@@ -96,7 +96,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         supabase
           .from('candidate_profiles')
           .select('*')
-          .eq('user_id', profile.id)
+          .eq('profile_id', profile.id)
           .maybeSingle(),
       ]);
 
@@ -125,13 +125,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     if (!profile?.id) return;
 
     const dataToSave = {
-      user_id: profile.id,
+      profile_id: profile.id,
+      title: formData.desired_position,
       skills: formData.skills,
       experience_years: Number(formData.experience_years),
       education_level: formData.education_level,
       location: formData.location,
       availability: formData.availability,
-      desired_position: formData.desired_position,
       desired_salary_min: formData.desired_salary_min ? Number(formData.desired_salary_min) : null,
       desired_salary_max: formData.desired_salary_max ? Number(formData.desired_salary_max) : null,
     };
@@ -140,7 +140,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       await supabase
         .from('candidate_profiles')
         .update(dataToSave)
-        .eq('user_id', profile.id);
+        .eq('profile_id', profile.id);
     } else {
       await supabase.from('candidate_profiles').insert(dataToSave);
     }

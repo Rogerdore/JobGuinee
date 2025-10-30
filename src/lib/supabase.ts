@@ -24,7 +24,9 @@ export type Profile = {
 
 export type CandidateProfile = {
   id: string;
-  user_id: string;
+  profile_id: string;
+  title?: string;
+  bio?: string;
   cv_url?: string;
   skills: string[];
   experience_years: number;
