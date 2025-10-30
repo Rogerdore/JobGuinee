@@ -55,7 +55,7 @@ interface Formation {
 }
 
 export default function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'applications' | 'profile' | 'formations' | 'alerts' | 'messages' | 'documents' | 'premium'>('dashboard');
   const [applications, setApplications] = useState<(Application & { jobs: Job & { companies: Company } })[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
@@ -80,38 +80,45 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   }, [profile?.id]);
 
   const loadData = async () => {
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
-    const [appsData, profileData] = await Promise.all([
-      supabase
-        .from('applications')
-        .select('*, jobs(*, companies(*))')
-        .eq('candidate_id', profile.id)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('candidate_profiles')
-        .select('*')
-        .eq('user_id', profile.id)
-        .maybeSingle(),
-    ]);
+    try {
+      const [appsData, profileData] = await Promise.all([
+        supabase
+          .from('applications')
+          .select('*, jobs(*, companies(*))')
+          .eq('candidate_id', profile.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('candidate_profiles')
+          .select('*')
+          .eq('user_id', profile.id)
+          .maybeSingle(),
+      ]);
 
-    if (appsData.data) setApplications(appsData.data as any);
-    if (profileData.data) {
-      setCandidateProfile(profileData.data);
-      setFormData({
-        skills: profileData.data.skills || [],
-        experience_years: profileData.data.experience_years || 0,
-        education_level: profileData.data.education_level || '',
-        location: profileData.data.location || '',
-        availability: profileData.data.availability || 'immediate',
-        desired_position: profileData.data.desired_position || '',
-        desired_salary_min: profileData.data.desired_salary_min?.toString() || '',
-        desired_salary_max: profileData.data.desired_salary_max?.toString() || '',
-      });
+      if (appsData.data) setApplications(appsData.data as any);
+      if (profileData.data) {
+        setCandidateProfile(profileData.data);
+        setFormData({
+          skills: profileData.data.skills || [],
+          experience_years: profileData.data.experience_years || 0,
+          education_level: profileData.data.education_level || '',
+          location: profileData.data.location || '',
+          availability: profileData.data.availability || 'immediate',
+          desired_position: profileData.data.desired_position || '',
+          desired_salary_min: profileData.data.desired_salary_min?.toString() || '',
+          desired_salary_max: profileData.data.desired_salary_max?.toString() || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading candidate data:', error);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleSaveProfile = async () => {
@@ -254,6 +261,15 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     },
   ];
 
+  useEffect(() => {
+    if (!user) {
+      onNavigate('login');
+    } else if (profile && profile.user_type !== 'candidate') {
+      alert('Cet espace est réservé aux candidats');
+      onNavigate('home');
+    }
+  }, [user, profile]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -263,6 +279,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         </div>
       </div>
     );
+  }
+
+  if (!user || !profile) {
+    return null;
   }
 
   const profileCompletion = calculateProfileCompletion();
