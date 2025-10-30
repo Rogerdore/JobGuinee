@@ -28,13 +28,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const navigation = [
     { name: 'Accueil', page: 'home', icon: Home },
     { name: "Offres d'emploi", page: 'jobs', icon: Briefcase },
+    { name: 'CVthèque', page: 'cvtheque', icon: Users },
     { name: 'Formations', page: 'formations', icon: BookOpen },
     { name: 'Blog', page: 'blog', icon: FileText },
   ];
-
-  if (profile?.user_type === 'recruiter') {
-    navigation.push({ name: 'CVthèque', page: 'cvtheque', icon: Users });
-  }
 
   const handleSignOut = async () => {
     try {
@@ -275,6 +272,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <li>
                   <button onClick={() => onNavigate('jobs')} className="hover:text-white transition">
                     Offres d'emploi
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => onNavigate('cvtheque')} className="hover:text-white transition">
+                    CVthèque
                   </button>
                 </li>
                 <li>
