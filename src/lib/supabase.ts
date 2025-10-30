@@ -13,12 +13,11 @@ export type UserRole = 'candidate' | 'recruiter' | 'admin';
 
 export type Profile = {
   id: string;
-  role: UserRole;
+  user_type: UserRole;
   full_name: string;
   email: string;
   phone?: string;
   avatar_url?: string;
-  bio?: string;
   created_at: string;
   updated_at: string;
 };

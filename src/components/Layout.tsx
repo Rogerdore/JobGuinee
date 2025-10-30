@@ -19,7 +19,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { name: 'Blog', page: 'blog', icon: FileText },
   ];
 
-  if (profile?.role === 'recruiter') {
+  if (profile?.user_type === 'recruiter') {
     navigation.push({ name: 'CVthèque', page: 'cvtheque', icon: Users });
   }
 
@@ -71,7 +71,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               {user ? (
                 <>
                   <button
-                    onClick={() => onNavigate(profile?.role === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard')}
+                    onClick={() => onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard')}
                     className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition"
                   >
                     <User className="w-4 h-4" />
@@ -142,7 +142,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <>
                   <button
                     onClick={() => {
-                      onNavigate(profile?.role === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
+                      onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-gray-600 hover:bg-gray-50"

@@ -57,7 +57,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
       return;
     }
 
-    if (profile?.role !== 'candidate') {
+    if (profile?.user_type !== 'candidate') {
       alert('Seuls les candidats peuvent postuler aux offres');
       return;
     }
@@ -313,7 +313,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     onClick={() => {
                       if (!user) {
                         onNavigate('login');
-                      } else if (profile?.role !== 'candidate') {
+                      } else if (profile?.user_type !== 'candidate') {
                         alert('Seuls les candidats peuvent postuler aux offres');
                       } else {
                         setShowApplicationForm(true);

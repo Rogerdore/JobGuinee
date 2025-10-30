@@ -51,12 +51,12 @@ export default function Home({ onNavigate }: HomeProps) {
       supabase
         .from('formations')
         .select('*')
-        .eq('is_active', true)
+        .eq('status', 'active')
         .limit(3),
       supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('status', 'published'),
       supabase.from('companies').select('id', { count: 'exact', head: true }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'candidate'),
-      supabase.from('formations').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'candidate'),
+      supabase.from('formations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     ]);
 
     if (jobsData.data) setRecentJobs(jobsData.data as any);

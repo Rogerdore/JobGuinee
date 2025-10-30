@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: data.user.id,
       email,
       full_name: fullName,
-      role,
+      user_type: role,
     });
 
     if (profileError) throw profileError;
