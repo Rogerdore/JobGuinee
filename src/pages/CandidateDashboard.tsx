@@ -1,5 +1,45 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award } from 'lucide-react';
+import {
+  Briefcase,
+  FileText,
+  Bell,
+  Settings,
+  Upload,
+  MapPin,
+  Award,
+  TrendingUp,
+  Target,
+  Calendar,
+  Clock,
+  MessageCircle,
+  Eye,
+  Heart,
+  Star,
+  CheckCircle,
+  AlertCircle,
+  Sparkles,
+  Brain,
+  Crown,
+  Lock,
+  Unlock,
+  Download,
+  Share2,
+  Edit,
+  Trash2,
+  Filter,
+  Search,
+  BarChart3,
+  BookOpen,
+  Users,
+  Zap,
+  Shield,
+  Cloud,
+  DollarSign,
+  ChevronRight,
+  X,
+  Plus,
+  GraduationCap
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 
@@ -7,12 +47,21 @@ interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
 }
 
+interface Formation {
+  id: string;
+  title: string;
+  status: string;
+  progress?: number;
+}
+
 export default function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'applications' | 'profile' | 'alerts'>('applications');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'applications' | 'profile' | 'formations' | 'alerts' | 'messages' | 'documents' | 'premium'>('dashboard');
   const [applications, setApplications] = useState<(Application & { jobs: Job & { companies: Company } })[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [formations, setFormations] = useState<Formation[]>([]);
+  const [isPremium, setIsPremium] = useState(false);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -89,6 +138,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       await supabase.from('candidate_profiles').insert(dataToSave);
     }
 
+    alert('Profil mis à jour avec succès!');
     loadData();
   };
 
@@ -125,63 +175,309 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     return labels[status] || status;
   };
 
+  const calculateProfileCompletion = () => {
+    let completion = 0;
+    const fields = [
+      formData.desired_position,
+      formData.education_level,
+      formData.location,
+      formData.skills.length > 0,
+      formData.experience_years > 0,
+      formData.desired_salary_min,
+    ];
+    completion = (fields.filter(Boolean).length / fields.length) * 100;
+    return Math.round(completion);
+  };
+
+  const getAIScore = () => {
+    return applications.length > 0
+      ? Math.round(applications.reduce((sum, app) => sum + (app.ai_match_score || 0), 0) / applications.length)
+      : 0;
+  };
+
+  const premiumServices = [
+    {
+      icon: Brain,
+      title: 'Analyse IA de profil',
+      description: 'Score CV vs offre + suggestions formations',
+      price: 'Inclus',
+      color: 'bg-purple-100 text-purple-700'
+    },
+    {
+      icon: FileText,
+      title: 'Création CV / Lettre IA',
+      description: 'Génération automatique design professionnel',
+      price: '100 000 GNF',
+      color: 'bg-blue-100 text-blue-700'
+    },
+    {
+      icon: Bell,
+      title: 'Alertes IA ciblées',
+      description: 'Détection auto d\'offres correspondantes',
+      price: 'Inclus',
+      color: 'bg-orange-100 text-orange-700'
+    },
+    {
+      icon: MessageCircle,
+      title: 'Chatbot Travail & Emploi',
+      description: 'Réponses Code du Travail guinéen',
+      price: 'Inclus',
+      color: 'bg-green-100 text-green-700'
+    },
+    {
+      icon: BarChart3,
+      title: 'Rapport mensuel IA',
+      description: 'Stats candidatures, matching, formations',
+      price: '150 000 GNF/mois',
+      color: 'bg-indigo-100 text-indigo-700'
+    },
+    {
+      icon: Users,
+      title: 'Coaching carrière IA',
+      description: 'Simulations entretien + feedbacks',
+      price: '250 000 GNF',
+      color: 'bg-pink-100 text-pink-700'
+    },
+    {
+      icon: Shield,
+      title: 'Badge Profil vérifié',
+      description: 'Vérification + scoring IA + visibilité',
+      price: '50 000 GNF',
+      color: 'bg-yellow-100 text-yellow-700'
+    },
+    {
+      icon: Cloud,
+      title: 'Espace cloud personnel',
+      description: 'Sauvegarde sécurisée documents RH',
+      price: 'Inclus Premium',
+      color: 'bg-teal-100 text-teal-700'
+    },
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-900"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-[#0E2F56]"></div>
+          <p className="mt-4 text-gray-600">Chargement de votre espace...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mon espace candidat</h1>
-          <p className="text-gray-600">Bienvenue {profile?.full_name}</p>
-        </div>
+  const profileCompletion = calculateProfileCompletion();
+  const aiScore = getAIScore();
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
+              <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
+            </div>
+            {isPremium && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#FF8C00] rounded-full">
+                <Crown className="w-5 h-5" />
+                <span className="font-bold">Premium</span>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-100 text-sm">Offres consultées</span>
+                <Eye className="w-5 h-5 text-blue-200" />
+              </div>
+              <div className="text-3xl font-bold">12</div>
+            </div>
+
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-100 text-sm">Candidatures</span>
+                <Briefcase className="w-5 h-5 text-blue-200" />
+              </div>
+              <div className="text-3xl font-bold">{applications.length}</div>
+            </div>
+
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-100 text-sm">Formations</span>
+                <BookOpen className="w-5 h-5 text-blue-200" />
+              </div>
+              <div className="text-3xl font-bold">{formations.length}</div>
+            </div>
+
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-100 text-sm">Score IA</span>
+                <Sparkles className="w-5 h-5 text-blue-200" />
+              </div>
+              <div className="text-3xl font-bold">{aiScore}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
           <div className="flex border-b border-gray-200 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('applications')}
-              className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'applications'
-                  ? 'border-b-2 border-blue-900 text-blue-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Briefcase className="w-5 h-5" />
-              <span>Mes candidatures ({applications.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'profile'
-                  ? 'border-b-2 border-blue-900 text-blue-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span>Mon profil</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('alerts')}
-              className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'alerts'
-                  ? 'border-b-2 border-blue-900 text-blue-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Bell className="w-5 h-5" />
-              <span>Alertes emploi</span>
-            </button>
+            {[
+              { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
+              { id: 'applications', label: `Candidatures (${applications.length})`, icon: Briefcase },
+              { id: 'profile', label: 'Mon profil', icon: Settings },
+              { id: 'formations', label: 'Formations', icon: BookOpen },
+              { id: 'alerts', label: 'Alertes emploi', icon: Bell },
+              { id: 'messages', label: 'Messages', icon: MessageCircle },
+              { id: 'documents', label: 'Documents', icon: FileText },
+              { id: 'premium', label: 'Services Premium', icon: Crown },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 transition ${
+                    activeTab === tab.id
+                      ? 'border-b-2 border-[#0E2F56] text-[#0E2F56] bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="p-6">
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Complétez votre profil</h3>
+                      <p className="text-sm text-gray-600">Votre profil est complété à {profileCompletion}%</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('profile')}
+                      className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition text-sm font-medium"
+                    >
+                      Compléter
+                    </button>
+                  </div>
+                  <div className="w-full bg-white rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-[#0E2F56] to-blue-600 h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${profileCompletion}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {aiScore > 0 && (
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Brain className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">Recommandation IA</h3>
+                        <p className="text-gray-700 mb-4">
+                          Votre score moyen de compatibilité est de <span className="font-bold text-purple-700">{aiScore}%</span> avec les offres consultées.
+                          {aiScore < 80 && ' Suivez une formation pour améliorer vos chances!'}
+                        </p>
+                        <button
+                          onClick={() => setActiveTab('formations')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          Découvrir les formations
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <button
+                    onClick={() => onNavigate('jobs')}
+                    className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
+                  >
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition">
+                      <Search className="w-6 h-6 text-[#0E2F56]" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">Rechercher une offre</h3>
+                    <p className="text-sm text-gray-600">Explorez des milliers d'opportunités</p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('premium')}
+                    className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl hover:border-[#FF8C00] hover:shadow-lg transition text-left group"
+                  >
+                    <div className="w-12 h-12 bg-[#FF8C00] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                      <Crown className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">Services Premium IA</h3>
+                    <p className="text-sm text-gray-600">Boostez votre recherche d'emploi</p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('formations')}
+                    className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
+                  >
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition">
+                      <GraduationCap className="w-6 h-6 text-green-700" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">Mes formations</h3>
+                    <p className="text-sm text-gray-600">Développez vos compétences</p>
+                  </button>
+                </div>
+
+                {applications.length > 0 && (
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Dernières candidatures</h3>
+                    <div className="space-y-3">
+                      {applications.slice(0, 3).map((app) => (
+                        <div
+                          key={app.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                          onClick={() => onNavigate('job-detail', app.job_id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-bold text-gray-900 mb-1">{app.jobs?.title}</h4>
+                              <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.company_name}</p>
+                              {app.ai_match_score && (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 text-xs text-gray-600">
+                                    <Sparkles className="w-3 h-3 text-purple-600" />
+                                    <span>Score IA: {app.ai_match_score}%</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+                              {getStatusLabel(app.status)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {applications.length > 3 && (
+                      <button
+                        onClick={() => setActiveTab('applications')}
+                        className="mt-4 w-full py-2 text-[#0E2F56] font-medium hover:bg-blue-50 rounded-lg transition"
+                      >
+                        Voir toutes les candidatures
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === 'applications' && (
               <div>
                 {applications.length === 0 ? (
@@ -190,27 +486,31 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                     <p className="text-gray-500 mb-4">Vous n'avez pas encore postulé à des offres</p>
                     <button
                       onClick={() => onNavigate('jobs')}
-                      className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-medium rounded-lg transition"
+                      className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition"
                     >
                       Découvrir les offres
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">Mes Candidatures</h2>
+                      <span className="text-sm text-gray-600">{applications.length} candidature{applications.length > 1 ? 's' : ''}</span>
+                    </div>
                     {applications.map((app) => (
                       <div
                         key={app.id}
-                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
+                        className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <h3
-                              className="font-bold text-lg text-gray-900 mb-2 hover:text-blue-900 cursor-pointer"
+                              className="font-bold text-xl text-gray-900 mb-2 hover:text-[#0E2F56] cursor-pointer"
                               onClick={() => onNavigate('job-detail', app.job_id)}
                             >
                               {app.jobs?.title}
                             </h3>
-                            <p className="text-gray-600 mb-2">{app.jobs?.companies?.company_name}</p>
+                            <p className="text-gray-600 mb-2 font-medium">{app.jobs?.companies?.company_name}</p>
                             {app.jobs?.location && (
                               <div className="flex items-center space-x-2 text-gray-500 text-sm">
                                 <MapPin className="w-4 h-4" />
@@ -218,28 +518,41 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                               </div>
                             )}
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
+                          <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
                             {getStatusLabel(app.status)}
                           </span>
                         </div>
 
                         {app.ai_match_score && (
                           <div className="mb-4">
-                            <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-gray-600">Score de compatibilité</span>
-                              <span className="font-semibold text-blue-900">{app.ai_match_score}%</span>
+                            <div className="flex items-center justify-between text-sm mb-2">
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-purple-600" />
+                                <span className="text-gray-600 font-medium">Score de compatibilité IA</span>
+                              </div>
+                              <span className="font-bold text-[#0E2F56]">{app.ai_match_score}%</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
                               <div
-                                className="bg-blue-900 h-2 rounded-full transition-all"
+                                className="bg-gradient-to-r from-[#0E2F56] to-purple-600 h-2.5 rounded-full transition-all"
                                 style={{ width: `${app.ai_match_score}%` }}
                               ></div>
                             </div>
                           </div>
                         )}
 
-                        <div className="text-sm text-gray-500">
-                          Postulé le {new Date(app.created_at).toLocaleDateString('fr-FR')}
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Calendar className="w-4 h-4" />
+                            <span>Postulé le {new Date(app.created_at).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                          <button
+                            onClick={() => onNavigate('job-detail', app.job_id)}
+                            className="text-[#0E2F56] font-medium text-sm hover:underline flex items-center gap-1"
+                          >
+                            Voir l'offre
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -250,43 +563,46 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
             {activeTab === 'profile' && (
               <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Mon Profil Professionnel</h2>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Poste recherché
+                      Poste recherché *
                     </label>
                     <input
                       type="text"
                       value={formData.desired_position}
                       onChange={(e) => setFormData({ ...formData, desired_position: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Développeur Web"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ex: Superviseur RH"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Années d'expérience
+                      Années d'expérience *
                     </label>
                     <input
                       type="number"
                       value={formData.experience_years}
                       onChange={(e) => setFormData({ ...formData, experience_years: Number(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
                       min="0"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Niveau d'études
+                      Niveau d'études *
                     </label>
                     <select
                       value={formData.education_level}
                       onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
                     >
                       <option value="">Sélectionner</option>
+                      <option value="Sans diplôme">Sans diplôme</option>
                       <option value="Bac">Bac</option>
                       <option value="Bac+2">Bac+2</option>
                       <option value="Licence">Licence (Bac+3)</option>
@@ -297,15 +613,31 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Localisation
+                      Localisation *
                     </label>
                     <input
                       type="text"
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Conakry"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ex: Conakry, Boké, Kamsar..."
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Disponibilité
+                    </label>
+                    <select
+                      value={formData.availability}
+                      onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    >
+                      <option value="immediate">Immédiate</option>
+                      <option value="1_month">Dans 1 mois</option>
+                      <option value="3_months">Dans 3 mois</option>
+                      <option value="negotiable">À négocier</option>
+                    </select>
                   </div>
 
                   <div>
@@ -316,7 +648,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       type="number"
                       value={formData.desired_salary_min}
                       onChange={(e) => setFormData({ ...formData, desired_salary_min: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
                       placeholder="Ex: 5000000"
                     />
                   </div>
@@ -329,7 +661,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       type="number"
                       value={formData.desired_salary_max}
                       onChange={(e) => setFormData({ ...formData, desired_salary_max: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
                       placeholder="Ex: 8000000"
                     />
                   </div>
@@ -337,7 +669,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Compétences
+                    Compétences *
                   </label>
                   <div className="flex gap-2 mb-3">
                     <input
@@ -345,13 +677,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ajouter une compétence"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ajouter une compétence (Ex: Microsoft Excel)"
                     />
                     <button
                       onClick={addSkill}
-                      className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-medium rounded-lg transition"
+                      className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2"
                     >
+                      <Plus className="w-5 h-5" />
                       Ajouter
                     </button>
                   </div>
@@ -359,24 +692,24 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                     {formData.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center space-x-2"
+                        className="px-4 py-2 bg-blue-100 text-[#0E2F56] rounded-full text-sm font-medium flex items-center space-x-2"
                       >
                         <span>{skill}</span>
                         <button
                           onClick={() => removeSkill(skill)}
                           className="hover:text-blue-900"
                         >
-                          ×
+                          <X className="w-4 h-4" />
                         </button>
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-6 border-t border-gray-200">
                   <button
                     onClick={handleSaveProfile}
-                    className="px-8 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg transition shadow-lg"
+                    className="px-8 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-bold rounded-lg transition shadow-lg"
                   >
                     Enregistrer les modifications
                   </button>
@@ -384,13 +717,131 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               </div>
             )}
 
+            {activeTab === 'formations' && (
+              <div className="text-center py-12">
+                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Mes Formations</h3>
+                <p className="text-gray-600 mb-6">Suivez vos formations inscrites et leur progression</p>
+                <button
+                  onClick={() => onNavigate('formations')}
+                  className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition"
+                >
+                  Découvrir les formations disponibles
+                </button>
+              </div>
+            )}
+
             {activeTab === 'alerts' && (
               <div className="text-center py-12">
                 <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">
-                  Configurez des alertes pour recevoir les nouvelles offres par email
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Alertes Emploi</h3>
+                <p className="text-gray-600 mb-6">
+                  Configurez des alertes pour recevoir les nouvelles offres par email, SMS ou WhatsApp
                 </p>
                 <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
+              </div>
+            )}
+
+            {activeTab === 'messages' && (
+              <div className="text-center py-12">
+                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Messagerie</h3>
+                <p className="text-gray-600 mb-6">Communiquez directement avec les recruteurs</p>
+                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
+              </div>
+            )}
+
+            {activeTab === 'documents' && (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Mes Documents</h3>
+                <p className="text-gray-600 mb-6">Gérez vos CV, lettres de motivation et autres documents</p>
+                <button className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2 mx-auto">
+                  <Upload className="w-5 h-5" />
+                  Télécharger un document
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'premium' && (
+              <div className="space-y-8">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#FF8C00] to-orange-600 rounded-full mb-4">
+                    <Crown className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Services Premium IA</h2>
+                  <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Boostez votre recherche d'emploi avec nos services intelligents propulsés par l'IA
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {premiumServices.map((service) => {
+                    const Icon = service.icon;
+                    return (
+                      <div
+                        key={service.title}
+                        className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-[#0E2F56] hover:shadow-xl transition"
+                      >
+                        <div className={`w-14 h-14 rounded-lg ${service.color} flex items-center justify-center mb-4`}>
+                          <Icon className="w-7 h-7" />
+                        </div>
+                        <h3 className="font-bold text-lg mb-2">{service.title}</h3>
+                        <p className="text-sm text-gray-600 mb-4">{service.description}</p>
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <span className="font-bold text-[#0E2F56]">{service.price}</span>
+                          <button className="text-[#0E2F56] font-medium text-sm hover:underline">
+                            En savoir plus
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-gradient-to-br from-[#0E2F56] to-blue-800 rounded-2xl p-8 text-white">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div>
+                      <h3 className="text-2xl font-bold mb-4">Abonnement Premium PRO+</h3>
+                      <p className="text-blue-100 mb-6">
+                        Accédez à tous les services Premium IA + Cloud sécurisé + Support prioritaire
+                      </p>
+                      <ul className="space-y-3 mb-6">
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
+                          <span>Tous les services IA inclus</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
+                          <span>Cloud 10 Go pour documents</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
+                          <span>Support prioritaire 24/7</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
+                          <span>Badge Profil vérifié</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="text-center">
+                      <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-8 mb-6">
+                        <div className="text-5xl font-bold mb-2">350 000</div>
+                        <div className="text-xl">GNF / mois</div>
+                      </div>
+                      <button
+                        onClick={() => alert('Paiement: Orange Money • LengoPay • DigitalPay SA')}
+                        className="w-full px-8 py-4 bg-[#FF8C00] hover:bg-orange-600 text-white font-bold text-lg rounded-lg transition shadow-xl"
+                      >
+                        S'abonner maintenant
+                      </button>
+                      <p className="text-sm text-blue-200 mt-4">
+                        Orange Money • LengoPay • DigitalPay SA
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
