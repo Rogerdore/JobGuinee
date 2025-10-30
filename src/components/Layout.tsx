@@ -1,5 +1,5 @@
-import { ReactNode, useState } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText } from 'lucide-react';
+import { ReactNode, useState, useRef, useEffect } from 'react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
@@ -11,6 +11,19 @@ interface LayoutProps {
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, profile, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navigation = [
     { name: 'Accueil', page: 'home', icon: Home },
@@ -69,22 +82,57 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
             <div className="hidden md:flex items-center space-x-4">
               {user ? (
-                <>
+                <div className="relative" ref={accountMenuRef}>
                   <button
-                    onClick={() => onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard')}
+                    onClick={() => setAccountMenuOpen(!accountMenuOpen)}
                     className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition"
                   >
                     <User className="w-4 h-4" />
                     <span>{profile?.full_name || 'Mon compte'}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Déconnexion</span>
-                  </button>
-                </>
+
+                  {accountMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
+                        <p className="text-xs text-gray-500">{profile?.email}</p>
+                        <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          {profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        <div>
+                          <p className="font-medium">
+                            {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
+                          </p>
+                          <p className="text-xs text-gray-500">Tableau de bord et profil</p>
+                        </div>
+                      </button>
+
+                      <div className="border-t border-gray-200 my-2"></div>
+
+                      <button
+                        onClick={() => {
+                          handleSignOut();
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 transition"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span className="font-medium">Déconnexion</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
                   <button
@@ -140,16 +188,32 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
               {user ? (
                 <>
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg mb-2">
+                    <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
+                    <p className="text-xs text-gray-500">{profile?.email}</p>
+                    <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                      {profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
+                    </span>
+                  </div>
+
                   <button
                     onClick={() => {
                       onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-gray-600 hover:bg-gray-50"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left bg-blue-50 text-blue-900 hover:bg-blue-100"
                   >
-                    <User className="w-5 h-5" />
-                    <span className="font-medium">{profile?.full_name || 'Mon compte'}</span>
+                    <LayoutDashboard className="w-5 h-5" />
+                    <div>
+                      <p className="font-medium text-sm">
+                        {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
+                      </p>
+                      <p className="text-xs opacity-75">Tableau de bord et profil</p>
+                    </div>
                   </button>
+
+                  <div className="border-t border-gray-200 my-2"></div>
+
                   <button
                     onClick={() => {
                       handleSignOut();
