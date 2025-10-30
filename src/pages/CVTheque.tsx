@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Users, Grid, List, Star, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import SearchBar from '../components/cvtheque/SearchBar';
 import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFilters';
-import CandidateCard from '../components/cvtheque/CandidateCard';
+import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
+import ProfileCart from '../components/cvtheque/ProfileCart';
 
 interface CVThequeProps {
   onNavigate: (page: string) => void;
@@ -18,13 +19,17 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterValues>({});
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'favorites'>('all');
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [purchasedProfiles, setPurchasedProfiles] = useState<string[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sessionId] = useState(() => `guest_${Date.now()}_${Math.random().toString(36)}`);
 
   useEffect(() => {
     loadCandidates();
-    if (profile?.user_type === 'recruiter') {
-      loadFavorites();
+    loadCart();
+    if (profile?.id) {
+      loadPurchasedProfiles();
     }
   }, [profile]);
 
@@ -56,16 +61,37 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     setLoading(false);
   };
 
-  const loadFavorites = async () => {
+  const loadCart = async () => {
+    const { data } = await supabase
+      .from('profile_cart')
+      .select(`
+        *,
+        candidate:candidate_profiles!profile_cart_candidate_id_fkey(
+          id,
+          title,
+          experience_years,
+          location,
+          profile_price
+        )
+      `)
+      .or(profile?.id ? `user_id.eq.${profile.id}` : `session_id.eq.${sessionId}`);
+
+    if (data) {
+      setCartItems(data);
+    }
+  };
+
+  const loadPurchasedProfiles = async () => {
     if (!profile?.id) return;
 
     const { data } = await supabase
-      .from('favorite_candidates')
+      .from('profile_purchases')
       .select('candidate_id')
-      .eq('recruiter_id', profile.id);
+      .eq('buyer_id', profile.id)
+      .eq('payment_status', 'completed');
 
     if (data) {
-      setFavorites(data.map(f => f.candidate_id));
+      setPurchasedProfiles(data.map(p => p.candidate_id));
     }
   };
 
@@ -97,26 +123,15 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     return Math.min(score, 100);
   };
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
-    await saveSearch(query);
     applyFilters(query, filters);
-  };
-
-  const saveSearch = async (query: string) => {
-    if (!profile?.id || !query) return;
-
-    await supabase.from('talent_searches').insert({
-      recruiter_id: profile.id,
-      search_query: query,
-      filters: filters,
-      results_count: filteredCandidates.length,
-    });
   };
 
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
     applyFilters(searchQuery, newFilters);
+    setShowFilters(false);
   };
 
   const handleFilterClear = () => {
@@ -136,7 +151,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
           ${candidate.location || ''}
           ${candidate.skills?.join(' ') || ''}
           ${candidate.education_level || ''}
-          ${candidate.profile?.full_name || ''}
         `.toLowerCase();
         return searchText.includes(queryLower);
       });
@@ -175,80 +189,67 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     setFilteredCandidates(results);
   };
 
-  const handleToggleFavorite = async (candidateId: string) => {
-    if (!profile?.id) return;
-
-    if (favorites.includes(candidateId)) {
-      await supabase
-        .from('favorite_candidates')
-        .delete()
-        .eq('recruiter_id', profile.id)
-        .eq('candidate_id', candidateId);
-
-      setFavorites(favorites.filter(id => id !== candidateId));
-    } else {
-      await supabase.from('favorite_candidates').insert({
-        recruiter_id: profile.id,
-        candidate_id: candidateId,
-      });
-
-      setFavorites([...favorites, candidateId]);
-    }
-  };
-
-  const handleContact = async (candidateId: string) => {
-    if (!profile?.id) return;
-    alert('Fonctionnalité de messagerie disponible prochainement !');
-  };
-
-  const handleDownload = async (candidateId: string) => {
-    if (!profile?.id) return;
-
-    await supabase.from('cv_downloads').insert({
-      recruiter_id: profile.id,
+  const handleAddToCart = async (candidateId: string) => {
+    const { error } = await supabase.from('profile_cart').insert({
+      user_id: profile?.id || null,
+      session_id: profile?.id ? null : sessionId,
       candidate_id: candidateId,
     });
 
-    const candidate = candidates.find(c => c.id === candidateId);
-    if (candidate?.cv_url) {
-      window.open(candidate.cv_url, '_blank');
-    } else {
-      alert('CV non disponible pour ce candidat');
+    if (!error) {
+      await loadCart();
     }
   };
 
-  const handleViewDetails = (candidateId: string) => {
-    alert('Vue détaillée du profil disponible prochainement !');
+  const handleRemoveFromCart = async (itemId: string) => {
+    await supabase.from('profile_cart').delete().eq('id', itemId);
+    await loadCart();
   };
 
-  const displayedCandidates = activeTab === 'favorites'
-    ? filteredCandidates.filter(c => favorites.includes(c.id))
-    : filteredCandidates;
+  const handleCheckout = () => {
+    if (!profile?.id) {
+      alert('Veuillez vous connecter pour finaliser votre achat');
+      onNavigate('login');
+      return;
+    }
 
-  if (profile?.user_type !== 'recruiter') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-red-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Accès réservé aux recruteurs</h2>
-          <p className="text-gray-600 mb-6">
-            La CVThèque est accessible uniquement aux entreprises et recruteurs inscrits.
-          </p>
-          <button
-            onClick={() => onNavigate('home')}
-            className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg transition"
-          >
-            Retour à l'accueil
-          </button>
-        </div>
-      </div>
-    );
-  }
+    alert('🚧 Paiement en cours de développement\n\nMoyens de paiement acceptés:\n- Orange Money\n- LengoPay\n- DigitalPay SA\n- Visa/Mastercard');
+  };
+
+  const handleViewDetails = (candidateId: string) => {
+    const isPurchased = purchasedProfiles.includes(candidateId);
+    if (isPurchased) {
+      alert('🎉 Vous avez accès à ce profil complet !\n\nFonctionnalité de vue détaillée en développement.');
+    } else {
+      alert('👁️ Aperçu du profil\n\nPour accéder aux informations complètes (coordonnées, CV, certifications), ajoutez ce profil à votre panier.');
+    }
+  };
+
+  const cartItemIds = cartItems.map(item => item.candidate_id);
+
+  const getStats = () => {
+    const junior = filteredCandidates.filter(c => (c.experience_years || 0) < 3).length;
+    const intermediate = filteredCandidates.filter(c => {
+      const exp = c.experience_years || 0;
+      return exp >= 3 && exp < 6;
+    }).length;
+    const senior = filteredCandidates.filter(c => (c.experience_years || 0) >= 6).length;
+
+    return { junior, intermediate, senior };
+  };
+
+  const stats = getStats();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+      <ProfileCart
+        items={cartItems}
+        onRemoveItem={handleRemoveFromCart}
+        onCheckout={handleCheckout}
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+      />
+
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -258,12 +259,42 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               </h1>
               <p className="text-gray-600 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-blue-900" />
-                Recherche intelligente propulsée par l'IA
+                Parcourez les profils et sélectionnez ceux qui vous intéressent
               </p>
             </div>
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg shadow-lg transition flex items-center gap-2"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span>Panier</span>
+              {cartItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <div className="text-3xl font-bold text-blue-900">{candidates.length}</div>
+              <div className="text-3xl font-bold text-gray-900">{candidates.length}</div>
               <div className="text-sm text-gray-600">Profils disponibles</div>
+            </div>
+            <div className="bg-orange-50 rounded-xl border border-orange-200 p-4 text-center">
+              <div className="text-3xl font-bold text-orange-900">🟠 {stats.junior}</div>
+              <div className="text-sm text-orange-700 font-medium">Profils Junior</div>
+              <div className="text-xs text-orange-600 mt-1">50.000 GNF</div>
+            </div>
+            <div className="bg-green-50 rounded-xl border border-green-200 p-4 text-center">
+              <div className="text-3xl font-bold text-green-900">🟢 {stats.intermediate}</div>
+              <div className="text-sm text-green-700 font-medium">Profils Intermédiaires</div>
+              <div className="text-xs text-green-600 mt-1">100.000 GNF</div>
+            </div>
+            <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 text-center">
+              <div className="text-3xl font-bold text-blue-900">🔷 {stats.senior}</div>
+              <div className="text-sm text-blue-700 font-medium">Profils Senior</div>
+              <div className="text-xs text-blue-600 mt-1">150.000 GNF</div>
             </div>
           </div>
 
@@ -271,34 +302,22 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         </div>
 
         <div className="mb-6">
-          <AdvancedFilters onApply={handleFilterApply} onClear={handleFilterClear} />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full md:hidden mb-4 px-4 py-3 bg-white border border-gray-200 rounded-lg flex items-center justify-center gap-2 font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <FilterIcon className="w-5 h-5" />
+            {showFilters ? 'Masquer les filtres' : 'Afficher les filtres'}
+          </button>
+          <div className={showFilters ? 'block' : 'hidden md:block'}>
+            <AdvancedFilters onApply={handleFilterApply} onClear={handleFilterClear} />
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 font-medium rounded-lg transition ${
-                  activeTab === 'all'
-                    ? 'bg-blue-900 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Users className="w-4 h-4 inline mr-2" />
-                Tous ({filteredCandidates.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('favorites')}
-                className={`px-4 py-2 font-medium rounded-lg transition ${
-                  activeTab === 'favorites'
-                    ? 'bg-blue-900 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Star className="w-4 h-4 inline mr-2" />
-                Favoris ({favorites.length})
-              </button>
+            <div className="text-sm text-gray-600">
+              <span className="font-semibold text-gray-900">{filteredCandidates.length}</span> profil(s) trouvé(s)
             </div>
 
             <div className="flex items-center gap-2">
@@ -331,7 +350,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-900 mb-4"></div>
             <p className="text-gray-600">Chargement des profils...</p>
           </div>
-        ) : displayedCandidates.length === 0 ? (
+        ) : filteredCandidates.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun profil trouvé</h3>
@@ -345,15 +364,14 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
               : 'grid-cols-1'
           }`}>
-            {displayedCandidates.map((candidate) => (
-              <CandidateCard
+            {filteredCandidates.map((candidate) => (
+              <AnonymizedCandidateCard
                 key={candidate.id}
                 candidate={candidate}
                 score={candidate.ai_score}
-                isFavorite={favorites.includes(candidate.id)}
-                onContact={handleContact}
-                onDownload={handleDownload}
-                onToggleFavorite={handleToggleFavorite}
+                isInCart={cartItemIds.includes(candidate.id)}
+                isPurchased={purchasedProfiles.includes(candidate.id)}
+                onAddToCart={handleAddToCart}
                 onViewDetails={handleViewDetails}
               />
             ))}
@@ -366,32 +384,35 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <TrendingUp className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-1">Passez en Premium</h2>
+              <h2 className="text-2xl font-bold mb-1">Comment ça marche ?</h2>
               <p className="text-blue-100">
-                Accédez à tous les profils vérifiés, téléchargements illimités et analyses IA avancées
+                Accédez aux informations complètes des profils qui vous intéressent
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/10 rounded-xl p-4">
-              <div className="text-3xl font-bold mb-1">800K</div>
-              <div className="text-blue-100 text-sm">GNF / mois</div>
-              <div className="text-white font-medium mt-2">Formule Pro</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/10 rounded-xl p-6">
+              <div className="text-3xl mb-3">1️⃣</div>
+              <h3 className="font-bold text-lg mb-2">Parcourez les profils</h3>
+              <p className="text-blue-100 text-sm">
+                Utilisez les filtres et la recherche IA pour trouver les candidats qui correspondent à vos besoins
+              </p>
             </div>
-            <div className="bg-white/10 rounded-xl p-4">
-              <div className="text-3xl font-bold mb-1">1,5M</div>
-              <div className="text-blue-100 text-sm">GNF / mois</div>
-              <div className="text-white font-medium mt-2">Formule Corporate</div>
+            <div className="bg-white/10 rounded-xl p-6">
+              <div className="text-3xl mb-3">2️⃣</div>
+              <h3 className="font-bold text-lg mb-2">Ajoutez au panier</h3>
+              <p className="text-blue-100 text-sm">
+                Sélectionnez les profils qui vous intéressent et ajoutez-les à votre panier
+              </p>
             </div>
-            <div className="bg-white/10 rounded-xl p-4">
-              <div className="text-3xl font-bold mb-1">2M</div>
-              <div className="text-blue-100 text-sm">GNF / mois</div>
-              <div className="text-white font-medium mt-2">Formule Premium+</div>
+            <div className="bg-white/10 rounded-xl p-6">
+              <div className="text-3xl mb-3">3️⃣</div>
+              <h3 className="font-bold text-lg mb-2">Payez et accédez</h3>
+              <p className="text-blue-100 text-sm">
+                Finalisez votre achat et accédez aux coordonnées complètes, CV et certifications
+              </p>
             </div>
           </div>
-          <button className="mt-6 px-8 py-3 bg-white text-blue-900 font-bold rounded-lg hover:bg-blue-50 transition shadow-lg">
-            Découvrir les offres Premium
-          </button>
         </div>
       </div>
     </div>
