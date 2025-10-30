@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon } from 'lucide-react';
+import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import SearchBar from '../components/cvtheque/SearchBar';
 import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFilters';
 import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
 import ProfileCart from '../components/cvtheque/ProfileCart';
+import { sampleProfiles } from '../utils/sampleProfiles';
 
 interface CVThequeProps {
   onNavigate: (page: string) => void;
@@ -24,6 +25,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [cartOpen, setCartOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [sessionId] = useState(() => `guest_${Date.now()}_${Math.random().toString(36)}`);
+  const [currentPage, setCurrentPage] = useState(1);
+  const profilesPerPage = 12;
 
   useEffect(() => {
     loadCandidates();
@@ -49,14 +52,29 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       .eq('visibility', 'public')
       .order('last_active_at', { ascending: false });
 
-    if (data && !error) {
-      const candidatesWithScores = data.map(candidate => ({
+    let candidatesList = [];
+
+    if (data && !error && data.length > 0) {
+      candidatesList = data.map(candidate => ({
         ...candidate,
         ai_score: calculateAIScore(candidate),
       }));
-      setCandidates(candidatesWithScores);
-      setFilteredCandidates(candidatesWithScores);
+    } else {
+      candidatesList = sampleProfiles.map((profile, index) => ({
+        id: `sample_${index}`,
+        profile_id: `sample_profile_${index}`,
+        ...profile,
+        ai_score: calculateAIScore(profile),
+        profile: {
+          full_name: `Profil ${index + 1}`,
+          email: `sample${index}@demo.com`,
+          avatar_url: null
+        }
+      }));
     }
+
+    setCandidates(candidatesList);
+    setFilteredCandidates(candidatesList);
 
     setLoading(false);
   };
@@ -125,17 +143,20 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    setCurrentPage(1);
     applyFilters(query, filters);
   };
 
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
+    setCurrentPage(1);
     applyFilters(searchQuery, newFilters);
     setShowFilters(false);
   };
 
   const handleFilterClear = () => {
     setFilters({});
+    setCurrentPage(1);
     setFilteredCandidates(candidates);
   };
 
@@ -359,23 +380,74 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
             </p>
           </div>
         ) : (
-          <div className={`grid gap-6 ${
-            viewMode === 'grid'
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-              : 'grid-cols-1'
-          }`}>
-            {filteredCandidates.map((candidate) => (
-              <AnonymizedCandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                score={candidate.ai_score}
-                isInCart={cartItemIds.includes(candidate.id)}
-                isPurchased={purchasedProfiles.includes(candidate.id)}
-                onAddToCart={handleAddToCart}
-                onViewDetails={handleViewDetails}
-              />
-            ))}
-          </div>
+          <>
+            <div className={`grid gap-6 ${
+              viewMode === 'grid'
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                : 'grid-cols-1'
+            }`}>
+              {filteredCandidates
+                .slice((currentPage - 1) * profilesPerPage, currentPage * profilesPerPage)
+                .map((candidate) => (
+                  <AnonymizedCandidateCard
+                    key={candidate.id}
+                    candidate={candidate}
+                    score={candidate.ai_score}
+                    isInCart={cartItemIds.includes(candidate.id)}
+                    isPurchased={purchasedProfiles.includes(candidate.id)}
+                    onAddToCart={handleAddToCart}
+                    onViewDetails={handleViewDetails}
+                  />
+                ))}
+            </div>
+
+            {filteredCandidates.length > profilesPerPage && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => {
+                    setCurrentPage(Math.max(1, currentPage - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Précédent
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: Math.ceil(filteredCandidates.length / profilesPerPage) }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`w-10 h-10 rounded-lg font-medium transition ${
+                        currentPage === page
+                          ? 'bg-blue-900 text-white'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setCurrentPage(Math.min(Math.ceil(filteredCandidates.length / profilesPerPage), currentPage + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === Math.ceil(filteredCandidates.length / profilesPerPage)}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  Suivant
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <div className="mt-12 bg-gradient-to-br from-blue-600 to-blue-900 rounded-2xl p-8 text-white">
