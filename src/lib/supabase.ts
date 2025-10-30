@@ -89,10 +89,11 @@ export type Formation = {
   title: string;
   description?: string;
   price: number;
-  duration_hours?: number;
+  duration?: string;
   instructor?: string;
   category?: string;
-  cover_image?: string;
-  is_active: boolean;
+  thumbnail_url?: string;
+  status: string;
   created_at: string;
+  updated_at: string;
 };
