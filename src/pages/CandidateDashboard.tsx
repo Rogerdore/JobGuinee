@@ -1,45 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Briefcase,
-  FileText,
-  Bell,
-  Settings,
-  Upload,
-  MapPin,
-  Award,
-  TrendingUp,
-  Target,
-  Calendar,
-  Clock,
-  MessageCircle,
-  Eye,
-  Heart,
-  Star,
-  CheckCircle,
-  AlertCircle,
-  Sparkles,
-  Brain,
-  Crown,
-  Lock,
-  Unlock,
-  Download,
-  Share2,
-  Edit,
-  Trash2,
-  Filter,
-  Search,
-  BarChart3,
-  BookOpen,
-  Users,
-  Zap,
-  Shield,
-  Cloud,
-  DollarSign,
-  ChevronRight,
-  X,
-  Plus,
-  GraduationCap
-} from 'lucide-react';
+import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 
