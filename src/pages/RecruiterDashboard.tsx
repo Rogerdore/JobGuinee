@@ -1,40 +1,62 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, Plus, Eye, Users, Settings, Building } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  MessageSquare,
+  BarChart3,
+  Wand2,
+  Download,
+  Sparkles,
+  Plus,
+  Filter,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, Job, Company, Application, Profile } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import DashboardStats from '../components/recruiter/DashboardStats';
+import ApplicationCard from '../components/recruiter/ApplicationCard';
+import AIJobGenerator, { JobGenerationData } from '../components/recruiter/AIJobGenerator';
+import PremiumPlans from '../components/recruiter/PremiumPlans';
 
 interface RecruiterDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
 }
 
+interface Job {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  contract_type: string;
+  status: string;
+  created_at: string;
+  applications_count: number;
+  views_count: number;
+}
+
+interface Application {
+  id: string;
+  job_id: string;
+  candidate_id: string;
+  ai_score: number;
+  ai_category: string;
+  workflow_stage: string;
+  applied_at: string;
+  cover_letter?: string;
+  cv_url?: string;
+}
+
+type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'premium';
+
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'jobs' | 'company' | 'create'>('jobs');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [company, setCompany] = useState<Company | null>(null);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedJobApplications, setSelectedJobApplications] = useState<(Application & { profiles: Profile })[]>([]);
-  const [viewingApplications, setViewingApplications] = useState(false);
-
-  const [jobForm, setJobForm] = useState({
-    title: '',
-    description: '',
-    requirements: '',
-    location: '',
-    contract_type: 'CDI',
-    sector: '',
-    salary_min: '',
-    salary_max: '',
-  });
-
-  const [companyForm, setCompanyForm] = useState({
-    company_name: '',
-    description: '',
-    sector: '',
-    website: '',
-    location: '',
-    size: '',
-  });
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [company, setCompany] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -44,530 +66,473 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     if (!profile?.id) return;
     setLoading(true);
 
-    const companyData = await supabase
+    const { data: companyData } = await supabase
       .from('companies')
       .select('*')
-      .eq('user_id', profile.id)
+      .eq('profile_id', profile.id)
       .maybeSingle();
 
-    if (companyData.data) {
-      setCompany(companyData.data);
-      setCompanyForm({
-        company_name: companyData.data.company_name,
-        description: companyData.data.description || '',
-        sector: companyData.data.sector || '',
-        website: companyData.data.website || '',
-        location: companyData.data.location || '',
-        size: companyData.data.size || '',
-      });
+    if (companyData) {
+      setCompany(companyData);
 
-      const jobsData = await supabase
+      const { data: jobsData } = await supabase
         .from('jobs')
         .select('*')
-        .eq('company_id', companyData.data.id)
+        .eq('company_id', companyData.id)
         .order('created_at', { ascending: false });
 
-      if (jobsData.data) setJobs(jobsData.data);
+      if (jobsData) {
+        setJobs(jobsData);
+
+        const jobIds = jobsData.map(j => j.id);
+        if (jobIds.length > 0) {
+          const { data: appsData } = await supabase
+            .from('applications')
+            .select(`
+              *,
+              candidate:candidate_profiles!applications_candidate_id_fkey(
+                id,
+                title,
+                experience_years,
+                education_level,
+                skills,
+                profile:profiles!candidate_profiles_profile_id_fkey(
+                  full_name,
+                  email,
+                  phone,
+                  avatar_url
+                )
+              )
+            `)
+            .in('job_id', jobIds)
+            .order('applied_at', { ascending: false });
+
+          if (appsData) {
+            setApplications(appsData);
+          }
+        }
+      }
     }
 
     setLoading(false);
   };
 
-  const handleSaveCompany = async () => {
-    if (!profile?.id) return;
+  const handleAIGenerate = async (data: JobGenerationData) => {
+    const generatedDescription = `
+# ${data.job_title}
 
-    if (company) {
-      await supabase
-        .from('companies')
-        .update(companyForm)
-        .eq('user_id', profile.id);
-    } else {
-      await supabase.from('companies').insert({
-        user_id: profile.id,
-        ...companyForm,
-      });
-    }
+## Description du poste
+Nous recherchons un(e) ${data.job_title} talentueux(se) pour rejoindre notre équipe ${data.department ? `au sein du département ${data.department}` : ''}.
 
-    loadData();
-  };
+## Missions principales
+- Assurer la ${data.job_title.toLowerCase()} conformément aux standards de qualité
+- Collaborer avec les équipes techniques et opérationnelles
+- Participer à l'amélioration continue des processus
+- Contribuer au développement et à l'innovation
+- Respecter les normes de sécurité et de qualité en vigueur
 
-  const handleCreateJob = async () => {
+## Profil recherché
+Nous recherchons un profil de niveau ${data.experience_level} avec :
+- Formation supérieure pertinente
+- Expérience significative dans un poste similaire
+- Excellentes capacités d'analyse et de résolution de problèmes
+- Autonomie et esprit d'équipe
+- Maîtrise des outils professionnels du secteur
+
+## Compétences techniques requises
+- Expertise technique dans le domaine
+- Capacité d'adaptation et d'apprentissage
+- Rigueur et sens de l'organisation
+- Communication efficace
+
+## Conditions
+- Type de contrat : ${data.contract_type}
+- Localisation : ${data.location}
+- Rémunération : Selon profil et expérience
+
+## Conformité légale
+Poste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).
+Nous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.
+
+---
+Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
+    `.trim();
+
     if (!company?.id) {
       alert('Veuillez d\'abord créer votre profil entreprise');
-      setActiveTab('company');
       return;
     }
 
-    await supabase.from('jobs').insert({
+    const { error } = await supabase.from('jobs').insert({
       company_id: company.id,
-      title: jobForm.title,
-      description: jobForm.description,
-      requirements: jobForm.requirements,
-      location: jobForm.location,
-      contract_type: jobForm.contract_type,
-      sector: jobForm.sector,
-      salary_min: jobForm.salary_min ? Number(jobForm.salary_min) : null,
-      salary_max: jobForm.salary_max ? Number(jobForm.salary_max) : null,
-      status: 'published',
+      title: data.job_title,
+      description: generatedDescription,
+      location: data.location,
+      contract_type: data.contract_type,
+      department: data.department,
+      experience_level: data.experience_level,
+      ai_generated: true,
+      status: 'draft',
     });
 
-    setJobForm({
-      title: '',
-      description: '',
-      requirements: '',
-      location: '',
-      contract_type: 'CDI',
-      sector: '',
-      salary_min: '',
-      salary_max: '',
-    });
-
-    loadData();
-    setActiveTab('jobs');
-  };
-
-  const loadApplications = async (jobId: string) => {
-    const { data } = await supabase
-      .from('applications')
-      .select('*, profiles(*)')
-      .eq('job_id', jobId)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      setSelectedJobApplications(data as any);
-      setViewingApplications(true);
+    if (!error) {
+      setShowAIGenerator(false);
+      await loadData();
+      setActiveTab('projects');
+      alert('✅ Offre générée avec succès ! Vous pouvez maintenant la modifier et la publier.');
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      published: 'bg-green-100 text-green-800',
-      expired: 'bg-red-100 text-red-800',
-      closed: 'bg-gray-100 text-gray-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+  const stats = {
+    totalJobs: jobs.length,
+    activeJobs: jobs.filter(j => j.status === 'published').length,
+    totalApplications: applications.length,
+    avgTimeToHire: 14,
   };
+
+  const filteredApplications = filterCategory === 'all'
+    ? applications
+    : applications.filter(app => app.ai_category === filterCategory);
+
+  const tabs = [
+    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'projects', label: 'Mes projets', icon: Briefcase },
+    { id: 'applications', label: 'Candidatures', icon: Users },
+    { id: 'ai-generator', label: 'Génération IA', icon: Wand2 },
+    { id: 'messages', label: 'Messagerie', icon: MessageSquare },
+    { id: 'analytics', label: 'Analyses', icon: BarChart3 },
+    { id: 'premium', label: 'Premium', icon: Sparkles },
+  ];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-900"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (viewingApplications) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <button
-            onClick={() => setViewingApplications(false)}
-            className="mb-6 text-blue-900 hover:text-blue-700 font-medium"
-          >
-            ← Retour aux offres
-          </button>
-
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Candidatures reçues ({selectedJobApplications.length})
-          </h2>
-
-          {selectedJobApplications.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Aucune candidature pour le moment</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {selectedJobApplications.map((app) => (
-                <div key={app.id} className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-900">{app.profiles?.full_name}</h3>
-                      <p className="text-gray-600">{app.profiles?.email}</p>
-                    </div>
-                    {app.ai_match_score && (
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-900">{app.ai_match_score}%</div>
-                        <div className="text-sm text-gray-600">Compatibilité</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {app.cover_letter && (
-                    <div className="mb-4">
-                      <h4 className="font-semibold text-gray-900 mb-2">Lettre de motivation</h4>
-                      <p className="text-gray-600 text-sm">{app.cover_letter}</p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                      {new Date(app.created_at).toLocaleDateString('fr-FR')}
-                    </span>
-                    {app.cv_url && (
-                      <a
-                        href={app.cv_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-medium rounded-lg transition"
-                      >
-                        Voir le CV
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <p className="mt-4 text-gray-600">Chargement de votre espace recruteur...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Espace recruteur</h1>
-          <p className="text-gray-600">Gérez vos offres et candidatures</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      {showAIGenerator && (
+        <AIJobGenerator
+          onGenerate={handleAIGenerate}
+          onClose={() => setShowAIGenerator(false)}
+        />
+      )}
+
+      <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-8 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Espace Recruteur</h1>
+              <p className="text-blue-100">Gestion complète du processus de recrutement avec IA</p>
+            </div>
+            <button
+              onClick={() => setShowAIGenerator(true)}
+              className="px-6 py-3 bg-white text-blue-900 font-semibold rounded-lg hover:bg-blue-50 transition shadow-lg flex items-center gap-2"
+            >
+              <Wand2 className="w-5 h-5" />
+              Générer une offre IA
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 -mt-4">
+        <div className="bg-white rounded-xl shadow-lg mb-6 overflow-hidden">
+          <div className="flex overflow-x-auto border-b border-gray-200">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as Tab)}
+                  className={`px-6 py-4 font-medium whitespace-nowrap flex items-center gap-2 transition ${
+                    activeTab === tab.id
+                      ? 'border-b-2 border-blue-900 text-blue-900 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                  {tab.id === 'applications' && applications.length > 0 && (
+                    <span className="ml-1 px-2 py-0.5 bg-blue-900 text-white text-xs rounded-full">
+                      {applications.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-          <div className="flex border-b border-gray-200 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('jobs')}
-              className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'jobs'
-                  ? 'border-b-2 border-blue-900 text-blue-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Briefcase className="w-5 h-5" />
-              <span>Mes offres ({jobs.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('create')}
-              className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'create'
-                  ? 'border-b-2 border-blue-900 text-blue-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Plus className="w-5 h-5" />
-              <span>Publier une offre</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('company')}
-              className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'company'
-                  ? 'border-b-2 border-blue-900 text-blue-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Building className="w-5 h-5" />
-              <span>Mon entreprise</span>
-            </button>
-          </div>
+        <div className="pb-12">
+          {activeTab === 'dashboard' && (
+            <div>
+              <DashboardStats stats={stats} />
 
-          <div className="p-6">
-            {activeTab === 'jobs' && (
-              <div>
-                {jobs.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">Vous n'avez pas encore publié d'offres</p>
-                    <button
-                      onClick={() => setActiveTab('create')}
-                      className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-medium rounded-lg transition"
-                    >
-                      Publier une offre
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {jobs.map((job) => (
-                      <div
-                        key={job.id}
-                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <h3 className="font-bold text-xl text-gray-900 mb-2">{job.title}</h3>
-                            <p className="text-gray-600 mb-2">{job.location}</p>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(job.status)}`}>
-                            {job.status}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <div className="text-2xl font-bold text-blue-900">{job.views_count}</div>
-                            <div className="text-sm text-gray-600">Vues</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-green-600">-</div>
-                            <div className="text-sm text-gray-600">Candidatures</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-bold text-lg text-gray-900 mb-4">Projets récents</h3>
+                  {jobs.slice(0, 3).length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">Aucun projet de recrutement</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {jobs.slice(0, 3).map((job) => (
+                        <div key={job.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition cursor-pointer">
+                          <h4 className="font-semibold text-gray-900">{job.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{job.location}</p>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                            <span>{job.applications_count || 0} candidatures</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${
+                              job.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {job.status}
+                            </span>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => loadApplications(job.id)}
-                            className="flex-1 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 font-medium rounded-lg transition flex items-center justify-center space-x-2"
-                          >
-                            <Users className="w-4 h-4" />
-                            <span>Voir les candidatures</span>
-                          </button>
-                          <button
-                            onClick={() => onNavigate('job-detail', job.id)}
-                            className="flex-1 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-lg transition flex items-center justify-center space-x-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>Voir l'offre</span>
-                          </button>
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-bold text-lg text-gray-900 mb-4">Candidatures récentes</h3>
+                  {applications.slice(0, 3).length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">Aucune candidature récente</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {applications.slice(0, 3).map((app) => (
+                        <div key={app.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">
+                                {app.candidate?.profile?.full_name || 'Candidat'}
+                              </h4>
+                              <p className="text-sm text-gray-600">{app.candidate?.title || 'Profil'}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-blue-900">{app.ai_score || 0}%</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'projects' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Mes projets de recrutement ({jobs.length})
+                </h2>
+                <button
+                  onClick={() => onNavigate('create-job')}
+                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg transition shadow-lg flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Nouvelle offre
+                </button>
+              </div>
+
+              {jobs.length === 0 ? (
+                <div className="bg-white rounded-xl p-12 text-center">
+                  <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">Aucun projet de recrutement pour le moment</p>
+                  <button
+                    onClick={() => setShowAIGenerator(true)}
+                    className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-medium rounded-lg transition"
+                  >
+                    Créer une offre avec l'IA
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {jobs.map((job) => (
+                    <div key={job.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-xl text-gray-900 mb-2">{job.title}</h3>
+                          <p className="text-gray-600">{job.location}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          job.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {job.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <div className="text-2xl font-bold text-blue-900">{job.views_count || 0}</div>
+                          <div className="text-sm text-gray-600">Vues</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">{job.applications_count || 0}</div>
+                          <div className="text-sm text-gray-600">Candidatures</div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
-            {activeTab === 'create' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Publier une nouvelle offre</h2>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Titre du poste *
-                  </label>
-                  <input
-                    type="text"
-                    value={jobForm.title}
-                    onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ex: Développeur Full Stack"
-                    required
-                  />
+                      <button
+                        onClick={() => onNavigate('job-detail', job.id)}
+                        className="w-full px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 font-medium rounded-lg transition"
+                      >
+                        Voir le projet
+                      </button>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+          )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description du poste *
-                  </label>
-                  <textarea
-                    value={jobForm.description}
-                    onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })}
-                    rows={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Décrivez le poste, les responsabilités..."
-                    required
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Exigences et compétences
-                  </label>
-                  <textarea
-                    value={jobForm.requirements}
-                    onChange={(e) => setJobForm({ ...jobForm, requirements: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Listez les compétences et qualifications requises..."
-                  ></textarea>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Localisation
-                    </label>
-                    <input
-                      type="text"
-                      value={jobForm.location}
-                      onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Conakry"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type de contrat
-                    </label>
+          {activeTab === 'applications' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Candidatures reçues ({applications.length})
+                </h2>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                    <Filter className="w-5 h-5 text-gray-500" />
                     <select
-                      value={jobForm.contract_type}
-                      onChange={(e) => setJobForm({ ...jobForm, contract_type: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="border-none focus:ring-0 text-sm"
                     >
-                      <option value="CDI">CDI</option>
-                      <option value="CDD">CDD</option>
-                      <option value="Stage">Stage</option>
-                      <option value="Freelance">Freelance</option>
+                      <option value="all">Tous les profils</option>
+                      <option value="strong">🟢 Profils forts</option>
+                      <option value="medium">🟡 Profils moyens</option>
+                      <option value="weak">🔴 Profils faibles</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Secteur
-                    </label>
-                    <input
-                      type="text"
-                      value={jobForm.sector}
-                      onChange={(e) => setJobForm({ ...jobForm, sector: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Technologie, Finance, Santé..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Salaire minimum (GNF)
-                    </label>
-                    <input
-                      type="number"
-                      value={jobForm.salary_min}
-                      onChange={(e) => setJobForm({ ...jobForm, salary_min: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: 5000000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Salaire maximum (GNF)
-                    </label>
-                    <input
-                      type="number"
-                      value={jobForm.salary_max}
-                      onChange={(e) => setJobForm({ ...jobForm, salary_max: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: 8000000"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleCreateJob}
-                    disabled={!jobForm.title || !jobForm.description}
-                    className="px-8 py-3 bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white font-semibold rounded-lg transition shadow-lg"
-                  >
-                    Publier l'offre
+                  <button className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium rounded-lg transition flex items-center gap-2">
+                    <Download className="w-5 h-5" />
+                    Exporter
                   </button>
                 </div>
               </div>
-            )}
 
-            {activeTab === 'company' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Profil de l'entreprise</h2>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom de l'entreprise *
-                  </label>
-                  <input
-                    type="text"
-                    value={companyForm.company_name}
-                    onChange={(e) => setCompanyForm({ ...companyForm, company_name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ex: TechCorp Guinée"
-                    required
-                  />
+              {filteredApplications.length === 0 ? (
+                <div className="bg-white rounded-xl p-12 text-center">
+                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Aucune candidature pour le moment</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={companyForm.description}
-                    onChange={(e) => setCompanyForm({ ...companyForm, description: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Présentez votre entreprise..."
-                  ></textarea>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {filteredApplications.map((app) => (
+                    <ApplicationCard
+                      key={app.id}
+                      application={{
+                        id: app.id,
+                        ai_score: app.ai_score || 0,
+                        ai_category: app.ai_category || 'medium',
+                        workflow_stage: app.workflow_stage || 'received',
+                        applied_at: app.applied_at,
+                        cover_letter: app.cover_letter,
+                        cv_url: app.cv_url,
+                        candidate: {
+                          full_name: app.candidate?.profile?.full_name || 'Candidat',
+                          email: app.candidate?.profile?.email || '',
+                          phone: app.candidate?.profile?.phone,
+                          avatar_url: app.candidate?.profile?.avatar_url,
+                        },
+                        candidate_profile: {
+                          title: app.candidate?.title,
+                          experience_years: app.candidate?.experience_years,
+                          education_level: app.candidate?.education_level,
+                          skills: app.candidate?.skills,
+                        },
+                      }}
+                      onMessage={(appId) => console.log('Message', appId)}
+                      onViewProfile={(appId) => console.log('View profile', appId)}
+                    />
+                  ))}
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Secteur d'activité
-                    </label>
-                    <input
-                      type="text"
-                      value={companyForm.sector}
-                      onChange={(e) => setCompanyForm({ ...companyForm, sector: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Technologie"
-                    />
+          {activeTab === 'ai-generator' && (
+            <div>
+              <div className="bg-gradient-to-br from-blue-600 to-blue-900 rounded-2xl p-8 text-white mb-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-4 bg-white/20 rounded-xl">
+                    <Wand2 className="w-10 h-10" />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Site web
-                    </label>
-                    <input
-                      type="url"
-                      value={companyForm.website}
-                      onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="https://example.com"
-                    />
+                    <h2 className="text-3xl font-bold mb-2">Générateur IA d'offres d'emploi</h2>
+                    <p className="text-blue-100">
+                      Créez des annonces professionnelles et conformes en quelques secondes
+                    </p>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Localisation
-                    </label>
-                    <input
-                      type="text"
-                      value={companyForm.location}
-                      onChange={(e) => setCompanyForm({ ...companyForm, location: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Conakry, Guinée"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Taille de l'entreprise
-                    </label>
-                    <select
-                      value={companyForm.size}
-                      onChange={(e) => setCompanyForm({ ...companyForm, size: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Sélectionner</option>
-                      <option value="1-10">1-10 employés</option>
-                      <option value="11-50">11-50 employés</option>
-                      <option value="51-200">51-200 employés</option>
-                      <option value="201-500">201-500 employés</option>
-                      <option value="500+">500+ employés</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleSaveCompany}
-                    disabled={!companyForm.company_name}
-                    className="px-8 py-3 bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white font-semibold rounded-lg transition shadow-lg"
-                  >
-                    Enregistrer
-                  </button>
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Comment ça marche ?</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="text-center p-6 bg-blue-50 rounded-xl">
+                    <div className="w-12 h-12 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                      1
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Renseignez les infos</h4>
+                    <p className="text-sm text-gray-600">Poste, localisation, expérience requise</p>
+                  </div>
+                  <div className="text-center p-6 bg-blue-50 rounded-xl">
+                    <div className="w-12 h-12 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                      2
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">L'IA génère l'offre</h4>
+                    <p className="text-sm text-gray-600">Description, missions, profil, compétences</p>
+                  </div>
+                  <div className="text-center p-6 bg-blue-50 rounded-xl">
+                    <div className="w-12 h-12 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                      3
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Publiez</h4>
+                    <p className="text-sm text-gray-600">Modifiez si besoin et lancez le recrutement</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowAIGenerator(true)}
+                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-900 hover:from-blue-700 hover:to-blue-950 text-white font-bold rounded-lg transition shadow-lg flex items-center justify-center gap-2"
+                >
+                  <Wand2 className="w-6 h-6" />
+                  Lancer le générateur IA
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'messages' && (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Messagerie RH</h3>
+              <p className="text-gray-600">Communiquez directement avec les candidats</p>
+              <p className="text-sm text-gray-500 mt-4">Fonctionnalité disponible prochainement</p>
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Analyses & Rapports RH</h3>
+              <p className="text-gray-600">Visualisez vos indicateurs de performance</p>
+              <p className="text-sm text-gray-500 mt-4">Fonctionnalité disponible prochainement</p>
+            </div>
+          )}
+
+          {activeTab === 'premium' && <PremiumPlans />}
         </div>
       </div>
     </div>
