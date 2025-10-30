@@ -1,0 +1,83 @@
+import { Search, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+  loading?: boolean;
+}
+
+export default function SearchBar({ onSearch, loading }: SearchBarProps) {
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(query);
+  };
+
+  const exampleSearches = [
+    'Comptable OHADA à Boké',
+    'Chargé RH bilingue anglais',
+    'Ingénieur maintenance industrielle',
+    'Chauffeur engins miniers',
+    'Secrétaire direction expérimentée',
+  ];
+
+  return (
+    <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-8 shadow-2xl">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-3 bg-white/20 rounded-xl">
+          <Search className="w-8 h-8 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-1">Recherche IA de Talents</h2>
+          <p className="text-blue-100">Trouvez le profil idéal grâce à l'intelligence artificielle</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSearch} className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Ex: Technicien électricité, Conakry, 5 ans d'expérience..."
+            className="w-full px-6 py-4 pr-32 text-lg border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-white/50 focus:border-white bg-white/10 text-white placeholder-white/60"
+          />
+          <button
+            type="submit"
+            disabled={loading || !query.trim()}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-white text-blue-900 font-semibold rounded-lg hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 transition flex items-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
+                Recherche...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Rechercher
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      <div className="flex flex-wrap gap-2">
+        <span className="text-white/80 text-sm">Exemples :</span>
+        {exampleSearches.map((example, idx) => (
+          <button
+            key={idx}
+            onClick={() => {
+              setQuery(example);
+              onSearch(example);
+            }}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-sm rounded-full transition"
+          >
+            {example}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

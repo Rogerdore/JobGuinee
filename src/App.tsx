@@ -9,6 +9,7 @@ import CandidateDashboard from './pages/CandidateDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import Formations from './pages/Formations';
 import Blog from './pages/Blog';
+import CVTheque from './pages/CVTheque';
 
 type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque';
 
@@ -53,17 +54,7 @@ function AppContent() {
       {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
       {currentPage === 'formations' && <Formations onNavigate={handleNavigate} />}
       {currentPage === 'blog' && <Blog />}
-      {currentPage === 'cvtheque' && (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">CVthèque</h2>
-            <p className="text-gray-600 mb-8 max-w-md">
-              Accédez à notre base de données de candidats qualifiés. Fonctionnalité réservée aux recruteurs avec abonnement actif.
-            </p>
-            <p className="text-sm text-gray-500">Fonctionnalité en cours de développement</p>
-          </div>
-        </div>
-      )}
+      {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
     </Layout>
   );
 }
