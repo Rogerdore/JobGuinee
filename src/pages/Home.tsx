@@ -129,7 +129,62 @@ export default function Home({ onNavigate }: HomeProps) {
   ];
 
   const partners = [
-    'SMB-Winning', 'Orange Guinée', 'Bolloré', 'WCS Mining', 'UMS', 'CBG', 'Rio Tinto'
+    {
+      name: 'SMB-Winning',
+      logo: 'https://ui-avatars.com/api/?name=SMB&background=DC2626&color=fff&size=120&bold=true',
+      color: 'from-red-500/20 to-red-600/20',
+      borderColor: 'border-red-500/30',
+      hoverColor: 'hover:shadow-red-500/30'
+    },
+    {
+      name: 'Orange Guinée',
+      logo: 'https://ui-avatars.com/api/?name=Orange&background=FF8C00&color=fff&size=120&bold=true',
+      color: 'from-orange-500/20 to-orange-600/20',
+      borderColor: 'border-orange-500/30',
+      hoverColor: 'hover:shadow-orange-500/30'
+    },
+    {
+      name: 'Bolloré',
+      logo: 'https://ui-avatars.com/api/?name=Bollore&background=0E2F56&color=fff&size=120&bold=true',
+      color: 'from-blue-900/20 to-blue-800/20',
+      borderColor: 'border-blue-900/30',
+      hoverColor: 'hover:shadow-blue-900/30'
+    },
+    {
+      name: 'WCS Mining',
+      logo: 'https://ui-avatars.com/api/?name=WCS&background=059669&color=fff&size=120&bold=true',
+      color: 'from-green-600/20 to-green-700/20',
+      borderColor: 'border-green-600/30',
+      hoverColor: 'hover:shadow-green-600/30'
+    },
+    {
+      name: 'UMS',
+      logo: 'https://ui-avatars.com/api/?name=UMS&background=8B5CF6&color=fff&size=120&bold=true',
+      color: 'from-purple-500/20 to-purple-600/20',
+      borderColor: 'border-purple-500/30',
+      hoverColor: 'hover:shadow-purple-500/30'
+    },
+    {
+      name: 'CBG',
+      logo: 'https://ui-avatars.com/api/?name=CBG&background=EAB308&color=fff&size=120&bold=true',
+      color: 'from-yellow-500/20 to-yellow-600/20',
+      borderColor: 'border-yellow-500/30',
+      hoverColor: 'hover:shadow-yellow-500/30'
+    },
+    {
+      name: 'Rio Tinto',
+      logo: 'https://ui-avatars.com/api/?name=Rio+Tinto&background=DC2626&color=fff&size=120&bold=true',
+      color: 'from-red-600/20 to-red-700/20',
+      borderColor: 'border-red-600/30',
+      hoverColor: 'hover:shadow-red-600/30'
+    },
+    {
+      name: 'Total Energies',
+      logo: 'https://ui-avatars.com/api/?name=Total&background=DC2626&color=fff&size=120&bold=true',
+      color: 'from-red-500/20 to-orange-500/20',
+      borderColor: 'border-red-500/30',
+      hoverColor: 'hover:shadow-red-500/30'
+    },
   ];
 
   return (
@@ -534,17 +589,60 @@ export default function Home({ onNavigate }: HomeProps) {
             ))}
           </div>
 
-          <div className="bg-white rounded-2xl p-8 border border-gray-200">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Nos partenaires</h3>
-              <p className="text-gray-600">Les entreprises qui recrutent avec JobGuinée</p>
+          <div className="relative">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#0E2F56]/10 to-[#FF8C00]/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+                <Award className="w-4 h-4 text-[#FF8C00]" />
+                <span className="text-sm font-semibold text-gray-700">Entreprises partenaires</span>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Nos partenaires</h3>
+              <p className="text-lg text-gray-600">Les entreprises leaders qui recrutent avec JobGuinée</p>
             </div>
-            <div className="flex flex-wrap justify-center items-center gap-8">
-              {partners.map((partner) => (
-                <div key={partner} className="px-6 py-4 bg-gray-50 rounded-lg">
-                  <span className="font-semibold text-gray-700">{partner}</span>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {partners.map((partner, index) => (
+                <div
+                  key={partner.name}
+                  className={`group relative bg-gradient-to-br ${partner.color} backdrop-blur-xl rounded-2xl border-2 ${partner.borderColor} p-6 hover:scale-105 transition-all duration-300 ${partner.hoverColor} hover:shadow-2xl cursor-pointer overflow-hidden`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-20 h-20 mb-4 rounded-xl overflow-hidden shadow-lg ring-2 ring-white/20 group-hover:ring-white/40 transition-all duration-300 group-hover:scale-110">
+                      <img
+                        src={partner.logo}
+                        alt={partner.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-[#0E2F56] transition-colors">
+                      {partner.name}
+                    </h4>
+
+                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="flex items-center space-x-1">
+                        <CheckCircle className="w-3 h-3 text-green-600" />
+                        <span className="text-xs text-gray-600 font-medium">Partenaire actif</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-12 text-center">
+              <p className="text-gray-600 mb-4">
+                <span className="font-semibold text-[#0E2F56]">{partners.length}+</span> entreprises leaders font confiance à JobGuinée
+              </p>
+              <div className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <Building className="w-4 h-4" />
+                <span className="font-medium">Devenir partenaire</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </div>
         </div>
