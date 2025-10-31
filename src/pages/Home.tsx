@@ -131,59 +131,35 @@ export default function Home({ onNavigate }: HomeProps) {
   const partners = [
     {
       name: 'SMB-Winning',
-      logo: 'https://ui-avatars.com/api/?name=SMB&background=DC2626&color=fff&size=120&bold=true',
-      color: 'from-red-500/20 to-red-600/20',
-      borderColor: 'border-red-500/30',
-      hoverColor: 'hover:shadow-red-500/30'
+      logo: 'https://ui-avatars.com/api/?name=SMB&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'Orange Guinée',
-      logo: 'https://ui-avatars.com/api/?name=Orange&background=FF8C00&color=fff&size=120&bold=true',
-      color: 'from-orange-500/20 to-orange-600/20',
-      borderColor: 'border-orange-500/30',
-      hoverColor: 'hover:shadow-orange-500/30'
+      logo: 'https://ui-avatars.com/api/?name=Orange&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'Bolloré',
-      logo: 'https://ui-avatars.com/api/?name=Bollore&background=0E2F56&color=fff&size=120&bold=true',
-      color: 'from-blue-900/20 to-blue-800/20',
-      borderColor: 'border-blue-900/30',
-      hoverColor: 'hover:shadow-blue-900/30'
+      logo: 'https://ui-avatars.com/api/?name=Bollore&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'WCS Mining',
-      logo: 'https://ui-avatars.com/api/?name=WCS&background=059669&color=fff&size=120&bold=true',
-      color: 'from-green-600/20 to-green-700/20',
-      borderColor: 'border-green-600/30',
-      hoverColor: 'hover:shadow-green-600/30'
+      logo: 'https://ui-avatars.com/api/?name=WCS&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'UMS',
-      logo: 'https://ui-avatars.com/api/?name=UMS&background=8B5CF6&color=fff&size=120&bold=true',
-      color: 'from-purple-500/20 to-purple-600/20',
-      borderColor: 'border-purple-500/30',
-      hoverColor: 'hover:shadow-purple-500/30'
+      logo: 'https://ui-avatars.com/api/?name=UMS&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'CBG',
-      logo: 'https://ui-avatars.com/api/?name=CBG&background=EAB308&color=fff&size=120&bold=true',
-      color: 'from-yellow-500/20 to-yellow-600/20',
-      borderColor: 'border-yellow-500/30',
-      hoverColor: 'hover:shadow-yellow-500/30'
+      logo: 'https://ui-avatars.com/api/?name=CBG&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'Rio Tinto',
-      logo: 'https://ui-avatars.com/api/?name=Rio+Tinto&background=DC2626&color=fff&size=120&bold=true',
-      color: 'from-red-600/20 to-red-700/20',
-      borderColor: 'border-red-600/30',
-      hoverColor: 'hover:shadow-red-600/30'
+      logo: 'https://ui-avatars.com/api/?name=Rio+Tinto&background=3B82F6&color=fff&size=120&bold=true',
     },
     {
       name: 'Total Energies',
-      logo: 'https://ui-avatars.com/api/?name=Total&background=DC2626&color=fff&size=120&bold=true',
-      color: 'from-red-500/20 to-orange-500/20',
-      borderColor: 'border-red-500/30',
-      hoverColor: 'hover:shadow-red-500/30'
+      logo: 'https://ui-avatars.com/api/?name=Total&background=3B82F6&color=fff&size=120&bold=true',
     },
   ];
 
@@ -603,13 +579,13 @@ export default function Home({ onNavigate }: HomeProps) {
               {partners.map((partner, index) => (
                 <div
                   key={partner.name}
-                  className={`group relative bg-gradient-to-br ${partner.color} backdrop-blur-xl rounded-2xl border-2 ${partner.borderColor} p-6 hover:scale-105 transition-all duration-300 ${partner.hoverColor} hover:shadow-2xl cursor-pointer overflow-hidden`}
+                  className="group relative bg-gradient-to-br from-blue-100/60 to-blue-200/60 backdrop-blur-xl rounded-2xl border-2 border-blue-300/40 p-6 hover:scale-105 transition-all duration-300 hover:shadow-blue-400/30 hover:shadow-2xl cursor-pointer overflow-hidden"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-20 h-20 mb-4 rounded-xl overflow-hidden shadow-lg ring-2 ring-white/20 group-hover:ring-white/40 transition-all duration-300 group-hover:scale-110">
+                    <div className="w-20 h-20 mb-4 rounded-xl overflow-hidden shadow-lg ring-2 ring-blue-300/30 group-hover:ring-blue-400/50 transition-all duration-300 group-hover:scale-110">
                       <img
                         src={partner.logo}
                         alt={partner.name}
@@ -617,19 +593,19 @@ export default function Home({ onNavigate }: HomeProps) {
                       />
                     </div>
 
-                    <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-[#0E2F56] transition-colors">
+                    <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">
                       {partner.name}
                     </h4>
 
                     <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="flex items-center space-x-1">
-                        <CheckCircle className="w-3 h-3 text-green-600" />
+                        <CheckCircle className="w-3 h-3 text-blue-600" />
                         <span className="text-xs text-gray-600 font-medium">Partenaire actif</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-300/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 </div>
               ))}
             </div>
