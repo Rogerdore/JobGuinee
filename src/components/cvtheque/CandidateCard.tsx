@@ -71,7 +71,7 @@ export default function CandidateCard({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       <div className="flex gap-4 mb-4">
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
           <div className="relative">
             {candidate.profile?.avatar_url ? (
               <img
@@ -92,31 +92,10 @@ export default function CandidateCard({
               </div>
             )}
           </div>
-
-          <div className="flex flex-col gap-1.5 w-full">
-            {candidate.location && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{candidate.location}</span>
-              </div>
-            )}
-            {candidate.experience_years !== undefined && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <Briefcase className="w-3 h-3 flex-shrink-0" />
-                <span>{candidate.experience_years} ans d'expérience</span>
-              </div>
-            )}
-            {candidate.education_level && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <GraduationCap className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{candidate.education_level}</span>
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-base text-gray-900 mb-0.5 truncate">
                 {candidate.profile?.full_name || 'Candidat'}
@@ -137,6 +116,28 @@ export default function CandidateCard({
               <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
             </button>
           </div>
+
+          <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-2">
+            {candidate.location && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                <span>{candidate.location}</span>
+              </div>
+            )}
+            {candidate.experience_years !== undefined && (
+              <div className="flex items-center gap-1">
+                <Briefcase className="w-3 h-3" />
+                <span>{candidate.experience_years} ans d'expérience</span>
+              </div>
+            )}
+          </div>
+
+          {candidate.education_level && (
+            <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+              <GraduationCap className="w-3 h-3" />
+              <span>{candidate.education_level}</span>
+            </div>
+          )}
 
           {candidate.bio && (
             <p className="text-xs text-gray-600 line-clamp-2 mb-3 leading-relaxed">{candidate.bio}</p>
