@@ -70,9 +70,9 @@ export default function CandidateCard({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      <div className="flex gap-4 mb-4">
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
-          <div className="relative">
+      <div className="flex gap-3 mb-4">
+        <div className="flex flex-col items-start gap-2 w-24 flex-shrink-0">
+          <div className="relative mx-auto">
             {candidate.profile?.avatar_url ? (
               <img
                 src={candidate.profile.avatar_url}
@@ -93,23 +93,23 @@ export default function CandidateCard({
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5 w-full">
+          <div className="flex flex-col gap-1.5 w-full pl-1">
             {candidate.location && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{candidate.location}</span>
+              <div className="flex items-start gap-1 text-xs text-gray-600">
+                <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                <span className="leading-tight break-words">{candidate.location}</span>
               </div>
             )}
             {candidate.experience_years !== undefined && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <Briefcase className="w-3 h-3 flex-shrink-0" />
-                <span>{candidate.experience_years} ans d'expérience</span>
+              <div className="flex items-start gap-1 text-xs text-gray-600">
+                <Briefcase className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                <span className="leading-tight break-words">{candidate.experience_years} ans d'expérience</span>
               </div>
             )}
             {candidate.education_level && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <GraduationCap className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{candidate.education_level}</span>
+              <div className="flex items-start gap-1 text-xs text-gray-600">
+                <GraduationCap className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                <span className="leading-tight break-words">{candidate.education_level}</span>
               </div>
             )}
           </div>
