@@ -1,6 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationCenter } from './notifications/NotificationCenter';
 
 interface LayoutProps {
   children: ReactNode;
@@ -78,6 +79,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
+              {user && <NotificationCenter />}
               {user ? (
                 <div className="relative" ref={accountMenuRef}>
                   <button
