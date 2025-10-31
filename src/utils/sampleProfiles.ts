@@ -11,7 +11,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -26,7 +26,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -41,7 +41,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: false,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -56,7 +56,7 @@ export const sampleProfiles = [
     mobility: 'Régionale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -71,7 +71,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -86,7 +86,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: false,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -101,7 +101,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -116,7 +116,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: false,
     visibility: 'public',
-    profile_price: 50000,
+    profile_price: 4000,
     nationality: 'Guinéenne'
   },
   {
@@ -131,7 +131,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -146,7 +146,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -161,7 +161,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -176,7 +176,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -191,7 +191,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -206,7 +206,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -221,7 +221,7 @@ export const sampleProfiles = [
     mobility: 'Nationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -236,7 +236,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 100000,
+    profile_price: 8000,
     nationality: 'Guinéenne'
   },
   {
@@ -251,7 +251,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -266,7 +266,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -281,7 +281,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -296,7 +296,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -311,7 +311,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -326,7 +326,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -341,7 +341,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   },
   {
@@ -356,7 +356,7 @@ export const sampleProfiles = [
     mobility: 'Internationale',
     is_verified: true,
     visibility: 'public',
-    profile_price: 150000,
+    profile_price: 15000,
     nationality: 'Guinéenne'
   }
 ];
