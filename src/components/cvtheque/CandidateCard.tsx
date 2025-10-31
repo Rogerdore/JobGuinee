@@ -1,4 +1,4 @@
-import { Download, MessageCircle, Heart, MapPin, Briefcase, GraduationCap, CheckCircle } from 'lucide-react';
+import { Download, MessageCircle, Heart, MapPin, Briefcase, GraduationCap, CheckCircle, Circle, Hexagon, Star } from 'lucide-react';
 import { useState } from 'react';
 
 interface Candidate {
@@ -43,9 +43,21 @@ export default function CandidateCard({
   const [downloading, setDownloading] = useState(false);
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return { bg: 'bg-green-100', text: 'text-green-800', badge: '🟢' };
-    if (score >= 60) return { bg: 'bg-yellow-100', text: 'text-yellow-800', badge: '🟡' };
-    return { bg: 'bg-red-100', text: 'text-red-800', badge: '🔴' };
+    if (score >= 80) return {
+      bg: 'bg-green-100',
+      text: 'text-green-800',
+      icon: <Circle className="w-3 h-3 fill-green-600 text-green-600" />
+    };
+    if (score >= 60) return {
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
+      icon: <Hexagon className="w-3 h-3 fill-yellow-600 text-yellow-600" />
+    };
+    return {
+      bg: 'bg-red-100',
+      text: 'text-red-800',
+      icon: <Star className="w-3 h-3 fill-red-600 text-red-600" />
+    };
   };
 
   const scoreColor = getScoreColor(score);
@@ -150,8 +162,8 @@ export default function CandidateCard({
 
       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
         <div className="flex items-center gap-2">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${scoreColor.bg} ${scoreColor.text}`}>
-            {scoreColor.badge} {score}% Compatible
+          <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${scoreColor.bg} ${scoreColor.text}`}>
+            {scoreColor.icon} {score}% Compatible
           </span>
           {candidate.is_verified && (
             <span className="px-3 py-1 bg-blue-50 text-blue-900 text-xs font-medium rounded-full">
