@@ -13,6 +13,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const { user, profile, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,6 +25,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const navigation = [
@@ -45,13 +55,19 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200'
+          : 'bg-transparent'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <button
                 onClick={() => onNavigate('home')}
-                className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
+                className={`flex items-center space-x-2 text-xl font-bold transition ${
+                  scrolled ? 'text-blue-900 hover:text-blue-700' : 'text-white hover:text-blue-100'
+                }`}
               >
                 <Briefcase className="w-8 h-8" />
                 <span>JobGuinée</span>
@@ -67,8 +83,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     onClick={() => onNavigate(item.page)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 ${
                       currentPage === item.page
-                        ? 'bg-blue-50 text-blue-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? scrolled
+                          ? 'bg-blue-50 text-blue-900'
+                          : 'bg-white/20 text-white backdrop-blur-sm'
+                        : scrolled
+                          ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -84,7 +104,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <div className="relative" ref={accountMenuRef}>
                   <button
                     onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                    className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
+                      scrolled
+                        ? 'text-gray-700 hover:bg-gray-50'
+                        : 'text-white hover:bg-white/10'
+                    }`}
                   >
                     <User className="w-4 h-4" />
                     <span>{profile?.full_name || 'Mon compte'}</span>
@@ -136,13 +160,19 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <>
                   <button
                     onClick={() => onNavigate('login')}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                    className={`px-4 py-2 text-sm font-medium transition ${
+                      scrolled ? 'text-gray-700 hover:text-gray-900' : 'text-white hover:text-blue-100'
+                    }`}
                   >
                     Connexion
                   </button>
                   <button
                     onClick={() => onNavigate('signup')}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-900 hover:bg-blue-800 rounded-lg transition"
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                      scrolled
+                        ? 'text-white bg-blue-900 hover:bg-blue-800'
+                        : 'text-blue-900 bg-white hover:bg-blue-50'
+                    }`}
                   >
                     Inscription
                   </button>
@@ -153,7 +183,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div className="md:hidden flex items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                className={`p-2 rounded-lg transition ${
+                  scrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-white hover:bg-white/10'
+                }`}
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -251,7 +283,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         )}
       </nav>
 
-      <main className="w-full">
+      <main className="w-full pt-16">
         {children}
       </main>
 
