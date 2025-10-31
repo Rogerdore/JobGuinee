@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
-  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock
+  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -377,7 +377,30 @@ export default function Home({ onNavigate }: HomeProps) {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="space-y-2 mb-4 text-xs text-gray-600">
+                    {job.education_level && (
+                      <div className="flex items-center space-x-2">
+                        <GraduationCap className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
+                        <span className="line-clamp-1">{job.education_level}</span>
+                      </div>
+                    )}
+                    {job.experience_level && (
+                      <div className="flex items-center space-x-2">
+                        <Briefcase className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
+                        <span>{job.experience_level}</span>
+                      </div>
+                    )}
+                    {job.deadline && (
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-red-500" />
+                        <span className="text-red-600 font-medium">
+                          Expire le {new Date(job.deadline).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
                     <div className="flex items-center space-x-2 text-gray-500">
                       <Clock className="w-4 h-4" />
                       <span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
