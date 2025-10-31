@@ -676,11 +676,13 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                         </button>
                       </div>
                       <button
-                        className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg group"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
+                          console.log('Navigating to job:', job.id);
                           onNavigate('job-detail', job.id);
                         }}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg group"
                       >
                         <span className="flex items-center justify-center">
                           Voir l'offre
