@@ -166,16 +166,16 @@ export default function AnonymizedCandidateCard({
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 mb-3">
+      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 mb-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-600 mb-1">Prix d'accès au profil complet</p>
-            <p className="text-2xl font-bold text-blue-900">
+            <p className="text-xs text-gray-600 mb-0.5">Prix d'accès</p>
+            <p className="text-lg font-bold text-blue-900">
               {formatPrice(candidate.profile_price)} GNF
             </p>
           </div>
           {isPurchased && (
-            <div className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+            <div className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
               ✓ Acheté
             </div>
           )}
