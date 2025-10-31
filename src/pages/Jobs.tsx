@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { sampleJobs } from '../utils/sampleJobsData';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -66,7 +67,20 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (data) setJobs(data as any);
+    if (data && data.length > 0) {
+      setJobs(data as any);
+    } else {
+      setJobs(sampleJobs.map(job => ({
+        ...job,
+        companies: {
+          id: 'sample-company',
+          name: 'JobGuinée Démo',
+          logo_url: null,
+          industry: job.department || 'Divers',
+          location: job.location,
+        }
+      })) as any);
+    }
     setLoading(false);
   };
 
