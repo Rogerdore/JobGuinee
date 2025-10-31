@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon, ChevronLeft, ChevronRight, Circle, Hexagon, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import SearchBar from '../components/cvtheque/SearchBar';
@@ -302,20 +302,35 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-3xl font-bold text-gray-900">{candidates.length}</div>
               <div className="text-sm text-gray-600">Profils disponibles</div>
             </div>
-            <div className="bg-orange-50 rounded-xl border border-orange-200 p-4 text-center">
-              <div className="text-3xl font-bold text-orange-900">🟠 {stats.junior}</div>
-              <div className="text-sm text-orange-700 font-medium">Profils Junior</div>
-              <div className="text-xs text-orange-600 mt-1">50.000 GNF</div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border-2 border-orange-200 p-6 text-center hover:shadow-lg transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Circle className="w-7 h-7 text-white fill-white" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-orange-900 mb-1">{stats.junior}</div>
+              <div className="text-sm text-orange-700 font-semibold mb-2">Profils Junior</div>
+              <div className="text-xs text-orange-600 font-medium bg-orange-200/50 px-3 py-1 rounded-full inline-block">50.000 GNF</div>
             </div>
-            <div className="bg-green-50 rounded-xl border border-green-200 p-4 text-center">
-              <div className="text-3xl font-bold text-green-900">🟢 {stats.intermediate}</div>
-              <div className="text-sm text-green-700 font-medium">Profils Intermédiaires</div>
-              <div className="text-xs text-green-600 mt-1">100.000 GNF</div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200 p-6 text-center hover:shadow-lg transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
+                  <Hexagon className="w-7 h-7 text-white fill-white" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-green-900 mb-1">{stats.intermediate}</div>
+              <div className="text-sm text-green-700 font-semibold mb-2">Profils Intermédiaires</div>
+              <div className="text-xs text-green-600 font-medium bg-green-200/50 px-3 py-1 rounded-full inline-block">100.000 GNF</div>
             </div>
-            <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 text-center">
-              <div className="text-3xl font-bold text-blue-900">🔷 {stats.senior}</div>
-              <div className="text-sm text-blue-700 font-medium">Profils Senior</div>
-              <div className="text-xs text-blue-600 mt-1">150.000 GNF</div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200 p-6 text-center hover:shadow-lg transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
+                  <Star className="w-7 h-7 text-white fill-white" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-blue-900 mb-1">{stats.senior}</div>
+              <div className="text-sm text-blue-700 font-semibold mb-2">Profils Senior</div>
+              <div className="text-xs text-blue-600 font-medium bg-blue-200/50 px-3 py-1 rounded-full inline-block">150.000 GNF</div>
             </div>
           </div>
 
