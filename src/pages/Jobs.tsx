@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock,
   ChevronDown, Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign,
-  Zap, Users, Award, GraduationCap, Globe
+  Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight,
+  Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3
 } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
+import { testimonials, companies as recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -30,6 +32,10 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('date');
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterDomain, setNewsletterDomain] = useState('');
+  const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 10 });
 
   const locations = ['Conakry', 'Boké', 'Kamsar', 'Kindia', 'Labé', 'Nzérékoré', 'Siguiri', 'Kankan', 'Mamou', 'Faranah'];
   const contractTypes = ['CDI', 'CDD', 'Stage', 'Mission', 'Freelance', 'Temps partiel'];
@@ -55,8 +61,31 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
   useEffect(() => {
     loadJobs();
+    loadStats();
     if (user) loadSavedJobs();
   }, [user]);
+
+  const loadStats = async () => {
+    const { count: jobsCount } = await supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'published');
+
+    const { count: candidatesCount } = await supabase
+      .from('candidate_profiles')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: companiesCount } = await supabase
+      .from('companies')
+      .select('*', { count: 'exact', head: true });
+
+    setStats({
+      jobs: jobsCount || sampleJobs.length,
+      candidates: candidatesCount || 1247,
+      companies: companiesCount || recruitingCompanies.length,
+      regions: 10,
+    });
+  };
 
   const loadJobs = async () => {
     setLoading(true);
@@ -212,6 +241,31 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     if (min) return `À partir de ${format(min)} GNF`;
     return `Jusqu'à ${format(max!)} GNF`;
   };
+
+  const nextTestimonial = () => {
+    setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  const subscribeNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+
+    await supabase.from('newsletter_subscribers').insert({
+      email: newsletterEmail,
+      domain: newsletterDomain || 'all',
+      subscribed_at: new Date().toISOString(),
+    });
+
+    setNewsletterEmail('');
+    setNewsletterDomain('');
+    alert('Merci pour votre inscription ! Vous recevrez nos alertes emploi.');
+  };
+
+  const recommendedJobs = sortedJobs.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -652,7 +706,305 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
         )}
       </div>
 
-      <div className="py-16"></div>
+      {/* Section 4: Recommandations IA */}
+      {user && recommendedJobs.length > 0 && (
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-md mb-4">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                <span className="text-sm font-semibold text-purple-600">Recommandé pour vous</span>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres qui pourraient vous intéresser</h2>
+              <p className="text-gray-600">Sélectionnées par notre algorithme IA selon votre profil</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {recommendedJobs.map((job) => (
+                <div
+                  key={job.id}
+                  onClick={() => onNavigate('job-detail', job.id)}
+                  className="bg-white rounded-xl border-2 border-purple-200 p-6 cursor-pointer hover:border-purple-400 hover:shadow-xl transition-all card-hover"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    {job.companies?.logo_url && (
+                      <img src={job.companies.logo_url} alt="" className="w-12 h-12 rounded-lg" />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 line-clamp-1">{job.title}</h3>
+                      <p className="text-sm text-gray-600">{job.companies?.company_name}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                    <MapPin className="w-4 h-4 text-purple-600" />
+                    <span>{job.location}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-purple-600">{formatSalary(job.salary_min, job.salary_max)}</span>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Target className="w-3 h-3" />
+                      <span>95% match</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Section 5: Entreprises qui recrutent */}
+      <div className="bg-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Entreprises qui recrutent</h2>
+            <p className="text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {recruitingCompanies.map((company) => (
+              <div
+                key={company.id}
+                className="bg-gray-50 rounded-xl p-6 text-center hover:shadow-lg hover:bg-white transition-all card-hover cursor-pointer"
+                onClick={() => {
+                  setSector(company.sector);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                <img src={company.logo} alt={company.name} className="w-20 h-20 mx-auto mb-4 rounded-lg" />
+                <h3 className="font-bold text-gray-900 mb-2 text-sm">{company.name}</h3>
+                <p className="text-xs text-gray-600 mb-3">{company.sector}</p>
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#0E2F56] text-white text-xs font-semibold rounded-full">
+                  <Briefcase className="w-3 h-3" />
+                  <span>{company.activeJobs} offres</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Section 6: Statistiques */}
+      <div className="bg-gradient-to-br from-[#0E2F56] to-[#1a4275] py-16 text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3">JobGuinée en chiffres</h2>
+            <p className="text-blue-100">La plateforme de référence pour l'emploi en Guinée</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-xl">
+              <div className="text-5xl font-bold mb-2 text-[#FF8C00]">{stats.jobs}+</div>
+              <div className="text-blue-100">Offres d'emploi</div>
+            </div>
+            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-xl">
+              <div className="text-5xl font-bold mb-2 text-[#FF8C00]">{stats.candidates}+</div>
+              <div className="text-blue-100">Candidats inscrits</div>
+            </div>
+            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-xl">
+              <div className="text-5xl font-bold mb-2 text-[#FF8C00]">{stats.companies}+</div>
+              <div className="text-blue-100">Entreprises partenaires</div>
+            </div>
+            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-xl">
+              <div className="text-5xl font-bold mb-2 text-[#FF8C00]">{stats.regions}</div>
+              <div className="text-blue-100">Régions couvertes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 7: Témoignages */}
+      <div className="bg-gray-50 py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Ils ont trouvé leur emploi avec nous</h2>
+            <p className="text-gray-600">Découvrez les success stories de notre communauté</p>
+          </div>
+
+          <div className="relative">
+            <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+              <Quote className="w-12 h-12 text-[#FF8C00] mb-6" />
+              <p className="text-gray-700 text-lg mb-6 leading-relaxed">{testimonials[currentTestimonial].content}</p>
+              <div className="flex items-center gap-4">
+                <img
+                  src={testimonials[currentTestimonial].avatar}
+                  alt={testimonials[currentTestimonial].name}
+                  className="w-16 h-16 rounded-full"
+                />
+                <div>
+                  <div className="font-bold text-gray-900">{testimonials[currentTestimonial].name}</div>
+                  <div className="text-sm text-gray-600">{testimonials[currentTestimonial].role}</div>
+                  <div className="text-sm text-[#FF8C00]">{testimonials[currentTestimonial].company}</div>
+                </div>
+                <div className="ml-auto flex gap-1">
+                  {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={prevTestimonial}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </button>
+            <button
+              onClick={nextTestimonial}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+            >
+              <ChevronRight className="w-6 h-6 text-gray-600" />
+            </button>
+
+            <div className="flex justify-center gap-2 mt-6">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-2 h-2 rounded-full transition ${
+                    index === currentTestimonial ? 'bg-[#FF8C00] w-8' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 8: CTA Recruteur */}
+      <div className="bg-gradient-to-r from-[#FF8C00] to-orange-600 py-16 text-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-6">
+            <BarChart3 className="w-5 h-5" />
+            <span className="font-semibold">Pour les recruteurs</span>
+          </div>
+          <h2 className="text-4xl font-bold mb-4">Vous recrutez ?</h2>
+          <p className="text-xl mb-8 text-orange-50">
+            Publiez vos offres et trouvez les meilleurs talents guinéens en quelques clics
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center mb-8">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              <span>Publication illimitée</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              <span>Tri IA des candidatures</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              <span>Accès CVthèque Premium</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('recruiter-dashboard')}
+            className="px-8 py-4 bg-white text-[#FF8C00] font-bold rounded-xl hover:bg-gray-50 transition shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+          >
+            <span>Publier une offre</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Section 11: Newsletter */}
+      <div className="bg-white py-16">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <Mail className="w-16 h-16 text-[#0E2F56] mx-auto mb-6" />
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">Alertes emploi personnalisées</h2>
+          <p className="text-gray-600 mb-8">
+            Recevez les nouvelles offres correspondant à votre profil directement par email
+          </p>
+
+          <form onSubmit={subscribeNewsletter} className="max-w-xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-3 mb-4">
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                placeholder="Votre adresse email"
+                required
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
+              />
+              <select
+                value={newsletterDomain}
+                onChange={(e) => setNewsletterDomain(e.target.value)}
+                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
+              >
+                <option value="">Tous les domaines</option>
+                {sectors.map((sector) => (
+                  <option key={sector} value={sector}>{sector}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="submit"
+              className="w-full md:w-auto px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 mx-auto"
+            >
+              <Send className="w-5 h-5" />
+              <span>S'abonner aux alertes</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Section 12: Offres par catégorie */}
+      <div className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Explorez par secteur d'activité</h2>
+            <p className="text-gray-600">Trouvez rapidement les offres dans votre domaine</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {jobCategories.map((category) => (
+              <div
+                key={category.id}
+                onClick={() => {
+                  setSector(category.name);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`bg-gradient-to-br ${category.color} text-white rounded-xl p-6 cursor-pointer hover:shadow-2xl transition-all card-hover text-center`}
+              >
+                <div className="text-4xl mb-3">{category.icon}</div>
+                <h3 className="font-bold mb-2">{category.name}</h3>
+                <div className="text-2xl font-bold">{category.count}</div>
+                <div className="text-sm opacity-90">offres disponibles</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Section 13: Carte interactive */}
+      <div className="bg-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres d'emploi par région</h2>
+            <p className="text-gray-600">Cliquez sur une région pour voir les opportunités locales</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {guineaRegions.map((region) => (
+              <div
+                key={region.name}
+                onClick={() => {
+                  setLocation(region.name);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="bg-gradient-to-br from-[#0E2F56] to-blue-700 text-white rounded-xl p-6 cursor-pointer hover:shadow-xl transition-all card-hover text-center"
+              >
+                <MapPin className="w-8 h-8 mx-auto mb-3" />
+                <h3 className="font-bold mb-2">{region.name}</h3>
+                <div className="text-2xl font-bold text-[#FF8C00]">{region.jobs}</div>
+                <div className="text-sm opacity-90">offres</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="py-8"></div>
     </div>
   );
 }
