@@ -380,7 +380,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <button
                     onClick={() => onNavigate('jobs')}
                     className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
@@ -393,10 +393,21 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   </button>
 
                   <button
-                    onClick={() => setActiveTab('premium')}
-                    className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl hover:border-[#FF8C00] hover:shadow-lg transition text-left group"
+                    onClick={() => onNavigate('candidate-profile-form')}
+                    className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
                   >
-                    <div className="w-12 h-12 bg-[#FF8C00] rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition">
+                      <User className="w-6 h-6 text-green-700" />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">Créer mon profil</h3>
+                    <p className="text-sm text-gray-600">Formulaire complet de profil</p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('premium')}
+                    className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-200 rounded-xl hover:border-amber-400 hover:shadow-lg transition text-left group"
+                  >
+                    <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
                       <Crown className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="font-bold text-lg mb-2">Services Premium IA</h3>

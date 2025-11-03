@@ -14,8 +14,9 @@ import Blog from './pages/Blog';
 import CVTheque from './pages/CVTheque';
 import CMSAdmin from './pages/CMSAdmin';
 import UserManagement from './pages/UserManagement';
+import CandidateProfileForm from './components/forms/CandidateProfileForm';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -61,6 +62,7 @@ function AppContent() {
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
       {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
+      {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
     </Layout>
   );
 }
