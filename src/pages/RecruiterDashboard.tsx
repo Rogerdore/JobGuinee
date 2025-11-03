@@ -150,8 +150,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           .order('applied_at', { ascending: false });
 
         if (appsData && appsData.length > 0) {
+          console.log('✅ Loaded applications from DB:', appsData.length);
           setApplications(appsData);
         } else {
+          console.log('⚠️ No applications in DB, using sample data');
           setApplications(sampleApplications);
         }
       } else {
@@ -261,10 +263,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handleStartMatching = (job: Job) => {
+    console.log('🚀 handleStartMatching called');
+    console.log('Job:', job);
+    console.log('Company:', company);
+
     if (!company) {
+      console.error('❌ Company not found');
       alert('Erreur: Profil entreprise non trouvé');
       return;
     }
+
+    console.log('✅ Opening matching modal');
     setSelectedJobForMatching(job);
     setShowMatchingModal(true);
   };
@@ -273,6 +282,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   console.log('RecruiterDashboard - company:', company);
   console.log('RecruiterDashboard - isPremium:', isPremium);
+  console.log('RecruiterDashboard - showMatchingModal:', showMatchingModal);
+  console.log('RecruiterDashboard - selectedJobForMatching:', selectedJobForMatching);
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
@@ -357,16 +368,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         />
       )}
 
-      {showMatchingModal && selectedJobForMatching && (
-        <AIMatchingModal
-          job={{
-            id: selectedJobForMatching.id,
-            title: selectedJobForMatching.title,
-            description: selectedJobForMatching.description || '',
-            required_skills: selectedJobForMatching.keywords || [],
-            experience_level: selectedJobForMatching.experience_level || '',
-            education_level: selectedJobForMatching.education_level || '',
-          }}
+      {showMatchingModal && selectedJobForMatching ? (
+        <>
+          {console.log('🎨 Rendering AIMatchingModal')}
+          <AIMatchingModal
+            job={{
+              id: selectedJobForMatching.id,
+              title: selectedJobForMatching.title,
+              description: selectedJobForMatching.description || '',
+              required_skills: selectedJobForMatching.keywords || [],
+              experience_level: selectedJobForMatching.experience_level || '',
+              education_level: selectedJobForMatching.education_level || '',
+            }}
           applications={applications
             .filter(app => app.job_id === selectedJobForMatching.id)
             .map(app => ({
@@ -392,8 +405,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             setShowMatchingModal(false);
             setActiveTab('premium');
           }}
-        />
-      )}
+          />
+        </>
+      ) : null}
 
       <div className="bg-gradient-to-r from-[#0E2F56] via-blue-800 to-[#1a4275] text-white py-12 shadow-xl relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -701,6 +715,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         <button
                           className="w-full px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg group"
                           onClick={(e) => {
+                            console.log('🔘 Matching IA button clicked!');
                             e.stopPropagation();
                             handleStartMatching(job);
                           }}
