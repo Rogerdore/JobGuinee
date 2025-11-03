@@ -84,14 +84,14 @@ export default function AnonymizedCandidateCard({
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       {/* Photo en haut */}
-      <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 p-8 flex items-center justify-center">
+      <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 py-6 flex items-center justify-center">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center shadow-lg">
-            <User className="w-12 h-12 text-white" strokeWidth={2} />
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center shadow-lg">
+            <User className="w-10 h-10 text-white" strokeWidth={2} />
           </div>
           {candidate.is_verified && (
-            <div className="absolute -bottom-1 -right-1 bg-blue-900 rounded-full p-1.5">
-              <CheckCircle className="w-5 h-5 text-white" />
+            <div className="absolute -bottom-1 -right-1 bg-blue-900 rounded-full p-1">
+              <CheckCircle className="w-4 h-4 text-white" />
             </div>
           )}
         </div>
