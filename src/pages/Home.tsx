@@ -6,12 +6,14 @@ import {
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
+import { useCMS } from '../contexts/CMSContext';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
 }
 
 export default function Home({ onNavigate }: HomeProps) {
+  const { getSetting, getSection } = useCMS();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [contractType, setContractType] = useState('');
@@ -172,16 +174,16 @@ export default function Home({ onNavigate }: HomeProps) {
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
-              <span className="text-sm font-medium">Plateforme N°1 de l'emploi en Guinée</span>
+              <span className="text-sm font-medium">{getSetting('site_tagline', 'Plateforme N°1 de l\'emploi en Guinée')}</span>
             </div>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              Simplifiez votre recrutement,<br />
-              <span className="text-[#FF8C00]">trouvez votre emploi</span>
+              {getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[0]},<br />
+              <span className="text-[#FF8C00]">{getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[1] || 'trouvez votre emploi'}</span>
             </h1>
 
             <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto">
-              La première plateforme guinéenne de recrutement digital connectant talents et opportunités
+              {getSetting('homepage_hero_subtitle', 'La première plateforme guinéenne de recrutement digital connectant talents et opportunités')}
             </p>
 
             <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-4 md:p-6">

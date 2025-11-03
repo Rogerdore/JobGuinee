@@ -14,6 +14,7 @@ import {
   Kanban,
   FileText,
   TrendingUp,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -266,6 +267,10 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
     { id: 'premium', label: 'Premium', icon: Sparkles },
   ];
 
+  const handleCMSClick = () => {
+    onNavigate('cms-admin');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0E2F56] via-blue-900 to-[#0E2F56] flex items-center justify-center relative overflow-hidden">
@@ -321,13 +326,22 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setShowAIGenerator(true)}
-              className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
-            >
-              <Wand2 className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
-              <span>Générer une offre IA</span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCMSClick}
+                className="px-6 py-4 neo-clay-button text-white font-semibold rounded-xl transition-all duration-300 flex items-center gap-2 hover:scale-105 transform"
+              >
+                <Settings className="w-5 h-5" />
+                <span>CMS</span>
+              </button>
+              <button
+                onClick={() => setShowAIGenerator(true)}
+                className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
+              >
+                <Wand2 className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
+                <span>Générer une offre IA</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
