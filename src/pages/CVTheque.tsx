@@ -219,17 +219,30 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   const handleAddToCart = async (candidateId: string) => {
-    console.log('🛒 Adding to cart:', candidateId);
+    console.log('🛒 Adding to cart:', {
+      candidateId,
+      profileId: profile?.id,
+      sessionId,
+      willUseUserId: !!profile?.id
+    });
+
     const candidate = candidates.find(c => c.id === candidateId);
     console.log('Found candidate:', candidate);
 
-    const { error } = await supabase.from('profile_cart').insert({
+    const insertData = {
       user_id: profile?.id || null,
       session_id: profile?.id ? null : sessionId,
       candidate_id: candidateId,
-    });
+    };
 
-    console.log('Insert result - error:', error);
+    console.log('Inserting data:', insertData);
+
+    const { data, error } = await supabase
+      .from('profile_cart')
+      .insert(insertData)
+      .select();
+
+    console.log('Insert result:', { data, error });
 
     if (!error) {
       await loadCart();
@@ -237,7 +250,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       alert(`✅ ${profileName} a été ajouté au panier avec succès!\n\nCliquez sur l'icône panier en haut à droite pour finaliser votre achat.`);
     } else {
       console.error('Error adding to cart:', error);
-      alert(`❌ Erreur lors de l'ajout au panier: ${error.message}\n\nVeuillez réessayer.`);
+      alert(`❌ Erreur lors de l'ajout au panier: ${error.message}\n\nDétails: ${JSON.stringify(error)}`);
     }
   };
 
