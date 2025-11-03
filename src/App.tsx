@@ -13,8 +13,9 @@ import Formations from './pages/Formations';
 import Blog from './pages/Blog';
 import CVTheque from './pages/CVTheque';
 import CMSAdmin from './pages/CMSAdmin';
+import UserManagement from './pages/UserManagement';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -59,6 +60,7 @@ function AppContent() {
       {currentPage === 'blog' && <Blog />}
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
+      {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
     </Layout>
   );
 }

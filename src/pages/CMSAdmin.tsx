@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle } from 'lucide-react';
+import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -93,6 +93,10 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     { id: 'navigation', name: 'Navigation', icon: Menu },
   ];
 
+  const handleNavigateToUserManagement = () => {
+    onNavigate('user-management');
+  };
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center py-12">
@@ -119,9 +123,18 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     <AdminLayout onNavigate={onNavigate}>
       <div className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
-            <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
+          <div className="mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
+              <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
+            </div>
+            <button
+              onClick={handleNavigateToUserManagement}
+              className="flex items-center gap-2 px-6 py-3 neo-clay-button rounded-xl font-medium text-primary-700 hover:shadow-lg transition"
+            >
+              <Users className="w-5 h-5" />
+              <span>Gérer les utilisateurs</span>
+            </button>
           </div>
 
         <div className="neo-clay-card rounded-2xl overflow-hidden">

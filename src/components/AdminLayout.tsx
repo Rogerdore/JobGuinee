@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -35,6 +35,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
             </div>
 
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => onNavigate('user-management')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Users className="w-4 h-4" />
+                <span>Utilisateurs</span>
+              </button>
+
               <button
                 onClick={() => onNavigate('home')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
