@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
@@ -106,10 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const isAdmin = profile?.user_type === 'admin';
+
   const value = {
     user,
     profile,
     loading,
+    isAdmin,
     signIn,
     signUp,
     signOut,

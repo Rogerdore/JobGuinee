@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -111,25 +111,43 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                         <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
                         <p className="text-xs text-gray-500">{profile?.email}</p>
                         <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full soft-gradient-blue text-primary-700">
-                          {profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
+                          {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
-                          setAccountMenuOpen(false);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
-                      >
-                        <LayoutDashboard className="w-4 h-4" />
-                        <div>
-                          <p className="font-medium">
-                            {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
-                          </p>
-                          <p className="text-xs text-gray-500">Tableau de bord et profil</p>
-                        </div>
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            onNavigate('cms-admin');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">Administration CMS</p>
+                            <p className="text-xs text-gray-500">Gestion du contenu du site</p>
+                          </div>
+                        </button>
+                      )}
+
+                      {profile?.user_type !== 'admin' && (
+                        <button
+                          onClick={() => {
+                            onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                        >
+                          <LayoutDashboard className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">
+                              {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
+                            </p>
+                            <p className="text-xs text-gray-500">Tableau de bord et profil</p>
+                          </div>
+                        </button>
+                      )}
 
                       <div className="border-t border-gray-200 my-2"></div>
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye } from 'lucide-react';
+import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface CMSAdminProps {
   onNavigate: (page: string) => void;
@@ -9,6 +10,7 @@ interface CMSAdminProps {
 
 export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const { settings, sections, refreshSettings } = useCMS();
+  const { isAdmin, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation'>('general');
   const [editingSettings, setEditingSettings] = useState<Record<string, any>>({});
   const [allSettings, setAllSettings] = useState<any[]>([]);
@@ -90,18 +92,51 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     { id: 'navigation', name: 'Navigation', icon: Menu },
   ];
 
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12">
+        <div className="max-w-md mx-auto px-4 text-center">
+          <div className="neo-clay-card rounded-2xl p-8">
+            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Accès refusé</h2>
+            <p className="text-gray-600 mb-6">
+              Vous devez être administrateur pour accéder au CMS.
+            </p>
+            <button
+              onClick={() => onNavigate('home')}
+              className="px-6 py-3 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <button
-            onClick={() => onNavigate('recruiter-dashboard')}
+            onClick={() => onNavigate('home')}
             className="text-primary-600 hover:text-primary-700 mb-4 flex items-center gap-2"
           >
-            ← Retour au tableau de bord
+            ← Retour à l'accueil
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
-          <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
+              <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
+            </div>
+            <div className="neo-clay-card px-4 py-2 rounded-xl">
+              <p className="text-sm text-gray-600">Connecté en tant que</p>
+              <p className="font-semibold text-gray-900">{profile?.full_name}</p>
+              <span className="inline-block mt-1 px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
+                Administrateur
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="neo-clay-card rounded-2xl overflow-hidden">
