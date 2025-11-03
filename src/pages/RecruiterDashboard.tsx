@@ -163,25 +163,57 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       return;
     }
 
-    let fullDescription = data.description;
+    let fullDescription = `# ${data.title}\n\n`;
+    fullDescription += `**Catégorie:** ${data.category} | **Contrat:** ${data.contract_type} | **Postes:** ${data.position_count}\n\n`;
+
+    fullDescription += `## Présentation du poste\n${data.description}\n\n`;
 
     if (data.responsibilities) {
-      fullDescription += `\n\n## Missions et responsabilités\n${data.responsibilities}`;
+      fullDescription += `## Missions principales\n${data.responsibilities}\n\n`;
     }
 
-    if (data.requirements) {
-      fullDescription += `\n\n## Profil et exigences\n${data.requirements}`;
+    if (data.profile) {
+      fullDescription += `## Profil recherché\n${data.profile}\n\n`;
     }
 
     if (data.skills.length > 0) {
-      fullDescription += `\n\n## Compétences requises\n${data.skills.join(', ')}`;
+      fullDescription += `## Compétences clés\n${data.skills.join(' • ')}\n\n`;
     }
 
-    if (data.benefits) {
-      fullDescription += `\n\n## Avantages\n${data.benefits}`;
+    fullDescription += `## Qualifications\n`;
+    fullDescription += `- **Niveau d'études:** ${data.education_level}\n`;
+    fullDescription += `- **Expérience:** ${data.experience_required}\n`;
+    if (data.languages.length > 0) {
+      fullDescription += `- **Langues:** ${data.languages.join(', ')}\n`;
+    }
+    fullDescription += `\n`;
+
+    if (data.salary_range) {
+      fullDescription += `## Rémunération\n`;
+      fullDescription += `- **Salaire:** ${data.salary_range}\n`;
+      fullDescription += `- **Type:** ${data.salary_type}\n`;
+      if (data.benefits.length > 0) {
+        fullDescription += `- **Avantages:** ${data.benefits.join(', ')}\n`;
+      }
+      fullDescription += `\n`;
     }
 
-    fullDescription += `\n\n## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
+    if (data.company_description) {
+      fullDescription += `## À propos de l'entreprise\n${data.company_description}\n\n`;
+    }
+
+    fullDescription += `## Modalités de candidature\n`;
+    fullDescription += `- **Email:** ${data.application_email}\n`;
+    fullDescription += `- **Date limite:** ${data.deadline}\n`;
+    if (data.required_documents.length > 0) {
+      fullDescription += `- **Documents requis:** ${data.required_documents.join(', ')}\n`;
+    }
+    if (data.application_instructions) {
+      fullDescription += `\n${data.application_instructions}\n`;
+    }
+    fullDescription += `\n`;
+
+    fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
 
     const { error } = await supabase.from('jobs').insert({
       company_id: company.id,
@@ -189,11 +221,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       description: fullDescription,
       location: data.location,
       contract_type: data.contract_type,
-      department: data.department,
-      experience_level: data.experience_level,
+      department: data.company_name,
+      experience_level: data.experience_required,
       education_level: data.education_level,
-      salary_min: data.salary_min,
-      salary_max: data.salary_max,
       application_deadline: data.deadline,
       required_skills: data.skills,
       status: 'published',
