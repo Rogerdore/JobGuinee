@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { NotificationProvider } from './contexts/NotificationContext';
-import { CMSProvider } from './contexts/CMSContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
@@ -12,9 +10,8 @@ import RecruiterDashboard from './pages/RecruiterDashboard';
 import Formations from './pages/Formations';
 import Blog from './pages/Blog';
 import CVTheque from './pages/CVTheque';
-import CMSAdmin from './pages/CMSAdmin';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -58,7 +55,6 @@ function AppContent() {
       {currentPage === 'formations' && <Formations onNavigate={handleNavigate} />}
       {currentPage === 'blog' && <Blog />}
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
-      {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
     </Layout>
   );
 }
@@ -66,11 +62,7 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <CMSProvider>
-          <AppContent />
-        </CMSProvider>
-      </NotificationProvider>
+      <AppContent />
     </AuthProvider>
   );
 }

@@ -29,7 +29,6 @@ import {
   Send
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { sampleBlogPosts, blogCategories } from '../utils/sampleBlogData';
 
 interface BlogPost {
   id: string;
@@ -76,11 +75,7 @@ export default function Blog() {
       .eq('published', true)
       .order('created_at', { ascending: false });
 
-    if (data && data.length > 0) {
-      setPosts(data);
-    } else {
-      setPosts(sampleBlogPosts as any);
-    }
+    if (data) setPosts(data);
     setLoading(false);
   };
 

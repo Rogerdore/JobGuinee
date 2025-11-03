@@ -6,7 +6,6 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
@@ -80,25 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-          user_type: role,
-        }
-      }
     });
 
     if (error) throw error;
     if (!data.user) throw new Error('No user returned');
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: data.user.id,
+      email,
+      full_name: fullName,
+      user_type: role,
+    });
 
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName })
-      .eq('id', data.user.id);
-
-    if (updateError) console.error('Error updating profile:', updateError);
+    if (profileError) throw profileError;
   };
 
   const signOut = async () => {
@@ -107,13 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
-  const isAdmin = profile?.user_type === 'admin';
-
   const value = {
     user,
     profile,
     loading,
-    isAdmin,
     signIn,
     signUp,
     signOut,

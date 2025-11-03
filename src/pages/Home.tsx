@@ -2,18 +2,15 @@ import { useEffect, useState } from 'react';
 import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
-  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar
+  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
-import { sampleJobs } from '../utils/sampleJobsData';
-import { useCMS } from '../contexts/CMSContext';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
 }
 
 export default function Home({ onNavigate }: HomeProps) {
-  const { getSetting, getSection } = useCMS();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [contractType, setContractType] = useState('');
@@ -62,30 +59,14 @@ export default function Home({ onNavigate }: HomeProps) {
       supabase.from('formations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     ]);
 
-    // Use sample data if database is empty
-    if (jobsData.data && jobsData.data.length > 0) {
-      setRecentJobs(jobsData.data as any);
-    } else {
-      // Transform sample jobs to match the expected format
-      const transformedSampleJobs = sampleJobs.map(job => ({
-        ...job,
-        sector: job.department,
-        companies: {
-          id: job.company_id,
-          company_name: job.company_name,
-          logo_url: job.company_logo,
-        }
-      }));
-      setRecentJobs(transformedSampleJobs as any);
-    }
-
+    if (jobsData.data) setRecentJobs(jobsData.data as any);
     if (formationsData.data) setFeaturedFormations(formationsData.data);
 
     setStats({
-      jobs: jobsCount.count || sampleJobs.length,
-      companies: companiesCount.count || 15,
-      candidates: candidatesCount.count || 1250,
-      formations: formationsCount.count || 8,
+      jobs: jobsCount.count || 0,
+      companies: companiesCount.count || 0,
+      candidates: candidatesCount.count || 0,
+      formations: formationsCount.count || 0,
     });
   };
 
@@ -131,38 +112,7 @@ export default function Home({ onNavigate }: HomeProps) {
   ];
 
   const partners = [
-    {
-      name: 'SMB-Winning',
-      logo: 'https://ui-avatars.com/api/?name=SMB&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'Orange Guinée',
-      logo: 'https://ui-avatars.com/api/?name=Orange&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'Bolloré',
-      logo: 'https://ui-avatars.com/api/?name=Bollore&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'WCS Mining',
-      logo: 'https://ui-avatars.com/api/?name=WCS&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'UMS',
-      logo: 'https://ui-avatars.com/api/?name=UMS&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'CBG',
-      logo: 'https://ui-avatars.com/api/?name=CBG&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'Rio Tinto',
-      logo: 'https://ui-avatars.com/api/?name=Rio+Tinto&background=3B82F6&color=fff&size=120&bold=true',
-    },
-    {
-      name: 'Total Energies',
-      logo: 'https://ui-avatars.com/api/?name=Total&background=3B82F6&color=fff&size=120&bold=true',
-    },
+    'SMB-Winning', 'Orange Guinée', 'Bolloré', 'WCS Mining', 'UMS', 'CBG', 'Rio Tinto'
   ];
 
   return (
@@ -174,19 +124,19 @@ export default function Home({ onNavigate }: HomeProps) {
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
-              <span className="text-sm font-medium">{getSetting('site_tagline', 'Plateforme N°1 de l\'emploi en Guinée')}</span>
+              <span className="text-sm font-medium">Plateforme N°1 de l'emploi en Guinée</span>
             </div>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              {getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[0]},<br />
-              <span className="text-[#FF8C00]">{getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[1] || 'trouvez votre emploi'}</span>
+              Simplifiez votre recrutement,<br />
+              <span className="text-[#FF8C00]">trouvez votre emploi</span>
             </h1>
 
             <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto">
-              {getSetting('homepage_hero_subtitle', 'La première plateforme guinéenne de recrutement digital connectant talents et opportunités')}
+              La première plateforme guinéenne de recrutement digital connectant talents et opportunités
             </p>
 
-            <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-4 md:p-6">
+            <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl p-4 md:p-6">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
                 <div className="md:col-span-5 relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -196,7 +146,7 @@ export default function Home({ onNavigate }: HomeProps) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl neo-clay-input focus:outline-none text-gray-900 text-base"
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#FF8C00] focus:outline-none text-gray-900 text-base"
                   />
                 </div>
 
@@ -208,7 +158,7 @@ export default function Home({ onNavigate }: HomeProps) {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl neo-clay-input focus:outline-none text-gray-900 text-base"
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#FF8C00] focus:outline-none text-gray-900 text-base"
                   />
                 </div>
 
@@ -256,7 +206,7 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent"></div>
       </section>
 
-      <section className="py-12 border-b border-white/30">
+      <section className="py-12 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
@@ -287,7 +237,7 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -303,7 +253,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 <button
                   key={category.name}
                   onClick={() => onNavigate('jobs')}
-                  className="group p-6 neo-clay-card rounded-2xl transition cursor-pointer"
+                  className="group p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-[#FF8C00] hover:shadow-lg transition"
                 >
                   <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>
                     <Icon className="w-7 h-7 text-white" />
@@ -317,7 +267,7 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <div>
@@ -345,7 +295,7 @@ export default function Home({ onNavigate }: HomeProps) {
               {recentJobs.slice(0, 6).map((job) => (
                 <div
                   key={job.id}
-                  className="group neo-clay-card rounded-2xl transition p-6 cursor-pointer"
+                  className="group bg-white rounded-xl border border-gray-200 hover:shadow-xl hover:border-[#FF8C00] transition p-6 cursor-pointer"
                   onClick={() => onNavigate('job-detail', job.id)}
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -368,41 +318,18 @@ export default function Home({ onNavigate }: HomeProps) {
 
                   <div className="flex flex-wrap gap-2 mb-4">
                     {job.contract_type && (
-                      <span className="px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                         {job.contract_type}
                       </span>
                     )}
                     {job.sector && (
-                      <span className="px-3 py-1 neo-clay-pressed text-gray-700 text-xs font-medium rounded-full">
+                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
                         {job.sector}
                       </span>
                     )}
                   </div>
 
-                  <div className="space-y-2 mb-4 text-xs text-gray-600">
-                    {job.education_level && (
-                      <div className="flex items-center space-x-2">
-                        <GraduationCap className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
-                        <span className="line-clamp-1">{job.education_level}</span>
-                      </div>
-                    )}
-                    {job.experience_level && (
-                      <div className="flex items-center space-x-2">
-                        <Briefcase className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
-                        <span>{job.experience_level}</span>
-                      </div>
-                    )}
-                    {job.deadline && (
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-red-500" />
-                        <span className="text-red-600 font-medium">
-                          Expire le {new Date(job.deadline).toLocaleDateString('fr-FR')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2 text-gray-500">
                       <Clock className="w-4 h-4" />
                       <span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
@@ -503,7 +430,7 @@ export default function Home({ onNavigate }: HomeProps) {
       </section>
 
       {featuredFormations.length > 0 && (
-        <section className="py-16">
+        <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -514,13 +441,13 @@ export default function Home({ onNavigate }: HomeProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {featuredFormations.map((formation) => (
-                <div key={formation.id} className="neo-clay-card rounded-2xl transition overflow-hidden group cursor-pointer">
+                <div key={formation.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-xl transition overflow-hidden group">
                   <div className="h-48 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center">
                     <BookOpen className="w-20 h-20 text-white opacity-50 group-hover:scale-110 transition" />
                   </div>
                   <div className="p-6">
                     {formation.category && (
-                      <span className="inline-block px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full mb-3">
+                      <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mb-3">
                         {formation.category}
                       </span>
                     )}
@@ -560,7 +487,7 @@ export default function Home({ onNavigate }: HomeProps) {
         </section>
       )}
 
-      <section className="py-16">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -571,7 +498,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {testimonials.map((testimonial) => (
-              <div key={testimonial.name} className="neo-clay-card rounded-2xl p-8 transition">
+              <div key={testimonial.name} className="bg-white rounded-xl p-8 border border-gray-200 hover:shadow-lg transition">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="text-4xl">{testimonial.avatar}</div>
                   <div>
@@ -590,60 +517,17 @@ export default function Home({ onNavigate }: HomeProps) {
             ))}
           </div>
 
-          <div className="relative">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#0E2F56]/10 to-[#FF8C00]/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-                <Award className="w-4 h-4 text-[#FF8C00]" />
-                <span className="text-sm font-semibold text-gray-700">Entreprises partenaires</span>
-              </div>
-              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Nos partenaires</h3>
-              <p className="text-lg text-gray-600">Les entreprises leaders qui recrutent avec JobGuinée</p>
+          <div className="bg-white rounded-2xl p-8 border border-gray-200">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Nos partenaires</h3>
+              <p className="text-gray-600">Les entreprises qui recrutent avec JobGuinée</p>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {partners.map((partner, index) => (
-                <div
-                  key={partner.name}
-                  className="group relative bg-gradient-to-br from-blue-100/60 to-blue-200/60 backdrop-blur-xl rounded-2xl border-2 border-blue-300/40 p-6 hover:scale-105 transition-all duration-300 hover:shadow-blue-400/30 hover:shadow-2xl cursor-pointer overflow-hidden"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-20 h-20 mb-4 rounded-xl overflow-hidden shadow-lg ring-2 ring-blue-300/30 group-hover:ring-blue-400/50 transition-all duration-300 group-hover:scale-110">
-                      <img
-                        src={partner.logo}
-                        alt={partner.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">
-                      {partner.name}
-                    </h4>
-
-                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="flex items-center space-x-1">
-                        <CheckCircle className="w-3 h-3 text-blue-600" />
-                        <span className="text-xs text-gray-600 font-medium">Partenaire actif</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-300/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+            <div className="flex flex-wrap justify-center items-center gap-8">
+              {partners.map((partner) => (
+                <div key={partner} className="px-6 py-4 bg-gray-50 rounded-lg">
+                  <span className="font-semibold text-gray-700">{partner}</span>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-12 text-center">
-              <p className="text-gray-600 mb-4">
-                <span className="font-semibold text-[#0E2F56]">{partners.length}+</span> entreprises leaders font confiance à JobGuinée
-              </p>
-              <div className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <Building className="w-4 h-4" />
-                <span className="font-medium">Devenir partenaire</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
             </div>
           </div>
         </div>
