@@ -172,13 +172,15 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     console.log('startAnalysis called - isPremium:', isPremium);
     console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
 
-    if (!isPremium) {
-      console.log('Not premium - blocking analysis');
+    if (selectedCandidates.size === 0) {
+      alert('Veuillez sélectionner au moins un candidat à analyser');
       return;
     }
 
-    if (selectedCandidates.size === 0) {
-      alert('Veuillez sélectionner au moins un candidat à analyser');
+    if (!isPremium) {
+      console.log('Not premium - showing upgrade prompt');
+      alert('⭐ Fonctionnalité Premium\n\nL\'analyse IA et le matching automatique des candidatures sont réservés aux membres Premium.\n\nPassez à Premium pour :\n• Scoring automatique des candidatures\n• Analyse approfondie des profils\n• Recommandations personnalisées\n• Statistiques avancées');
+      onUpgrade();
       return;
     }
 
@@ -407,12 +409,10 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                         </p>
                       </div>
                       <button
-                        onClick={isPremium ? startAnalysis : onUpgrade}
-                        disabled={!isPremium && selectedCandidates.size === 0}
+                        onClick={startAnalysis}
+                        disabled={selectedCandidates.size === 0}
                         className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
-                          !isPremium
-                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed opacity-60'
-                            : selectedCandidates.size === 0
+                          selectedCandidates.size === 0
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white shadow-lg hover:shadow-xl'
                         }`}
