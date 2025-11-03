@@ -162,7 +162,7 @@ export default function Blog() {
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-lg transition"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition"
                 >
                   <Filter className="w-5 h-5" />
                   Catégories
@@ -480,7 +480,7 @@ export default function Blog() {
                 />
                 <button
                   type="submit"
-                  className="px-8 py-4 bg-[#FF8C00] hover:bg-orange-600 text-white font-bold rounded-lg transition whitespace-nowrap"
+                  className="px-8 py-4 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition whitespace-nowrap"
                 >
                   S'abonner gratuitement
                 </button>
@@ -581,21 +581,21 @@ export default function Blog() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleShare('whatsapp', selectedPost)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition"
                   >
                     <Send className="w-4 h-4" />
                     WhatsApp
                   </button>
                   <button
                     onClick={() => handleShare('linkedin', selectedPost)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition"
                   >
                     <Linkedin className="w-4 h-4" />
                     LinkedIn
                   </button>
                   <button
                     onClick={() => handleShare('facebook', selectedPost)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition"
                   >
                     <Facebook className="w-4 h-4" />
                     Facebook

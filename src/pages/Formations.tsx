@@ -166,7 +166,7 @@ export default function Formations({ onNavigate }: FormationsProps) {
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-lg transition"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition"
                 >
                   <Filter className="w-5 h-5" />
                   Filtres
@@ -370,7 +370,7 @@ export default function Formations({ onNavigate }: FormationsProps) {
                       </button>
                       <button
                         onClick={() => alert('Paiement : Orange Money / LengoPay / DigitalPay SA')}
-                        className="flex-1 py-2.5 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-lg transition"
+                        className="flex-1 py-2.5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition"
                       >
                         S'inscrire
                       </button>
@@ -418,7 +418,7 @@ export default function Formations({ onNavigate }: FormationsProps) {
           <div className="text-center">
             <button
               onClick={() => alert('Réservation de coaching disponible prochainement')}
-              className="px-10 py-4 bg-[#FF8C00] hover:bg-orange-600 text-white font-bold text-lg rounded-lg transition shadow-xl inline-flex items-center gap-2"
+              className="px-10 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold text-lg rounded-lg transition shadow-md inline-flex items-center gap-2 border-2 border-white"
             >
               <Calendar className="w-5 h-5" />
               Réserver une session de coaching

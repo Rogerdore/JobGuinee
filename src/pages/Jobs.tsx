@@ -317,7 +317,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
               <div className="md:col-span-3">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="w-full px-6 py-4 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-xl transition flex items-center justify-center space-x-2 shadow-lg"
+                  className="w-full px-6 py-4 bg-gray-700 hover:bg-gray-800 text-white font-medium rounded-xl transition flex items-center justify-center space-x-2 shadow-md"
                 >
                   <SlidersHorizontal className="w-5 h-5" />
                   <span>

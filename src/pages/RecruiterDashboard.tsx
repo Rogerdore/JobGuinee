@@ -690,7 +690,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       <div className="space-y-3 mb-4 relative z-10">
                         <div className="grid grid-cols-2 gap-3">
                           <button
-                            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300"
                             onClick={(e) => {
                               e.stopPropagation();
                               setActiveTab('applications');
@@ -701,7 +701,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             <span>Candidatures</span>
                           </button>
                           <button
-                            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300"
                             onClick={(e) => {
                               e.stopPropagation();
                               setActiveTab('analytics');
@@ -713,21 +713,21 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </button>
                         </div>
                         <button
-                          className="w-full px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg group"
+                          className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56]"
                           onClick={(e) => {
                             console.log('🔘 Matching IA button clicked!');
                             e.stopPropagation();
                             handleStartMatching(job);
                           }}
                         >
-                          <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          <Sparkles className="w-4 h-4 animate-pulse" />
+                          <Target className="w-5 h-5" />
+                          <Sparkles className="w-4 h-4" />
                           <span>Matching IA</span>
                         </button>
                       </div>
 
                       <button
-                        className="w-full px-4 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-semibold rounded-xl transition-all duration-300 relative z-10 group"
+                        className="w-full px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNavigate('job-detail', job.id);

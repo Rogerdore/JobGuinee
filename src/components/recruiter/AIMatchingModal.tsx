@@ -283,14 +283,14 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                       onClick={() => toggleCandidate(app.id)}
                       className={`p-5 border-2 rounded-2xl cursor-pointer transition-all ${
                         selectedCandidates.has(app.id)
-                          ? 'border-[#FF8C00] bg-orange-50 shadow-lg'
+                          ? 'border-[#0E2F56] bg-blue-50 shadow-lg'
                           : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
                       }`}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
                           selectedCandidates.has(app.id)
-                            ? 'bg-[#FF8C00] border-[#FF8C00]'
+                            ? 'bg-[#0E2F56] border-[#0E2F56]'
                             : 'border-gray-300'
                         }`}>
                           {selectedCandidates.has(app.id) && (
@@ -350,14 +350,14 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
               {applications.length > 0 && (
                 <div>
                   {!isPremium && (
-                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-[#FF8C00] rounded-2xl p-6 mb-4">
+                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-400 rounded-2xl p-6 mb-4">
                       <div className="flex items-start gap-4">
-                        <div className="p-3 bg-[#FF8C00] rounded-xl">
+                        <div className="p-3 bg-amber-500 rounded-xl">
                           <Crown className="w-8 h-8 text-white" />
                         </div>
                         <div className="flex-1">
                           <h4 className="font-bold text-gray-900 text-lg mb-2 flex items-center gap-2">
-                            <Lock className="w-5 h-5 text-[#FF8C00]" />
+                            <Lock className="w-5 h-5 text-amber-600" />
                             Fonctionnalité Premium Requise
                           </h4>
                           <p className="text-gray-700 mb-4">
@@ -384,7 +384,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                           </ul>
                           <button
                             onClick={onUpgrade}
-                            className="px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                            className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                           >
                             <Crown className="w-5 h-5" />
                             Passer à Premium
@@ -411,10 +411,10 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                       <button
                         onClick={startAnalysis}
                         disabled={selectedCandidates.size === 0}
-                        className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
+                        className={`px-8 py-4 rounded-xl font-semibold text-lg flex items-center gap-3 transition-all ${
                           selectedCandidates.size === 0
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white shadow-lg hover:shadow-xl'
+                            : 'bg-[#0E2F56] hover:bg-[#1a4275] text-white shadow-md hover:shadow-lg'
                         }`}
                       >
                         {!isPremium ? (

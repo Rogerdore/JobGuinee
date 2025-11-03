@@ -246,7 +246,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
               <button
                 onClick={() => handleExport('docx')}
                 disabled={exportFormat === 'docx'}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition shadow-md"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition shadow-md"
               >
                 <Download className="w-4 h-4" />
                 Exporter DOCX
@@ -256,7 +256,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                 disabled={isGeneratingAI || !isPremium}
                 className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition shadow-md ${
                   isPremium
-                    ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
+                    ? 'bg-[#0E2F56] hover:bg-[#1a4275] text-white'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
                 title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
@@ -557,7 +557,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                         </p>
                         <button
                           onClick={() => onNavigate('candidate-dashboard')}
-                          className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+                          className="px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white font-medium rounded-lg transition"
                         >
                           Voir mes candidatures
                         </button>
@@ -573,7 +573,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                             setShowApplicationForm(true);
                           }
                         }}
-                        className="w-full py-5 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition shadow-xl text-lg"
+                        className="w-full py-5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg text-lg"
                       >
                         Postuler maintenant
                       </button>
