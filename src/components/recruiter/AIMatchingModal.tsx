@@ -1,5 +1,5 @@
-import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check } from 'lucide-react';
+import { useState } from 'react';
 
 interface AIMatchingModalProps {
   job: {
@@ -43,9 +43,29 @@ interface MatchingResult {
 }
 
 export default function AIMatchingModal({ job, applications, onClose, onUpdateScores }: AIMatchingModalProps) {
+  const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<MatchingResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+
+  const toggleCandidate = (id: string) => {
+    const newSelected = new Set(selectedCandidates);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedCandidates(newSelected);
+  };
+
+  const toggleAll = () => {
+    if (selectedCandidates.size === applications.length) {
+      setSelectedCandidates(new Set());
+    } else {
+      setSelectedCandidates(new Set(applications.map(app => app.id)));
+    }
+  };
 
   const analyzeProfile = (application: any): MatchingResult => {
     const candidate = application.candidate_profile;
@@ -143,13 +163,20 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   };
 
   const startAnalysis = () => {
+    if (selectedCandidates.size === 0) {
+      alert('Veuillez sélectionner au moins un candidat à analyser');
+      return;
+    }
+
     setAnalyzing(true);
     setResults([]);
     setCurrentIndex(0);
 
+    const selectedApps = applications.filter(app => selectedCandidates.has(app.id));
+
     const interval = setInterval(() => {
       setCurrentIndex(prev => {
-        if (prev >= applications.length - 1) {
+        if (prev >= selectedApps.length - 1) {
           clearInterval(interval);
           setAnalyzing(false);
           return prev;
@@ -158,24 +185,21 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
       });
     }, 800);
 
-    const analysisResults = applications.map(analyzeProfile);
+    const analysisResults = selectedApps.map(analyzeProfile);
 
     setTimeout(() => {
       setResults(analysisResults);
+      setShowResults(true);
       const scores = analysisResults.map(r => ({
         id: r.applicationId,
         score: r.newScore,
         category: r.category,
       }));
       onUpdateScores(scores);
-    }, applications.length * 800 + 500);
+    }, selectedApps.length * 800 + 500);
   };
 
-  useEffect(() => {
-    startAnalysis();
-  }, []);
-
-  const progress = applications.length > 0 ? ((currentIndex + 1) / applications.length) * 100 : 0;
+  const progress = selectedCandidates.size > 0 ? ((currentIndex + 1) / selectedCandidates.size) * 100 : 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -206,13 +230,136 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
         </div>
 
         <div className="p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
+          {!showResults && !analyzing && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  Sélectionnez les candidats à analyser
+                </h3>
+                <button
+                  onClick={toggleAll}
+                  className="px-4 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition flex items-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  {selectedCandidates.size === applications.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                </button>
+              </div>
+
+              {applications.length === 0 ? (
+                <div className="text-center py-16">
+                  <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg">Aucune candidature disponible pour ce projet</p>
+                </div>
+              ) : (
+                <div className="space-y-3 mb-6">
+                  {applications.map((app) => (
+                    <div
+                      key={app.id}
+                      onClick={() => toggleCandidate(app.id)}
+                      className={`p-5 border-2 rounded-2xl cursor-pointer transition-all ${
+                        selectedCandidates.has(app.id)
+                          ? 'border-[#FF8C00] bg-orange-50 shadow-lg'
+                          : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-md'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          selectedCandidates.has(app.id)
+                            ? 'bg-[#FF8C00] border-[#FF8C00]'
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedCandidates.has(app.id) && (
+                            <Check className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#0E2F56] to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                          {app.candidate.full_name.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div className="flex-1">
+                          <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            {app.candidate.full_name}
+                          </h4>
+                          <p className="text-sm text-gray-600 flex items-center gap-1">
+                            <Briefcase className="w-4 h-4" />
+                            {app.candidate_profile?.title || 'Profil'}
+                          </p>
+                        </div>
+
+                        <div className="text-center">
+                          <div className={`px-4 py-2 rounded-xl ${
+                            app.ai_score >= 75
+                              ? 'bg-green-100 text-green-700'
+                              : app.ai_score >= 50
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : app.ai_score > 0
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            <div className="text-xs font-semibold mb-1">Score actuel</div>
+                            <div className="text-2xl font-bold">
+                              {app.ai_score > 0 ? `${app.ai_score}%` : 'Non scoré'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {app.candidate_profile?.skills && app.candidate_profile.skills.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {app.candidate_profile.skills.slice(0, 5).map((skill, i) => (
+                            <span
+                              key={i}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {applications.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-blue-900 text-lg mb-1">
+                        {selectedCandidates.size} candidat{selectedCandidates.size > 1 ? 's' : ''} sélectionné{selectedCandidates.size > 1 ? 's' : ''}
+                      </h4>
+                      <p className="text-sm text-blue-700">
+                        {selectedCandidates.size === 0
+                          ? 'Cochez les candidats que vous souhaitez analyser'
+                          : `Prêt à analyser ${selectedCandidates.size} profil${selectedCandidates.size > 1 ? 's' : ''}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={startAnalysis}
+                      disabled={selectedCandidates.size === 0}
+                      className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
+                        selectedCandidates.size === 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white shadow-lg hover:shadow-xl'
+                      }`}
+                    >
+                      <Sparkles className="w-6 h-6" />
+                      Lancer l'analyse
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {analyzing && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-[#0E2F56]/20 border-t-[#0E2F56]"></div>
                   <span className="text-lg font-semibold text-gray-900">
-                    Analyse en cours... {currentIndex + 1}/{applications.length}
+                    Analyse en cours... {currentIndex + 1}/{selectedCandidates.size}
                   </span>
                 </div>
                 <span className="text-2xl font-bold text-[#0E2F56]">{Math.round(progress)}%</span>
@@ -229,7 +376,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
             </div>
           )}
 
-          {!analyzing && results.length > 0 && (
+          {showResults && results.length > 0 && (
             <div>
               <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-3 mb-2">
@@ -387,13 +534,13 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
           )}
         </div>
 
-        {!analyzing && results.length > 0 && (
+        {!analyzing && (
           <div className="border-t-2 border-gray-200 p-6 bg-gray-50">
             <button
               onClick={onClose}
               className="w-full py-4 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-blue-700 hover:to-[#0E2F56] text-white font-bold text-lg rounded-xl transition shadow-lg"
             >
-              Fermer et appliquer les scores
+              {showResults ? 'Fermer et appliquer les scores' : 'Annuler'}
             </button>
           </div>
         )}
