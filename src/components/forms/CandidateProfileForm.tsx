@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle2, HelpCircle, Save } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import {
   Input,
   Select,
@@ -15,6 +17,7 @@ import {
 } from './FormComponents';
 
 export default function CandidateProfileForm() {
+  const { user, profile } = useAuth();
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('candidateProfileDraft');
     if (saved) {
@@ -124,7 +127,7 @@ export default function CandidateProfileForm() {
     setErrors({ ...errors, [fieldName]: error });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
@@ -140,9 +143,68 @@ export default function CandidateProfileForm() {
       return;
     }
 
-    console.log('Form submitted:', formData);
-    localStorage.removeItem('candidateProfileDraft');
-    alert('Profil enregistré avec succès !');
+    if (!profile?.id) {
+      alert('Erreur: Profil utilisateur introuvable');
+      return;
+    }
+
+    try {
+      // Update or insert candidate profile
+      const candidateData = {
+        profile_id: profile.id,
+        title: formData.currentPosition || formData.professionalStatus,
+        bio: formData.professionalSummary,
+        experience_years: formData.experiences.length,
+        skills: formData.skills,
+        education: formData.formations,
+        work_experience: formData.experiences,
+        languages: formData.languages,
+        location: formData.address,
+        availability: formData.availability,
+        nationality: formData.region,
+        visibility: formData.visibleInCVTheque ? 'public' : 'private',
+        last_active_at: new Date().toISOString(),
+      };
+
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('candidate_profiles')
+        .select('id')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('candidate_profiles')
+          .update(candidateData)
+          .eq('profile_id', profile.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new profile
+        const { error } = await supabase
+          .from('candidate_profiles')
+          .insert(candidateData);
+
+        if (error) throw error;
+      }
+
+      // Update main profile
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: formData.fullName,
+          phone: formData.phone,
+        })
+        .eq('id', profile.id);
+
+      localStorage.removeItem('candidateProfileDraft');
+      alert('Profil enregistré avec succès ! Votre profil est maintenant visible dans la CVThèque.');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Erreur lors de l\'enregistrement du profil. Veuillez réessayer.');
+    }
   };
 
   const clearDraft = () => {

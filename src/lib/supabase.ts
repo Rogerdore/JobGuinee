@@ -18,6 +18,10 @@ export type Profile = {
   email: string;
   phone?: string;
   avatar_url?: string;
+  birth_date?: string;
+  gender?: string;
+  address?: string;
+  region?: string;
   created_at: string;
   updated_at: string;
 };
@@ -31,11 +35,21 @@ export type CandidateProfile = {
   skills: string[];
   experience_years: number;
   education_level?: string;
+  education?: any;
+  work_experience?: any;
   location?: string;
   availability: string;
   desired_position?: string;
   desired_salary_min?: number;
   desired_salary_max?: number;
+  languages?: string[];
+  certifications?: any;
+  preferred_contract_type?: string;
+  mobility?: string;
+  is_verified?: boolean;
+  visibility?: string;
+  last_active_at?: string;
+  nationality?: string;
 };
 
 export type Company = {
