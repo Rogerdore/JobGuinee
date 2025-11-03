@@ -582,7 +582,10 @@ export default function Home({ onNavigate }: HomeProps) {
                       <div className="text-2xl font-bold text-[#FF8C00]">
                         {formation.price.toLocaleString()} GNF
                       </div>
-                      <button className="px-4 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition group-hover:shadow-lg">
+                      <button
+                        onClick={() => onNavigate('formations')}
+                        className="px-4 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition group-hover:shadow-lg"
+                      >
                         Voir détails
                       </button>
                     </div>
@@ -709,7 +712,27 @@ export default function Home({ onNavigate }: HomeProps) {
                 placeholder="Votre adresse email"
                 className="flex-1 px-6 py-4 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
               />
-              <button className="px-8 py-4 bg-white hover:bg-gray-100 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg whitespace-nowrap">
+              <button
+                onClick={async () => {
+                  const email = (document.querySelector('input[type="email"]') as HTMLInputElement)?.value;
+                  if (!email) {
+                    alert('Veuillez entrer votre adresse email');
+                    return;
+                  }
+                  const { error } = await supabase.from('newsletter_subscribers').insert({ email });
+                  if (error) {
+                    if (error.code === '23505') {
+                      alert('Cet email est déjà inscrit à la newsletter');
+                    } else {
+                      alert('Erreur lors de l\'inscription');
+                    }
+                  } else {
+                    alert('Merci de vous être inscrit à notre newsletter !');
+                    (document.querySelector('input[type="email"]') as HTMLInputElement).value = '';
+                  }
+                }}
+                className="px-8 py-4 bg-white hover:bg-gray-100 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg whitespace-nowrap"
+              >
                 S'abonner
               </button>
             </div>

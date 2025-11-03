@@ -215,7 +215,10 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Sections de contenu</h2>
-                  <button className="flex items-center gap-2 px-4 py-2 neo-clay-button rounded-xl text-primary-700 font-medium">
+                  <button
+                    onClick={() => alert('Fonctionnalité de création de section disponible prochainement')}
+                    className="flex items-center gap-2 px-4 py-2 neo-clay-button rounded-xl text-primary-700 font-medium"
+                  >
                     <Plus className="w-4 h-4" />
                     Nouvelle section
                   </button>
@@ -235,10 +238,20 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                           </span>
                         </div>
                         <div className="flex gap-2">
-                          <button className="p-2 neo-clay-button rounded-lg text-gray-600">
+                          <button
+                            onClick={() => alert('Fonctionnalité d\'édition disponible prochainement')}
+                            className="p-2 neo-clay-button rounded-lg text-gray-600"
+                          >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button className="p-2 neo-clay-button rounded-lg text-red-600">
+                          <button
+                            onClick={() => {
+                              if (confirm('Voulez-vous vraiment supprimer cette section ?')) {
+                                alert('Fonctionnalité de suppression disponible prochainement');
+                              }
+                            }}
+                            className="p-2 neo-clay-button rounded-lg text-red-600"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -259,7 +272,10 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestion des pages</h3>
                 <p className="text-gray-600 mb-6">Créez et gérez vos pages personnalisées</p>
-                <button className="neo-clay-button px-6 py-3 rounded-xl font-medium text-primary-700">
+                <button
+                  onClick={() => alert('Fonctionnalité de création de page disponible prochainement')}
+                  className="neo-clay-button px-6 py-3 rounded-xl font-medium text-primary-700"
+                >
                   Créer une nouvelle page
                 </button>
               </div>
@@ -270,7 +286,10 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 <Menu className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestion de la navigation</h3>
                 <p className="text-gray-600 mb-6">Configurez les menus de votre site</p>
-                <button className="neo-clay-button px-6 py-3 rounded-xl font-medium text-primary-700">
+                <button
+                  onClick={() => alert('Fonctionnalité de gestion des menus disponible prochainement')}
+                  className="neo-clay-button px-6 py-3 rounded-xl font-medium text-primary-700"
+                >
                   Gérer les menus
                 </button>
               </div>

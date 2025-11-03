@@ -419,7 +419,10 @@ export default function Blog() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <button className="text-[#0E2F56] font-semibold text-sm hover:text-blue-800 transition flex items-center gap-1">
+                      <button
+                        onClick={() => setSelectedPost(post)}
+                        className="text-[#0E2F56] font-semibold text-sm hover:text-blue-800 transition flex items-center gap-1"
+                      >
                         Lire l'article
                         <ChevronRight className="w-4 h-4" />
                       </button>

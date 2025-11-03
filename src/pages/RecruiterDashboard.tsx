@@ -638,7 +638,10 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
                     </button>
                   </div>
 
-                  <button className="px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-700 font-medium rounded-xl transition flex items-center gap-2 shadow-sm">
+                  <button
+                    onClick={() => alert('Fonctionnalité d\'export disponible prochainement')}
+                    className="px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-700 font-medium rounded-xl transition flex items-center gap-2 shadow-sm"
+                  >
                     <Download className="w-5 h-5" />
                     Exporter
                   </button>
