@@ -334,7 +334,7 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-white rounded-2xl shadow-2xl -mt-6 mb-6 overflow-hidden border-2 border-gray-100">
+        <div className="bg-white rounded-2xl shadow-2xl mt-6 mb-6 overflow-hidden border-2 border-gray-100">
           <div className="flex overflow-x-auto border-b border-gray-200">
             {tabs.map((tab) => {
               const Icon = tab.icon;
