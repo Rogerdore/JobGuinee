@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon
+  CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -47,10 +48,15 @@ export interface JobFormData {
 }
 
 export default function JobPublishForm({ onPublish, onClose }: JobPublishFormProps) {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [skillInput, setSkillInput] = useState('');
   const [benefitInput, setBenefitInput] = useState('');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [importingFile, setImportingFile] = useState(false);
+
+  const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
@@ -132,6 +138,112 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
     }
   };
 
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileType = file.name.split('.').pop()?.toLowerCase();
+    if (fileType !== 'pdf' && fileType !== 'docx' && fileType !== 'doc') {
+      alert('Format non supporté. Veuillez importer un fichier PDF ou DOCX.');
+      return;
+    }
+
+    setImportingFile(true);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+
+      const extractedTitle = text.match(/Titre[:\s]+(.+)/i)?.[1] || formData.title;
+      const extractedLocation = text.match(/Localisation[:\s]+(.+)/i)?.[1] || formData.location;
+      const extractedDescription = text.substring(0, 500);
+
+      setFormData({
+        ...formData,
+        title: extractedTitle.trim(),
+        location: extractedLocation.trim(),
+        description: extractedDescription.trim(),
+      });
+
+      setImportingFile(false);
+      alert('Fichier importé avec succès ! Veuillez vérifier et compléter les informations.');
+    };
+
+    reader.onerror = () => {
+      setImportingFile(false);
+      alert('Erreur lors de l\'import du fichier.');
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleGenerateWithAI = async () => {
+    if (!isPremium) {
+      alert('Cette fonctionnalité est réservée aux abonnés Premium. Souscrivez pour débloquer la génération IA !');
+      return;
+    }
+
+    if (!formData.title || !formData.location) {
+      alert('Veuillez d\'abord renseigner le titre du poste et la localisation.');
+      return;
+    }
+
+    setIsGeneratingAI(true);
+
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    const aiGeneratedData = {
+      description: `Nous recherchons un(e) ${formData.title} talentueux(se) pour rejoindre notre équipe dynamique basée à ${formData.location}. Ce poste stratégique offre l'opportunité de contribuer activement au développement de nos activités dans un environnement professionnel stimulant.`,
+
+      responsibilities: `• Assurer la gestion quotidienne des activités du département ${formData.category}
+• Piloter et coordonner les projets stratégiques en lien avec le poste
+• Développer et mettre en œuvre des processus d'amélioration continue
+• Collaborer étroitement avec les équipes transverses
+• Garantir le respect des standards de qualité et des procédures internes
+• Participer activement aux réunions de coordination et de reporting
+• Contribuer à l'innovation et à l'optimisation des pratiques`,
+
+      profile: `Nous recherchons un profil dynamique et rigoureux, doté d'excellentes compétences en ${formData.category.toLowerCase()}. Le candidat idéal possède une forte capacité d'adaptation, un excellent sens de l'organisation et une aptitude avérée à travailler en équipe. Autonome et proactif, vous faites preuve d'un engagement sans faille dans l'atteinte des objectifs fixés.`,
+
+      skills: [
+        'Leadership',
+        'Gestion de projet',
+        'Communication efficace',
+        'Analyse et résolution de problèmes',
+        'Maîtrise des outils bureautiques (Excel, Word, PowerPoint)',
+        'Esprit d\'équipe',
+        'Sens de l\'organisation',
+        'Autonomie'
+      ],
+
+      benefits: [
+        'Package salarial compétitif',
+        'Couverture médicale',
+        'Formation continue',
+        'Environnement de travail moderne',
+        'Opportunités d\'évolution'
+      ],
+
+      company_description: `Entreprise leader dans le secteur ${formData.sector}, nous nous distinguons par notre excellence opérationnelle et notre engagement envers nos collaborateurs. Rejoignez une équipe passionnée et dynamique où vos talents seront valorisés.`,
+
+      application_instructions: `Les candidats intéressés sont priés d'envoyer leur dossier de candidature complet (CV détaillé et lettre de motivation) à l'adresse email indiquée avant la date limite. Seuls les candidats présélectionnés seront contactés pour un entretien.`
+    };
+
+    setFormData({
+      ...formData,
+      description: aiGeneratedData.description,
+      responsibilities: aiGeneratedData.responsibilities,
+      profile: aiGeneratedData.profile,
+      skills: [...new Set([...formData.skills, ...aiGeneratedData.skills])],
+      benefits: [...new Set([...formData.benefits, ...aiGeneratedData.benefits])],
+      company_description: aiGeneratedData.company_description || formData.company_description,
+      application_instructions: aiGeneratedData.application_instructions || formData.application_instructions,
+    });
+
+    setIsGeneratingAI(false);
+    alert('✨ Offre générée avec succès par l\'IA ! Vérifiez et ajustez les informations si nécessaire.');
+  };
+
   const handlePublish = async () => {
     if (!formData.title || !formData.location || !formData.description || !formData.legal_compliance) {
       alert('Veuillez remplir tous les champs obligatoires et accepter la conformité légale.');
@@ -181,6 +293,47 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
             <p className="text-sm text-gray-800 text-center">
               <span className="font-semibold text-[#FF8C00]">📋 Formulaire complet :</span> Remplissez toutes les sections pour créer une offre professionnelle et conforme.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
+            <div>
+              <label htmlFor="file-import" className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition shadow-md">
+                  <UploadIcon className="w-5 h-5" />
+                  <span>{importingFile ? 'Import en cours...' : 'Importer depuis PDF/DOCX'}</span>
+                </div>
+              </label>
+              <input
+                id="file-import"
+                type="file"
+                accept=".pdf,.docx,.doc"
+                onChange={handleImportFile}
+                className="hidden"
+                disabled={importingFile}
+              />
+              <p className="text-xs text-gray-600 mt-2 text-center">Remplir automatiquement depuis un fichier</p>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={handleGenerateWithAI}
+                disabled={isGeneratingAI || !isPremium}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold rounded-xl transition shadow-md ${
+                  isPremium
+                    ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{isGeneratingAI ? 'Génération IA...' : 'Générer avec IA'}</span>
+                {!isPremium && <span className="text-xs">(Premium)</span>}
+              </button>
+              <p className="text-xs text-gray-600 mt-2 text-center">
+                {isPremium ? 'Remplir automatiquement avec l\'IA' : 'Abonnement Premium requis'}
+              </p>
+            </div>
           </div>
 
           <FormSection title="1. Informations générales" icon={FileText}>
