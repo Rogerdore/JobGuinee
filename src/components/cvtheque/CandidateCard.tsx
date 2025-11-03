@@ -44,18 +44,18 @@ export default function CandidateCard({
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
+      bg: 'soft-gradient-green',
+      text: 'text-green-700',
       icon: <Circle className="w-3 h-3 fill-green-600 text-green-600" />
     };
     if (score >= 60) return {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-800',
+      bg: 'bg-pastel-yellow',
+      text: 'text-yellow-700',
       icon: <Hexagon className="w-3 h-3 fill-yellow-600 text-yellow-600" />
     };
     return {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
+      bg: 'bg-red-50',
+      text: 'text-red-700',
       icon: <Star className="w-3 h-3 fill-red-600 text-red-600" />
     };
   };
@@ -69,7 +69,7 @@ export default function CandidateCard({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <div className="neo-clay-card rounded-2xl p-5 transition-all duration-300">
       <div className="flex gap-3 mb-4">
         <div className="flex flex-col items-start gap-2 w-24 flex-shrink-0">
           <div className="relative mx-auto">
@@ -127,10 +127,10 @@ export default function CandidateCard({
             </div>
             <button
               onClick={() => onToggleFavorite(candidate.id)}
-              className={`p-1.5 rounded-full transition flex-shrink-0 ${
+              className={`p-1.5 rounded-full transition flex-shrink-0 neo-clay-button ${
                 isFavorite
-                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                  : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-red-600'
+                  ? 'text-red-600'
+                  : 'text-gray-400 hover:text-red-600'
               }`}
               title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             >
@@ -147,13 +147,13 @@ export default function CandidateCard({
               {candidate.skills.slice(0, 3).map((skill, idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 bg-blue-50 text-blue-900 text-xs font-medium rounded"
+                  className="px-2 py-0.5 soft-gradient-blue text-primary-700 text-xs font-medium rounded-lg"
                 >
                   {skill}
                 </span>
               ))}
               {candidate.skills.length > 3 && (
-                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded font-medium">
+                <span className="px-2 py-0.5 neo-clay-pressed text-gray-600 text-xs rounded-lg font-medium">
                   +{candidate.skills.length - 3} compétences
                 </span>
               )}
@@ -167,13 +167,13 @@ export default function CandidateCard({
           {scoreColor.icon} {score}% Compatible
         </span>
         {candidate.is_verified && (
-          <span className="px-2.5 py-1 bg-blue-50 text-blue-900 text-xs font-medium rounded-full">
+          <span className="px-2.5 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full">
             ✓ Vérifié
           </span>
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3">
+      <div className="soft-gradient-blue border border-blue-200/50 rounded-xl p-3 mb-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-gray-600 font-medium">Prix d'accès</span>
         </div>
@@ -184,7 +184,7 @@ export default function CandidateCard({
         <button
           onClick={handleDownload}
           disabled={downloading}
-          className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition flex items-center justify-center gap-1.5"
+          className="px-3 py-2 neo-clay-button text-gray-700 text-xs font-medium rounded-xl transition flex items-center justify-center gap-1.5"
           title="Aperçu"
         >
           <Download className="w-4 h-4" />
@@ -192,7 +192,7 @@ export default function CandidateCard({
         </button>
         <button
           onClick={() => onViewDetails(candidate.id)}
-          className="px-3 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5"
+          className="px-3 py-2 bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 text-white text-xs font-semibold rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
         >
           <MessageCircle className="w-4 h-4" />
           Ajouter

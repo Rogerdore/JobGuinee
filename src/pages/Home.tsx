@@ -184,7 +184,7 @@ export default function Home({ onNavigate }: HomeProps) {
               La première plateforme guinéenne de recrutement digital connectant talents et opportunités
             </p>
 
-            <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl p-4 md:p-6">
+            <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-4 md:p-6">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
                 <div className="md:col-span-5 relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -194,7 +194,7 @@ export default function Home({ onNavigate }: HomeProps) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#FF8C00] focus:outline-none text-gray-900 text-base"
+                    className="w-full pl-12 pr-4 py-4 rounded-xl neo-clay-input focus:outline-none text-gray-900 text-base"
                   />
                 </div>
 
@@ -206,7 +206,7 @@ export default function Home({ onNavigate }: HomeProps) {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#FF8C00] focus:outline-none text-gray-900 text-base"
+                    className="w-full pl-12 pr-4 py-4 rounded-xl neo-clay-input focus:outline-none text-gray-900 text-base"
                   />
                 </div>
 
@@ -254,7 +254,7 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent"></div>
       </section>
 
-      <section className="py-12 bg-white border-b border-gray-200">
+      <section className="py-12 border-b border-white/30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
@@ -285,7 +285,7 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16 bg-gray-50">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -301,7 +301,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 <button
                   key={category.name}
                   onClick={() => onNavigate('jobs')}
-                  className="group p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-[#FF8C00] hover:shadow-lg transition"
+                  className="group p-6 neo-clay-card rounded-2xl transition cursor-pointer"
                 >
                   <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>
                     <Icon className="w-7 h-7 text-white" />
@@ -315,7 +315,7 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16 bg-white">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <div>
@@ -343,7 +343,7 @@ export default function Home({ onNavigate }: HomeProps) {
               {recentJobs.slice(0, 6).map((job) => (
                 <div
                   key={job.id}
-                  className="group bg-white rounded-xl border border-gray-200 hover:shadow-xl hover:border-[#FF8C00] transition p-6 cursor-pointer"
+                  className="group neo-clay-card rounded-2xl transition p-6 cursor-pointer"
                   onClick={() => onNavigate('job-detail', job.id)}
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -366,12 +366,12 @@ export default function Home({ onNavigate }: HomeProps) {
 
                   <div className="flex flex-wrap gap-2 mb-4">
                     {job.contract_type && (
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                      <span className="px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full">
                         {job.contract_type}
                       </span>
                     )}
                     {job.sector && (
-                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                      <span className="px-3 py-1 neo-clay-pressed text-gray-700 text-xs font-medium rounded-full">
                         {job.sector}
                       </span>
                     )}
@@ -501,7 +501,7 @@ export default function Home({ onNavigate }: HomeProps) {
       </section>
 
       {featuredFormations.length > 0 && (
-        <section className="py-16 bg-white">
+        <section className="py-16">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -512,13 +512,13 @@ export default function Home({ onNavigate }: HomeProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {featuredFormations.map((formation) => (
-                <div key={formation.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-xl transition overflow-hidden group">
+                <div key={formation.id} className="neo-clay-card rounded-2xl transition overflow-hidden group cursor-pointer">
                   <div className="h-48 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center">
                     <BookOpen className="w-20 h-20 text-white opacity-50 group-hover:scale-110 transition" />
                   </div>
                   <div className="p-6">
                     {formation.category && (
-                      <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mb-3">
+                      <span className="inline-block px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full mb-3">
                         {formation.category}
                       </span>
                     )}
@@ -558,7 +558,7 @@ export default function Home({ onNavigate }: HomeProps) {
         </section>
       )}
 
-      <section className="py-16 bg-gray-50">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -569,7 +569,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {testimonials.map((testimonial) => (
-              <div key={testimonial.name} className="bg-white rounded-xl p-8 border border-gray-200 hover:shadow-lg transition">
+              <div key={testimonial.name} className="neo-clay-card rounded-2xl p-8 transition">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="text-4xl">{testimonial.avatar}</div>
                   <div>
