@@ -239,7 +239,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
               <div className="mt-4 text-sm text-gray-600 flex flex-wrap gap-2">
                 <span className="font-medium">Suggestions:</span>
-                {['Assistant RH', 'Chauffeur', 'Comptable', 'Technicien'].map((suggestion) => (
+                {['Assistant RH', 'Chauffeur', 'Comptable', 'Technicien', 'Ingénieur', 'Commercial', 'Logisticien', 'Secrétaire'].map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => setSearchQuery(suggestion)}
