@@ -151,20 +151,13 @@ export default function AnonymizedCandidateCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100 mb-4">
-        <div className="flex items-center gap-2">
-          {score > 0 && (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${scoreColor.bg} ${scoreColor.text}`}>
-              {scoreColor.icon} {score}% Compatible
-            </span>
-          )}
-          {candidate.is_verified && (
-            <span className="px-3 py-1 bg-blue-50 text-blue-900 text-xs font-medium rounded-full">
-              ✓ Vérifié
-            </span>
-          )}
+      {candidate.is_verified && (
+        <div className="flex items-center justify-start pt-4 border-t border-gray-100 mb-4">
+          <span className="px-3 py-1 bg-blue-50 text-blue-900 text-xs font-medium rounded-full">
+            ✓ Vérifié
+          </span>
         </div>
-      </div>
+      )}
 
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 mb-3">
         <div className="flex items-center justify-between">

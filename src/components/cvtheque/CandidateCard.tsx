@@ -162,16 +162,13 @@ export default function CandidateCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100 mb-3">
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${scoreColor.bg} ${scoreColor.text}`}>
-          {scoreColor.icon} {score}% Compatible
-        </span>
-        {candidate.is_verified && (
+      {candidate.is_verified && (
+        <div className="flex items-center justify-start pt-3 border-t border-gray-100 mb-3">
           <span className="px-2.5 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full">
             ✓ Vérifié
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="soft-gradient-blue border border-blue-200/50 rounded-xl p-3 mb-3">
         <div className="flex items-center justify-between mb-2">
