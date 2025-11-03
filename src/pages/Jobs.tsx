@@ -531,9 +531,8 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
               return (
                 <div
                   key={job.id}
-                  className="group bg-white rounded-2xl border-2 border-gray-200 hover:border-[#FF8C00] card-hover cursor-pointer relative overflow-hidden animate-slide-up"
+                  className="group bg-white rounded-2xl border-2 border-gray-200 hover:border-[#FF8C00] card-hover relative overflow-hidden animate-slide-up"
                   style={{ animationDelay: `${sortedJobs.indexOf(job) * 0.05}s` }}
-                  onClick={() => onNavigate('job-detail', job.id)}
                 >
                   <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF8C00]/5 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
