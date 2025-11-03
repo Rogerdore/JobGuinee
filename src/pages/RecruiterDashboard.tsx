@@ -15,6 +15,7 @@ import {
   FileText,
   TrendingUp,
   Settings,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -24,6 +25,7 @@ import JobPublishForm, { JobFormData } from '../components/recruiter/JobPublishF
 import PremiumPlans from '../components/recruiter/PremiumPlans';
 import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
+import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
@@ -41,6 +43,9 @@ interface Job {
   created_at: string;
   applications_count: number;
   views_count: number;
+  required_skills?: string[];
+  experience_level?: string;
+  education_level?: string;
 }
 
 interface Application {
@@ -78,6 +83,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [company, setCompany] = useState<any>(null);
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>('all');
   const [selectedJobAnalytics, setSelectedJobAnalytics] = useState<string>('all');
+  const [showMatchingModal, setShowMatchingModal] = useState(false);
+  const [selectedJobForMatching, setSelectedJobForMatching] = useState<Job | null>(null);
 
   useEffect(() => {
     loadData();
@@ -250,6 +257,24 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   };
 
+  const handleStartMatching = (job: Job) => {
+    setSelectedJobForMatching(job);
+    setShowMatchingModal(true);
+  };
+
+  const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
+    for (const score of scores) {
+      await supabase
+        .from('applications')
+        .update({
+          ai_score: score.score,
+          ai_category: score.category
+        })
+        .eq('id', score.id);
+    }
+    await loadData();
+  };
+
   const stats = {
     totalJobs: jobs.length,
     activeJobs: jobs.filter(j => j.status === 'published').length,
@@ -317,6 +342,32 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         <JobPublishForm
           onPublish={handlePublishJob}
           onClose={() => setShowJobForm(false)}
+        />
+      )}
+
+      {showMatchingModal && selectedJobForMatching && (
+        <AIMatchingModal
+          job={selectedJobForMatching}
+          applications={applications
+            .filter(app => app.job_id === selectedJobForMatching.id)
+            .map(app => ({
+              id: app.id,
+              ai_score: app.ai_score || 0,
+              ai_category: app.ai_category || 'medium',
+              candidate: {
+                full_name: app.candidate?.profile?.full_name || 'Candidat',
+                email: app.candidate?.profile?.email || '',
+                avatar_url: app.candidate?.profile?.avatar_url,
+              },
+              candidate_profile: {
+                title: app.candidate?.title,
+                experience_years: app.candidate?.experience_years,
+                education_level: app.candidate?.education_level,
+                skills: app.candidate?.skills,
+              },
+            }))}
+          onClose={() => setShowMatchingModal(false)}
+          onUpdateScores={handleUpdateScores}
         />
       )}
 
@@ -598,28 +649,41 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                      <div className="space-y-3 mb-4 relative z-10">
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTab('applications');
+                              setSelectedJobFilter(job.id);
+                            }}
+                          >
+                            <Users className="w-4 h-4" />
+                            <span>Candidatures</span>
+                          </button>
+                          <button
+                            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTab('analytics');
+                              setSelectedJobAnalytics(job.id);
+                            }}
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                            <span>Analyses</span>
+                          </button>
+                        </div>
                         <button
-                          className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                          className="w-full px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg group"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveTab('applications');
-                            setSelectedJobFilter(job.id);
+                            handleStartMatching(job);
                           }}
                         >
-                          <Users className="w-4 h-4" />
-                          <span>Candidatures</span>
-                        </button>
-                        <button
-                          className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTab('analytics');
-                            setSelectedJobAnalytics(job.id);
-                          }}
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                          <span>Analyses</span>
+                          <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          <Sparkles className="w-4 h-4 animate-pulse" />
+                          <span>Matching IA</span>
                         </button>
                       </div>
 
