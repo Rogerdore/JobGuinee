@@ -58,6 +58,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       candidatesList = data.map(candidate => ({
         ...candidate,
         ai_score: calculateAIScore(candidate),
+        profile_price: calculateProfilePrice(candidate.experience_years || 0),
       }));
     } else {
       candidatesList = sampleProfiles.map((profile, index) => ({
@@ -65,6 +66,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         profile_id: `sample_profile_${index}`,
         ...profile,
         ai_score: calculateAIScore(profile),
+        profile_price: calculateProfilePrice(profile.experience_years || 0),
         profile: {
           full_name: `Profil ${index + 1}`,
           email: `sample${index}@demo.com`,
@@ -111,6 +113,12 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     if (data) {
       setPurchasedProfiles(data.map(p => p.candidate_id));
     }
+  };
+
+  const calculateProfilePrice = (experienceYears: number) => {
+    if (experienceYears >= 6) return 15000;
+    if (experienceYears >= 3) return 8000;
+    return 4000;
   };
 
   const calculateAIScore = (candidate: any) => {
@@ -211,14 +219,25 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   const handleAddToCart = async (candidateId: string) => {
+    console.log('🛒 Adding to cart:', candidateId);
+    const candidate = candidates.find(c => c.id === candidateId);
+    console.log('Found candidate:', candidate);
+
     const { error } = await supabase.from('profile_cart').insert({
       user_id: profile?.id || null,
       session_id: profile?.id ? null : sessionId,
       candidate_id: candidateId,
     });
 
+    console.log('Insert result - error:', error);
+
     if (!error) {
       await loadCart();
+      const profileName = candidate?.title || 'Profil';
+      alert(`✅ ${profileName} a été ajouté au panier avec succès!\n\nCliquez sur l'icône panier en haut à droite pour finaliser votre achat.`);
+    } else {
+      console.error('Error adding to cart:', error);
+      alert(`❌ Erreur lors de l'ajout au panier: ${error.message}\n\nVeuillez réessayer.`);
     }
   };
 
@@ -238,11 +257,58 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   const handleViewDetails = (candidateId: string) => {
+    console.log('👁️ Viewing details for:', candidateId);
+    const candidate = candidates.find(c => c.id === candidateId);
     const isPurchased = purchasedProfiles.includes(candidateId);
+
+    console.log('Found candidate:', candidate);
+    console.log('Is purchased:', isPurchased);
+
+    if (!candidate) {
+      console.error('Candidate not found');
+      alert('❌ Erreur: Profil introuvable');
+      return;
+    }
+
     if (isPurchased) {
-      alert('🎉 Vous avez accès à ce profil complet !\n\nFonctionnalité de vue détaillée en développement.');
+      const fullInfo = `🎉 PROFIL COMPLET - ${candidate.profile?.full_name || 'Candidat'}
+
+📋 Poste: ${candidate.title || 'N/A'}
+📍 Localisation: ${candidate.location || 'N/A'}
+💼 Expérience: ${candidate.experience_years || 0} ans
+🎓 Formation: ${candidate.education_level || 'N/A'}
+
+📧 Email: ${candidate.profile?.email || 'N/A'}
+📱 Téléphone: [Disponible après achat]
+
+🔧 Compétences principales:
+${candidate.skills?.slice(0, 5).map(s => `• ${s}`).join('\n') || 'N/A'}
+
+${candidate.bio ? `📝 Bio:\n${candidate.bio}\n` : ''}
+💾 Téléchargez le CV complet depuis votre espace recruteur.`;
+      alert(fullInfo);
     } else {
-      alert('👁️ Aperçu du profil\n\nPour accéder aux informations complètes (coordonnées, CV, certifications), ajoutez ce profil à votre panier.');
+      const preview = `👁️ APERÇU DU PROFIL
+
+📋 Poste: ${candidate.title || 'Professionnel qualifié'}
+📍 Région: ${candidate.location?.split(',')[0] || 'Confidentielle'}
+💼 Expérience: ${candidate.experience_years || 0} ans
+🎓 Niveau: ${candidate.education_level || 'N/A'}
+
+🔧 Compétences (aperçu):
+${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
+
+🔒 INFORMATIONS COMPLÈTES DISPONIBLES APRÈS ACHAT:
+• Nom complet et coordonnées
+• CV téléchargeable
+• Certifications
+• Portfolio / références
+• Historique complet
+
+💰 Prix: ${new Intl.NumberFormat('fr-GN').format(candidate.profile_price || 0)} GNF
+
+➡️ Ajoutez ce profil au panier pour déverrouiller toutes les informations!`;
+      alert(preview);
     }
   };
 
