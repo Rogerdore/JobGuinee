@@ -750,7 +750,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
                     onChange={(e) => setFormData({ ...formData, receive_in_platform: e.target.checked })}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
-                  <span className="text-sm font-medium text-gray-700">Recevoir les candidatures directement dans mon espace JobVision</span>
+                  <span className="text-sm font-medium text-gray-700">Recevoir les candidatures directement dans mon espace recruteur</span>
                 </label>
               </div>
 
@@ -795,7 +795,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
                   Visibilité de l'annonce
                 </label>
                 <div className="space-y-2">
-                  {['Publique', 'Restreinte aux abonnés JobVision', 'Confidentielle (anonyme)'].map((option) => (
+                  {['Publique', 'Restreinte aux abonnés', 'Confidentielle (anonyme)'].map((option) => (
                     <label key={option} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
