@@ -1,4 +1,4 @@
-import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User } from 'lucide-react';
+import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User, Languages } from 'lucide-react';
 import { useState } from 'react';
 
 interface Candidate {
@@ -121,6 +121,12 @@ export default function AnonymizedCandidateCard({
             <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
               <GraduationCap className="w-4 h-4" />
               <span>{candidate.education_level}</span>
+            </div>
+          )}
+          {candidate.languages && candidate.languages.length > 0 && (
+            <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
+              <Languages className="w-4 h-4" />
+              <span>{candidate.languages.join(', ')}</span>
             </div>
           )}
         </div>
