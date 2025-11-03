@@ -452,7 +452,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Missions principales *
+                  Missions principales
                 </label>
                 <textarea
                   value={formData.responsibilities}
@@ -460,13 +460,12 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
-                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Profil recherché *
+                  Profil recherché
                 </label>
                 <textarea
                   value={formData.profile}
@@ -474,7 +473,6 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Indiquez le type de profil souhaité..."
-                  required
                 />
               </div>
 
