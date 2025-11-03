@@ -258,9 +258,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handleStartMatching = (job: Job) => {
+    if (!company) {
+      alert('Erreur: Profil entreprise non trouvé');
+      return;
+    }
     setSelectedJobForMatching(job);
     setShowMatchingModal(true);
   };
+
+  const isPremium = company?.subscription_tier === 'premium' || company?.subscription_tier === 'enterprise';
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
@@ -368,6 +374,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             }))}
           onClose={() => setShowMatchingModal(false)}
           onUpdateScores={handleUpdateScores}
+          isPremium={isPremium}
+          onUpgrade={() => {
+            setShowMatchingModal(false);
+            setActiveTab('premium');
+          }}
         />
       )}
 

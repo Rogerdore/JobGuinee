@@ -1,4 +1,4 @@
-import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check } from 'lucide-react';
+import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown } from 'lucide-react';
 import { useState } from 'react';
 
 interface AIMatchingModalProps {
@@ -28,6 +28,8 @@ interface AIMatchingModalProps {
   }>;
   onClose: () => void;
   onUpdateScores: (scores: Array<{ id: string; score: number; category: string }>) => void;
+  isPremium: boolean;
+  onUpgrade: () => void;
 }
 
 interface MatchingResult {
@@ -42,7 +44,7 @@ interface MatchingResult {
   recommendations: string[];
 }
 
-export default function AIMatchingModal({ job, applications, onClose, onUpdateScores }: AIMatchingModalProps) {
+export default function AIMatchingModal({ job, applications, onClose, onUpdateScores, isPremium, onUpgrade }: AIMatchingModalProps) {
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<MatchingResult[]>([]);
@@ -163,6 +165,10 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   };
 
   const startAnalysis = () => {
+    if (!isPremium) {
+      return;
+    }
+
     if (selectedCandidates.size === 0) {
       alert('Veuillez sélectionner au moins un candidat à analyser');
       return;
@@ -323,30 +329,90 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
               )}
 
               {applications.length > 0 && (
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-blue-900 text-lg mb-1">
-                        {selectedCandidates.size} candidat{selectedCandidates.size > 1 ? 's' : ''} sélectionné{selectedCandidates.size > 1 ? 's' : ''}
-                      </h4>
-                      <p className="text-sm text-blue-700">
-                        {selectedCandidates.size === 0
-                          ? 'Cochez les candidats que vous souhaitez analyser'
-                          : `Prêt à analyser ${selectedCandidates.size} profil${selectedCandidates.size > 1 ? 's' : ''}`}
-                      </p>
+                <div>
+                  {!isPremium && (
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-[#FF8C00] rounded-2xl p-6 mb-4">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-[#FF8C00] rounded-xl">
+                          <Crown className="w-8 h-8 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900 text-lg mb-2 flex items-center gap-2">
+                            <Lock className="w-5 h-5 text-[#FF8C00]" />
+                            Fonctionnalité Premium Requise
+                          </h4>
+                          <p className="text-gray-700 mb-4">
+                            L'analyse IA et le matching automatique des candidatures sont réservés aux membres Premium.
+                            Passez à Premium pour débloquer cette fonctionnalité puissante et bien plus encore.
+                          </p>
+                          <ul className="space-y-2 mb-4">
+                            <li className="flex items-center gap-2 text-sm text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              Scoring automatique IA des candidatures
+                            </li>
+                            <li className="flex items-center gap-2 text-sm text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              Analyses détaillées avec recommandations
+                            </li>
+                            <li className="flex items-center gap-2 text-sm text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              Accès à la CVthèque avec profils anonymisés
+                            </li>
+                            <li className="flex items-center gap-2 text-sm text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              Statistiques et analytics avancées
+                            </li>
+                          </ul>
+                          <button
+                            onClick={onUpgrade}
+                            className="px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                          >
+                            <Crown className="w-5 h-5" />
+                            Passer à Premium
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      onClick={startAnalysis}
-                      disabled={selectedCandidates.size === 0}
-                      className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
-                        selectedCandidates.size === 0
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white shadow-lg hover:shadow-xl'
-                      }`}
-                    >
-                      <Sparkles className="w-6 h-6" />
-                      Lancer l'analyse
-                    </button>
+                  )}
+
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-blue-900 text-lg mb-1">
+                          {selectedCandidates.size} candidat{selectedCandidates.size > 1 ? 's' : ''} sélectionné{selectedCandidates.size > 1 ? 's' : ''}
+                        </h4>
+                        <p className="text-sm text-blue-700">
+                          {selectedCandidates.size === 0
+                            ? 'Cochez les candidats que vous souhaitez analyser'
+                            : isPremium
+                            ? `Prêt à analyser ${selectedCandidates.size} profil${selectedCandidates.size > 1 ? 's' : ''}`
+                            : 'Passez à Premium pour lancer l\'analyse'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={isPremium ? startAnalysis : onUpgrade}
+                        disabled={!isPremium && selectedCandidates.size === 0}
+                        className={`px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all ${
+                          !isPremium
+                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed opacity-60'
+                            : selectedCandidates.size === 0
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white shadow-lg hover:shadow-xl'
+                        }`}
+                      >
+                        {!isPremium ? (
+                          <>
+                            <Lock className="w-6 h-6" />
+                            Premium Requis
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-6 h-6" />
+                            Lancer l'analyse
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
