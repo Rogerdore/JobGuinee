@@ -20,7 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import DashboardStats from '../components/recruiter/DashboardStats';
 import ApplicationCard from '../components/recruiter/ApplicationCard';
-import AIJobGenerator, { JobGenerationData } from '../components/recruiter/AIJobGenerator';
+import JobPublishForm, { JobFormData } from '../components/recruiter/JobPublishForm';
 import PremiumPlans from '../components/recruiter/PremiumPlans';
 import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
@@ -72,7 +72,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [applications, setApplications] = useState<Application[]>([]);
   const [workflowStages, setWorkflowStages] = useState<WorkflowStage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showJobForm, setShowJobForm] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [company, setCompany] = useState<any>(null);
@@ -157,70 +157,55 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     setLoading(false);
   };
 
-  const handleAIGenerate = async (data: JobGenerationData) => {
-    const generatedDescription = `
-# ${data.job_title}
-
-## Description du poste
-Nous recherchons un(e) ${data.job_title} talentueux(se) pour rejoindre notre équipe ${data.department ? `au sein du département ${data.department}` : ''}.
-
-## Missions principales
-- Assurer la ${data.job_title.toLowerCase()} conformément aux standards de qualité
-- Collaborer avec les équipes techniques et opérationnelles
-- Participer à l'amélioration continue des processus
-- Contribuer au développement et à l'innovation
-- Respecter les normes de sécurité et de qualité en vigueur
-
-## Profil recherché
-Nous recherchons un profil de niveau ${data.experience_level} avec :
-- Formation supérieure pertinente
-- Expérience significative dans un poste similaire
-- Excellentes capacités d'analyse et de résolution de problèmes
-- Autonomie et esprit d'équipe
-- Maîtrise des outils professionnels du secteur
-
-## Compétences techniques requises
-- Expertise technique dans le domaine
-- Capacité d'adaptation et d'apprentissage
-- Rigueur et sens de l'organisation
-- Communication efficace
-
-## Conditions
-- Type de contrat : ${data.contract_type}
-- Localisation : ${data.location}
-- Département : ${data.department || 'Non spécifié'}
-- Rémunération : Selon profil et expérience
-
-## Conformité légale
-Poste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).
-Nous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.
-
----
-Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
-    `.trim();
-
+  const handlePublishJob = async (data: JobFormData) => {
     if (!company?.id) {
       alert("Veuillez d'abord créer votre profil entreprise");
       return;
     }
 
+    let fullDescription = data.description;
+
+    if (data.responsibilities) {
+      fullDescription += `\n\n## Missions et responsabilités\n${data.responsibilities}`;
+    }
+
+    if (data.requirements) {
+      fullDescription += `\n\n## Profil et exigences\n${data.requirements}`;
+    }
+
+    if (data.skills.length > 0) {
+      fullDescription += `\n\n## Compétences requises\n${data.skills.join(', ')}`;
+    }
+
+    if (data.benefits) {
+      fullDescription += `\n\n## Avantages\n${data.benefits}`;
+    }
+
+    fullDescription += `\n\n## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
+
     const { error } = await supabase.from('jobs').insert({
       company_id: company.id,
-      title: data.job_title,
-      description: generatedDescription,
+      title: data.title,
+      description: fullDescription,
       location: data.location,
       contract_type: data.contract_type,
       department: data.department,
       experience_level: data.experience_level,
-      ai_generated: true,
-      status: 'draft',
+      education_level: data.education_level,
+      salary_min: data.salary_min,
+      salary_max: data.salary_max,
+      application_deadline: data.deadline,
+      required_skills: data.skills,
+      status: 'published',
     });
 
     if (!error) {
-      setShowAIGenerator(false);
+      setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
-      alert('✅ Offre générée avec succès ! Vous pouvez maintenant la modifier et la publier.');
+      alert('✅ Offre publiée avec succès !');
+    } else {
+      alert('❌ Erreur lors de la publication de l\'offre');
     }
   };
 
@@ -271,7 +256,7 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
     { id: 'applications', label: 'Candidatures', icon: Users, count: applications.length },
-    { id: 'ai-generator', label: 'Génération IA', icon: Wand2 },
+    { id: 'ai-generator', label: 'Publier une offre', icon: Plus },
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
     { id: 'premium', label: 'Premium', icon: Sparkles },
@@ -298,10 +283,10 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {showAIGenerator && (
-        <AIJobGenerator
-          onGenerate={handleAIGenerate}
-          onClose={() => setShowAIGenerator(false)}
+      {showJobForm && (
+        <JobPublishForm
+          onPublish={handlePublishJob}
+          onClose={() => setShowJobForm(false)}
         />
       )}
 
@@ -333,11 +318,11 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
               )}
             </div>
             <button
-              onClick={() => setShowAIGenerator(true)}
+              onClick={() => setShowJobForm(true)}
               className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
             >
-              <Wand2 className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
-              <span>Générer une offre IA</span>
+              <Plus className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
+              <span>Publier une offre</span>
             </button>
           </div>
         </div>
@@ -387,7 +372,7 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
                       <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                       <p className="text-gray-500">Aucun projet de recrutement</p>
                       <button
-                        onClick={() => setShowAIGenerator(true)}
+                        onClick={() => setShowJobForm(true)}
                         className="mt-4 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition"
                       >
                         Créer une offre
@@ -496,7 +481,7 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
                   Mes projets de recrutement ({jobs.length})
                 </h2>
                 <button
-                  onClick={() => setShowAIGenerator(true)}
+                  onClick={() => setShowJobForm(true)}
                   className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
@@ -514,10 +499,10 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
                     Commencez par créer votre première offre d'emploi
                   </p>
                   <button
-                    onClick={() => setShowAIGenerator(true)}
+                    onClick={() => setShowJobForm(true)}
                     className="px-8 py-4 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-bold rounded-xl transition shadow-lg"
                   >
-                    Créer une offre avec l'IA
+                    Créer une offre
                   </button>
                 </div>
               ) : (
@@ -755,12 +740,12 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
                 <div className="relative z-10">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl">
-                      <Wand2 className="w-12 h-12" />
+                      <Briefcase className="w-12 h-12" />
                     </div>
                     <div>
-                      <h2 className="text-4xl font-bold mb-2">Générateur IA d'offres d'emploi</h2>
+                      <h2 className="text-4xl font-bold mb-2">Publication d'offres d'emploi</h2>
                       <p className="text-blue-100 text-lg">
-                        Créez des annonces professionnelles et conformes en quelques secondes
+                        Créez et publiez vos offres de recrutement
                       </p>
                     </div>
                   </div>
@@ -768,37 +753,37 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
               </div>
 
               <div className="bg-white rounded-2xl border-2 border-gray-200 p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Comment ça marche ?</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Comment publier une offre ?</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border-2 border-blue-200">
                     <div className="w-16 h-16 bg-[#0E2F56] text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold shadow-lg">
                       1
                     </div>
-                    <h4 className="font-bold text-gray-900 mb-2 text-lg">Renseignez les infos</h4>
-                    <p className="text-sm text-gray-600">Poste, localisation, expérience requise</p>
+                    <h4 className="font-bold text-gray-900 mb-2 text-lg">Remplissez le formulaire</h4>
+                    <p className="text-sm text-gray-600">Poste, localisation, salaire, compétences</p>
                   </div>
                   <div className="text-center p-8 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border-2 border-orange-200">
                     <div className="w-16 h-16 bg-[#FF8C00] text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold shadow-lg">
                       2
                     </div>
-                    <h4 className="font-bold text-gray-900 mb-2 text-lg">L'IA génère l'offre</h4>
-                    <p className="text-sm text-gray-600">Description, missions, profil, compétences</p>
+                    <h4 className="font-bold text-gray-900 mb-2 text-lg">Vérifiez les détails</h4>
+                    <p className="text-sm text-gray-600">Assurez-vous que tout est correct</p>
                   </div>
                   <div className="text-center p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border-2 border-green-200">
                     <div className="w-16 h-16 bg-green-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold shadow-lg">
                       3
                     </div>
                     <h4 className="font-bold text-gray-900 mb-2 text-lg">Publiez</h4>
-                    <p className="text-sm text-gray-600">Modifiez si besoin et lancez le recrutement</p>
+                    <p className="text-sm text-gray-600">Votre offre est visible immédiatement</p>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => setShowAIGenerator(true)}
+                  onClick={() => setShowJobForm(true)}
                   className="w-full py-5 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-bold text-lg rounded-2xl transition shadow-2xl flex items-center justify-center gap-3"
                 >
-                  <Wand2 className="w-7 h-7" />
-                  Lancer le générateur IA
+                  <Plus className="w-7 h-7" />
+                  Publier une offre
                 </button>
               </div>
             </div>
