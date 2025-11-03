@@ -1,4 +1,4 @@
-import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye } from 'lucide-react';
+import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User } from 'lucide-react';
 import { useState } from 'react';
 
 interface Candidate {
@@ -33,15 +33,39 @@ export default function AnonymizedCandidateCard({
   isPurchased = false,
 }: AnonymizedCandidateCardProps) {
   const getExperienceLevel = (years: number) => {
-    if (years >= 6) return { label: 'Senior', color: 'bg-blue-100 text-blue-900', badge: '🔷' };
-    if (years >= 3) return { label: 'Intermédiaire', color: 'bg-green-100 text-green-900', badge: '🟢' };
-    return { label: 'Junior', color: 'bg-orange-100 text-orange-900', badge: '🟠' };
+    if (years >= 6) return {
+      label: 'Senior',
+      color: 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900 border border-blue-300',
+      icon: <Star className="w-3.5 h-3.5 fill-blue-600 text-blue-600" />
+    };
+    if (years >= 3) return {
+      label: 'Intermédiaire',
+      color: 'bg-gradient-to-r from-green-100 to-green-200 text-green-900 border border-green-300',
+      icon: <Hexagon className="w-3.5 h-3.5 fill-green-600 text-green-600" />
+    };
+    return {
+      label: 'Junior',
+      color: 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-900 border border-orange-300',
+      icon: <Circle className="w-3.5 h-3.5 fill-orange-600 text-orange-600" />
+    };
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return { bg: 'bg-green-100', text: 'text-green-800', badge: '🟢' };
-    if (score >= 60) return { bg: 'bg-yellow-100', text: 'text-yellow-800', badge: '🟡' };
-    return { bg: 'bg-red-100', text: 'text-red-800', badge: '🔴' };
+    if (score >= 80) return {
+      bg: 'bg-green-100',
+      text: 'text-green-800',
+      icon: <Circle className="w-3 h-3 fill-green-600 text-green-600" />
+    };
+    if (score >= 60) return {
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
+      icon: <Hexagon className="w-3 h-3 fill-yellow-600 text-yellow-600" />
+    };
+    return {
+      bg: 'bg-red-100',
+      text: 'text-red-800',
+      icon: <Star className="w-3 h-3 fill-red-600 text-red-600" />
+    };
   };
 
   const level = getExperienceLevel(candidate.experience_years || 0);
@@ -61,8 +85,8 @@ export default function AnonymizedCandidateCard({
     <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       <div className="flex items-start gap-4 mb-4">
         <div className="relative flex-shrink-0">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-            <span className="text-3xl">👤</span>
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center shadow-lg">
+            <User className="w-10 h-10 text-white" strokeWidth={2} />
           </div>
           {candidate.is_verified && (
             <div className="absolute -bottom-1 -right-1 bg-blue-900 rounded-full p-1">
@@ -77,8 +101,8 @@ export default function AnonymizedCandidateCard({
               <h3 className="font-bold text-lg text-gray-900 mb-1">
                 {candidate.title || 'Professionnel qualifié'}
               </h3>
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${level.color}`}>
-                {level.badge} {level.label}
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${level.color}`}>
+                {level.icon} {level.label}
               </span>
             </div>
           </div>
@@ -130,8 +154,8 @@ export default function AnonymizedCandidateCard({
       <div className="flex items-center justify-between pt-4 border-t border-gray-100 mb-4">
         <div className="flex items-center gap-2">
           {score > 0 && (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${scoreColor.bg} ${scoreColor.text}`}>
-              {scoreColor.badge} {score}% Compatible
+            <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${scoreColor.bg} ${scoreColor.text}`}>
+              {scoreColor.icon} {score}% Compatible
             </span>
           )}
           {candidate.is_verified && (
@@ -142,16 +166,16 @@ export default function AnonymizedCandidateCard({
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 mb-3">
+      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 mb-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-600 mb-1">Prix d'accès au profil complet</p>
-            <p className="text-2xl font-bold text-blue-900">
+            <p className="text-xs text-gray-600 mb-0.5">Prix d'accès</p>
+            <p className="text-lg font-bold text-blue-900">
               {formatPrice(candidate.profile_price)} GNF
             </p>
           </div>
           {isPurchased && (
-            <div className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+            <div className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
               ✓ Acheté
             </div>
           )}

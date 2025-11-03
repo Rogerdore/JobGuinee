@@ -24,6 +24,7 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { sampleFormations, formationCategories } from '../utils/sampleFormationsData';
 
 interface Formation {
   id: string;
@@ -101,7 +102,11 @@ export default function Formations({ onNavigate }: FormationsProps) {
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
-    if (data) setFormations(data);
+    if (data && data.length > 0) {
+      setFormations(data);
+    } else {
+      setFormations(sampleFormations as any);
+    }
     setLoading(false);
   };
 
@@ -279,17 +284,26 @@ export default function Formations({ onNavigate }: FormationsProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredFormations.map((formation) => (
+              {filteredFormations.map((formation, index) => (
                 <div
                   key={formation.id}
-                  className="bg-white rounded-xl border border-gray-200 hover:shadow-2xl hover:border-[#0E2F56] transition-all overflow-hidden group"
+                  className="bg-white rounded-xl border-2 border-gray-200 card-hover overflow-hidden group animate-slide-up relative"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
+                  <div className="absolute top-4 right-4 z-10">
+                    {formation.rating && (
+                      <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                        <span className="font-bold text-gray-900">{formation.rating}</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="relative h-48 overflow-hidden">
-                    {formation.thumbnail_url ? (
+                    {formation.image ? (
                       <img
-                        src={formation.thumbnail_url}
+                        src={formation.image}
                         alt={formation.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-[#0E2F56] to-blue-700 flex items-center justify-center">

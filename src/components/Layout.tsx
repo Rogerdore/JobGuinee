@@ -1,6 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationCenter } from './notifications/NotificationCenter';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,9 +10,10 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,6 +25,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const navigation = [
@@ -43,8 +54,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'neo-clay backdrop-blur-md'
+          : 'neo-clay backdrop-blur-sm'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -64,10 +79,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   <button
                     key={item.page}
                     onClick={() => onNavigate(item.page)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 ${
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-2 ${
                       currentPage === item.page
-                        ? 'bg-blue-50 text-blue-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'neo-clay-pressed text-primary-700'
+                        : 'text-gray-700 hover:neo-clay'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -78,11 +93,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
+              {user && <NotificationCenter />}
               {user ? (
                 <div className="relative" ref={accountMenuRef}>
                   <button
                     onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition"
                   >
                     <User className="w-4 h-4" />
                     <span>{profile?.full_name || 'Mon compte'}</span>
@@ -90,30 +106,48 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
 
                   {accountMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-64 neo-clay-card rounded-2xl py-2 z-50">
                       <div className="px-4 py-3 border-b border-gray-200">
                         <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
                         <p className="text-xs text-gray-500">{profile?.email}</p>
-                        <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                          {profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
+                        <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full soft-gradient-blue text-primary-700">
+                          {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
-                          setAccountMenuOpen(false);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition"
-                      >
-                        <LayoutDashboard className="w-4 h-4" />
-                        <div>
-                          <p className="font-medium">
-                            {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
-                          </p>
-                          <p className="text-xs text-gray-500">Tableau de bord et profil</p>
-                        </div>
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            onNavigate('cms-admin');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">Administration CMS</p>
+                            <p className="text-xs text-gray-500">Gestion du contenu du site</p>
+                          </div>
+                        </button>
+                      )}
+
+                      {profile?.user_type !== 'admin' && (
+                        <button
+                          onClick={() => {
+                            onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                        >
+                          <LayoutDashboard className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">
+                              {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
+                            </p>
+                            <p className="text-xs text-gray-500">Tableau de bord et profil</p>
+                          </div>
+                        </button>
+                      )}
 
                       <div className="border-t border-gray-200 my-2"></div>
 
@@ -122,7 +156,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                           handleSignOut();
                           setAccountMenuOpen(false);
                         }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 transition"
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50/50 transition rounded-lg mx-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span className="font-medium">Déconnexion</span>
@@ -140,7 +174,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
                   <button
                     onClick={() => onNavigate('signup')}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-900 hover:bg-blue-800 rounded-lg transition"
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 rounded-xl transition shadow-lg"
                   >
                     Inscription
                   </button>
@@ -151,7 +185,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div className="md:hidden flex items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                className="p-2 rounded-xl neo-clay-button text-gray-600"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -160,7 +194,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
+          <div className="md:hidden border-t border-white/50 neo-clay">
             <div className="px-4 py-3 space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
@@ -171,10 +205,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       onNavigate(item.page);
                       setMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left ${
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left ${
                       currentPage === item.page
-                        ? 'bg-blue-50 text-blue-900'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? 'neo-clay-pressed text-primary-700'
+                        : 'text-gray-700 hover:neo-clay'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -185,10 +219,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
               {user ? (
                 <>
-                  <div className="px-4 py-3 bg-gray-50 rounded-lg mb-2">
+                  <div className="px-4 py-3 neo-clay-pressed rounded-xl mb-2">
                     <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
                     <p className="text-xs text-gray-500">{profile?.email}</p>
-                    <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full soft-gradient-blue text-primary-700">
                       {profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
                     </span>
                   </div>
@@ -198,7 +232,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left bg-blue-50 text-blue-900 hover:bg-blue-100"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left neo-clay-pressed text-primary-700 hover:shadow-md transition"
                   >
                     <LayoutDashboard className="w-5 h-5" />
                     <div>
@@ -216,7 +250,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       handleSignOut();
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-red-600 hover:bg-red-50"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50/50 transition"
                   >
                     <LogOut className="w-5 h-5" />
                     <span className="font-medium">Déconnexion</span>
@@ -229,7 +263,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       onNavigate('login');
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full px-4 py-3 text-left font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="w-full px-4 py-3 text-left font-medium text-gray-700 neo-clay-button rounded-xl"
                   >
                     Connexion
                   </button>
@@ -238,7 +272,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       onNavigate('signup');
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full px-4 py-3 text-left font-medium text-white bg-blue-900 hover:bg-blue-800 rounded-lg"
+                    className="w-full px-4 py-3 text-left font-medium text-white bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 rounded-xl shadow-lg transition"
                   >
                     Inscription
                   </button>
@@ -249,7 +283,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         )}
       </nav>
 
-      <main className="w-full">
+      <main className="w-full pt-16">
         {children}
       </main>
 

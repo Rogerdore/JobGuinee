@@ -1,3 +1,221 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50;
+  }
+}
+
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(255, 140, 0, 0.6);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .neo-clay {
+    background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+    backdrop-filter: blur(10px);
+    box-shadow:
+      8px 8px 16px rgba(163, 177, 198, 0.2),
+      -8px -8px 16px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .neo-clay:hover {
+    box-shadow:
+      12px 12px 24px rgba(163, 177, 198, 0.3),
+      -12px -12px 24px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+  }
+
+  .neo-clay-pressed {
+    background: linear-gradient(145deg, rgba(255,255,255,0.7), rgba(255,255,255,0.9));
+    backdrop-filter: blur(10px);
+    box-shadow:
+      inset 4px 4px 8px rgba(163, 177, 198, 0.3),
+      inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .neo-clay-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+    backdrop-filter: blur(20px);
+    box-shadow:
+      10px 10px 20px rgba(163, 177, 198, 0.15),
+      -10px -10px 20px rgba(255, 255, 255, 0.7),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .neo-clay-card:hover {
+    box-shadow:
+      15px 15px 30px rgba(163, 177, 198, 0.2),
+      -15px -15px 30px rgba(255, 255, 255, 0.8),
+      inset 1px 1px 3px rgba(255, 255, 255, 0.9);
+    transform: translateY(-4px);
+  }
+
+  .neo-clay-button {
+    background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+    backdrop-filter: blur(10px);
+    box-shadow:
+      6px 6px 12px rgba(163, 177, 198, 0.2),
+      -6px -6px 12px rgba(255, 255, 255, 0.8),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .neo-clay-button:hover {
+    box-shadow:
+      8px 8px 16px rgba(163, 177, 198, 0.25),
+      -8px -8px 16px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 3px rgba(255, 255, 255, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .neo-clay-button:active {
+    box-shadow:
+      inset 3px 3px 6px rgba(163, 177, 198, 0.3),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.7);
+    transform: translateY(0);
+  }
+
+  .neo-clay-input {
+    background: linear-gradient(145deg, rgba(255,255,255,0.6), rgba(255,255,255,0.8));
+    backdrop-filter: blur(10px);
+    box-shadow:
+      inset 4px 4px 8px rgba(163, 177, 198, 0.2),
+      inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+  }
+
+  .neo-clay-input:focus {
+    box-shadow:
+      inset 4px 4px 8px rgba(163, 177, 198, 0.25),
+      inset -4px -4px 8px rgba(255, 255, 255, 0.6),
+      0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  .soft-gradient-blue {
+    background: linear-gradient(135deg, #e0f2fe 0%, #ddd6fe 100%);
+  }
+
+  .soft-gradient-purple {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+  }
+
+  .soft-gradient-orange {
+    background: linear-gradient(135deg, #fed7aa 0%, #fecaca 100%);
+  }
+
+  .soft-gradient-green {
+    background: linear-gradient(135deg, #d1fae5 0%, #dbeafe 100%);
+  }
+
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .gradient-border {
+    position: relative;
+    background: white;
+    border-radius: 1rem;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    padding: 2px;
+    background: linear-gradient(135deg, #0E2F56, #FF8C00);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
