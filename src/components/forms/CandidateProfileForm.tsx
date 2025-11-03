@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { AlertCircle, CheckCircle2, HelpCircle, Save } from 'lucide-react';
 import {
   Input,
   Select,
@@ -14,7 +15,24 @@ import {
 } from './FormComponents';
 
 export default function CandidateProfileForm() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem('candidateProfileDraft');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return getInitialFormData();
+      }
+    }
+    return getInitialFormData();
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  function getInitialFormData() {
+    return {
     fullName: '',
     email: '',
     phone: '',
@@ -40,17 +58,106 @@ export default function CandidateProfileForm() {
     professionalGoal: '',
     acceptTerms: false,
     certifyAccuracy: false,
-  });
+    };
+  }
+
+  const calculateProgress = () => {
+    const fields = [
+      formData.fullName,
+      formData.email,
+      formData.phone,
+      formData.birthDate,
+      formData.gender,
+      formData.address,
+      formData.region,
+      formData.professionalStatus,
+      formData.availability,
+      formData.professionalSummary,
+      formData.skills.length > 0,
+      formData.languages.length > 0,
+      formData.englishLevel,
+      formData.experiences.length > 0,
+      formData.formations.length > 0,
+    ];
+    const completed = fields.filter(Boolean).length;
+    return Math.round((completed / fields.length) * 100);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAutoSaving(true);
+      localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
+      setLastSaved(new Date());
+      setTimeout(() => setAutoSaving(false), 1000);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData]);
+
+  const validateField = (fieldName: string, value: any): string => {
+    switch (fieldName) {
+      case 'email':
+        if (!value) return 'L\'adresse email est obligatoire';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          return 'Veuillez saisir un email valide';
+        }
+        return '';
+      case 'phone':
+        if (!value) return 'Le numéro de téléphone est obligatoire';
+        if (!/^\+?[0-9\s]{8,}$/.test(value)) {
+          return 'Veuillez saisir un numéro de téléphone valide';
+        }
+        return '';
+      case 'fullName':
+        if (!value || value.trim().length < 3) {
+          return 'Le nom complet doit contenir au moins 3 caractères';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const updateField = (fieldName: string, value: any) => {
+    setFormData({ ...formData, [fieldName]: value });
+    const error = validateField(fieldName, value);
+    setErrors({ ...errors, [fieldName]: error });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const newErrors: Record<string, string> = {};
+    if (!formData.fullName) newErrors.fullName = 'Ce champ est obligatoire';
+    if (!formData.email) newErrors.email = 'Ce champ est obligatoire';
+    if (!formData.phone) newErrors.phone = 'Ce champ est obligatoire';
+    if (!formData.acceptTerms) newErrors.acceptTerms = 'Vous devez accepter les conditions';
+    if (!formData.certifyAccuracy) newErrors.certifyAccuracy = 'Vous devez certifier l\'exactitude';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      alert('Veuillez corriger les erreurs dans le formulaire');
+      return;
+    }
+
     console.log('Form submitted:', formData);
+    localStorage.removeItem('candidateProfileDraft');
     alert('Profil enregistré avec succès !');
+  };
+
+  const clearDraft = () => {
+    if (confirm('Voulez-vous vraiment effacer le brouillon ?')) {
+      localStorage.removeItem('candidateProfileDraft');
+      setFormData(getInitialFormData());
+      setErrors({});
+    }
   };
 
   const handleAIAnalysis = () => {
     alert('Analyse IA du profil en cours... Cette fonctionnalité sera disponible prochainement.');
   };
+
+  const progress = calculateProgress();
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
@@ -61,25 +168,68 @@ export default function CandidateProfileForm() {
         </p>
       </div>
 
+      {/* Progress Bar */}
+      <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">Profil complété</span>
+          <div className="flex items-center gap-3">
+            {autoSaving && (
+              <span className="text-xs text-green-600 flex items-center gap-1">
+                <Save className="w-3 h-3 animate-pulse" />
+                Sauvegarde...
+              </span>
+            )}
+            {lastSaved && !autoSaving && (
+              <span className="text-xs text-gray-500">
+                Sauvegardé à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <span className="text-sm font-bold text-[#0E2F56]">{progress}%</span>
+          </div>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div
+            className="bg-gradient-to-r from-[#0E2F56] to-blue-500 h-3 rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={clearDraft}
+          className="mt-3 text-xs text-gray-500 hover:text-red-600 underline"
+        >
+          Effacer le brouillon
+        </button>
+      </div>
+
       <FormSection title="1️⃣ Informations personnelles">
         <Input
           label="Nom complet"
           placeholder="Ex : Fatoumata Camara"
           value={formData.fullName}
-          onChange={(value) => setFormData({ ...formData, fullName: value })}
+          onChange={(value) => updateField('fullName', value)}
+          error={errors.fullName}
+          helpText="Saisissez votre nom et prénom complets tels qu'ils apparaissent sur vos documents officiels"
+          required
         />
         <Input
           label="Adresse email"
           type="email"
           placeholder="Ex : fatou.camara@gmail.com"
           value={formData.email}
-          onChange={(value) => setFormData({ ...formData, email: value })}
+          onChange={(value) => updateField('email', value)}
+          error={errors.email}
+          helpText="Utilisez une adresse email professionnelle que vous consultez régulièrement"
+          required
         />
         <Input
           label="Numéro de téléphone"
           placeholder="Ex : +224 620 00 00 00"
           value={formData.phone}
-          onChange={(value) => setFormData({ ...formData, phone: value })}
+          onChange={(value) => updateField('phone', value)}
+          error={errors.phone}
+          helpText="Incluez l'indicatif pays pour faciliter le contact international"
+          required
         />
         <DatePicker
           label="Date de naissance"
@@ -141,6 +291,7 @@ export default function CandidateProfileForm() {
           value={formData.professionalSummary}
           onChange={(value) => setFormData({ ...formData, professionalSummary: value })}
           rows={5}
+          helpText="Exemple : 'Professionnel RH avec 5 ans d'expérience dans le recrutement et la gestion du personnel, spécialisé dans le secteur minier. Passionné par le développement des talents et la mise en place de politiques RH innovantes.'"
         />
       </FormSection>
 
@@ -204,10 +355,12 @@ export default function CandidateProfileForm() {
         <Upload
           label="CV principal (PDF ou Word)"
           onChange={(file) => setFormData({ ...formData, cv: file })}
+          helpText="Téléchargez votre CV le plus récent. Formats acceptés : PDF, Word (max 5 Mo)"
         />
         <Upload
           label="Certificats / Attestations (optionnel)"
           onChange={(file) => setFormData({ ...formData, certificates: file })}
+          helpText="Ajoutez vos diplômes, certificats de formation ou attestations de travail"
         />
         <Checkbox
           label="Je souhaite que mon profil soit visible dans la CVThèque JobGuinée"
@@ -233,6 +386,7 @@ export default function CandidateProfileForm() {
           placeholder="Décrivez le type d'emploi ou secteur que vous recherchez..."
           value={formData.professionalGoal}
           onChange={(value) => setFormData({ ...formData, professionalGoal: value })}
+          helpText="Exemple : 'Je recherche un poste de responsable RH dans une entreprise internationale basée à Conakry, avec des opportunités d'évolution et de formation continue.'"
         />
       </FormSection>
 

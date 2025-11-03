@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Upload as UploadIcon } from 'lucide-react';
+import { X, Plus, Upload as UploadIcon, AlertCircle, HelpCircle } from 'lucide-react';
 
 interface InputProps {
   label: string;
@@ -7,19 +7,51 @@ interface InputProps {
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
+  error?: string;
+  helpText?: string;
+  required?: boolean;
 }
 
-export function Input({ label, type = 'text', placeholder, value, onChange }: InputProps) {
+export function Input({ label, type = 'text', placeholder, value, onChange, error, helpText, required }: InputProps) {
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-gray-700">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        {helpText && (
+          <button
+            type="button"
+            onMouseEnter={() => setShowHelp(true)}
+            onMouseLeave={() => setShowHelp(false)}
+            className="text-gray-400 hover:text-gray-600 transition relative"
+          >
+            <HelpCircle className="w-4 h-4" />
+            {showHelp && (
+              <div className="absolute right-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-10">
+                {helpText}
+              </div>
+            )}
+          </button>
+        )}
+      </div>
       <input
         type={type}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
+        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition ${
+          error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+        }`}
       />
+      {error && (
+        <div className="flex items-center gap-1 text-red-600 text-sm">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -95,19 +127,51 @@ interface TextareaProps {
   value?: string;
   onChange?: (value: string) => void;
   rows?: number;
+  error?: string;
+  helpText?: string;
+  required?: boolean;
 }
 
-export function Textarea({ label, placeholder, value, onChange, rows = 4 }: TextareaProps) {
+export function Textarea({ label, placeholder, value, onChange, rows = 4, error, helpText, required }: TextareaProps) {
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-gray-700">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        {helpText && (
+          <button
+            type="button"
+            onMouseEnter={() => setShowHelp(true)}
+            onMouseLeave={() => setShowHelp(false)}
+            className="text-gray-400 hover:text-gray-600 transition relative"
+          >
+            <HelpCircle className="w-4 h-4" />
+            {showHelp && (
+              <div className="absolute right-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-10">
+                {helpText}
+              </div>
+            )}
+          </button>
+        )}
+      </div>
       <textarea
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         rows={rows}
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition resize-none"
+        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition resize-none ${
+          error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+        }`}
       />
+      {error && (
+        <div className="flex items-center gap-1 text-red-600 text-sm">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -135,10 +199,14 @@ export function DatePicker({ label, value, onChange }: DatePickerProps) {
 interface UploadProps {
   label: string;
   onChange?: (file: File | null) => void;
+  accept?: string;
+  error?: string;
+  helpText?: string;
 }
 
-export function Upload({ label, onChange }: UploadProps) {
+export function Upload({ label, onChange, accept = '.pdf,.docx,.doc,.jpg,.jpeg,.png', error, helpText }: UploadProps) {
   const [fileName, setFileName] = useState<string>('');
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -148,17 +216,37 @@ export function Upload({ label, onChange }: UploadProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        {helpText && (
+          <button
+            type="button"
+            onMouseEnter={() => setShowHelp(true)}
+            onMouseLeave={() => setShowHelp(false)}
+            className="text-gray-400 hover:text-gray-600 transition relative"
+          >
+            <HelpCircle className="w-4 h-4" />
+            {showHelp && (
+              <div className="absolute right-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-10">
+                {helpText}
+              </div>
+            )}
+          </button>
+        )}
+      </div>
       <div className="relative">
         <input
           type="file"
+          accept={accept}
           onChange={handleFileChange}
           className="hidden"
           id={`upload-${label}`}
         />
         <label
           htmlFor={`upload-${label}`}
-          className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0E2F56] hover:bg-gray-50 cursor-pointer transition"
+          className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition ${
+            error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-[#0E2F56] hover:bg-gray-50'
+          }`}
         >
           <UploadIcon className="w-5 h-5 text-gray-500" />
           <span className="text-sm text-gray-600">
@@ -166,6 +254,13 @@ export function Upload({ label, onChange }: UploadProps) {
           </span>
         </label>
       </div>
+      {error && (
+        <div className="flex items-center gap-1 text-red-600 text-sm">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+      <p className="text-xs text-gray-500">Formats acceptés: PDF, Word, JPG, PNG</p>
     </div>
   );
 }
