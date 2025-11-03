@@ -76,6 +76,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [company, setCompany] = useState<any>(null);
+  const [selectedJobFilter, setSelectedJobFilter] = useState<string>('all');
+  const [selectedJobAnalytics, setSelectedJobAnalytics] = useState<string>('all');
 
   useEffect(() => {
     loadData();
@@ -240,22 +242,30 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
     avgTimeToHire: 14,
   };
 
+
+  const filteredApplications = applications.filter(app => {
+    const categoryMatch = filterCategory === 'all' || app.ai_category === filterCategory;
+    const jobMatch = selectedJobFilter === 'all' || app.job_id === selectedJobFilter;
+    return categoryMatch && jobMatch;
+  });
+
+  const selectedJob = jobs.find(j => j.id === selectedJobAnalytics);
+  const jobApplications = selectedJobAnalytics === 'all'
+    ? applications
+    : applications.filter(app => app.job_id === selectedJobAnalytics);
+
   const analyticsData = {
     totalJobs: jobs.length,
     activeJobs: jobs.filter(j => j.status === 'published').length,
-    totalApplications: applications.length,
-    strongProfiles: applications.filter(a => a.ai_category === 'strong').length,
-    mediumProfiles: applications.filter(a => a.ai_category === 'medium').length,
-    weakProfiles: applications.filter(a => a.ai_category === 'weak').length,
+    totalApplications: jobApplications.length,
+    strongProfiles: jobApplications.filter(a => a.ai_category === 'strong').length,
+    mediumProfiles: jobApplications.filter(a => a.ai_category === 'medium').length,
+    weakProfiles: jobApplications.filter(a => a.ai_category === 'weak').length,
     avgTimeToHire: 14,
-    avgAIScore: applications.length > 0
-      ? Math.round(applications.reduce((acc, app) => acc + (app.ai_score || 0), 0) / applications.length)
+    avgAIScore: jobApplications.length > 0
+      ? Math.round(jobApplications.reduce((acc, app) => acc + (app.ai_score || 0), 0) / jobApplications.length)
       : 0,
   };
-
-  const filteredApplications = filterCategory === 'all'
-    ? applications
-    : applications.filter(app => app.ai_category === filterCategory);
 
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -596,9 +606,24 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl font-bold text-gray-900">
-                  Candidatures reçues ({applications.length})
+                  Candidatures reçues ({filteredApplications.length})
                 </h2>
                 <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
+                    <Briefcase className="w-5 h-5 text-gray-500" />
+                    <select
+                      value={selectedJobFilter}
+                      onChange={(e) => setSelectedJobFilter(e.target.value)}
+                      className="border-none focus:ring-0 text-sm font-medium"
+                    >
+                      <option value="all">Tous les projets</option>
+                      {jobs.map(job => (
+                        <option key={job.id} value={job.id}>
+                          {job.title} ({applications.filter(app => app.job_id === job.id).length})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
                     <Filter className="w-5 h-5 text-gray-500" />
                     <select
@@ -792,7 +817,54 @@ Pour postuler, merci d'envoyer votre CV et lettre de motivation via JobGuinée.
             </div>
           )}
 
-          {activeTab === 'analytics' && <AnalyticsDashboard data={analyticsData} />}
+          {activeTab === 'analytics' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Analyses et statistiques
+                </h2>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
+                  <Briefcase className="w-5 h-5 text-gray-500" />
+                  <select
+                    value={selectedJobAnalytics}
+                    onChange={(e) => setSelectedJobAnalytics(e.target.value)}
+                    className="border-none focus:ring-0 text-sm font-medium"
+                  >
+                    <option value="all">Tous les projets</option>
+                    {jobs.map(job => (
+                      <option key={job.id} value={job.id}>
+                        {job.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {selectedJobAnalytics !== 'all' && selectedJob && (
+                <div className="bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white p-6 rounded-2xl mb-6 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold mb-2">{selectedJob.title}</h3>
+                      <p className="text-blue-200 flex items-center">
+                        <FileText className="w-4 h-4 mr-2" />
+                        {selectedJob.location} • {selectedJob.contract_type}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-center px-4">
+                        <div className="text-3xl font-bold">{jobApplications.length}</div>
+                        <div className="text-sm text-blue-200">Candidatures</div>
+                      </div>
+                      <div className="text-center px-4">
+                        <div className="text-3xl font-bold">{selectedJob.views_count || 0}</div>
+                        <div className="text-sm text-blue-200">Vues</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <AnalyticsDashboard data={analyticsData} />
+            </div>
+          )}
 
           {activeTab === 'premium' && <PremiumPlans />}
         </div>
