@@ -3,6 +3,7 @@ import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye,
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
+import AdminLayout from '../components/AdminLayout';
 
 interface CMSAdminProps {
   onNavigate: (page: string) => void;
@@ -115,29 +116,13 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   }
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <button
-            onClick={() => onNavigate('home')}
-            className="text-primary-600 hover:text-primary-700 mb-4 flex items-center gap-2"
-          >
-            ← Retour à l'accueil
-          </button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
-              <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
-            </div>
-            <div className="neo-clay-card px-4 py-2 rounded-xl">
-              <p className="text-sm text-gray-600">Connecté en tant que</p>
-              <p className="font-semibold text-gray-900">{profile?.full_name}</p>
-              <span className="inline-block mt-1 px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
-                Administrateur
-              </span>
-            </div>
+    <AdminLayout onNavigate={onNavigate}>
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
+            <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
           </div>
-        </div>
 
         <div className="neo-clay-card rounded-2xl overflow-hidden">
           <div className="border-b border-gray-200">
@@ -279,7 +264,8 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
             )}
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
