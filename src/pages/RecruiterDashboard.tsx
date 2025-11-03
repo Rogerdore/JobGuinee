@@ -598,6 +598,31 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                        <button
+                          className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTab('applications');
+                            setSelectedJobFilter(job.id);
+                          }}
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>Candidatures</span>
+                        </button>
+                        <button
+                          className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTab('analytics');
+                            setSelectedJobAnalytics(job.id);
+                          }}
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                          <span>Analyses</span>
+                        </button>
+                      </div>
+
                       <button
                         className="w-full px-4 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-semibold rounded-xl transition-all duration-300 relative z-10 group"
                         onClick={(e) => {
@@ -606,7 +631,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         }}
                       >
                         <span className="flex items-center justify-center">
-                          Gérer le projet
+                          Voir les détails
                           <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                         </span>
                       </button>
