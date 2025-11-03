@@ -51,6 +51,10 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
+  console.log('AIMatchingModal - isPremium:', isPremium);
+  console.log('AIMatchingModal - applications count:', applications.length);
+  console.log('AIMatchingModal - job:', job);
+
   const toggleCandidate = (id: string) => {
     const newSelected = new Set(selectedCandidates);
     if (newSelected.has(id)) {
@@ -165,7 +169,11 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   };
 
   const startAnalysis = () => {
+    console.log('startAnalysis called - isPremium:', isPremium);
+    console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
+
     if (!isPremium) {
+      console.log('Not premium - blocking analysis');
       return;
     }
 
@@ -174,33 +182,42 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
       return;
     }
 
+    console.log('Starting analysis...');
     setAnalyzing(true);
     setResults([]);
     setCurrentIndex(0);
+    setShowResults(false);
 
     const selectedApps = applications.filter(app => selectedCandidates.has(app.id));
+    console.log('Selected apps for analysis:', selectedApps.length);
 
+    let currentIdx = 0;
     const interval = setInterval(() => {
-      setCurrentIndex(prev => {
-        if (prev >= selectedApps.length - 1) {
-          clearInterval(interval);
-          setAnalyzing(false);
-          return prev;
-        }
-        return prev + 1;
-      });
+      currentIdx++;
+      setCurrentIndex(currentIdx);
+
+      if (currentIdx >= selectedApps.length) {
+        clearInterval(interval);
+        console.log('Progress animation complete');
+      }
     }, 800);
 
     const analysisResults = selectedApps.map(analyzeProfile);
+    console.log('Analysis results:', analysisResults);
 
     setTimeout(() => {
+      console.log('Showing results...');
       setResults(analysisResults);
       setShowResults(true);
+      setAnalyzing(false);
+
       const scores = analysisResults.map(r => ({
         id: r.applicationId,
         score: r.newScore,
         category: r.category,
       }));
+
+      console.log('Updating scores:', scores);
       onUpdateScores(scores);
     }, selectedApps.length * 800 + 500);
   };

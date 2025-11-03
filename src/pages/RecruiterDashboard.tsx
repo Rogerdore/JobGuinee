@@ -102,6 +102,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       .maybeSingle();
 
     if (companyData) {
+      console.log('Company loaded:', companyData);
+      console.log('Subscription tier:', companyData.subscription_tier);
       setCompany(companyData);
 
       const { data: stagesData } = await supabase
@@ -268,6 +270,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const isPremium = Boolean(company?.subscription_tier === 'premium' || company?.subscription_tier === 'enterprise');
+
+  console.log('RecruiterDashboard - company:', company);
+  console.log('RecruiterDashboard - isPremium:', isPremium);
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
