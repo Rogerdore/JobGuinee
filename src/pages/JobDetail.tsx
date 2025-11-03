@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
+import { sampleJobs } from '../utils/sampleJobsData';
 
 interface JobDetailProps {
   jobId: string;
@@ -30,7 +31,22 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
       .eq('id', jobId)
       .maybeSingle();
 
-    if (data) setJob(data as any);
+    if (data) {
+      setJob(data as any);
+    } else if (jobId.startsWith('sample-')) {
+      const sampleJob = sampleJobs.find(j => j.id === jobId);
+      if (sampleJob) {
+        setJob({
+          ...sampleJob,
+          sector: sampleJob.department,
+          companies: {
+            id: sampleJob.company_id,
+            company_name: sampleJob.company_name,
+            logo_url: sampleJob.company_logo,
+          }
+        } as any);
+      }
+    }
     setLoading(false);
   };
 
