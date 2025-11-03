@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
+import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 
 interface HomeProps {
@@ -79,7 +80,11 @@ export default function Home({ onNavigate }: HomeProps) {
       setRecentJobs(transformedSampleJobs as any);
     }
 
-    if (formationsData.data) setFeaturedFormations(formationsData.data);
+    if (formationsData.data && formationsData.data.length > 0) {
+      setFeaturedFormations(formationsData.data);
+    } else {
+      setFeaturedFormations(sampleFormations.slice(0, 3) as any);
+    }
 
     setStats({
       jobs: jobsCount.count || sampleJobs.length,
@@ -502,63 +507,96 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {featuredFormations.length > 0 && (
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Formations & Coaching
-              </h2>
-              <p className="text-lg text-gray-600">Développez vos compétences et boostez votre carrière</p>
+      <section className="py-16 bg-gradient-to-br from-blue-50 via-white to-orange-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#0E2F56]/10 to-[#FF8C00]/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+              <BookOpen className="w-4 h-4 text-[#FF8C00]" />
+              <span className="text-sm font-semibold text-gray-700">Formations à la une</span>
             </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Développez vos compétences
+            </h2>
+            <p className="text-lg text-gray-600">Formations professionnelles pour booster votre carrière</p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredFormations.map((formation) => (
-                <div key={formation.id} className="neo-clay-card rounded-2xl transition overflow-hidden group cursor-pointer">
-                  <div className="h-48 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center">
-                    <BookOpen className="w-20 h-20 text-white opacity-50 group-hover:scale-110 transition" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {featuredFormations.slice(0, 3).map((formation: any) => (
+              <div
+                key={formation.id}
+                className="neo-clay-card rounded-2xl transition overflow-hidden group cursor-pointer hover:shadow-2xl"
+                onClick={() => onNavigate('formations')}
+              >
+                <div className="h-48 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+                  <BookOpen className="w-20 h-20 text-white opacity-70 group-hover:scale-110 transition-transform duration-300 relative z-10" />
+                  <div className="absolute top-4 right-4 bg-[#FF8C00] text-white px-3 py-1 rounded-full text-xs font-semibold">
+                    Populaire
                   </div>
-                  <div className="p-6">
-                    {formation.category && (
-                      <span className="inline-block px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full mb-3">
-                        {formation.category}
-                      </span>
+                </div>
+                <div className="p-6">
+                  {formation.category && (
+                    <span className="inline-block px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full mb-3">
+                      {formation.category}
+                    </span>
+                  )}
+                  <h3 className="font-bold text-xl text-gray-900 mb-3 line-clamp-2 group-hover:text-[#0E2F56] transition">
+                    {formation.title}
+                  </h3>
+
+                  <div className="space-y-2 mb-4">
+                    {formation.duration && (
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{formation.duration}</span>
+                      </div>
                     )}
-                    <h3 className="font-bold text-xl text-gray-900 mb-3">{formation.title}</h3>
                     {formation.duration_hours && (
-                      <div className="flex items-center space-x-2 text-gray-600 mb-4">
-                        <Clock className="w-4 h-4" />
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Clock className="w-4 h-4 text-gray-400" />
                         <span className="text-sm">{formation.duration_hours} heures</span>
                       </div>
                     )}
+                    {formation.level && (
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Target className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{formation.level}</span>
+                      </div>
+                    )}
+                    {formation.students && (
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{formation.students} participants</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between">
                       <div className="text-2xl font-bold text-[#FF8C00]">
                         {formation.price.toLocaleString()} GNF
                       </div>
-                      <button
-                        onClick={() => onNavigate('formations')}
-                        className="px-4 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition"
-                      >
-                        Découvrir
+                      <button className="px-4 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition group-hover:shadow-lg">
+                        Voir détails
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="text-center mt-8">
-              <button
-                onClick={() => onNavigate('formations')}
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition"
-              >
-                <span>Voir toutes les formations</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+              </div>
+            ))}
           </div>
-        </section>
-      )}
+
+          <div className="text-center mt-12">
+            <button
+              onClick={() => onNavigate('formations')}
+              className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-[#e67e00] hover:from-[#e67e00] hover:to-[#d67500] text-white font-semibold rounded-xl transition shadow-lg hover:shadow-xl"
+            >
+              <span>Découvrir toutes les formations</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </section>
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
