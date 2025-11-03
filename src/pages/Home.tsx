@@ -412,7 +412,13 @@ export default function Home({ onNavigate }: HomeProps) {
                       <Clock className="w-4 h-4" />
                       <span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
-                    <button className="text-[#FF8C00] font-semibold group-hover:underline">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate('job-detail', job.id);
+                      }}
+                      className="text-[#FF8C00] font-semibold group-hover:underline"
+                    >
                       Voir l'offre →
                     </button>
                   </div>
