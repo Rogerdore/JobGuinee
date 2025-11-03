@@ -161,7 +161,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
           </div>
 
           <div className="p-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
               {job.contract_type && (
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -218,6 +218,23 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                   </div>
                 </div>
               </div>
+
+              {job.deadline && (
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Date limite</div>
+                    <div className="font-semibold text-gray-900 text-sm">
+                      {new Date(job.deadline).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short'
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-gray-200 pt-8 mb-8">
