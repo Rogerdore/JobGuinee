@@ -43,9 +43,10 @@ interface Job {
   created_at: string;
   applications_count: number;
   views_count: number;
-  required_skills?: string[];
+  keywords?: string[];
   experience_level?: string;
   education_level?: string;
+  requirements?: string;
 }
 
 interface Application {
@@ -101,6 +102,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       .maybeSingle();
 
     if (companyData) {
+      console.log('Company loaded:', companyData);
+      console.log('Subscription tier:', companyData.subscription_tier);
       setCompany(companyData);
 
       const { data: stagesData } = await supabase
@@ -266,7 +269,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     setShowMatchingModal(true);
   };
 
-  const isPremium = company?.subscription_tier === 'premium' || company?.subscription_tier === 'enterprise';
+  const isPremium = Boolean(company?.subscription_tier === 'premium' || company?.subscription_tier === 'enterprise');
+
+  console.log('RecruiterDashboard - company:', company);
+  console.log('RecruiterDashboard - isPremium:', isPremium);
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
@@ -353,7 +359,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
       {showMatchingModal && selectedJobForMatching && (
         <AIMatchingModal
-          job={selectedJobForMatching}
+          job={{
+            id: selectedJobForMatching.id,
+            title: selectedJobForMatching.title,
+            description: selectedJobForMatching.description || '',
+            required_skills: selectedJobForMatching.keywords || [],
+            experience_level: selectedJobForMatching.experience_level || '',
+            education_level: selectedJobForMatching.education_level || '',
+          }}
           applications={applications
             .filter(app => app.job_id === selectedJobForMatching.id)
             .map(app => ({
