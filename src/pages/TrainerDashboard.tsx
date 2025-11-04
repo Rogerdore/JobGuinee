@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase, TrainerProfile } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import TrainerProfileForm from '../components/forms/TrainerProfileForm';
 
 interface TrainerDashboardProps {
   onNavigate: (page: string) => void;
@@ -357,109 +358,11 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
 
             {activeTab === 'profile' && (
               <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Mon Profil Formateur</h3>
                 {trainerProfile ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Nom de l'Organisation
-                        </label>
-                        <input
-                          type="text"
-                          value={trainerProfile.organization_name || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Nom de votre organisation"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Type d'Organisation
-                        </label>
-                        <select
-                          value={trainerProfile.organization_type}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="individual">Indépendant</option>
-                          <option value="company">Entreprise</option>
-                          <option value="institute">Institut</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Années d'Expérience
-                        </label>
-                        <input
-                          type="number"
-                          value={trainerProfile.experience_years}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Tarif Horaire (GNF)
-                        </label>
-                        <input
-                          type="number"
-                          value={trainerProfile.hourly_rate || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Votre tarif horaire"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Biographie
-                      </label>
-                      <textarea
-                        value={trainerProfile.bio || ''}
-                        rows={4}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Parlez de votre expertise et de votre expérience..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Spécialisations
-                      </label>
-                      <input
-                        type="text"
-                        value={trainerProfile.specializations.join(', ')}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Ex: Développement Web, Marketing Digital, Management"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Séparez les spécialisations par des virgules</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Site Web
-                        </label>
-                        <input
-                          type="url"
-                          value={trainerProfile.website || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="https://votresite.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          LinkedIn
-                        </label>
-                        <input
-                          type="url"
-                          value={trainerProfile.linkedin_url || ''}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="https://linkedin.com/in/votreprofil"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <button className="px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium">
-                        Enregistrer les Modifications
-                      </button>
-                    </div>
-                  </div>
+                  <TrainerProfileForm
+                    trainerProfile={trainerProfile}
+                    onUpdate={loadTrainerData}
+                  />
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     <Award className="w-16 h-16 mx-auto mb-4 text-gray-300" />
