@@ -599,13 +599,20 @@ export default function Home({ onNavigate }: HomeProps) {
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
             <button
               onClick={() => onNavigate('formations')}
               className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-[#e67e00] hover:from-[#e67e00] hover:to-[#d67500] text-white font-semibold rounded-xl transition shadow-lg hover:shadow-xl"
             >
               <span>Découvrir toutes les formations</span>
               <ArrowRight className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => onNavigate('formations')}
+              className="inline-flex items-center space-x-2 px-8 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg hover:shadow-xl border-2 border-[#0E2F56]"
+            >
+              <Award className="w-5 h-5" />
+              <span>Devenir formateur/coach</span>
             </button>
           </div>
         </div>
