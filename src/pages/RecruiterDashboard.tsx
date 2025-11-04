@@ -26,6 +26,7 @@ import PremiumPlans from '../components/recruiter/PremiumPlans';
 import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
+import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
@@ -69,7 +70,7 @@ interface WorkflowStage {
   stage_color: string;
 }
 
-type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'premium';
+type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'premium' | 'profile';
 
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { profile } = useAuth();
@@ -90,6 +91,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   useEffect(() => {
     loadData();
   }, [profile?.id]);
+
+  useEffect(() => {
+    if (profile && !loading && profile.user_type === 'recruiter') {
+      if (!profile.profile_completed && activeTab !== 'profile') {
+        setActiveTab('profile');
+      }
+    }
+  }, [profile, loading]);
 
   const loadData = async () => {
     if (!profile?.id) return;
@@ -338,6 +347,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
     { id: 'premium', label: 'Premium', icon: Sparkles },
+    { id: 'profile', label: 'Mon Profil', icon: Settings },
   ];
 
   if (loading) {
@@ -448,6 +458,28 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
+        {profile && !profile.profile_completed && (
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-[#FF8C00] p-6 rounded-lg shadow-lg mt-6 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#FF8C00] bg-opacity-20 rounded-full flex items-center justify-center">
+                <Settings className="w-6 h-6 text-[#FF8C00]" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900 text-lg mb-1">Complétez votre profil</h3>
+                <p className="text-gray-700">
+                  Pour profiter pleinement de toutes les fonctionnalités, veuillez compléter vos informations personnelles et celles de votre entreprise.
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className="px-6 py-3 bg-[#FF8C00] text-white rounded-lg font-semibold hover:bg-orange-600 transition whitespace-nowrap"
+              >
+                Compléter maintenant
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-2xl mt-6 mb-6 overflow-hidden border-2 border-gray-100">
           <div className="flex overflow-x-auto border-b border-gray-200">
             {tabs.map((tab) => {
@@ -1010,6 +1042,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           )}
 
           {activeTab === 'premium' && <PremiumPlans />}
+
+          {activeTab === 'profile' && <RecruiterProfileForm />}
         </div>
       </div>
     </div>
