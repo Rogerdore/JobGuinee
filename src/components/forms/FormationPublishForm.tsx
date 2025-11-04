@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, X, Plus, Monitor, Users, Building2 } from 'lucide-react';
+import { Save, X, Plus, Monitor, Users, Building2, Upload, Image as ImageIcon, Video } from 'lucide-react';
 import { supabase, TrainerProfile } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -20,6 +20,11 @@ export default function FormationPublishForm({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState<'individual' | 'company' | 'institute'>('individual');
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
 
   const [commonData, setCommonData] = useState({
     title: '',
@@ -105,6 +110,14 @@ export default function FormationPublishForm({
         const orgType = (data as any).organization_type || 'individual';
         setSelectedOrgType(orgType);
 
+        if (data.thumbnail_url) {
+          setCoverImagePreview(data.thumbnail_url);
+        }
+
+        if ((data as any).media_urls && Array.isArray((data as any).media_urls)) {
+          setMediaUrls((data as any).media_urls);
+        }
+
         if (orgType === 'individual') {
           setIndividualData({
             individual_location: data.individual_location || '',
@@ -136,14 +149,82 @@ export default function FormationPublishForm({
     }
   };
 
+  const uploadCoverImage = async (): Promise<string | null> => {
+    if (!coverImage || !user) return null;
+
+    try {
+      const fileExt = coverImage.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('formation-covers')
+        .upload(fileName, coverImage);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('formation-covers')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading cover:', error);
+      return null;
+    }
+  };
+
+  const uploadMediaFiles = async (): Promise<string[]> => {
+    if (mediaFiles.length === 0 || !user) return [];
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of mediaFiles) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('formation-media')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from('formation-media')
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(data.publicUrl);
+      }
+
+      return uploadedUrls;
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      return [];
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setUploadingMedia(true);
     setMessage('');
 
     try {
+      let thumbnailUrl = commonData.thumbnail_url;
+      if (coverImage) {
+        const uploadedCover = await uploadCoverImage();
+        if (uploadedCover) {
+          thumbnailUrl = uploadedCover;
+        }
+      }
+
+      const uploadedMedia = await uploadMediaFiles();
+      const allMediaUrls = [...mediaUrls, ...uploadedMedia];
+
       let formationData: any = {
         ...commonData,
+        thumbnail_url: thumbnailUrl,
+        media_urls: allMediaUrls,
         trainer_id: trainerProfile.id,
         provider: trainerProfile.organization_name || 'Non défini',
         organization_type: selectedOrgType
@@ -156,6 +237,8 @@ export default function FormationPublishForm({
       } else if (selectedOrgType === 'institute') {
         formationData = { ...formationData, ...instituteData };
       }
+
+      setUploadingMedia(false);
 
       if (formationId) {
         const { error } = await supabase
@@ -198,6 +281,43 @@ export default function FormationPublishForm({
   const handleTrainerTeamChange = (value: string) => {
     const team = value.split('\n').filter(t => t.trim());
     setCompanyData({ ...companyData, company_trainer_team: team });
+  };
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        setCoverImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setCoverImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Veuillez sélectionner une image');
+      }
+    }
+  };
+
+  const handleMediaFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file =>
+      file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+
+    if (validFiles.length !== files.length) {
+      alert('Seules les images et vidéos sont acceptées');
+    }
+
+    setMediaFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const removeMediaFile = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeMediaUrl = (index: number) => {
+    setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -506,6 +626,125 @@ export default function FormationPublishForm({
             )}
           </div>
 
+          <div className="space-y-6 pt-6 border-t">
+            <h3 className="text-lg font-bold text-gray-900">Médias de la Formation</h3>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Image de Couverture *
+              </label>
+              <div className="space-y-4">
+                {coverImagePreview && (
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200">
+                    <img
+                      src={coverImagePreview}
+                      alt="Couverture"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverImage(null);
+                        setCoverImagePreview('');
+                      }}
+                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <ImageIcon className="w-10 h-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Cliquez pour uploader</span> l'image de couverture
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG ou JPEG</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Images et Vidéos Supplémentaires
+              </label>
+              <div className="space-y-4">
+                {(mediaUrls.length > 0 || mediaFiles.length > 0) && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {mediaUrls.map((url, index) => (
+                      <div key={`url-${index}`} className="relative group">
+                        {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                          <video
+                            src={url}
+                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                          />
+                        ) : (
+                          <img
+                            src={url}
+                            alt={`Media ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeMediaUrl(index)}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {mediaFiles.map((file, index) => (
+                      <div key={`file-${index}`} className="relative group">
+                        {file.type.startsWith('video/') ? (
+                          <div className="w-full h-32 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                            <Video className="w-8 h-8 text-gray-400" />
+                          </div>
+                        ) : (
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeMediaFile(index)}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Cliquez pour ajouter</span> des médias
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Images ou vidéos</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={handleMediaFilesChange}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
           {selectedOrgType === 'individual' && (
             <div className="space-y-6 pt-6 border-t">
               <h3 className="text-lg font-bold text-gray-900">Informations Formateur Indépendant</h3>
@@ -740,11 +979,11 @@ export default function FormationPublishForm({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploadingMedia}
               className="flex items-center gap-2 px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium disabled:bg-gray-400"
             >
               <Save className="w-5 h-5" />
-              {loading ? 'Enregistrement...' : formationId ? 'Mettre à jour' : 'Publier'}
+              {uploadingMedia ? 'Upload en cours...' : loading ? 'Enregistrement...' : formationId ? 'Mettre à jour' : 'Publier'}
             </button>
           </div>
         </form>
