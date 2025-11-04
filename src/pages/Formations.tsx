@@ -23,12 +23,14 @@ import {
   ChevronDown,
   X
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, TrainerProfile } from '../lib/supabase';
 import { sampleFormations, formationCategories } from '../utils/sampleFormationsData';
 import FormationDetailsModal from '../components/formations/FormationDetailsModal';
 import EnrollmentModal from '../components/formations/EnrollmentModal';
 import CoachingBookingModal from '../components/formations/CoachingBookingModal';
 import TrainerApplicationModal from '../components/formations/TrainerApplicationModal';
+import FormationPublishForm from '../components/forms/FormationPublishForm';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Formation {
   id: string;
@@ -88,6 +90,7 @@ const coachingServices = [
 ];
 
 export default function Formations({ onNavigate }: FormationsProps) {
+  const { user, profile } = useAuth();
   const [formations, setFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,10 +103,32 @@ export default function Formations({ onNavigate }: FormationsProps) {
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [showTrainerModal, setShowTrainerModal] = useState(false);
+  const [showFormationPublishForm, setShowFormationPublishForm] = useState(false);
+  const [trainerProfile, setTrainerProfile] = useState<TrainerProfile | null>(null);
 
   useEffect(() => {
     loadFormations();
   }, []);
+
+  useEffect(() => {
+    if (user && profile?.user_type === 'trainer') {
+      loadTrainerProfile();
+    }
+  }, [user, profile]);
+
+  const loadTrainerProfile = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('trainer_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      setTrainerProfile(data);
+    }
+  };
 
   const loadFormations = async () => {
     const { data } = await supabase
@@ -233,7 +258,13 @@ export default function Formations({ onNavigate }: FormationsProps) {
               </p>
             </div>
             <button
-              onClick={() => setShowTrainerModal(true)}
+              onClick={() => {
+                if (user && profile?.user_type === 'trainer' && trainerProfile) {
+                  setShowFormationPublishForm(true);
+                } else {
+                  setShowTrainerModal(true);
+                }
+              }}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 whitespace-nowrap"
             >
               <Award className="w-5 h-5" />
@@ -546,6 +577,17 @@ export default function Formations({ onNavigate }: FormationsProps) {
         <TrainerApplicationModal
           onClose={() => setShowTrainerModal(false)}
           onSuccess={() => {}}
+        />
+      )}
+
+      {showFormationPublishForm && trainerProfile && (
+        <FormationPublishForm
+          trainerProfile={trainerProfile}
+          onClose={() => setShowFormationPublishForm(false)}
+          onSuccess={() => {
+            loadFormations();
+            setShowFormationPublishForm(false);
+          }}
         />
       )}
     </div>
