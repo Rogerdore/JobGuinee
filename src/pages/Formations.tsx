@@ -245,25 +245,25 @@ export default function Formations({ onNavigate }: FormationsProps) {
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Explorer par Domaine</h2>
           <p className="text-gray-600 mb-8">Trouvez rapidement les formations qui correspondent à vos objectifs</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="flex flex-wrap gap-3">
             {categories.map((category) => {
               const Icon = category.icon;
               return (
                 <button
                   key={category.name}
                   onClick={() => setSelectedCategory(category.name)}
-                  className={`p-6 rounded-xl border-2 transition hover:shadow-lg ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition hover:shadow-md ${
                     selectedCategory === category.name
                       ? 'border-[#0E2F56] bg-blue-50'
                       : 'border-gray-200 bg-white hover:border-[#0E2F56]'
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-lg ${category.color} flex items-center justify-center mb-3 mx-auto`}>
-                    <Icon className="w-6 h-6" />
+                  <div className={`w-8 h-8 rounded-md ${category.color} flex items-center justify-center flex-shrink-0`}>
+                    <Icon className="w-4 h-4" />
                   </div>
-                  <div className="text-sm font-semibold text-gray-900 text-center">
+                  <span className="text-sm font-semibold text-gray-900">
                     {category.name}
-                  </div>
+                  </span>
                 </button>
               );
             })}
