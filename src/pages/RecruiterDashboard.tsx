@@ -1041,7 +1041,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             </div>
           )}
 
-          {activeTab === 'premium' && <PremiumPlans />}
+          {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
           {activeTab === 'profile' && <RecruiterProfileForm />}
         </div>

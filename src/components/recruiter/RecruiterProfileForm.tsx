@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { calculateRecruiterCompletion, getCompletionStatus, getMissingRecruiterFields } from '../../utils/profileCompletion';
 import {
   User,
   Building2,
@@ -17,7 +18,8 @@ import {
   CheckCircle,
   Loader,
   Image as ImageIcon,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 
 interface RecruiterProfileFormProps {
@@ -30,6 +32,7 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
 
   const [profileData, setProfileData] = useState({
     full_name: '',
@@ -68,6 +71,11 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
   useEffect(() => {
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    const percentage = calculateRecruiterCompletion(profileData, companyData);
+    setCompletionPercentage(percentage);
+  }, [profileData, companyData]);
 
   const loadData = async () => {
     if (!user) return;
@@ -141,6 +149,7 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
           linkedin_url: profileData.linkedin_url,
           avatar_url: profileData.avatar_url,
           profile_completed: true,
+          profile_completion_percentage: completionPercentage,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -251,12 +260,54 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
     );
   }
 
+  const completionStatus = getCompletionStatus(completionPercentage);
+  const missingFields = getMissingRecruiterFields(profileData, companyData);
+
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-[#0E2F56] rounded-2xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Mon Profil Recruteur</h1>
         <p className="text-blue-100">Complétez votre profil pour maximiser votre visibilité auprès des candidats</p>
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Complétion du profil</span>
+            <span className="text-2xl font-bold">{completionPercentage}%</span>
+          </div>
+          <div className="w-full bg-white bg-opacity-20 rounded-full h-4 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                completionPercentage < 50 ? 'bg-red-500' :
+                completionPercentage < 80 ? 'bg-orange-500' :
+                completionPercentage < 100 ? 'bg-blue-400' :
+                'bg-green-500'
+              }`}
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-blue-200 mt-2">{completionStatus.message}</p>
+        </div>
       </div>
+
+      {completionPercentage < 80 && missingFields.length > 0 && (
+        <div className={`${completionStatus.bgColor} border ${completionStatus.borderColor} rounded-xl p-6`}>
+          <div className="flex items-start gap-3">
+            <AlertCircle className={`w-6 h-6 ${completionStatus.color} flex-shrink-0 mt-1`} />
+            <div className="flex-1">
+              <h3 className={`font-bold text-lg mb-2 ${completionStatus.color}`}>
+                Champs requis pour atteindre 80% (nécessaire pour Premium)
+              </h3>
+              <ul className="space-y-1">
+                {missingFields.map((field, index) => (
+                  <li key={index} className={`text-sm ${completionStatus.color}`}>
+                    • {field}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div className={`p-4 rounded-lg flex items-center gap-3 ${
