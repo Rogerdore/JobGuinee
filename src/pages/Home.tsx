@@ -307,7 +307,11 @@ export default function Home({ onNavigate }: HomeProps) {
               return (
                 <button
                   key={category.name}
-                  onClick={() => onNavigate('jobs')}
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.set('sector', category.name);
+                    onNavigate('jobs', params.toString());
+                  }}
                   className="group p-6 neo-clay-card rounded-2xl transition cursor-pointer"
                 >
                   <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>

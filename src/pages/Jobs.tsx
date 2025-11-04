@@ -65,6 +65,16 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     if (user) loadSavedJobs();
   }, [user]);
 
+  useEffect(() => {
+    if (initialSearch) {
+      const params = new URLSearchParams(initialSearch);
+      const sectorParam = params.get('sector');
+      if (sectorParam) {
+        setSector(sectorParam);
+      }
+    }
+  }, [initialSearch]);
+
   const loadStats = async () => {
     const { count: jobsCount } = await supabase
       .from('jobs')
