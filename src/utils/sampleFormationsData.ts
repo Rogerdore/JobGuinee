@@ -10,7 +10,7 @@ export const sampleFormations = [
     price: 2500000,
     instructor: 'Dr. Mamadou Sow',
     instructor_bio: '15 ans d\'expérience en GRH, Ancien DRH de grandes entreprises minières',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
+    image: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800',
     rating: 4.8,
     students: 156,
     modules: [
@@ -41,7 +41,7 @@ export const sampleFormations = [
     price: 3500000,
     instructor: 'Fatoumata Diallo',
     instructor_bio: 'Coach Certifiée ICF, Executive Coach pour cadres dirigeants',
-    image: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800',
+    image: 'https://images.pexels.com/photos/5257268/pexels-photo-5257268.jpeg?auto=compress&cs=tinysrgb&w=800',
     rating: 4.9,
     students: 89,
     modules: [
@@ -72,7 +72,7 @@ export const sampleFormations = [
     price: 1800000,
     instructor: 'Ibrahima Konaté',
     instructor_bio: 'Ingénieur HSE Senior, 12 ans dans le secteur minier',
-    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800',
+    image: 'https://images.pexels.com/photos/3862130/pexels-photo-3862130.jpeg?auto=compress&cs=tinysrgb&w=800',
     rating: 4.7,
     students: 203,
     modules: [
@@ -103,7 +103,7 @@ export const sampleFormations = [
     price: 4000000,
     instructor: 'Alpha Condé',
     instructor_bio: 'Lead Developer, Formateur tech avec +100 développeurs formés',
-    image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',
+    image: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800',
     rating: 4.9,
     students: 127,
     modules: [
@@ -134,7 +134,7 @@ export const sampleFormations = [
     price: 2000000,
     instructor: 'Hadja Bah',
     instructor_bio: 'Digital Strategist, Consultante pour PME et startups',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
+    image: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=800',
     rating: 4.6,
     students: 245,
     modules: [
@@ -165,7 +165,7 @@ export const sampleFormations = [
     price: 3000000,
     instructor: 'Mohamed Keita',
     instructor_bio: 'PMP, PMI-ACP, 20+ ans en gestion de projets complexes',
-    image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800',
+    image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
     rating: 4.8,
     students: 98,
     modules: [
