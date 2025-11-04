@@ -22,6 +22,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [loading, setLoading] = useState(true);
   const [formations, setFormations] = useState<Formation[]>([]);
   const [isPremium, setIsPremium] = useState(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -168,56 +169,158 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       title: 'Analyse IA de profil',
       description: 'Score CV vs offre + suggestions formations',
       price: 'Inclus',
-      color: 'bg-purple-100 text-purple-700'
+      color: 'bg-purple-100 text-purple-700',
+      details: {
+        fullDescription: 'Analyse automatique complète de votre profil avec intelligence artificielle pour maximiser vos chances de succès.',
+        features: [
+          'Score de compatibilité (0-100) entre votre profil et les offres',
+          'Analyse détaillée des compétences requises vs vos compétences',
+          'Suggestions de formations pour combler les lacunes',
+          'Recommandations personnalisées d\'amélioration',
+          'Mise à jour en temps réel du matching',
+          'Top 10 des meilleures offres correspondantes'
+        ],
+        benefits: 'Gagnez du temps et ciblez les offres qui correspondent vraiment à votre profil.',
+      }
     },
     {
       icon: FileText,
       title: 'Création CV / Lettre IA',
       description: 'Génération automatique design professionnel',
       price: '100 000 GNF',
-      color: 'bg-blue-100 text-blue-700'
+      color: 'bg-blue-100 text-blue-700',
+      details: {
+        fullDescription: 'Création automatique de CV et lettres de motivation professionnels optimisés pour les systèmes de recrutement.',
+        features: [
+          'Génération de CV au format HTML téléchargeable',
+          'Design moderne et professionnel',
+          'Optimisé pour les systèmes ATS (Applicant Tracking System)',
+          'Lettres de motivation personnalisées par offre',
+          'Choix entre 3 tons : formel, créatif, simple',
+          'Import automatique depuis votre profil',
+          'Modifications et ajustements illimités'
+        ],
+        benefits: 'Présentez-vous de manière professionnelle et augmentez vos chances de décrocher des entretiens.',
+      }
     },
     {
       icon: Bell,
       title: 'Alertes IA ciblées',
       description: 'Détection auto d\'offres correspondantes',
       price: 'Inclus',
-      color: 'bg-orange-100 text-orange-700'
+      color: 'bg-orange-100 text-orange-700',
+      details: {
+        fullDescription: 'Système intelligent de notification qui détecte automatiquement les offres correspondant à votre profil.',
+        features: [
+          'Notifications instantanées par email et SMS',
+          'Analyse automatique de toutes les nouvelles offres',
+          'Filtrage intelligent basé sur vos critères',
+          'Alertes personnalisées par secteur et compétences',
+          'Résumé hebdomadaire des opportunités',
+          'Désactivation/réactivation flexible'
+        ],
+        benefits: 'Ne ratez plus jamais une opportunité qui vous correspond.',
+      }
     },
     {
       icon: MessageCircle,
       title: 'Chatbot Travail & Emploi',
       description: 'Réponses Code du Travail guinéen',
       price: 'Inclus',
-      color: 'bg-green-100 text-green-700'
+      color: 'bg-green-100 text-green-700',
+      details: {
+        fullDescription: 'Assistant virtuel disponible 24/7 pour répondre à toutes vos questions sur l\'emploi et le Code du Travail guinéen.',
+        features: [
+          'Réponses instantanées et personnalisées',
+          'Base de connaissances sur le Code du Travail guinéen',
+          'Conseils sur la préparation d\'entretiens',
+          'Stratégies de recherche d\'emploi',
+          'Aide à la négociation salariale',
+          'Conseils de développement de carrière',
+          'Historique des conversations sauvegardé'
+        ],
+        benefits: 'Obtenez des réponses immédiates à vos questions professionnelles, 24h/24.',
+      }
     },
     {
       icon: BarChart3,
       title: 'Rapport mensuel IA',
       description: 'Stats candidatures, matching, formations',
       price: '150 000 GNF/mois',
-      color: 'bg-indigo-100 text-indigo-700'
+      color: 'bg-indigo-100 text-indigo-700',
+      details: {
+        fullDescription: 'Rapport détaillé mensuel avec analyses et statistiques de votre activité sur la plateforme.',
+        features: [
+          'Statistiques de candidatures (envoyées, vues, réponses)',
+          'Évolution de votre score de matching',
+          'Analyse des formations suivies',
+          'Comparaison avec d\'autres candidats de votre secteur',
+          'Recommandations d\'amélioration personnalisées',
+          'Graphiques et visualisations claires',
+          'Export PDF pour vos archives'
+        ],
+        benefits: 'Suivez votre progression et optimisez votre stratégie de recherche d\'emploi.',
+      }
     },
     {
       icon: Users,
       title: 'Coaching carrière IA',
       description: 'Simulations entretien + feedbacks',
       price: '250 000 GNF',
-      color: 'bg-pink-100 text-pink-700'
+      color: 'bg-pink-100 text-pink-700',
+      details: {
+        fullDescription: 'Programme de coaching complet avec simulations d\'entretiens et feedback détaillé pour réussir vos recrutements.',
+        features: [
+          'Simulations d\'entretiens réalistes',
+          'Questions personnalisées selon le poste visé',
+          'Feedback détaillé sur vos réponses',
+          'Analyse de votre communication et présentation',
+          'Conseils d\'amélioration ciblés',
+          'Entraînement illimité',
+          'Suivi de progression'
+        ],
+        benefits: 'Préparez-vous efficacement et arrivez confiant à vos entretiens.',
+      }
     },
     {
       icon: Shield,
       title: 'Badge Profil vérifié',
       description: 'Vérification + scoring IA + visibilité',
       price: '50 000 GNF',
-      color: 'bg-yellow-100 text-yellow-700'
+      color: 'bg-yellow-100 text-yellow-700',
+      details: {
+        fullDescription: 'Certification de votre profil avec badge visible pour augmenter votre crédibilité auprès des recruteurs.',
+        features: [
+          'Vérification d\'identité complète',
+          'Badge visible sur votre profil',
+          'Score de crédibilité IA',
+          'Augmentation de visibilité +30%',
+          'Priorité dans les recherches',
+          'Confiance accrue des recruteurs',
+          'Valable 1 an'
+        ],
+        benefits: 'Démarquez-vous avec un profil vérifié et gagnez la confiance des recruteurs.',
+      }
     },
     {
       icon: Cloud,
       title: 'Espace cloud personnel',
       description: 'Sauvegarde sécurisée documents RH',
       price: 'Inclus Premium',
-      color: 'bg-teal-100 text-teal-700'
+      color: 'bg-teal-100 text-teal-700',
+      details: {
+        fullDescription: 'Espace de stockage sécurisé pour tous vos documents professionnels et RH.',
+        features: [
+          '10 Go de stockage cloud',
+          'Sauvegarde automatique de vos documents',
+          'Accès depuis n\'importe quel appareil',
+          'Partage sécurisé avec les recruteurs',
+          'Organisation par dossiers',
+          'Historique des versions',
+          'Chiffrement de bout en bout'
+        ],
+        benefits: 'Gardez tous vos documents professionnels organisés et accessibles en tout temps.',
+      }
     },
   ];
 
@@ -793,7 +896,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                           <span className="font-bold text-[#0E2F56]">{service.price}</span>
                           <button
-                            onClick={() => alert(`Service: ${service.title}\nPrix: ${service.price}\n\nPaiement: Orange Money • LengoPay • DigitalPay SA`)}
+                            onClick={() => setSelectedService(service)}
                             className="text-[#0E2F56] font-medium text-sm hover:underline"
                           >
                             En savoir plus
@@ -852,6 +955,85 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           </div>
         </div>
       </div>
+
+      {/* Service Details Modal */}
+      {selectedService && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-lg ${selectedService.color} flex items-center justify-center`}>
+                  <selectedService.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedService.title}</h2>
+                  <p className="text-[#FF8C00] font-bold text-lg">{selectedService.price}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedService(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
+                <p className="text-gray-700 leading-relaxed">{selectedService.details.fullDescription}</p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Fonctionnalités incluses</h3>
+                <ul className="space-y-2">
+                  {selectedService.details.features.map((feature: string, index: number) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-blue-900 mb-1">Avantage clé</h4>
+                    <p className="text-blue-800 text-sm">{selectedService.details.benefits}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Modalités de paiement</h3>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-3 bg-orange-50 rounded-lg">
+                    <div className="font-bold text-orange-600">Orange Money</div>
+                  </div>
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="font-bold text-blue-600">LengoPay</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="font-bold text-green-600">DigitalPay SA</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    alert(`Service: ${selectedService.title}\nPrix: ${selectedService.price}\n\nPour activer ce service, veuillez nous contacter:\n\n📧 Email: premium@jobguinee.com\n📱 WhatsApp: +224 XXX XX XX XX\n\nPaiement accepté via:\n• Orange Money\n• LengoPay\n• DigitalPay SA`);
+                    setSelectedService(null);
+                  }}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white rounded-xl font-bold text-lg hover:from-blue-900 hover:to-blue-900 transition-all shadow-lg"
+                >
+                  Souscrire maintenant
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
