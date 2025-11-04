@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft, Download,
-  FileText, Sparkles, Users, GraduationCap, Globe, Mail, CheckCircle2,
+  MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft,
+  FileText, Users, GraduationCap, Globe, Mail, CheckCircle2,
   Clock, Tag, Languages
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,8 +21,6 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const [hasApplied, setHasApplied] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
   const [showApplicationForm, setShowApplicationForm] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'pdf' | 'docx' | null>(null);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
@@ -105,68 +103,6 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     alert('Votre candidature a été envoyée avec succès !');
   };
 
-  const handleExport = async (format: 'pdf' | 'docx') => {
-    setExportFormat(format);
-
-    const content = generateExportContent();
-
-    if (format === 'docx') {
-      const blob = new Blob([content], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${job?.title?.replace(/\s+/g, '_')}_${jobId}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } else {
-      window.print();
-    }
-
-    setExportFormat(null);
-    alert(`Export ${format.toUpperCase()} en cours...`);
-  };
-
-  const generateExportContent = () => {
-    if (!job) return '';
-
-    let content = `${job.title}\n\n`;
-    content += `Entreprise: ${job.companies?.company_name}\n`;
-    content += `Localisation: ${job.location}\n`;
-    content += `Type de contrat: ${job.contract_type}\n\n`;
-    content += `Description:\n${job.description}\n\n`;
-
-    return content;
-  };
-
-  const handleGenerateWithAI = async () => {
-    if (!isPremium) {
-      alert('Cette fonctionnalité est réservée aux abonnés Premium. Souscrivez pour débloquer la génération IA !');
-      return;
-    }
-
-    setIsGeneratingAI(true);
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const enhancedDescription = `# ${job?.title}\n\n## 🎯 Présentation du poste\n${job?.description}\n\n## 📋 Missions principales\n• Gérer et coordonner les activités quotidiennes\n• Développer et mettre en œuvre des stratégies efficaces\n• Collaborer avec les équipes transverses\n• Assurer le suivi et le reporting des performances\n\n## 👤 Profil recherché\n• Diplôme universitaire pertinent\n• Expérience significative dans un poste similaire\n• Excellentes capacités de communication\n• Autonomie et esprit d'équipe\n\n## 💼 Compétences requises\n• Leadership et management d'équipe\n• Gestion de projet\n• Analyse et résolution de problèmes\n• Maîtrise des outils bureautiques\n\n## 🎁 Avantages\n• Package salarial compétitif\n• Couverture santé\n• Formation continue\n• Environnement de travail stimulant\n\n## ⚖️ Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
-
-    if (job) {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ description: enhancedDescription })
-        .eq('id', jobId);
-
-      if (!error) {
-        await loadJob();
-        alert('✨ Offre améliorée avec succès par l\'IA !');
-      }
-    }
-
-    setIsGeneratingAI(false);
-  };
-
   const parseJobDescription = (description: string) => {
     const sections: { [key: string]: string } = {};
     const lines = description.split('\n');
@@ -233,40 +169,6 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             <span>Retour aux offres</span>
           </button>
 
-          {isRecruiter && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleExport('pdf')}
-                disabled={exportFormat === 'pdf'}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition shadow-md"
-              >
-                <Download className="w-4 h-4" />
-                Exporter PDF
-              </button>
-              <button
-                onClick={() => handleExport('docx')}
-                disabled={exportFormat === 'docx'}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition shadow-md"
-              >
-                <Download className="w-4 h-4" />
-                Exporter DOCX
-              </button>
-              <button
-                onClick={handleGenerateWithAI}
-                disabled={isGeneratingAI || !isPremium}
-                className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition shadow-md ${
-                  isPremium
-                    ? 'bg-[#0E2F56] hover:bg-[#1a4275] text-white'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
-              >
-                <Sparkles className="w-4 h-4" />
-                {isGeneratingAI ? 'Génération...' : 'Améliorer avec IA'}
-                {!isPremium && <span className="text-xs ml-1">(Premium)</span>}
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
