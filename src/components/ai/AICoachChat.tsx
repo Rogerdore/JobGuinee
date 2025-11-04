@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { MessageCircle, Send, Loader, Bot, User } from 'lucide-react';
+import { MessageCircle, Send, Loader, Bot, User, ArrowLeft } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -10,7 +10,11 @@ interface Message {
   timestamp: Date;
 }
 
-export default function AICoachChat() {
+interface AICoachChatProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function AICoachChat({ onNavigate }: AICoachChatProps = {}) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -215,6 +219,15 @@ N'hésitez pas à me poser des questions plus spécifiques sur :
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate('premium-ai')}
+          className="mb-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Retour aux Services IA</span>
+        </button>
+      )}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
           <div className="flex items-center gap-3">

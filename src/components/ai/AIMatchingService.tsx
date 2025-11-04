@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight } from 'lucide-react';
+import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface JobMatch {
   id: string;
@@ -15,7 +15,11 @@ interface JobMatch {
   education_match: number;
 }
 
-export default function AIMatchingService() {
+interface AIMatchingServiceProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps = {}) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -143,6 +147,15 @@ export default function AIMatchingService() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate('premium-ai')}
+          className="mb-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Retour aux Services IA</span>
+        </button>
+      )}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">

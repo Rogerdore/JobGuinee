@@ -69,10 +69,10 @@ function AppContent() {
       {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
-      {currentPage === 'ai-matching' && <AIMatchingService />}
-      {currentPage === 'ai-cv-generator' && <AICVGenerator />}
-      {currentPage === 'ai-coach' && <AICoachChat />}
-      {currentPage === 'gold-profile' && <GoldProfileService />}
+      {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
+      {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
+      {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
+      {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
     </Layout>
   );
 }

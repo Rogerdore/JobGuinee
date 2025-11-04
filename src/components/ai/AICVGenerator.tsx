@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Download, Loader, Upload, Sparkles } from 'lucide-react';
+import { FileText, Download, Loader, Upload, Sparkles, ArrowLeft } from 'lucide-react';
 
 interface CVData {
   fullName: string;
@@ -25,7 +25,11 @@ interface CVData {
   languages: string[];
 }
 
-export default function AICVGenerator() {
+interface AICVGeneratorProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -212,6 +216,15 @@ export default function AICVGenerator() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate('premium-ai')}
+          className="mb-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Retour aux Services IA</span>
+        </button>
+      )}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">

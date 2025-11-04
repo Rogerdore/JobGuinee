@@ -16,7 +16,8 @@ import {
   Clock,
   MessageCircle,
   BarChart3,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 
 interface CoachingSession {
@@ -47,7 +48,11 @@ interface VisibilityStats {
   contact_reveals: number;
 }
 
-export default function GoldProfileService() {
+interface GoldProfileServiceProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function GoldProfileService({ onNavigate }: GoldProfileServiceProps = {}) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isGoldMember, setIsGoldMember] = useState(false);
@@ -288,6 +293,15 @@ export default function GoldProfileService() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate('premium-ai')}
+          className="mb-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Retour aux Services IA</span>
+        </button>
+      )}
       <div className="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl shadow-xl p-8 text-white mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

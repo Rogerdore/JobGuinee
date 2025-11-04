@@ -12,7 +12,8 @@ import {
   Crown,
   Check,
   ArrowRight,
-  Loader
+  Loader,
+  ArrowLeft
 } from 'lucide-react';
 
 interface PremiumService {
@@ -132,6 +133,17 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Back Button */}
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('candidate-dashboard')}
+            className="mb-8 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-medium">Retour au Dashboard</span>
+          </button>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-orange-500 rounded-full text-white mb-6">
