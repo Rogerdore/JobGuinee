@@ -503,7 +503,7 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('signup')}
+                onClick={() => onNavigate('recruiter-dashboard')}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
                 Publier une annonce maintenant
