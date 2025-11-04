@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sampleBlogPosts, blogCategories } from '../utils/sampleBlogData';
+import { sampleResources } from '../utils/sampleResources';
 
 interface BlogPost {
   id: string;
@@ -95,8 +96,10 @@ export default function Blog() {
       .eq('published', true)
       .order('created_at', { ascending: false });
 
-    if (data) {
+    if (data && data.length > 0) {
       setResources(data);
+    } else {
+      setResources(sampleResources as any);
     }
     setResourcesLoading(false);
   };
