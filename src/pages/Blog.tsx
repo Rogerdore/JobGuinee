@@ -26,7 +26,8 @@ import {
   X,
   Facebook,
   Linkedin,
-  Send
+  Send,
+  Download
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sampleBlogPosts, blogCategories } from '../utils/sampleBlogData';
