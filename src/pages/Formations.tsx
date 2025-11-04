@@ -224,6 +224,24 @@ export default function Formations({ onNavigate }: FormationsProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="mb-12 bg-gradient-to-r from-[#FF8C00] to-[#e67e00] rounded-2xl p-8 text-white">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold mb-2">Vous êtes un organisme de formation ou de conseil ?</h3>
+              <p className="text-white text-opacity-90">
+                Publiez vos formations et prestations de conseil pour atteindre des milliers de professionnels en Guinée
+              </p>
+            </div>
+            <button
+              onClick={() => setShowTrainerModal(true)}
+              className="px-8 py-4 bg-white hover:bg-gray-50 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 whitespace-nowrap"
+            >
+              <Award className="w-5 h-5" />
+              Publier une formation
+            </button>
+          </div>
+        </div>
+
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Explorer par Domaine</h2>
           <p className="text-gray-600 mb-8">Trouvez rapidement les formations qui correspondent à vos objectifs</p>
