@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X } from 'lucide-react';
+import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +12,7 @@ interface CMSAdminProps {
 export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const { settings, sections, refreshSettings } = useCMS();
   const { isAdmin, profile, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation' | 'blog'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation' | 'blog' | 'resources'>('general');
   const [editingSettings, setEditingSettings] = useState<Record<string, any>>({});
   const [allSettings, setAllSettings] = useState<any[]>([]);
   const [allSections, setAllSections] = useState<any[]>([]);
@@ -33,10 +33,27 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const [blogCoverPreview, setBlogCoverPreview] = useState<string>('');
   const [uploadingBlogImage, setUploadingBlogImage] = useState(false);
 
+  const [resources, setResources] = useState<any[]>([]);
+  const [showResourceForm, setShowResourceForm] = useState(false);
+  const [editingResource, setEditingResource] = useState<any>(null);
+  const [resourceFormData, setResourceFormData] = useState({
+    title: '',
+    description: '',
+    category: 'ebook',
+    author: '',
+    tags: [] as string[],
+    published: false
+  });
+  const [resourceFile, setResourceFile] = useState<File | null>(null);
+  const [resourceThumbnail, setResourceThumbnail] = useState<File | null>(null);
+  const [resourceThumbnailPreview, setResourceThumbnailPreview] = useState<string>('');
+  const [uploadingResource, setUploadingResource] = useState(false);
+
   useEffect(() => {
     loadAllSettings();
     loadAllSections();
     loadBlogPosts();
+    loadResources();
   }, []);
 
   const loadAllSettings = async () => {
@@ -206,6 +223,202 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     }
   };
 
+  const loadResources = async () => {
+    const { data } = await supabase
+      .from('resources')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (data) setResources(data);
+  };
+
+  const uploadResourceFile = async (): Promise<string | null> => {
+    if (!resourceFile || !user) return null;
+
+    try {
+      const fileExt = resourceFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('resource-files')
+        .upload(fileName, resourceFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('resource-files')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading resource file:', error);
+      return null;
+    }
+  };
+
+  const uploadResourceThumbnail = async (): Promise<string | null> => {
+    if (!resourceThumbnail || !user) return null;
+
+    try {
+      const fileExt = resourceThumbnail.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('resource-thumbnails')
+        .upload(fileName, resourceThumbnail);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('resource-thumbnails')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
+      return null;
+    }
+  };
+
+  const getFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const handleResourceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setUploadingResource(true);
+
+    try {
+      let fileUrl = editingResource?.file_url || '';
+      let thumbnailUrl = editingResource?.thumbnail_url || '';
+      let fileType = editingResource?.file_type || '';
+      let fileSize = editingResource?.file_size || '';
+
+      if (resourceFile) {
+        const uploadedFile = await uploadResourceFile();
+        if (uploadedFile) {
+          fileUrl = uploadedFile;
+          fileType = resourceFile.type || resourceFile.name.split('.').pop() || '';
+          fileSize = getFileSize(resourceFile.size);
+        }
+      }
+
+      if (resourceThumbnail) {
+        const uploadedThumb = await uploadResourceThumbnail();
+        if (uploadedThumb) {
+          thumbnailUrl = uploadedThumb;
+        }
+      }
+
+      const resourceData = {
+        ...resourceFormData,
+        file_url: fileUrl,
+        file_type: fileType,
+        file_size: fileSize,
+        thumbnail_url: thumbnailUrl,
+        published_at: resourceFormData.published ? new Date().toISOString() : null
+      };
+
+      setUploadingResource(false);
+
+      if (editingResource) {
+        const { error } = await supabase
+          .from('resources')
+          .update(resourceData)
+          .eq('id', editingResource.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('resources')
+          .insert(resourceData);
+
+        if (error) throw error;
+      }
+
+      await loadResources();
+      setShowResourceForm(false);
+      resetResourceForm();
+      alert(editingResource ? 'Ressource mise à jour!' : 'Ressource créée!');
+    } catch (error: any) {
+      alert('Erreur: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: string) => {
+    if (!confirm('Supprimer cette ressource?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', resourceId);
+
+      if (error) throw error;
+      await loadResources();
+      alert('Ressource supprimée!');
+    } catch (error: any) {
+      alert('Erreur: ' + error.message);
+    }
+  };
+
+  const handleEditResource = (resource: any) => {
+    setEditingResource(resource);
+    setResourceFormData({
+      title: resource.title,
+      description: resource.description || '',
+      category: resource.category,
+      author: resource.author || '',
+      tags: resource.tags || [],
+      published: resource.published
+    });
+    setResourceThumbnailPreview(resource.thumbnail_url || '');
+    setShowResourceForm(true);
+  };
+
+  const resetResourceForm = () => {
+    setEditingResource(null);
+    setResourceFormData({
+      title: '',
+      description: '',
+      category: 'ebook',
+      author: '',
+      tags: [],
+      published: false
+    });
+    setResourceFile(null);
+    setResourceThumbnail(null);
+    setResourceThumbnailPreview('');
+  };
+
+  const handleResourceThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setResourceThumbnail(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setResourceThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert('Veuillez sélectionner une image');
+    }
+  };
+
+  const handleResourceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setResourceFile(file);
+    }
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
@@ -250,6 +463,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     { id: 'pages', name: 'Pages', icon: Eye },
     { id: 'navigation', name: 'Navigation', icon: Menu },
     { id: 'blog', name: 'Blog & Actualités', icon: FileText },
+    { id: 'resources', name: 'Ressources', icon: BookOpen },
   ];
 
   const handleNavigateToUserManagement = () => {
@@ -519,6 +733,82 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 </div>
               </div>
             )}
+
+            {activeTab === 'resources' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">Ressources</h2>
+                  <button
+                    onClick={() => {
+                      resetResourceForm();
+                      setShowResourceForm(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Nouvelle ressource
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {resources.map((resource) => (
+                    <div key={resource.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition overflow-hidden">
+                      {resource.thumbnail_url && (
+                        <img
+                          src={resource.thumbnail_url}
+                          alt={resource.title}
+                          className="w-full h-48 object-cover"
+                        />
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-1">{resource.title}</h3>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">{resource.category}</span>
+                              <span>{resource.file_size}</span>
+                              <span className="flex items-center gap-1">
+                                <Download className="w-3 h-3" />
+                                {resource.download_count}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${resource.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                            {resource.published ? 'Publié' : 'Brouillon'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{resource.description}</p>
+                        {resource.author && (
+                          <p className="text-xs text-gray-500 mb-3">Par {resource.author}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditResource(resource)}
+                            className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-medium"
+                          >
+                            <Edit2 className="w-4 h-4 inline mr-1" />
+                            Modifier
+                          </button>
+                          <button
+                            onClick={() => handleDeleteResource(resource.id)}
+                            className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm font-medium"
+                          >
+                            <Trash2 className="w-4 h-4 inline mr-1" />
+                            Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {resources.length === 0 && (
+                    <div className="col-span-2 text-center py-12 bg-gray-50 rounded-xl">
+                      <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">Aucune ressource pour le moment</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         </div>
@@ -679,6 +969,219 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 >
                   <Save className="w-5 h-5" />
                   {uploadingBlogImage ? 'Upload...' : saving ? 'Enregistrement...' : editingBlogPost ? 'Mettre à jour' : 'Créer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showResourceForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {editingResource ? 'Modifier la ressource' : 'Nouvelle ressource'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowResourceForm(false);
+                  resetResourceForm();
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResourceSubmit} className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Image de prévisualisation
+                </label>
+                <div className="space-y-4">
+                  {resourceThumbnailPreview && (
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={resourceThumbnailPreview}
+                        alt="Prévisualisation"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResourceThumbnail(null);
+                          setResourceThumbnailPreview('');
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Image className="w-10 h-10 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">
+                        <span className="font-semibold">Cliquez pour uploader</span> une image
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG ou JPEG</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleResourceThumbnailChange}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fichier ressource {!editingResource && '*'}
+                </label>
+                <div className="space-y-2">
+                  {resourceFile && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                      <File className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm text-blue-900 flex-1">{resourceFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setResourceFile(null)}
+                        className="p-1 hover:bg-blue-200 rounded"
+                      >
+                        <X className="w-4 h-4 text-blue-900" />
+                      </button>
+                    </div>
+                  )}
+                  {editingResource && !resourceFile && editingResource.file_url && (
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                      <File className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm text-gray-900 flex-1">Fichier actuel</span>
+                      <a
+                        href={editingResource.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Voir
+                      </a>
+                    </div>
+                  )}
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                    <div className="flex flex-col items-center justify-center">
+                      <Upload className="w-8 h-8 text-gray-400 mb-1" />
+                      <p className="text-sm text-gray-600">
+                        <span className="font-semibold">Cliquez pour uploader</span> le fichier
+                      </p>
+                      <p className="text-xs text-gray-500">Tous formats acceptés</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleResourceFileChange}
+                      required={!editingResource}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Titre *</label>
+                <input
+                  type="text"
+                  value={resourceFormData.title}
+                  onChange={(e) => setResourceFormData({ ...resourceFormData, title: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie *</label>
+                <select
+                  value={resourceFormData.category}
+                  onChange={(e) => setResourceFormData({ ...resourceFormData, category: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="ebook">Livre électronique</option>
+                  <option value="document">Document</option>
+                  <option value="software">Logiciel/Progiciel</option>
+                  <option value="guide">Guide</option>
+                  <option value="template">Modèle</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={resourceFormData.description}
+                  onChange={(e) => setResourceFormData({ ...resourceFormData, description: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Décrivez la ressource..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Auteur</label>
+                <input
+                  type="text"
+                  value={resourceFormData.author}
+                  onChange={(e) => setResourceFormData({ ...resourceFormData, author: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nom de l'auteur ou créateur"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par des virgules)</label>
+                <input
+                  type="text"
+                  value={resourceFormData.tags.join(', ')}
+                  onChange={(e) => setResourceFormData({
+                    ...resourceFormData,
+                    tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)
+                  })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Exemple: RH, Formation, Juridique"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="publishedResource"
+                  checked={resourceFormData.published}
+                  onChange={(e) => setResourceFormData({ ...resourceFormData, published: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="publishedResource" className="text-sm font-medium text-gray-700">
+                  Publier immédiatement
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-4 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResourceForm(false);
+                    resetResourceForm();
+                  }}
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || uploadingResource}
+                  className="flex items-center gap-2 px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium disabled:bg-gray-400"
+                >
+                  <Save className="w-5 h-5" />
+                  {uploadingResource ? 'Upload...' : saving ? 'Enregistrement...' : editingResource ? 'Mettre à jour' : 'Créer'}
                 </button>
               </div>
             </form>

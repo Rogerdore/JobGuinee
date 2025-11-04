@@ -64,9 +64,13 @@ export default function Blog() {
   const [showFilters, setShowFilters] = useState(false);
   const [email, setEmail] = useState('');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [resources, setResources] = useState<any[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(true);
+  const [resourceCategory, setResourceCategory] = useState('all');
 
   useEffect(() => {
     loadPosts();
+    loadResources();
   }, []);
 
   const loadPosts = async () => {
@@ -82,6 +86,24 @@ export default function Blog() {
       setPosts(sampleBlogPosts as any);
     }
     setLoading(false);
+  };
+
+  const loadResources = async () => {
+    const { data } = await supabase
+      .from('resources')
+      .select('*')
+      .eq('published', true)
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setResources(data);
+    }
+    setResourcesLoading(false);
+  };
+
+  const handleResourceDownload = async (resourceId: string, fileUrl: string) => {
+    await supabase.rpc('increment_resource_downloads', { resource_id: resourceId });
+    window.open(fileUrl, '_blank');
   };
 
   const filteredPosts = posts.filter((post) => {
@@ -100,6 +122,10 @@ export default function Blog() {
 
   const featuredPosts = posts.slice(0, 3);
   const recentPosts = posts.slice(3, 9);
+
+  const filteredResources = resources.filter((resource) => {
+    return resourceCategory === 'all' || resource.category === resourceCategory;
+  });
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -490,6 +516,103 @@ export default function Blog() {
               </p>
             </form>
           </div>
+        </section>
+
+        <section className="mb-16">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Ressources Téléchargeables</h2>
+              <p className="text-gray-600">Livres, documents, logiciels et autres ressources utiles pour votre carrière</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <select
+                value={resourceCategory}
+                onChange={(e) => setResourceCategory(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Toutes les catégories</option>
+                <option value="ebook">Livres électroniques</option>
+                <option value="document">Documents</option>
+                <option value="software">Logiciels</option>
+                <option value="guide">Guides</option>
+                <option value="template">Modèles</option>
+                <option value="other">Autres</option>
+              </select>
+            </div>
+          </div>
+
+          {resourcesLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Chargement des ressources...</p>
+            </div>
+          ) : filteredResources.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">Aucune ressource disponible pour le moment</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredResources.map((resource) => (
+                <div key={resource.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-xl transition-all overflow-hidden group">
+                  {resource.thumbnail_url && (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={resource.thumbnail_url}
+                        alt={resource.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-3 py-1 bg-blue-100 text-[#0E2F56] text-xs font-bold rounded-full">
+                        {resource.category === 'ebook' ? 'Livre électronique' :
+                         resource.category === 'document' ? 'Document' :
+                         resource.category === 'software' ? 'Logiciel' :
+                         resource.category === 'guide' ? 'Guide' :
+                         resource.category === 'template' ? 'Modèle' : 'Autre'}
+                      </span>
+                      <span className="text-xs text-gray-500">{resource.file_size}</span>
+                    </div>
+
+                    <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">{resource.title}</h3>
+
+                    {resource.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{resource.description}</p>
+                    )}
+
+                    {resource.author && (
+                      <p className="text-xs text-gray-500 mb-3">Par {resource.author}</p>
+                    )}
+
+                    {resource.tags && resource.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {resource.tags.slice(0, 3).map((tag: string, idx: number) => (
+                          <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <Download className="w-4 h-4" />
+                        <span>{resource.download_count} téléchargements</span>
+                      </div>
+                      <button
+                        onClick={() => handleResourceDownload(resource.id, resource.file_url)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-medium"
+                      >
+                        <Download className="w-4 h-4" />
+                        Télécharger
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="bg-white rounded-2xl border border-gray-200 p-12">
