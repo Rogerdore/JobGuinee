@@ -19,8 +19,9 @@ import PremiumAIServices from './pages/PremiumAIServices';
 import AIMatchingService from './components/ai/AIMatchingService';
 import AICVGenerator from './components/ai/AICVGenerator';
 import AICoachChat from './components/ai/AICoachChat';
+import GoldProfileService from './components/ai/GoldProfileService';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -71,6 +72,7 @@ function AppContent() {
       {currentPage === 'ai-matching' && <AIMatchingService />}
       {currentPage === 'ai-cv-generator' && <AICVGenerator />}
       {currentPage === 'ai-coach' && <AICoachChat />}
+      {currentPage === 'gold-profile' && <GoldProfileService />}
     </Layout>
   );
 }

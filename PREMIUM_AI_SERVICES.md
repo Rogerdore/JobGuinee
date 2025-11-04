@@ -36,7 +36,60 @@ Le système de Services Premium IA offre aux candidats une suite complète d'out
    - Historique des conversations avec JobCoach IA
    - Suivi des sessions de chat
 
+7. **coaching_sessions**
+   - Suivi des séances de coaching personnalisé
+   - Planning et historique des sessions
+   - Feedback des coachs
+
+8. **video_cvs**
+   - Stockage des vidéos CV professionnelles
+   - Métadonnées et statistiques de visionnage
+   - Support création par équipe JobGuinée
+
+9. **profile_visibility_stats**
+   - Statistiques de visibilité des profils Gold
+   - Tracking apparitions première page
+   - Analyses de performance
+
 ### Services Disponibles
+
+#### 0. Profil Gold (Service Premium Ultime)
+**Catégorie:** `gold_profile`
+**Prix:** 500,000 GNF / 3 mois
+
+**Fonctionnalités exclusives:**
+- **Visibilité maximale** : Profil en première page des résultats de recherche
+- **Badge Gold** : Distinction visible sur votre profil
+- **Boost de visibilité x10** : Augmentation drastique de la portée
+- **3 séances de coaching personnalisé** avec experts JobGuinée
+  - Revue de CV professionnelle
+  - Préparation entretien
+  - Planification carrière
+  - Négociation salariale
+  - Coaching général
+- **Vidéo CV professionnelle** créée par l'équipe JobGuinée
+- **Statistiques détaillées** :
+  - Nombre de vues profil
+  - Apparitions en première page
+  - Contacts révélés
+  - Performances globales
+- **Support prioritaire** du cabinet JobGuinée
+- **Accompagnement personnalisé** tout au long de l'abonnement
+
+**Composant:** `GoldProfileService.tsx`
+
+**Avantages pour le candidat:**
+- Maximise les chances d'être vu par les recruteurs
+- Accompagnement professionnel complet
+- Présentation vidéo impactante
+- Suivi détaillé de la performance
+- Priorité dans les résultats de recherche
+
+**Tables associées:**
+- `candidate_profiles` (champs Gold)
+- `coaching_sessions`
+- `video_cvs`
+- `profile_visibility_stats`
 
 #### 1. Analyse & Matching IA
 **Catégorie:** `matching`

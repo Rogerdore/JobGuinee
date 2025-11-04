@@ -112,6 +112,7 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       coaching: 'ai-coach',
       career_plan: 'ai-career-plan',
       interview: 'ai-interview-simulator',
+      gold_profile: 'gold-profile',
     };
 
     const page = routes[category];
