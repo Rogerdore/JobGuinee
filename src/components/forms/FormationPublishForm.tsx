@@ -19,6 +19,7 @@ export default function FormationPublishForm({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [selectedOrgType, setSelectedOrgType] = useState<'individual' | 'company' | 'institute'>('individual');
 
   const [commonData, setCommonData] = useState({
     title: '',
@@ -101,14 +102,17 @@ export default function FormationPublishForm({
           status: data.status || 'draft'
         });
 
-        if (trainerProfile.organization_type === 'individual') {
+        const orgType = (data as any).organization_type || 'individual';
+        setSelectedOrgType(orgType);
+
+        if (orgType === 'individual') {
           setIndividualData({
             individual_location: data.individual_location || '',
             individual_schedule: data.individual_schedule || '',
             individual_materials_included: data.individual_materials_included || false,
             individual_materials_list: data.individual_materials_list || []
           });
-        } else if (trainerProfile.organization_type === 'company') {
+        } else if (orgType === 'company') {
           setCompanyData({
             company_location: data.company_location || '',
             company_custom_program: data.company_custom_program || false,
@@ -116,7 +120,7 @@ export default function FormationPublishForm({
             company_corporate_training: data.company_corporate_training || false,
             company_trainer_team: data.company_trainer_team || []
           });
-        } else if (trainerProfile.organization_type === 'institute') {
+        } else if (orgType === 'institute') {
           setInstituteData({
             institute_campus_location: data.institute_campus_location || '',
             institute_accredited: data.institute_accredited || false,
@@ -141,14 +145,15 @@ export default function FormationPublishForm({
       let formationData: any = {
         ...commonData,
         trainer_id: trainerProfile.id,
-        provider: trainerProfile.organization_name || 'Non défini'
+        provider: trainerProfile.organization_name || 'Non défini',
+        organization_type: selectedOrgType
       };
 
-      if (trainerProfile.organization_type === 'individual') {
+      if (selectedOrgType === 'individual') {
         formationData = { ...formationData, ...individualData };
-      } else if (trainerProfile.organization_type === 'company') {
+      } else if (selectedOrgType === 'company') {
         formationData = { ...formationData, ...companyData };
-      } else if (trainerProfile.organization_type === 'institute') {
+      } else if (selectedOrgType === 'institute') {
         formationData = { ...formationData, ...instituteData };
       }
 
@@ -219,6 +224,50 @@ export default function FormationPublishForm({
 
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Informations Générales</h3>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type d'Organisation *
+              </label>
+              <div className="grid grid-cols-3 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrgType('individual')}
+                  className={`p-4 rounded-lg border-2 transition ${
+                    selectedOrgType === 'individual'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Users className="w-6 h-6 mx-auto mb-2" />
+                  <div className="text-sm font-semibold">Indépendant</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrgType('company')}
+                  className={`p-4 rounded-lg border-2 transition ${
+                    selectedOrgType === 'company'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Building2 className="w-6 h-6 mx-auto mb-2" />
+                  <div className="text-sm font-semibold">Entreprise</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrgType('institute')}
+                  className={`p-4 rounded-lg border-2 transition ${
+                    selectedOrgType === 'institute'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Users className="w-6 h-6 mx-auto mb-2" />
+                  <div className="text-sm font-semibold">Institut</div>
+                </button>
+              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -457,7 +506,7 @@ export default function FormationPublishForm({
             )}
           </div>
 
-          {trainerProfile.organization_type === 'individual' && (
+          {selectedOrgType === 'individual' && (
             <div className="space-y-6 pt-6 border-t">
               <h3 className="text-lg font-bold text-gray-900">Informations Formateur Indépendant</h3>
 
@@ -520,7 +569,7 @@ export default function FormationPublishForm({
             </div>
           )}
 
-          {trainerProfile.organization_type === 'company' && (
+          {selectedOrgType === 'company' && (
             <div className="space-y-6 pt-6 border-t">
               <h3 className="text-lg font-bold text-gray-900">Informations Entreprise</h3>
 
@@ -592,7 +641,7 @@ export default function FormationPublishForm({
             </div>
           )}
 
-          {trainerProfile.organization_type === 'institute' && (
+          {selectedOrgType === 'institute' && (
             <div className="space-y-6 pt-6 border-t">
               <h3 className="text-lg font-bold text-gray-900">Informations Institut</h3>
 
