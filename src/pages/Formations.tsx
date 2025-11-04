@@ -25,6 +25,10 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sampleFormations, formationCategories } from '../utils/sampleFormationsData';
+import FormationDetailsModal from '../components/formations/FormationDetailsModal';
+import EnrollmentModal from '../components/formations/EnrollmentModal';
+import CoachingBookingModal from '../components/formations/CoachingBookingModal';
+import TrainerApplicationModal from '../components/formations/TrainerApplicationModal';
 
 interface Formation {
   id: string;
@@ -90,6 +94,12 @@ export default function Formations({ onNavigate }: FormationsProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [priceFilter, setPriceFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [showCoachingModal, setShowCoachingModal] = useState(false);
+  const [showTrainerModal, setShowTrainerModal] = useState(false);
 
   useEffect(() => {
     loadFormations();
@@ -363,13 +373,19 @@ export default function Formations({ onNavigate }: FormationsProps) {
 
                     <div className="flex gap-2">
                       <button
-                        onClick={() => alert('Détails de la formation')}
+                        onClick={() => {
+                          setSelectedFormation(formation);
+                          setShowDetailsModal(true);
+                        }}
                         className="flex-1 py-2.5 border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-lg hover:bg-blue-50 transition"
                       >
                         Détails
                       </button>
                       <button
-                        onClick={() => alert('Paiement : Orange Money / LengoPay / DigitalPay SA')}
+                        onClick={() => {
+                          setSelectedFormation(formation);
+                          setShowEnrollmentModal(true);
+                        }}
                         className="flex-1 py-2.5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition"
                       >
                         S'inscrire
@@ -417,7 +433,7 @@ export default function Formations({ onNavigate }: FormationsProps) {
 
           <div className="text-center">
             <button
-              onClick={() => alert('Réservation de coaching disponible prochainement')}
+              onClick={() => setShowCoachingModal(true)}
               className="px-10 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold text-lg rounded-lg transition shadow-md inline-flex items-center gap-2 border-2 border-white"
             >
               <Calendar className="w-5 h-5" />
@@ -463,7 +479,7 @@ export default function Formations({ onNavigate }: FormationsProps) {
 
           <div className="text-center">
             <button
-              onClick={() => alert('Inscription formateur disponible prochainement')}
+              onClick={() => setShowTrainerModal(true)}
               className="px-8 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-semibold rounded-lg transition inline-flex items-center gap-2"
             >
               <Award className="w-5 h-5" />
@@ -472,6 +488,48 @@ export default function Formations({ onNavigate }: FormationsProps) {
           </div>
         </section>
       </div>
+
+      {showDetailsModal && selectedFormation && (
+        <FormationDetailsModal
+          formation={selectedFormation}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedFormation(null);
+          }}
+          onEnroll={(formation) => {
+            setShowDetailsModal(false);
+            setSelectedFormation(formation);
+            setShowEnrollmentModal(true);
+          }}
+        />
+      )}
+
+      {showEnrollmentModal && selectedFormation && (
+        <EnrollmentModal
+          formation={selectedFormation}
+          onClose={() => {
+            setShowEnrollmentModal(false);
+            setSelectedFormation(null);
+          }}
+          onSuccess={() => {
+            loadFormations();
+          }}
+        />
+      )}
+
+      {showCoachingModal && (
+        <CoachingBookingModal
+          onClose={() => setShowCoachingModal(false)}
+          onSuccess={() => {}}
+        />
+      )}
+
+      {showTrainerModal && (
+        <TrainerApplicationModal
+          onClose={() => setShowTrainerModal(false)}
+          onSuccess={() => {}}
+        />
+      )}
     </div>
   );
 }
