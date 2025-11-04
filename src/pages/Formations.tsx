@@ -259,11 +259,26 @@ export default function Formations({ onNavigate }: FormationsProps) {
             </div>
             <button
               onClick={() => {
-                if (user && profile?.user_type === 'trainer' && trainerProfile) {
-                  setShowFormationPublishForm(true);
-                } else {
-                  setShowTrainerModal(true);
+                // Seuls les utilisateurs connectés avec un compte formateur peuvent publier
+                if (!user) {
+                  alert('Vous devez être connecté pour publier une formation.');
+                  return;
                 }
+
+                if (profile?.user_type !== 'trainer') {
+                  alert('Seuls les formateurs peuvent publier des formations. Veuillez créer un profil formateur.');
+                  setShowTrainerModal(true);
+                  return;
+                }
+
+                if (!trainerProfile) {
+                  alert('Votre profil formateur est incomplet. Veuillez compléter votre profil.');
+                  setShowTrainerModal(true);
+                  return;
+                }
+
+                // Si tout est OK, ouvrir le formulaire
+                setShowFormationPublishForm(true);
               }}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 whitespace-nowrap"
             >
