@@ -15,8 +15,12 @@ import CVTheque from './pages/CVTheque';
 import CMSAdmin from './pages/CMSAdmin';
 import UserManagement from './pages/UserManagement';
 import CandidateProfileForm from './components/forms/CandidateProfileForm';
+import PremiumAIServices from './pages/PremiumAIServices';
+import AIMatchingService from './components/ai/AIMatchingService';
+import AICVGenerator from './components/ai/AICVGenerator';
+import AICoachChat from './components/ai/AICoachChat';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -63,6 +67,10 @@ function AppContent() {
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
       {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
+      {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
+      {currentPage === 'ai-matching' && <AIMatchingService />}
+      {currentPage === 'ai-cv-generator' && <AICVGenerator />}
+      {currentPage === 'ai-coach' && <AICoachChat />}
     </Layout>
   );
 }

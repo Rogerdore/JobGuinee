@@ -764,9 +764,17 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                     <Crown className="w-8 h-8 text-white" />
                   </div>
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">Services Premium IA</h2>
-                  <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                  <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
                     Boostez votre recherche d'emploi avec nos services intelligents propulsés par l'IA
                   </p>
+                  <button
+                    onClick={() => onNavigate('premium-ai')}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Découvrir tous les services IA
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
