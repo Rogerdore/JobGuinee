@@ -9,6 +9,7 @@ import Jobs from './pages/Jobs';
 import JobDetail from './pages/JobDetail';
 import CandidateDashboard from './pages/CandidateDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import TrainerDashboard from './pages/TrainerDashboard';
 import Formations from './pages/Formations';
 import Blog from './pages/Blog';
 import CVTheque from './pages/CVTheque';
@@ -21,7 +22,7 @@ import AICVGenerator from './components/ai/AICVGenerator';
 import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -62,6 +63,7 @@ function AppContent() {
       {currentPage === 'job-detail' && <JobDetail jobId={selectedJobId} onNavigate={handleNavigate} />}
       {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}
       {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
+      {currentPage === 'trainer-dashboard' && <TrainerDashboard onNavigate={handleNavigate} />}
       {currentPage === 'formations' && <Formations onNavigate={handleNavigate} />}
       {currentPage === 'blog' && <Blog />}
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
