@@ -17,6 +17,7 @@ import {
 import { supabase, TrainerProfile } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import TrainerProfileForm from '../components/forms/TrainerProfileForm';
+import FormationPublishForm from '../components/forms/FormationPublishForm';
 
 interface TrainerDashboardProps {
   onNavigate: (page: string) => void;
@@ -51,6 +52,8 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'formations' | 'students' | 'profile'>('overview');
+  const [showFormationForm, setShowFormationForm] = useState(false);
+  const [selectedFormationId, setSelectedFormationId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (user) {
@@ -254,7 +257,13 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-gray-900">Mes Formations</h3>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition">
+                  <button
+                    onClick={() => {
+                      setSelectedFormationId(undefined);
+                      setShowFormationForm(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition"
+                  >
                     <Plus className="w-5 h-5" />
                     Créer une Formation
                   </button>
@@ -264,7 +273,13 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
                   <div className="text-center py-12 text-gray-500">
                     <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                     <p className="mb-4">Aucune formation créée</p>
-                    <button className="px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition">
+                    <button
+                      onClick={() => {
+                        setSelectedFormationId(undefined);
+                        setShowFormationForm(true);
+                      }}
+                      className="px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition"
+                    >
                       Créer ma première formation
                     </button>
                   </div>
@@ -297,7 +312,13 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
                             <span className="font-bold text-[#0E2F56]">{formation.price.toLocaleString()} GNF</span>
                           </div>
                           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
-                            <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                            <button
+                              onClick={() => {
+                                setSelectedFormationId(formation.id);
+                                setShowFormationForm(true);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                            >
                               <Edit2 className="w-4 h-4" />
                               Modifier
                             </button>
@@ -373,6 +394,18 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
             )}
           </div>
         </div>
+
+        {showFormationForm && trainerProfile && (
+          <FormationPublishForm
+            trainerProfile={trainerProfile}
+            formationId={selectedFormationId}
+            onClose={() => {
+              setShowFormationForm(false);
+              setSelectedFormationId(undefined);
+            }}
+            onSuccess={loadTrainerData}
+          />
+        )}
       </div>
     </div>
   );
