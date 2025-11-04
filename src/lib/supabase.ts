@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export type UserRole = 'candidate' | 'recruiter' | 'admin';
+export type UserRole = 'candidate' | 'recruiter' | 'admin' | 'trainer';
 
 export type Profile = {
   id: string;
@@ -118,6 +118,26 @@ export type Formation = {
   category?: string;
   thumbnail_url?: string;
   status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TrainerProfile = {
+  id: string;
+  profile_id: string;
+  user_id: string;
+  organization_name?: string;
+  organization_type: 'individual' | 'company' | 'institute';
+  bio?: string;
+  specializations: string[];
+  certifications?: any;
+  experience_years: number;
+  website?: string;
+  linkedin_url?: string;
+  hourly_rate?: number;
+  is_verified: boolean;
+  rating: number;
+  total_students: number;
   created_at: string;
   updated_at: string;
 };

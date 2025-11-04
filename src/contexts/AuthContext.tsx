@@ -99,6 +99,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', data.user.id);
 
     if (updateError) console.error('Error updating profile:', updateError);
+
+    if (role === 'trainer') {
+      const { error: trainerError } = await supabase
+        .from('trainer_profiles')
+        .insert({
+          profile_id: data.user.id,
+          user_id: data.user.id,
+          organization_type: 'individual',
+          experience_years: 0,
+          is_verified: false,
+          rating: 0,
+          total_students: 0
+        });
+
+      if (trainerError) console.error('Error creating trainer profile:', trainerError);
+    }
   };
 
   const signOut = async () => {

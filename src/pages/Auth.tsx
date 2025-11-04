@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Briefcase, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Briefcase, Mail, Lock, User, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../lib/supabase';
 
@@ -92,30 +92,42 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Je suis
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setRole('candidate')}
-                      className={`p-4 rounded-lg border-2 transition ${
+                      className={`p-3 rounded-lg border-2 transition ${
                         role === 'candidate'
                           ? 'border-blue-500 bg-blue-50 text-blue-900'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <User className="w-6 h-6 mx-auto mb-2" />
-                      <div className="font-semibold">Candidat</div>
+                      <User className="w-5 h-5 mx-auto mb-1" />
+                      <div className="text-xs font-semibold">Candidat</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setRole('recruiter')}
-                      className={`p-4 rounded-lg border-2 transition ${
+                      className={`p-3 rounded-lg border-2 transition ${
                         role === 'recruiter'
                           ? 'border-blue-500 bg-blue-50 text-blue-900'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <Briefcase className="w-6 h-6 mx-auto mb-2" />
-                      <div className="font-semibold">Recruteur</div>
+                      <Briefcase className="w-5 h-5 mx-auto mb-1" />
+                      <div className="text-xs font-semibold">Recruteur</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('trainer')}
+                      className={`p-3 rounded-lg border-2 transition ${
+                        role === 'trainer'
+                          ? 'border-blue-500 bg-blue-50 text-blue-900'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <GraduationCap className="w-5 h-5 mx-auto mb-1" />
+                      <div className="text-xs font-semibold">Formateur</div>
                     </button>
                   </div>
                 </div>
