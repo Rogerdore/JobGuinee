@@ -175,7 +175,7 @@ export default function Home({ onNavigate }: HomeProps) {
       <section className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-32">
+        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-20">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
@@ -261,8 +261,18 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent"></div>
       </section>
 
-      <section className="py-12 border-b border-white/30">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="relative bg-gray-50">
+        <div className="absolute inset-0 flex items-end justify-center overflow-hidden pointer-events-none">
+          <img
+            src="/image copy copy copy copy copy copy.png"
+            alt=""
+            className="w-full max-w-5xl h-auto opacity-40"
+            style={{ marginBottom: '-2rem' }}
+          />
+        </div>
+
+        <section className="relative py-12 border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#0E2F56] mb-2">
@@ -291,6 +301,7 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+      </div>
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
