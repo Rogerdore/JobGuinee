@@ -376,40 +376,46 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <div className="text-3xl font-bold text-gray-900">{candidates.length}</div>
-              <div className="text-sm text-gray-600">Profils disponibles</div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-3 text-center">
+              <div className="text-2xl font-bold text-gray-900">{candidates.length}</div>
+              <div className="text-xs text-gray-600">Profils disponibles</div>
             </div>
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border-2 border-orange-200 p-6 text-center hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg">
-                  <Circle className="w-7 h-7 text-white fill-white" />
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200 p-3 flex items-center justify-between hover:shadow-md transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow">
+                  <Circle className="w-5 h-5 text-white fill-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-2xl font-bold text-orange-900">{stats.junior}</div>
+                  <div className="text-xs text-orange-700 font-medium">Profils Junior</div>
                 </div>
               </div>
-              <div className="text-3xl font-bold text-orange-900 mb-1">{stats.junior}</div>
-              <div className="text-sm text-orange-700 font-semibold mb-2">Profils Junior</div>
-              <div className="text-xs text-orange-600 font-medium bg-orange-200/50 px-3 py-1 rounded-full inline-block">4.000 GNF</div>
+              <div className="text-xs text-orange-600 font-semibold bg-orange-200/50 px-2 py-1 rounded">4.000 GNF</div>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200 p-6 text-center hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
-                  <Hexagon className="w-7 h-7 text-white fill-white" />
+            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200 p-3 flex items-center justify-between hover:shadow-md transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow">
+                  <Hexagon className="w-5 h-5 text-white fill-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-2xl font-bold text-green-900">{stats.intermediate}</div>
+                  <div className="text-xs text-green-700 font-medium">Profils Intermédiaires</div>
                 </div>
               </div>
-              <div className="text-3xl font-bold text-green-900 mb-1">{stats.intermediate}</div>
-              <div className="text-sm text-green-700 font-semibold mb-2">Profils Intermédiaires</div>
-              <div className="text-xs text-green-600 font-medium bg-green-200/50 px-3 py-1 rounded-full inline-block">8.000 GNF</div>
+              <div className="text-xs text-green-600 font-semibold bg-green-200/50 px-2 py-1 rounded">8.000 GNF</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200 p-6 text-center hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
-                  <Star className="w-7 h-7 text-white fill-white" />
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-3 flex items-center justify-between hover:shadow-md transition-all">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow">
+                  <Star className="w-5 h-5 text-white fill-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-2xl font-bold text-blue-900">{stats.senior}</div>
+                  <div className="text-xs text-blue-700 font-medium">Profils Senior</div>
                 </div>
               </div>
-              <div className="text-3xl font-bold text-blue-900 mb-1">{stats.senior}</div>
-              <div className="text-sm text-blue-700 font-semibold mb-2">Profils Senior</div>
-              <div className="text-xs text-blue-600 font-medium bg-blue-200/50 px-3 py-1 rounded-full inline-block">15.000 GNF</div>
+              <div className="text-xs text-blue-600 font-semibold bg-blue-200/50 px-2 py-1 rounded">15.000 GNF</div>
             </div>
           </div>
 
