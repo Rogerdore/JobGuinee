@@ -77,7 +77,14 @@ export default function Blog() {
     category: '',
     author: '',
     email: '',
+    phone: '',
   });
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+  const [galleryImages, setGalleryImages] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadPosts();
@@ -159,10 +166,93 @@ export default function Blog() {
     }
   };
 
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGalleryImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setGalleryImages(prev => [...prev, ...files]);
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGalleryPreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryImages(prev => prev.filter((_, i) => i !== index));
+    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDocumentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setDocuments(prev => [...prev, ...files]);
+  };
+
+  const removeDocument = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFile = async (file: File, bucket: string, folder: string = '') => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file);
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
   const handleArticleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploading(true);
 
     try {
+      let thumbnailUrl = '';
+      let mediaUrls: string[] = [];
+      let documentUrls: string[] = [];
+
+      // Upload cover image
+      if (coverImage) {
+        thumbnailUrl = await uploadFile(coverImage, 'blog-images', 'covers/');
+      }
+
+      // Upload gallery images
+      if (galleryImages.length > 0) {
+        const uploadPromises = galleryImages.map(img =>
+          uploadFile(img, 'blog-images', 'gallery/')
+        );
+        mediaUrls = await Promise.all(uploadPromises);
+      }
+
+      // Upload documents
+      if (documents.length > 0) {
+        const uploadPromises = documents.map(doc =>
+          uploadFile(doc, 'blog-documents', '')
+        );
+        documentUrls = await Promise.all(uploadPromises);
+      }
+
+      // Insert blog post
       const { error } = await supabase
         .from('blog_posts')
         .insert([{
@@ -172,13 +262,20 @@ export default function Blog() {
           content: articleSubmitForm.content,
           category: articleSubmitForm.category,
           author: articleSubmitForm.author,
-          published: false, // Les articles soumis doivent être validés
+          author_email: articleSubmitForm.email,
+          author_phone: articleSubmitForm.phone,
+          thumbnail_url: thumbnailUrl || null,
+          media_urls: mediaUrls,
+          document_urls: documentUrls,
+          published: false,
         }]);
 
       if (error) throw error;
 
       alert('Merci pour votre soumission ! Votre article sera examiné par notre équipe et publié prochainement.');
       setShowArticleSubmitModal(false);
+
+      // Reset form
       setArticleSubmitForm({
         title: '',
         excerpt: '',
@@ -186,10 +283,18 @@ export default function Blog() {
         category: '',
         author: '',
         email: '',
+        phone: '',
       });
+      setCoverImage(null);
+      setCoverImagePreview('');
+      setGalleryImages([]);
+      setGalleryPreviews([]);
+      setDocuments([]);
     } catch (error) {
       console.error('Erreur lors de la soumission:', error);
       alert('Une erreur est survenue. Veuillez réessayer.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -855,7 +960,7 @@ export default function Blog() {
                 />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Votre nom *
@@ -883,6 +988,109 @@ export default function Blog() {
                     placeholder="votre.email@exemple.com"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={articleSubmitForm.phone}
+                    onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, phone: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    placeholder="+224 XXX XX XX XX"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Image de couverture
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverImageChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                />
+                {coverImagePreview && (
+                  <div className="mt-3">
+                    <img
+                      src={coverImagePreview}
+                      alt="Aperçu"
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Images supplémentaires (galerie)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleGalleryImagesChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                />
+                {galleryPreviews.length > 0 && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {galleryPreviews.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={preview}
+                          alt={`Galerie ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Documents joints (PDF, DOCX, etc.)
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xlsx,.xls,.ppt,.pptx"
+                  multiple
+                  onChange={handleDocumentsChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                />
+                {documents.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {documents.map((doc, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-gray-500" />
+                          <span className="text-sm text-gray-700">{doc.name}</span>
+                          <span className="text-xs text-gray-500">
+                            ({(doc.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeDocument(index)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -896,15 +1104,24 @@ export default function Blog() {
                 <button
                   type="button"
                   onClick={() => setShowArticleSubmitModal(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                  disabled={uploading}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-semibold"
+                  disabled={uploading}
+                  className="flex-1 px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Soumettre l'article
+                  {uploading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Envoi en cours...</span>
+                    </>
+                  ) : (
+                    'Soumettre l\'article'
+                  )}
                 </button>
               </div>
             </form>
