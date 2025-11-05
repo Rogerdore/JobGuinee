@@ -172,10 +172,18 @@ export default function Home({ onNavigate }: HomeProps) {
 
   return (
     <div className="w-full">
-      <section className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+      <section
+        className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden"
+        style={{
+          backgroundImage: 'url("https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundBlendMode: 'multiply',
+        }}
+      >
+        <div className="absolute inset-0 bg-[#0E2F56] opacity-90"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-32">
+        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
