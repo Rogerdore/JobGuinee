@@ -765,27 +765,29 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       )}
 
       {/* Section 5: Entreprises qui recrutent */}
-      <div className="bg-white py-16">
+      <div className="bg-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Entreprises qui recrutent</h2>
-            <p className="text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Entreprises qui recrutent</h2>
+            <p className="text-sm text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {recruitingCompanies.map((company) => (
               <div
                 key={company.id}
-                className="bg-gray-50 rounded-xl p-6 text-center hover:shadow-lg hover:bg-white transition-all card-hover cursor-pointer"
+                className="bg-gray-50 rounded-lg p-4 text-center hover:shadow-lg hover:bg-white transition-all card-hover cursor-pointer"
                 onClick={() => {
                   setSector(company.sector);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
-                <img src={company.logo} alt={company.name} className="w-20 h-20 mx-auto mb-4 rounded-lg" />
-                <h3 className="font-bold text-gray-900 mb-2 text-sm">{company.name}</h3>
-                <p className="text-xs text-gray-600 mb-3">{company.sector}</p>
-                <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#0E2F56] text-white text-xs font-semibold rounded-full">
+                <div className="w-14 h-14 mx-auto mb-3 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
+                  <img src={company.logo} alt={company.name} className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1 text-xs leading-tight line-clamp-2">{company.name}</h3>
+                <p className="text-[10px] text-gray-600 mb-2 truncate">{company.sector}</p>
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0E2F56] text-white text-[10px] font-semibold rounded-full">
                   <Briefcase className="w-3 h-3" />
                   <span>{company.activeJobs} offres</span>
                 </div>
