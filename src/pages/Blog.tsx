@@ -69,6 +69,15 @@ export default function Blog() {
   const [resources, setResources] = useState<any[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [resourceCategory, setResourceCategory] = useState('all');
+  const [showArticleSubmitModal, setShowArticleSubmitModal] = useState(false);
+  const [articleSubmitForm, setArticleSubmitForm] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    category: '',
+    author: '',
+    email: '',
+  });
 
   useEffect(() => {
     loadPosts();
@@ -147,6 +156,40 @@ export default function Blog() {
       window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
     } else if (platform === 'linkedin') {
       window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`);
+    }
+  };
+
+  const handleArticleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const { error } = await supabase
+        .from('blog_posts')
+        .insert([{
+          title: articleSubmitForm.title,
+          slug: articleSubmitForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          excerpt: articleSubmitForm.excerpt,
+          content: articleSubmitForm.content,
+          category: articleSubmitForm.category,
+          author: articleSubmitForm.author,
+          published: false, // Les articles soumis doivent être validés
+        }]);
+
+      if (error) throw error;
+
+      alert('Merci pour votre soumission ! Votre article sera examiné par notre équipe et publié prochainement.');
+      setShowArticleSubmitModal(false);
+      setArticleSubmitForm({
+        title: '',
+        excerpt: '',
+        content: '',
+        category: '',
+        author: '',
+        email: '',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la soumission:', error);
+      alert('Une erreur est survenue. Veuillez réessayer.');
     }
   };
 
@@ -653,7 +696,7 @@ export default function Blog() {
 
           <div className="text-center">
             <button
-              onClick={() => alert('Formulaire de soumission d\'article disponible prochainement')}
+              onClick={() => setShowArticleSubmitModal(true)}
               className="px-8 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-semibold rounded-lg transition inline-flex items-center gap-2"
             >
               <FileText className="w-5 h-5" />
@@ -730,6 +773,141 @@ export default function Blog() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showArticleSubmitModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Proposer un article</h2>
+              <button
+                onClick={() => setShowArticleSubmitModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleArticleSubmit} className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre de l'article *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={articleSubmitForm.title}
+                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, title: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                  placeholder="Ex: Les tendances RH en Guinée en 2025"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Catégorie *
+                </label>
+                <select
+                  required
+                  value={articleSubmitForm.category}
+                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, category: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                >
+                  <option value="">Sélectionnez une catégorie</option>
+                  <option value="Recrutement">Recrutement</option>
+                  <option value="RH">RH</option>
+                  <option value="Carrière">Carrière</option>
+                  <option value="Formation">Formation</option>
+                  <option value="HSE">HSE</option>
+                  <option value="Juridique">Juridique</option>
+                  <option value="Innovation RH">Innovation RH</option>
+                  <option value="Tendances">Tendances</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Résumé (excerpt) *
+                </label>
+                <textarea
+                  required
+                  value={articleSubmitForm.excerpt}
+                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, excerpt: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                  placeholder="Résumé court de votre article (150-200 caractères)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contenu de l'article *
+                </label>
+                <textarea
+                  required
+                  value={articleSubmitForm.content}
+                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, content: e.target.value })}
+                  rows={12}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                  placeholder="Rédigez votre article ici..."
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Votre nom *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={articleSubmitForm.author}
+                    onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, author: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    placeholder="Ex: Dr. Mamadou Sow"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={articleSubmitForm.email}
+                    onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, email: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    placeholder="votre.email@exemple.com"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Votre article sera examiné par notre équipe avant publication.
+                  Nous vous contacterons par email pour valider la publication.
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowArticleSubmitModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-semibold"
+                >
+                  Soumettre l'article
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
