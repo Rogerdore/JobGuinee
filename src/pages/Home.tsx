@@ -175,13 +175,13 @@ export default function Home({ onNavigate }: HomeProps) {
       <section
         className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden"
         style={{
-          backgroundImage: 'url("https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920")',
+          backgroundImage: 'url("https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundBlendMode: 'multiply',
         }}
       >
-        <div className="absolute inset-0 bg-[#0E2F56] opacity-90"></div>
+        <div className="absolute inset-0 bg-[#0E2F56] opacity-85"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="text-center mb-12">
