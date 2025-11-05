@@ -147,10 +147,37 @@ export default function Blog() {
     return resourceCategory === 'all' || resource.category === resourceCategory;
   });
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Merci ${email}! Vous recevrez bientôt nos meilleurs articles RH.`);
-    setEmail('');
+
+    if (!email) {
+      alert('Veuillez entrer votre adresse email');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert([{
+          email: email,
+          domain: 'all',
+          is_active: true,
+        }]);
+
+      if (error) {
+        if (error.code === '23505') {
+          alert('Cet email est déjà abonné à notre newsletter !');
+        } else {
+          throw error;
+        }
+      } else {
+        alert(`Merci ${email}! Vous recevrez bientôt nos meilleurs articles RH directement dans votre boîte mail.`);
+        setEmail('');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'inscription:', error);
+      alert('Une erreur est survenue. Veuillez réessayer.');
+    }
   };
 
   const handleShare = (platform: string, post: BlogPost) => {
