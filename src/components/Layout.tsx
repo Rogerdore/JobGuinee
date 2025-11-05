@@ -1,5 +1,5 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 
@@ -42,6 +42,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { name: 'CVthèque', page: 'cvtheque', icon: Users },
     { name: 'Formations', page: 'formations', icon: BookOpen },
     { name: 'Blog', page: 'blog', icon: FileText },
+    { name: 'Ressources', page: 'resources', icon: Download },
   ];
 
   const handleSignOut = async () => {

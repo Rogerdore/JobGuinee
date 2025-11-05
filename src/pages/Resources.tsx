@@ -1,0 +1,329 @@
+import { useEffect, useState } from 'react';
+import {
+  BookOpen,
+  Download,
+  Filter,
+  Search,
+  FileText,
+  Laptop,
+  Book,
+  FileCode,
+  FileSpreadsheet,
+  Star,
+  Calendar,
+  Eye
+} from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { sampleResources } from '../utils/sampleResources';
+
+interface Resource {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  file_url: string;
+  file_size?: string;
+  thumbnail_url?: string;
+  author?: string;
+  tags?: string[];
+  download_count: number;
+  view_count?: number;
+  rating?: number;
+  published: boolean;
+  created_at: string;
+}
+
+const categoryIcons: { [key: string]: any } = {
+  ebook: Book,
+  document: FileText,
+  software: Laptop,
+  guide: BookOpen,
+  template: FileSpreadsheet,
+  other: FileCode,
+};
+
+const categoryLabels: { [key: string]: string } = {
+  ebook: 'Livre électronique',
+  document: 'Document',
+  software: 'Logiciel',
+  guide: 'Guide',
+  template: 'Modèle',
+  other: 'Autre',
+};
+
+export default function Resources() {
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('recent');
+
+  useEffect(() => {
+    loadResources();
+  }, []);
+
+  const loadResources = async () => {
+    const { data } = await supabase
+      .from('resources')
+      .select('*')
+      .eq('published', true)
+      .order('created_at', { ascending: false });
+
+    if (data && data.length > 0) {
+      setResources(data);
+    } else {
+      setResources(sampleResources as any);
+    }
+    setLoading(false);
+  };
+
+  const handleResourceDownload = async (resourceId: string, fileUrl: string) => {
+    await supabase.rpc('increment_resource_downloads', { resource_id: resourceId });
+    window.open(fileUrl, '_blank');
+  };
+
+  const filteredResources = resources
+    .filter((resource) => {
+      const matchesSearch =
+        !searchQuery ||
+        resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        resource.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        resource.author?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === 'all' || resource.category === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'recent') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } else if (sortBy === 'popular') {
+        return b.download_count - a.download_count;
+      } else if (sortBy === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+
+  const categories = [
+    { id: 'all', name: 'Toutes les catégories', icon: Filter },
+    { id: 'ebook', name: 'Livres électroniques', icon: Book },
+    { id: 'document', name: 'Documents', icon: FileText },
+    { id: 'software', name: 'Logiciels', icon: Laptop },
+    { id: 'guide', name: 'Guides', icon: BookOpen },
+    { id: 'template', name: 'Modèles', icon: FileSpreadsheet },
+    { id: 'other', name: 'Autres', icon: FileCode },
+  ];
+
+  const stats = {
+    total: resources.length,
+    downloads: resources.reduce((sum, r) => sum + (r.download_count || 0), 0),
+    categories: new Set(resources.map(r => r.category)).size,
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-br from-[#0E2F56] via-blue-800 to-[#0E2F56] text-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Centre de Ressources</h1>
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+              Livres, documents, guides et outils pour booster votre carrière
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+              <BookOpen className="w-12 h-12 mx-auto mb-3 text-blue-200" />
+              <div className="text-3xl font-bold mb-1">{stats.total}</div>
+              <div className="text-blue-200">Ressources disponibles</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+              <Download className="w-12 h-12 mx-auto mb-3 text-blue-200" />
+              <div className="text-3xl font-bold mb-1">{stats.downloads}</div>
+              <div className="text-blue-200">Téléchargements totaux</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+              <Filter className="w-12 h-12 mx-auto mb-3 text-blue-200" />
+              <div className="text-3xl font-bold mb-1">{stats.categories}</div>
+              <div className="text-blue-200">Catégories</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher une ressource..."
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+              />
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+            >
+              <option value="recent">Plus récentes</option>
+              <option value="popular">Plus populaires</option>
+              <option value="title">Par titre (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <aside className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Catégories
+              </h3>
+              <div className="space-y-2">
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  const count = category.id === 'all'
+                    ? resources.length
+                    : resources.filter(r => r.category === category.id).length;
+
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition ${
+                        selectedCategory === category.id
+                          ? 'bg-[#0E2F56] text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5" />
+                        <span className="font-medium text-sm">{category.name}</span>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        selectedCategory === category.id
+                          ? 'bg-white/20'
+                          : 'bg-gray-200'
+                      }`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </aside>
+
+          <main className="lg:col-span-3">
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500">Chargement des ressources...</p>
+              </div>
+            ) : filteredResources.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg mb-2">Aucune ressource trouvée</p>
+                <p className="text-gray-400 text-sm">Essayez de modifier vos critères de recherche</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredResources.map((resource) => {
+                  const Icon = categoryIcons[resource.category] || FileCode;
+
+                  return (
+                    <div
+                      key={resource.id}
+                      className="bg-white rounded-xl border border-gray-200 hover:shadow-xl transition-all overflow-hidden group"
+                    >
+                      {resource.thumbnail_url ? (
+                        <div className="relative h-48 overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700">
+                          <img
+                            src={resource.thumbnail_url}
+                            alt={resource.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute top-3 left-3">
+                            <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[#0E2F56] text-xs font-bold rounded-full">
+                              {categoryLabels[resource.category]}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative h-48 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                          <Icon className="w-20 h-20 text-white/30" />
+                          <div className="absolute top-3 left-3">
+                            <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[#0E2F56] text-xs font-bold rounded-full">
+                              {categoryLabels[resource.category]}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-6">
+                        <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-[#0E2F56] transition">
+                          {resource.title}
+                        </h3>
+
+                        {resource.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                            {resource.description}
+                          </p>
+                        )}
+
+                        {resource.author && (
+                          <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                            <span>Par</span>
+                            <span className="font-medium">{resource.author}</span>
+                          </p>
+                        )}
+
+                        {resource.tags && resource.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-4">
+                            {resource.tags.slice(0, 3).map((tag: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded font-medium"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <Download className="w-3 h-3" />
+                              <span>{resource.download_count} téléchargements</span>
+                            </div>
+                            {resource.file_size && (
+                              <div className="text-xs text-gray-400">{resource.file_size}</div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleResourceDownload(resource.id, resource.file_url)}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-medium text-sm"
+                          >
+                            <Download className="w-4 h-4" />
+                            Télécharger
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
