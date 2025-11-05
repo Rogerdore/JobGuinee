@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sampleResources } from '../utils/sampleResources';
+import { sampleSuccessStories } from '../utils/sampleSuccessStories';
 import PaidResourceModal from '../components/resources/PaidResourceModal';
 import SuccessStoryCard from '../components/resources/SuccessStoryCard';
 import SuccessStoryModal from '../components/resources/SuccessStoryModal';
@@ -104,8 +105,10 @@ export default function Resources() {
       .order('view_count', { ascending: false })
       .limit(6);
 
-    if (data) {
+    if (data && data.length > 0) {
       setSuccessStories(data);
+    } else {
+      setSuccessStories(sampleSuccessStories as any);
     }
     setStoriesLoading(false);
   };
