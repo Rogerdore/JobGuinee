@@ -6,6 +6,7 @@ import SearchBar from '../components/cvtheque/SearchBar';
 import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFilters';
 import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
 import ProfileCart from '../components/cvtheque/ProfileCart';
+import CandidatePreviewModal from '../components/cvtheque/CandidatePreviewModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 
 interface CVThequeProps {
@@ -27,6 +28,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [sessionId] = useState(() => `guest_${Date.now()}_${Math.random().toString(36)}`);
   const [currentPage, setCurrentPage] = useState(1);
   const profilesPerPage = 12;
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
 
   useEffect(() => {
     loadCandidates();
@@ -270,59 +273,15 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   const handleViewDetails = (candidateId: string) => {
-    console.log('👁️ Viewing details for:', candidateId);
     const candidate = candidates.find(c => c.id === candidateId);
-    const isPurchased = purchasedProfiles.includes(candidateId);
-
-    console.log('Found candidate:', candidate);
-    console.log('Is purchased:', isPurchased);
 
     if (!candidate) {
-      console.error('Candidate not found');
       alert('❌ Erreur: Profil introuvable');
       return;
     }
 
-    if (isPurchased) {
-      const fullInfo = `🎉 PROFIL COMPLET - ${candidate.profile?.full_name || 'Candidat'}
-
-📋 Poste: ${candidate.title || 'N/A'}
-📍 Localisation: ${candidate.location || 'N/A'}
-💼 Expérience: ${candidate.experience_years || 0} ans
-🎓 Formation: ${candidate.education_level || 'N/A'}
-
-📧 Email: ${candidate.profile?.email || 'N/A'}
-📱 Téléphone: [Disponible après achat]
-
-🔧 Compétences principales:
-${candidate.skills?.slice(0, 5).map(s => `• ${s}`).join('\n') || 'N/A'}
-
-${candidate.bio ? `📝 Bio:\n${candidate.bio}\n` : ''}
-💾 Téléchargez le CV complet depuis votre espace recruteur.`;
-      alert(fullInfo);
-    } else {
-      const preview = `👁️ APERÇU DU PROFIL
-
-📋 Poste: ${candidate.title || 'Professionnel qualifié'}
-📍 Région: ${candidate.location?.split(',')[0] || 'Confidentielle'}
-💼 Expérience: ${candidate.experience_years || 0} ans
-🎓 Niveau: ${candidate.education_level || 'N/A'}
-
-🔧 Compétences (aperçu):
-${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
-
-🔒 INFORMATIONS COMPLÈTES DISPONIBLES APRÈS ACHAT:
-• Nom complet et coordonnées
-• CV téléchargeable
-• Certifications
-• Portfolio / références
-• Historique complet
-
-💰 Prix: ${new Intl.NumberFormat('fr-GN').format(candidate.profile_price || 0)} GNF
-
-➡️ Ajoutez ce profil au panier pour déverrouiller toutes les informations!`;
-      alert(preview);
-    }
+    setSelectedCandidate(candidate);
+    setPreviewModalOpen(true);
   };
 
   const cartItemIds = cartItems.map(item => item.candidate_id);
@@ -349,6 +308,20 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
       />
+
+      {selectedCandidate && (
+        <CandidatePreviewModal
+          candidate={selectedCandidate}
+          isOpen={previewModalOpen}
+          onClose={() => {
+            setPreviewModalOpen(false);
+            setSelectedCandidate(null);
+          }}
+          isPurchased={purchasedProfiles.includes(selectedCandidate.id)}
+          onAddToCart={handleAddToCart}
+          isInCart={cartItems.some(item => item.candidate_id === selectedCandidate.id)}
+        />
+      )}
 
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-8">
