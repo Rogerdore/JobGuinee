@@ -41,7 +41,11 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     description: '',
     category: 'ebook',
     author: '',
+    author_email: '',
+    author_phone: '',
     tags: [] as string[],
+    is_paid: false,
+    price: '',
     published: false
   });
   const [resourceFile, setResourceFile] = useState<File | null>(null);
@@ -321,6 +325,8 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
         file_type: fileType,
         file_size: fileSize,
         thumbnail_url: thumbnailUrl,
+        price: resourceFormData.is_paid && resourceFormData.price ? parseFloat(resourceFormData.price) : null,
+        author_user_id: user?.id || null,
         published_at: resourceFormData.published ? new Date().toISOString() : null
       };
 
@@ -390,7 +396,11 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       description: '',
       category: 'ebook',
       author: '',
+      author_email: '',
+      author_phone: '',
       tags: [],
+      is_paid: false,
+      price: '',
       published: false
     });
     setResourceFile(null);
@@ -1137,6 +1147,31 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email de contact</label>
+                  <input
+                    type="email"
+                    value={resourceFormData.author_email}
+                    onChange={(e) => setResourceFormData({ ...resourceFormData, author_email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="email@exemple.com"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Affiché pour les ressources payantes</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone de contact</label>
+                  <input
+                    type="tel"
+                    value={resourceFormData.author_phone}
+                    onChange={(e) => setResourceFormData({ ...resourceFormData, author_phone: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="+224 XXX XXX XXX"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Affiché pour les ressources payantes</p>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par des virgules)</label>
                 <input
@@ -1149,6 +1184,44 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Exemple: RH, Formation, Juridique"
                 />
+              </div>
+
+              <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50">
+                <div className="flex items-center gap-3 mb-4">
+                  <input
+                    type="checkbox"
+                    id="isPaidResource"
+                    checked={resourceFormData.is_paid}
+                    onChange={(e) => setResourceFormData({
+                      ...resourceFormData,
+                      is_paid: e.target.checked,
+                      price: e.target.checked ? resourceFormData.price : ''
+                    })}
+                    className="w-5 h-5 text-[#FF8C00] focus:ring-[#FF8C00]"
+                  />
+                  <label htmlFor="isPaidResource" className="text-sm font-bold text-gray-900">
+                    Cette ressource est payante
+                  </label>
+                </div>
+
+                {resourceFormData.is_paid && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Prix (GNF) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={resourceFormData.price}
+                      onChange={(e) => setResourceFormData({ ...resourceFormData, price: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00]"
+                      placeholder="Exemple: 50000"
+                      required={resourceFormData.is_paid}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Les utilisateurs devront vous contacter pour effectuer le paiement
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

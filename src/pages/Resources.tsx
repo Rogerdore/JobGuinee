@@ -9,12 +9,11 @@ import {
   Book,
   FileCode,
   FileSpreadsheet,
-  Star,
-  Calendar,
-  Eye
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sampleResources } from '../utils/sampleResources';
+import PaidResourceModal from '../components/resources/PaidResourceModal';
 
 interface Resource {
   id: string;
@@ -25,10 +24,14 @@ interface Resource {
   file_size?: string;
   thumbnail_url?: string;
   author?: string;
+  author_email?: string;
+  author_phone?: string;
   tags?: string[];
   download_count: number;
   view_count?: number;
   rating?: number;
+  is_paid: boolean;
+  price?: number;
   published: boolean;
   created_at: string;
 }
@@ -57,6 +60,8 @@ export default function Resources() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('recent');
+  const [selectedPaidResource, setSelectedPaidResource] = useState<Resource | null>(null);
+  const [showPaidModal, setShowPaidModal] = useState(false);
 
   useEffect(() => {
     loadResources();
@@ -77,9 +82,24 @@ export default function Resources() {
     setLoading(false);
   };
 
-  const handleResourceDownload = async (resourceId: string, fileUrl: string) => {
-    await supabase.rpc('increment_resource_downloads', { resource_id: resourceId });
-    window.open(fileUrl, '_blank');
+  const handleResourceDownload = async (resource: Resource) => {
+    if (resource.is_paid) {
+      setSelectedPaidResource(resource);
+      setShowPaidModal(true);
+      return;
+    }
+
+    await supabase.rpc('increment_resource_downloads', { resource_id: resource.id });
+    window.open(resource.file_url, '_blank');
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('fr-GN', {
+      style: 'currency',
+      currency: 'GNF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
   };
 
   const filteredResources = resources
@@ -249,19 +269,31 @@ export default function Resources() {
                             alt={resource.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
-                          <div className="absolute top-3 left-3">
+                          <div className="absolute top-3 left-3 flex gap-2">
                             <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[#0E2F56] text-xs font-bold rounded-full">
                               {categoryLabels[resource.category]}
                             </span>
+                            {resource.is_paid && (
+                              <span className="px-3 py-1 bg-[#FF8C00]/90 backdrop-blur-sm text-white text-xs font-bold rounded-full flex items-center gap-1">
+                                <DollarSign className="w-3 h-3" />
+                                Payant
+                              </span>
+                            )}
                           </div>
                         </div>
                       ) : (
                         <div className="relative h-48 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
                           <Icon className="w-20 h-20 text-white/30" />
-                          <div className="absolute top-3 left-3">
+                          <div className="absolute top-3 left-3 flex gap-2">
                             <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[#0E2F56] text-xs font-bold rounded-full">
                               {categoryLabels[resource.category]}
                             </span>
+                            {resource.is_paid && (
+                              <span className="px-3 py-1 bg-[#FF8C00]/90 backdrop-blur-sm text-white text-xs font-bold rounded-full flex items-center gap-1">
+                                <DollarSign className="w-3 h-3" />
+                                Payant
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -297,6 +329,17 @@ export default function Resources() {
                           </div>
                         )}
 
+                        {resource.is_paid && resource.price && (
+                          <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-3 mb-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-700 font-medium">Prix:</span>
+                              <span className="text-xl font-bold text-[#FF8C00]">
+                                {formatPrice(resource.price)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -308,11 +351,24 @@ export default function Resources() {
                             )}
                           </div>
                           <button
-                            onClick={() => handleResourceDownload(resource.id, resource.file_url)}
-                            className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-medium text-sm"
+                            onClick={() => handleResourceDownload(resource)}
+                            className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition font-medium text-sm ${
+                              resource.is_paid
+                                ? 'bg-[#FF8C00] hover:bg-orange-600'
+                                : 'bg-[#0E2F56] hover:bg-blue-800'
+                            }`}
                           >
-                            <Download className="w-4 h-4" />
-                            Télécharger
+                            {resource.is_paid ? (
+                              <>
+                                <DollarSign className="w-4 h-4" />
+                                Acheter
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4" />
+                                Télécharger
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -324,6 +380,23 @@ export default function Resources() {
           </main>
         </div>
       </div>
+
+      {selectedPaidResource && (
+        <PaidResourceModal
+          isOpen={showPaidModal}
+          onClose={() => {
+            setShowPaidModal(false);
+            setSelectedPaidResource(null);
+          }}
+          resource={{
+            title: selectedPaidResource.title,
+            price: selectedPaidResource.price || 0,
+            author: selectedPaidResource.author || 'Auteur',
+            author_email: selectedPaidResource.author_email,
+            author_phone: selectedPaidResource.author_phone,
+          }}
+        />
+      )}
     </div>
   );
 }
