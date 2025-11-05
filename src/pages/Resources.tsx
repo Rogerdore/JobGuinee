@@ -20,6 +20,8 @@ import {
 import { supabase } from '../lib/supabase';
 import { sampleResources } from '../utils/sampleResources';
 import PaidResourceModal from '../components/resources/PaidResourceModal';
+import SuccessStoryCard from '../components/resources/SuccessStoryCard';
+import SuccessStoryModal from '../components/resources/SuccessStoryModal';
 
 interface Resource {
   id: string;
@@ -69,8 +71,14 @@ export default function Resources() {
   const [selectedPaidResource, setSelectedPaidResource] = useState<Resource | null>(null);
   const [showPaidModal, setShowPaidModal] = useState(false);
 
+  const [successStories, setSuccessStories] = useState<any[]>([]);
+  const [storiesLoading, setStoriesLoading] = useState(true);
+  const [selectedStory, setSelectedStory] = useState<any>(null);
+  const [showStoryModal, setShowStoryModal] = useState(false);
+
   useEffect(() => {
     loadResources();
+    loadSuccessStories();
   }, []);
 
   const loadResources = async () => {
@@ -86,6 +94,25 @@ export default function Resources() {
       setResources(sampleResources as any);
     }
     setLoading(false);
+  };
+
+  const loadSuccessStories = async () => {
+    const { data } = await supabase
+      .from('success_stories')
+      .select('*')
+      .eq('published', true)
+      .order('view_count', { ascending: false })
+      .limit(6);
+
+    if (data) {
+      setSuccessStories(data);
+    }
+    setStoriesLoading(false);
+  };
+
+  const handleStoryClick = (story: any) => {
+    setSelectedStory(story);
+    setShowStoryModal(true);
   };
 
   const handleResourceDownload = async (resource: Resource) => {
@@ -488,6 +515,80 @@ export default function Resources() {
             )}
           </main>
         </div>
+
+        <section className="mt-16 mb-12">
+          <div className="bg-gradient-to-br from-orange-50 via-white to-blue-50 rounded-2xl p-8 lg:p-12 border-2 border-orange-100">
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-6 mb-8">
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF8C00]/10 rounded-full text-sm font-bold text-[#FF8C00] mb-4">
+                  <Heart className="w-4 h-4" />
+                  Histoires Inspirantes
+                </div>
+                <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
+                  Success Stories & Autobiographies
+                </h2>
+                <p className="text-lg text-gray-600 max-w-3xl">
+                  Découvrez les parcours inspirants de professionnels guinéens qui ont marqué leur domaine.
+                  Leurs histoires de réussite, défis surmontés et leçons apprises pour inspirer votre propre trajectoire.
+                </p>
+              </div>
+
+              <button className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <Upload className="w-5 h-5" />
+                Partager mon histoire
+              </button>
+            </div>
+
+            {storiesLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500">Chargement des histoires...</p>
+              </div>
+            ) : successStories.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-gray-300">
+                <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg mb-2">Aucune histoire publiée pour le moment</p>
+                <p className="text-gray-400 text-sm">Soyez le premier à partager votre parcours inspirant!</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {successStories.map((story) => (
+                    <SuccessStoryCard
+                      key={story.id}
+                      story={story}
+                      onClick={() => handleStoryClick(story)}
+                    />
+                  ))}
+                </div>
+
+                <div className="bg-gradient-to-r from-[#0E2F56] to-blue-700 rounded-xl p-8 text-center">
+                  <h3 className="text-2xl font-bold text-white mb-3">
+                    Votre histoire peut inspirer des milliers de personnes
+                  </h3>
+                  <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+                    Partagez votre parcours, vos défis surmontés et vos réussites. Devenez un modèle pour la prochaine génération
+                    de professionnels guinéens et contribuez à créer un réseau d'inspiration et de mentorat.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-4">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-white">
+                      <Users className="w-5 h-5" />
+                      <span className="font-medium">Inspirez la communauté</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-white">
+                      <TrendingUp className="w-5 h-5" />
+                      <span className="font-medium">Créez des opportunités</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-white">
+                      <Share2 className="w-5 h-5" />
+                      <span className="font-medium">Construisez votre réseau</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
       </div>
 
       {selectedPaidResource && (
@@ -504,6 +605,17 @@ export default function Resources() {
             author_email: selectedPaidResource.author_email,
             author_phone: selectedPaidResource.author_phone,
           }}
+        />
+      )}
+
+      {selectedStory && (
+        <SuccessStoryModal
+          isOpen={showStoryModal}
+          onClose={() => {
+            setShowStoryModal(false);
+            setSelectedStory(null);
+          }}
+          story={selectedStory}
         />
       )}
     </div>
