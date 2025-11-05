@@ -237,101 +237,100 @@ export default function Resources() {
         </div>
 
         <div className="bg-gradient-to-br from-[#0E2F56] via-blue-700 to-[#0E2F56] rounded-2xl shadow-xl overflow-hidden mb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 lg:p-12">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr,1fr] gap-6 p-6 lg:p-10">
             <div className="text-white">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-6">
                 <Heart className="w-4 h-4" />
                 Partagez vos connaissances
               </div>
 
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              <h2 className="text-2xl lg:text-3xl font-bold mb-3">
                 Contribuez à l'Écosystème Professionnel Guinéen
               </h2>
 
-              <p className="text-lg text-blue-100 mb-6 leading-relaxed">
+              <p className="text-base text-blue-100 mb-5 leading-relaxed">
                 En partageant vos ressources, vous participez activement à l'enrichissement du monde du travail en Guinée.
                 Votre contribution aide des milliers de professionnels à monter en compétences et à réussir leur carrière.
               </p>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-[#FF8C00] rounded-lg flex items-center justify-center">
-                    <Share2 className="w-5 h-5 text-white" />
+              <div className="space-y-3 mb-6">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#FF8C00] rounded-lg flex items-center justify-center">
+                    <Share2 className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white mb-1">Partagez vos savoirs</h3>
-                    <p className="text-sm text-blue-200">Livres, guides, modèles et outils qui ont fait leurs preuves</p>
+                    <h3 className="font-bold text-white text-sm mb-0.5">Partagez vos savoirs</h3>
+                    <p className="text-xs text-blue-200">Livres, guides, modèles et outils qui ont fait leurs preuves</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-[#FF8C00] rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#FF8C00] rounded-lg flex items-center justify-center">
+                    <Users className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white mb-1">Aidez la communauté</h3>
-                    <p className="text-sm text-blue-200">Contribuez au développement professionnel de vos pairs</p>
+                    <h3 className="font-bold text-white text-sm mb-0.5">Aidez la communauté</h3>
+                    <p className="text-xs text-blue-200">Contribuez au développement professionnel de vos pairs</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-[#FF8C00] rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-white" />
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#FF8C00] rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white mb-1">Valorisez votre expertise</h3>
-                    <p className="text-sm text-blue-200">Proposez des ressources gratuites ou générez des revenus avec vos contenus premium</p>
+                    <h3 className="font-bold text-white text-sm mb-0.5">Valorisez votre expertise</h3>
+                    <p className="text-xs text-blue-200">Proposez des ressources gratuites ou générez des revenus avec vos contenus premium</p>
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF8C00] hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-sm"
               >
-                <Upload className="w-5 h-5" />
+                <Upload className="w-4 h-4" />
                 Publier une ressource
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
             <div className="hidden lg:block relative">
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl backdrop-blur-sm"></div>
-              <div className="relative z-10 space-y-6 p-6">
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-lg transform rotate-2 hover:rotate-0 transition-transform">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
-                      <Book className="w-6 h-6 text-white" />
+              <div className="relative z-10 space-y-3 p-4">
+                <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
+                      <Book className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600 font-medium">Ressources partagées</div>
-                      <div className="text-2xl font-bold text-gray-900">{stats.total}+</div>
+                      <div className="text-xs text-gray-600 font-medium">Ressources partagées</div>
+                      <div className="text-xl font-bold text-gray-900">{stats.total}+</div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">Et ce nombre ne cesse de croître grâce à vous!</p>
+                  <p className="text-xs text-gray-600">Et ce nombre ne cesse de croître grâce à vous!</p>
                 </div>
 
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-lg transform -rotate-2 hover:rotate-0 transition-transform">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-700 rounded-lg flex items-center justify-center">
-                      <Download className="w-6 h-6 text-white" />
+                <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-700 rounded-lg flex items-center justify-center">
+                      <Download className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600 font-medium">Téléchargements</div>
-                      <div className="text-2xl font-bold text-gray-900">{stats.downloads.toLocaleString()}+</div>
+                      <div className="text-xs text-gray-600 font-medium">Téléchargements</div>
+                      <div className="text-xl font-bold text-gray-900">{stats.downloads.toLocaleString()}+</div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">Des professionnels ont déjà bénéficié de ces ressources</p>
+                  <p className="text-xs text-gray-600">Des professionnels ont déjà bénéficié de ces ressources</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-[#FF8C00] to-orange-600 rounded-xl p-6 shadow-lg">
-                  <p className="text-white text-sm italic leading-relaxed">
-                    "Le partage de connaissances est la clé du développement professionnel collectif.
-                    Ensemble, construisons un écosystème RH guinéen plus fort et plus compétent."
+                <div className="bg-gradient-to-br from-[#FF8C00] to-orange-600 rounded-lg p-4 shadow-lg">
+                  <p className="text-white text-xs italic leading-relaxed mb-2">
+                    "Le partage de connaissances est la clé du développement professionnel collectif. Ensemble, construisons un écosystème RH guinéen plus fort et plus compétent."
                   </p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <Heart className="w-5 h-5 text-white" />
-                    <span className="text-white font-bold text-sm">JobGuinée</span>
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-white" />
+                    <span className="text-white font-bold text-xs">JobGuinée</span>
                   </div>
                 </div>
               </div>
