@@ -23,6 +23,7 @@ import { sampleSuccessStories } from '../utils/sampleSuccessStories';
 import PaidResourceModal from '../components/resources/PaidResourceModal';
 import SuccessStoryCard from '../components/resources/SuccessStoryCard';
 import SuccessStoryModal from '../components/resources/SuccessStoryModal';
+import SubmitStoryModal from '../components/resources/SubmitStoryModal';
 
 interface Resource {
   id: string;
@@ -76,6 +77,7 @@ export default function Resources() {
   const [storiesLoading, setStoriesLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState<any>(null);
   const [showStoryModal, setShowStoryModal] = useState(false);
+  const [showSubmitStoryModal, setShowSubmitStoryModal] = useState(false);
 
   useEffect(() => {
     loadResources();
@@ -536,7 +538,10 @@ export default function Resources() {
                 </p>
               </div>
 
-              <button className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <button
+                onClick={() => setShowSubmitStoryModal(true)}
+                className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
                 <Upload className="w-5 h-5" />
                 Partager mon histoire
               </button>
@@ -621,6 +626,14 @@ export default function Resources() {
           story={selectedStory}
         />
       )}
+
+      <SubmitStoryModal
+        isOpen={showSubmitStoryModal}
+        onClose={() => setShowSubmitStoryModal(false)}
+        onSuccess={() => {
+          loadSuccessStories();
+        }}
+      />
     </div>
   );
 }
