@@ -41,6 +41,22 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     loadData();
   }, [profile?.id]);
 
+  useEffect(() => {
+    if (activeTab === 'dashboard' || activeTab === 'applications') {
+      loadData();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (activeTab === 'dashboard' || activeTab === 'applications') {
+        loadData();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, profile?.id]);
+
   const loadData = async () => {
     if (!profile?.id) {
       setLoading(false);

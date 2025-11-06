@@ -35,6 +35,14 @@ export default function MyApplications() {
     loadApplications();
   }, [filter]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadApplications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [filter]);
+
   const loadApplications = async () => {
     setLoading(true);
 
