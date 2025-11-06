@@ -59,7 +59,11 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   };
 
   const incrementViews = async () => {
-    await supabase.rpc('increment_job_views', { job_id: jobId }).catch(() => {});
+    try {
+      await supabase.rpc('increment_job_views', { job_id: jobId });
+    } catch (error) {
+      console.log('Could not increment views');
+    }
   };
 
   const checkIfApplied = async () => {
@@ -449,15 +453,15 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
             {!isRecruiter && (
               <>
-                {showApplicationForm ? (
+                {false && showQuickApplyModal ? (
                   <div className="border-t-2 border-gray-200 pt-8 mt-8">
                     <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                       <Mail className="w-5 h-5 text-[#FF8C00]" />
                       Lettre de motivation
                     </h3>
                     <textarea
-                      value={coverLetter}
-                      onChange={(e) => setCoverLetter(e.target.value)}
+                      value=""
+                      onChange={() => {}}
                       rows={6}
                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] mb-4"
                       placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste..."
@@ -465,13 +469,13 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     <div className="flex gap-3">
                       <button
                         onClick={handleApply}
-                        disabled={applying}
+                        disabled={loading}
                         className="flex-1 py-4 bg-[#0E2F56] hover:bg-[#1a4275] disabled:bg-gray-400 text-white font-bold rounded-xl transition shadow-lg text-lg"
                       >
-                        {applying ? 'Envoi en cours...' : 'Confirmer ma candidature'}
+                        {loading ? 'Envoi en cours...' : 'Confirmer ma candidature'}
                       </button>
                       <button
-                        onClick={() => setShowApplicationForm(false)}
+                        onClick={() => setShowQuickApplyModal(false)}
                         className="px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition"
                       >
                         Annuler
