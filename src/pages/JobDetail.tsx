@@ -504,17 +504,10 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                       </div>
                     ) : (
                       <button
-                        onClick={() => {
-                          if (!user) {
-                            onNavigate('login');
-                          } else if (profile?.user_type !== 'candidate') {
-                            alert('Seuls les candidats peuvent postuler aux offres');
-                          } else {
-                            setShowApplicationForm(true);
-                          }
-                        }}
-                        className="w-full py-5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg text-lg"
+                        onClick={handleApply}
+                        className="w-full py-5 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-bold rounded-xl transition shadow-lg text-lg flex items-center justify-center gap-2"
                       >
+                        <Briefcase className="w-5 h-5" />
                         Postuler maintenant
                       </button>
                     )}
