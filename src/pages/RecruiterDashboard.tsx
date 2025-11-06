@@ -104,11 +104,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     if (!profile?.id) return;
     setLoading(true);
 
-    const { data: companyData } = await supabase
+    const { data: companiesData, error: companyError } = await supabase
       .from('companies')
       .select('*')
       .eq('profile_id', profile.id)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
+
+    if (companyError) {
+      console.error('Error loading company:', companyError);
+    }
+
+    const companyData = companiesData && companiesData.length > 0 ? companiesData[0] : null;
 
     if (companyData) {
       console.log('Company loaded:', companyData);
@@ -171,6 +177,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
 
     setLoading(false);
+  };
+
+  const handleOpenJobForm = () => {
+    console.log('🔍 Checking company profile...', company);
+
+    if (!company?.id) {
+      alert("⚠️ Profil entreprise requis\n\nVeuillez d'abord compléter votre profil entreprise dans l'onglet 'Profil' avant de publier une offre d'emploi.");
+      setActiveTab('profile');
+      return;
+    }
+
+    setShowJobForm(true);
   };
 
   const handlePublishJob = async (data: JobFormData) => {
@@ -456,7 +474,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               )}
             </div>
             <button
-              onClick={() => setShowJobForm(true)}
+              onClick={handleOpenJobForm}
               className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
             >
               <Plus className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
@@ -532,7 +550,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                       <p className="text-gray-500">Aucun projet de recrutement</p>
                       <button
-                        onClick={() => setShowJobForm(true)}
+                        onClick={handleOpenJobForm}
                         className="mt-4 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition"
                       >
                         Créer une offre
@@ -641,7 +659,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   Mes projets de recrutement ({jobs.length})
                 </h2>
                 <button
-                  onClick={() => setShowJobForm(true)}
+                  onClick={handleOpenJobForm}
                   className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
@@ -659,7 +677,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     Commencez par créer votre première offre d'emploi
                   </p>
                   <button
-                    onClick={() => setShowJobForm(true)}
+                    onClick={handleOpenJobForm}
                     className="px-8 py-4 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-bold rounded-xl transition shadow-lg"
                   >
                     Créer une offre
@@ -978,7 +996,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 </div>
 
                 <button
-                  onClick={() => setShowJobForm(true)}
+                  onClick={handleOpenJobForm}
                   className="w-full py-5 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-bold text-lg rounded-2xl transition shadow-2xl flex items-center justify-center gap-3"
                 >
                   <Plus className="w-7 h-7" />
