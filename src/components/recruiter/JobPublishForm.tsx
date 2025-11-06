@@ -47,6 +47,18 @@ export interface JobFormData {
   legal_compliance: boolean;
 }
 
+const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+  <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+      <Icon className="w-6 h-6 text-[#FF8C00]" />
+      {title}
+    </h3>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </div>
+);
+
 export default function JobPublishForm({ onPublish, onClose }: JobPublishFormProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -254,18 +266,6 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
     await onPublish(formData);
     setLoading(false);
   };
-
-  const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-    <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <Icon className="w-6 h-6 text-[#FF8C00]" />
-        {title}
-      </h3>
-      <div className="space-y-4">
-        {children}
-      </div>
-    </div>
-  );
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
