@@ -375,6 +375,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         <JobPublishForm
           onPublish={handlePublishJob}
           onClose={() => setShowJobForm(false)}
+          companyData={company ? {
+            name: company.name,
+            description: company.description,
+            location: company.location,
+            website: company.website,
+            industry: company.industry,
+            email: company.email,
+            benefits: company.benefits
+          } : undefined}
         />
       )}
 

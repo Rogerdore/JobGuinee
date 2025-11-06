@@ -9,6 +9,15 @@ import { useAuth } from '../../contexts/AuthContext';
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
   onClose: () => void;
+  companyData?: {
+    name: string;
+    description?: string;
+    location?: string;
+    website?: string;
+    industry?: string;
+    email?: string;
+    benefits?: string[];
+  };
 }
 
 export interface JobFormData {
@@ -59,7 +68,7 @@ const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any
   </div>
 );
 
-export default function JobPublishForm({ onPublish, onClose }: JobPublishFormProps) {
+export default function JobPublishForm({ onPublish, onClose, companyData }: JobPublishFormProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -84,15 +93,15 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
     education_level: 'Licence',
     experience_required: '3–5 ans',
     languages: [],
-    company_name: '',
-    sector: 'Mines',
-    location: '',
-    company_description: '',
-    website: '',
+    company_name: companyData?.name || '',
+    sector: companyData?.industry || 'Mines',
+    location: companyData?.location || '',
+    company_description: companyData?.description || '',
+    website: companyData?.website || '',
     salary_range: '',
     salary_type: 'Négociable',
-    benefits: [],
-    application_email: '',
+    benefits: companyData?.benefits || [],
+    application_email: companyData?.email || '',
     receive_in_platform: true,
     required_documents: ['CV', 'Lettre de motivation'],
     application_instructions: '',
