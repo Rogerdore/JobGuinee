@@ -898,12 +898,14 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
 
           <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
             <button
+              type="button"
               onClick={onClose}
               className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
             >
               Annuler
             </button>
             <button
+              type="button"
               onClick={handlePublish}
               disabled={!formData.title || !formData.location || !formData.description || !formData.legal_compliance || loading}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
