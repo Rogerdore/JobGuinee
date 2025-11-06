@@ -213,7 +213,7 @@ export default function ApplicationModal({ isOpen, onClose, job, onSuccess }: Ap
                 required
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 placeholder="Votre prénom"
               />
             </div>
@@ -227,7 +227,7 @@ export default function ApplicationModal({ isOpen, onClose, job, onSuccess }: Ap
                 required
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 placeholder="Votre nom"
               />
             </div>
@@ -243,7 +243,7 @@ export default function ApplicationModal({ isOpen, onClose, job, onSuccess }: Ap
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 placeholder="votre@email.com"
               />
             </div>
@@ -257,7 +257,7 @@ export default function ApplicationModal({ isOpen, onClose, job, onSuccess }: Ap
                 required
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 placeholder="+224 XXX XX XX XX"
               />
             </div>
@@ -343,15 +343,18 @@ export default function ApplicationModal({ isOpen, onClose, job, onSuccess }: Ap
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message de motivation (Optionnel)
+              Message de motivation <span className="text-xs text-gray-500">(Optionnel)</span>
             </label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Expliquez brièvement pourquoi vous êtes intéressé par ce poste..."
+              rows={6}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
+              placeholder="Expliquez brièvement pourquoi vous êtes le candidat idéal pour ce poste..."
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Partagez votre motivation et mettez en avant vos atouts
+            </p>
           </div>
 
           <div className="flex gap-3">
