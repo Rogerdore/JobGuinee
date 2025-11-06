@@ -257,14 +257,34 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
   };
 
   const handlePublish = async () => {
-    if (!formData.title || !formData.location || !formData.description || !formData.legal_compliance) {
-      alert('Veuillez remplir tous les champs obligatoires et accepter la conformité légale.');
+    console.log('🔄 handlePublish called');
+    console.log('Form data:', formData);
+
+    const missingFields = [];
+    if (!formData.title) missingFields.push('Titre du poste');
+    if (!formData.location) missingFields.push('Localisation');
+    if (!formData.description) missingFields.push('Présentation du poste');
+    if (!formData.company_name) missingFields.push('Nom de l\'entreprise');
+    if (!formData.application_email) missingFields.push('Email de candidature');
+    if (!formData.deadline) missingFields.push('Date limite');
+    if (!formData.legal_compliance) missingFields.push('Conformité légale (case à cocher)');
+
+    if (missingFields.length > 0) {
+      alert(`Veuillez remplir les champs obligatoires manquants:\n\n• ${missingFields.join('\n• ')}`);
       return;
     }
 
-    setLoading(true);
-    await onPublish(formData);
-    setLoading(false);
+    try {
+      setLoading(true);
+      console.log('📤 Calling onPublish...');
+      await onPublish(formData);
+      console.log('✅ onPublish completed');
+    } catch (error) {
+      console.error('❌ Error in handlePublish:', error);
+      alert('Une erreur est survenue lors de la publication');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -907,7 +927,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
             <button
               type="button"
               onClick={handlePublish}
-              disabled={!formData.title || !formData.location || !formData.description || !formData.legal_compliance || loading}
+              disabled={!formData.title || !formData.location || !formData.description || !formData.company_name || !formData.application_email || !formData.deadline || !formData.legal_compliance || loading}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
             >
               {loading ? (

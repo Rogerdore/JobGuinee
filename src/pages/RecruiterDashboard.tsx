@@ -174,8 +174,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handlePublishJob = async (data: JobFormData) => {
+    console.log('📤 Publishing job...', { company, data });
+
     if (!company?.id) {
-      alert("Veuillez d'abord créer votre profil entreprise");
+      alert("Veuillez d'abord créer votre profil entreprise dans l'onglet 'Profil'");
+      setShowJobForm(false);
+      setActiveTab('profile');
       return;
     }
 
@@ -251,7 +255,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setActiveTab('projects');
       alert('✅ Offre publiée avec succès !');
     } else {
-      alert('❌ Erreur lors de la publication de l\'offre');
+      console.error('Error publishing job:', error);
+      alert(`❌ Erreur lors de la publication de l'offre: ${error.message}`);
     }
   };
 
