@@ -259,12 +259,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       description: fullDescription,
       location: data.location,
       contract_type: data.contract_type,
+      sector: data.sector,
       department: data.company_name,
       experience_level: data.experience_required,
       education_level: data.education_level,
-      application_deadline: data.deadline,
-      required_skills: data.skills,
+      deadline: data.deadline,
+      languages: data.languages,
+      keywords: data.skills,
       status: 'published',
+      is_featured: data.is_premium,
+      ai_generated: false,
     });
 
     if (!error) {
