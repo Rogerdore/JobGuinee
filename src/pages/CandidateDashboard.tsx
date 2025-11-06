@@ -441,20 +441,73 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               <div className="space-y-6">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                   <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">Complétez votre profil</h3>
-                      <p className="text-sm text-gray-600">Votre profil est complété à {profileCompletion}%</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-gray-900">Complétez votre profil</h3>
+                        {profileCompletion >= 80 ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                            <CheckCircle className="w-3 h-3" />
+                            Visible CVThèque
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                            <Lock className="w-3 h-3" />
+                            Non visible
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">Votre profil est complété à {profileCompletion}%</p>
+                      {profileCompletion < 80 ? (
+                        <div className="flex items-start gap-2 mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                          <AlertCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-semibold text-gray-900 mb-1">
+                              Complétez au moins 80% de votre profil pour :
+                            </p>
+                            <ul className="text-gray-700 space-y-1 text-xs">
+                              <li className="flex items-center gap-1.5">
+                                <Eye className="w-3.5 h-3.5 text-[#FF8C00]" />
+                                <span>Être visible dans la <strong>CVThèque</strong></span>
+                              </li>
+                              <li className="flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5 text-[#FF8C00]" />
+                                <span>Recevoir plus <strong>d'opportunités</strong></span>
+                              </li>
+                              <li className="flex items-center gap-1.5">
+                                <TrendingUp className="w-3.5 h-3.5 text-[#FF8C00]" />
+                                <span>Augmenter vos <strong>interactions avec les recruteurs</strong></span>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-semibold text-green-900 mb-1">
+                              Profil excellent !
+                            </p>
+                            <p className="text-green-700 text-xs">
+                              Vous êtes visible dans la CVThèque et maximisez vos chances d'être contacté par les recruteurs.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => setActiveTab('profile')}
-                      className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition text-sm font-medium"
+                      className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition text-sm font-medium flex-shrink-0 ml-4"
                     >
                       Compléter
                     </button>
                   </div>
                   <div className="w-full bg-white rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-[#0E2F56] to-blue-600 h-3 rounded-full transition-all duration-500"
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        profileCompletion >= 80
+                          ? 'bg-gradient-to-r from-green-500 to-green-600'
+                          : 'bg-gradient-to-r from-[#FF8C00] to-orange-500'
+                      }`}
                       style={{ width: `${profileCompletion}%` }}
                     ></div>
                   </div>
