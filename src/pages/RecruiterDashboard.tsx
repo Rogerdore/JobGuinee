@@ -141,22 +141,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           .from('applications')
           .select(`
             *,
-            candidate:candidate_profiles!applications_candidate_id_fkey(
+            jobs:job_id(title),
+            candidate_profile:candidate_profiles!applications_candidate_id_fkey(
               id,
               title,
               experience_years,
               education_level,
-              skills,
-              profile:profiles!candidate_profiles_profile_id_fkey(
-                full_name,
-                email,
-                phone,
-                avatar_url
-              )
+              skills
             )
           `)
           .in('job_id', jobIds)
-          .order('applied_at', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (appsData && appsData.length > 0) {
           console.log('✅ Loaded applications from DB:', appsData.length);
