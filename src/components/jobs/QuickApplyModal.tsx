@@ -25,6 +25,11 @@ export default function QuickApplyModal({ isOpen, onClose, job, onSuccess, onCus
   const hasCompleteProfile = profile?.full_name && user?.email && profile?.phone;
 
   const handleQuickApply = async () => {
+    if (job.id.startsWith('sample-')) {
+      setError('Impossible de postuler aux offres d\'exemple. Veuillez postuler à des offres réelles.');
+      return;
+    }
+
     if (!hasCompleteProfile) {
       setError('Votre profil est incomplet. Veuillez compléter votre candidature manuellement.');
       return;

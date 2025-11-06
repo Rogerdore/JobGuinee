@@ -74,6 +74,11 @@ export default function ApplicationModal({ isOpen, onClose, job, onSuccess }: Ap
       return;
     }
 
+    if (job.id.startsWith('sample-')) {
+      setError('Impossible de postuler aux offres d\'exemple. Veuillez postuler à des offres réelles.');
+      return;
+    }
+
     if (!cvFile) {
       setError('Veuillez télécharger votre CV');
       return;
