@@ -7,6 +7,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
+import ApplicationModal from '../components/jobs/ApplicationModal';
+import QuickApplyModal from '../components/jobs/QuickApplyModal';
 
 interface JobDetailProps {
   jobId: string;
@@ -17,10 +19,9 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const { user, profile } = useAuth();
   const [job, setJob] = useState<(Job & { companies: Company }) | null>(null);
   const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
-  const [coverLetter, setCoverLetter] = useState('');
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [showQuickApplyModal, setShowQuickApplyModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
@@ -74,33 +75,36 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     setHasApplied(!!data);
   };
 
-  const handleApply = async () => {
+  const handleApply = () => {
     if (!user) {
-      onNavigate('login');
+      const confirmLogin = confirm(
+        '⚠️ Vous devez créer un compte pour postuler\n\n' +
+        'Créez votre compte gratuitement en quelques secondes pour:\n' +
+        '• Postuler à cette offre\n' +
+        '• Gérer vos candidatures\n' +
+        '• Recevoir des alertes emploi\n\n' +
+        'Cliquez sur OK pour vous inscrire'
+      );
+
+      if (confirmLogin) {
+        onNavigate('login');
+      }
       return;
     }
 
     if (profile?.user_type !== 'candidate') {
-      alert('Seuls les candidats peuvent postuler aux offres');
+      alert('Seuls les candidats peuvent postuler aux offres d\'emploi');
       return;
     }
 
-    setApplying(true);
+    setShowQuickApplyModal(true);
+  };
 
-    const aiScore = Math.floor(Math.random() * 30) + 70;
-
-    await supabase.from('applications').insert({
-      job_id: jobId,
-      candidate_id: user.id,
-      cover_letter: coverLetter,
-      status: 'pending',
-      ai_match_score: aiScore,
-    });
-
-    setApplying(false);
+  const handleApplicationSuccess = () => {
     setHasApplied(true);
-    setShowApplicationForm(false);
-    alert('Votre candidature a été envoyée avec succès !');
+    setShowQuickApplyModal(false);
+    setShowApplicationModal(false);
+    checkIfApplied();
   };
 
   const parseJobDescription = (description: string) => {
@@ -159,6 +163,36 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {job && (
+        <>
+          <QuickApplyModal
+            isOpen={showQuickApplyModal}
+            onClose={() => setShowQuickApplyModal(false)}
+            job={{
+              id: job.id,
+              title: job.title,
+              company: job.companies?.name || job.company || ''
+            }}
+            onSuccess={handleApplicationSuccess}
+            onCustomApply={() => {
+              setShowQuickApplyModal(false);
+              setShowApplicationModal(true);
+            }}
+          />
+
+          <ApplicationModal
+            isOpen={showApplicationModal}
+            onClose={() => setShowApplicationModal(false)}
+            job={{
+              id: job.id,
+              title: job.title,
+              company: job.companies?.name || job.company || ''
+            }}
+            onSuccess={handleApplicationSuccess}
+          />
+        </>
+      )}
+
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <button

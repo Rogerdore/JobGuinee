@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
+import MyApplications from '../components/candidate/MyApplications';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -574,7 +575,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
             {activeTab === 'applications' && (
               <div>
-                {applications.length === 0 ? (
+                <MyApplications />
+                {false && applications.length === 0 ? (
                   <div className="text-center py-12">
                     <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 mb-4">Vous n'avez pas encore postulé à des offres</p>
@@ -585,7 +587,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       Découvrir les offres
                     </button>
                   </div>
-                ) : (
+                ) : false && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Mes Candidatures</h2>
