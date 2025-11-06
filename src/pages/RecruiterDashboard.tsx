@@ -254,6 +254,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
 
     const { error } = await supabase.from('jobs').insert({
+      user_id: profile?.id,
       company_id: company.id,
       title: data.title,
       description: fullDescription,
