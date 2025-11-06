@@ -13,7 +13,7 @@ interface Application {
   cover_letter_url?: string;
   message?: string;
   status: 'pending' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired';
-  created_at: string;
+  applied_at: string;
   jobs: {
     id: string;
     title: string;
@@ -51,7 +51,7 @@ export default function MyApplications() {
         )
       `)
       .eq('candidate_id', user!.id)
-      .order('created_at', { ascending: false });
+      .order('applied_at', { ascending: false });
 
     if (filter !== 'all') {
       query = query.eq('status', filter);
@@ -194,7 +194,7 @@ export default function MyApplications() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="w-4 h-4" />
-                  Postulé le {formatDate(application.created_at)}
+                  Postulé le {formatDate(application.applied_at)}
                 </div>
               </div>
 
