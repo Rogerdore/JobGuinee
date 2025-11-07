@@ -34,6 +34,7 @@ export default function CandidateProfileForm() {
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   function getInitialFormData() {
     return {
@@ -197,8 +198,6 @@ export default function CandidateProfileForm() {
     if (!formData.fullName) newErrors.fullName = 'Ce champ est obligatoire';
     if (!formData.email) newErrors.email = 'Ce champ est obligatoire';
     if (!formData.phone) newErrors.phone = 'Ce champ est obligatoire';
-    if (!formData.acceptTerms) newErrors.acceptTerms = 'Vous devez accepter les conditions';
-    if (!formData.certifyAccuracy) newErrors.certifyAccuracy = 'Vous devez certifier l\'exactitude';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -211,20 +210,28 @@ export default function CandidateProfileForm() {
       return;
     }
 
+    if (!user?.id) {
+      alert('Erreur: Utilisateur introuvable');
+      return;
+    }
+
+    setSubmitting(true);
+
     try {
       // Update or insert candidate profile
       const candidateData = {
         profile_id: profile.id,
-        title: formData.currentPosition || formData.professionalStatus,
-        bio: formData.professionalSummary,
-        experience_years: formData.experiences.length,
-        skills: formData.skills,
-        education: formData.formations,
-        work_experience: formData.experiences,
-        languages: formData.languages,
-        location: formData.address,
-        availability: formData.availability,
-        nationality: formData.region,
+        user_id: user.id,
+        title: formData.currentPosition || formData.professionalStatus || '',
+        bio: formData.professionalSummary || '',
+        experience_years: formData.experiences.length || 0,
+        skills: formData.skills || [],
+        education: formData.formations || [],
+        work_experience: formData.experiences || [],
+        languages: formData.languages || [],
+        location: formData.address || '',
+        availability: formData.availability || 'Immédiate',
+        full_name: formData.fullName,
         visibility: formData.visibleInCVTheque ? 'public' : 'private',
         last_active_at: new Date().toISOString(),
       };
@@ -264,9 +271,29 @@ export default function CandidateProfileForm() {
 
       localStorage.removeItem('candidateProfileDraft');
       alert('Profil enregistré avec succès ! Votre profil est maintenant visible dans la CVThèque.');
-    } catch (error) {
+
+      // Reload the profile data
+      await loadExistingProfile();
+    } catch (error: any) {
       console.error('Error saving profile:', error);
-      alert('Erreur lors de l\'enregistrement du profil. Veuillez réessayer.');
+
+      let errorMessage = 'Erreur inconnue';
+
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
+      if (error.code === '23505') {
+        errorMessage = 'Un profil existe déjà pour cet utilisateur.';
+      } else if (error.code === '23502') {
+        errorMessage = 'Certains champs obligatoires sont manquants.';
+      } else if (error.code === '23503') {
+        errorMessage = 'Référence invalide dans les données du profil.';
+      }
+
+      alert(`Erreur lors de l'enregistrement du profil:\n\n${errorMessage}\n\nVeuillez réessayer ou contacter le support.`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -284,12 +311,23 @@ export default function CandidateProfileForm() {
 
   const progress = calculateProgress();
 
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-16 h-16 border-4 border-[#0E2F56] border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600">Chargement de votre profil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
       <div className="text-center border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-800">👤 Créer mon profil JobGuinée</h1>
+        <h1 className="text-2xl font-bold text-gray-800">👤 Mon Profil Professionnel</h1>
         <p className="text-gray-500 mt-2">
-          Complétez les informations ci-dessous pour créer votre profil professionnel.
+          Complétez les informations ci-dessous pour créer ou mettre à jour votre profil professionnel.
         </p>
       </div>
 
@@ -515,19 +553,14 @@ export default function CandidateProfileForm() {
         />
       </FormSection>
 
-      <FormSection title="8️⃣ Sécurité et validation">
-        <Checkbox
-          label="J'accepte les conditions générales et la politique de confidentialité"
-          checked={formData.acceptTerms}
-          onChange={(checked) => setFormData({ ...formData, acceptTerms: checked })}
-        />
-        <Checkbox
-          label="Je certifie que les informations fournies sont exactes"
-          checked={formData.certifyAccuracy}
-          onChange={(checked) => setFormData({ ...formData, certifyAccuracy: checked })}
-        />
-        <Button variant="primary" type="submit">
-          ✅ Enregistrer mon profil
+      <FormSection title="8️⃣ Validation et enregistrement">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-sm text-blue-800">
+            En enregistrant votre profil, vous confirmez que les informations fournies sont exactes et à jour.
+          </p>
+        </div>
+        <Button variant="primary" type="submit" disabled={submitting}>
+          {submitting ? 'Enregistrement en cours...' : '✅ Enregistrer mon profil'}
         </Button>
       </FormSection>
     </form>

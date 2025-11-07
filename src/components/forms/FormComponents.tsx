@@ -455,17 +455,23 @@ interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   type?: 'button' | 'submit';
+  disabled?: boolean;
 }
 
-export function Button({ variant = 'primary', children, onClick, type = 'button' }: ButtonProps) {
+export function Button({ variant = 'primary', children, onClick, type = 'button', disabled = false }: ButtonProps) {
   const baseClasses = 'w-full px-6 py-3 rounded-lg font-medium transition';
   const variantClasses =
     variant === 'primary'
-      ? 'bg-[#0E2F56] hover:bg-[#1a4275] text-white shadow-md'
-      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-2 border-gray-300';
+      ? 'bg-[#0E2F56] hover:bg-[#1a4275] text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed'
+      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-2 border-gray-300 disabled:bg-gray-200 disabled:cursor-not-allowed';
 
   return (
-    <button type={type} onClick={onClick} className={`${baseClasses} ${variantClasses}`}>
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseClasses} ${variantClasses}`}
+    >
       {children}
     </button>
   );
