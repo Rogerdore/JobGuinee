@@ -24,6 +24,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [formations, setFormations] = useState<Formation[]>([]);
   const [isPremium, setIsPremium] = useState(false);
   const [selectedService, setSelectedService] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -100,31 +103,54 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   };
 
   const handleSaveProfile = async () => {
-    if (!profile?.id) return;
-
-    const dataToSave = {
-      profile_id: profile.id,
-      title: formData.desired_position,
-      skills: formData.skills,
-      experience_years: Number(formData.experience_years),
-      education_level: formData.education_level,
-      location: formData.location,
-      availability: formData.availability,
-      desired_salary_min: formData.desired_salary_min ? Number(formData.desired_salary_min) : null,
-      desired_salary_max: formData.desired_salary_max ? Number(formData.desired_salary_max) : null,
-    };
-
-    if (candidateProfile) {
-      await supabase
-        .from('candidate_profiles')
-        .update(dataToSave)
-        .eq('profile_id', profile.id);
-    } else {
-      await supabase.from('candidate_profiles').insert(dataToSave);
+    if (!profile?.id) {
+      setSaveError('Profil non trouvé');
+      return;
     }
 
-    alert('Profil mis à jour avec succès!');
-    loadData();
+    setSaving(true);
+    setSaveError('');
+    setSaveSuccess(false);
+
+    try {
+      const dataToSave = {
+        profile_id: profile.id,
+        title: formData.desired_position,
+        skills: formData.skills,
+        experience_years: Number(formData.experience_years),
+        education_level: formData.education_level,
+        location: formData.location,
+        availability: formData.availability,
+        desired_salary_min: formData.desired_salary_min ? Number(formData.desired_salary_min) : null,
+        desired_salary_max: formData.desired_salary_max ? Number(formData.desired_salary_max) : null,
+      };
+
+      let result;
+      if (candidateProfile) {
+        result = await supabase
+          .from('candidate_profiles')
+          .update(dataToSave)
+          .eq('profile_id', profile.id);
+      } else {
+        result = await supabase.from('candidate_profiles').insert(dataToSave);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      setSaveSuccess(true);
+      await loadData();
+
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      setSaveError(error.message || 'Erreur lors de la sauvegarde du profil');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addSkill = () => {
@@ -871,13 +897,40 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-6 border-t border-gray-200">
-                  <button
-                    onClick={handleSaveProfile}
-                    className="px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition shadow-md"
-                  >
-                    Enregistrer les modifications
-                  </button>
+                <div className="space-y-4 pt-6 border-t border-gray-200">
+                  {saveError && (
+                    <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5" />
+                      <span>{saveError}</span>
+                    </div>
+                  )}
+
+                  {saveSuccess && (
+                    <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Profil mis à jour avec succès!</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                      className="px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition shadow-md flex items-center gap-2"
+                    >
+                      {saving ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Enregistrement...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          Enregistrer les modifications
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
