@@ -33,6 +33,7 @@ export default function CandidateProfileForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(true);
 
   function getInitialFormData() {
     return {
@@ -87,15 +88,77 @@ export default function CandidateProfileForm() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAutoSaving(true);
-      localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
-      setLastSaved(new Date());
-      setTimeout(() => setAutoSaving(false), 1000);
-    }, 2000);
+    loadExistingProfile();
+  }, [profile?.id]);
 
-    return () => clearTimeout(timer);
-  }, [formData]);
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => {
+        setAutoSaving(true);
+        localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
+        setLastSaved(new Date());
+        setTimeout(() => setAutoSaving(false), 1000);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [formData, loading]);
+
+  const loadExistingProfile = async () => {
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data: candidateData } = await supabase
+        .from('candidate_profiles')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+
+      if (candidateData) {
+        setFormData({
+          fullName: profile.full_name || '',
+          email: user?.email || '',
+          phone: profile.phone || '',
+          birthDate: '',
+          gender: '',
+          address: candidateData.location || '',
+          region: candidateData.nationality || '',
+          profilePhoto: null,
+          professionalStatus: '',
+          currentPosition: candidateData.title || '',
+          currentCompany: '',
+          availability: candidateData.availability || '',
+          professionalSummary: candidateData.bio || '',
+          experiences: candidateData.work_experience || [],
+          formations: candidateData.education || [],
+          skills: candidateData.skills || [],
+          languages: candidateData.languages || [],
+          englishLevel: '',
+          cv: null,
+          certificates: null,
+          visibleInCVTheque: candidateData.visibility === 'public',
+          receiveAlerts: false,
+          professionalGoal: '',
+          acceptTerms: false,
+          certifyAccuracy: false,
+        });
+      } else {
+        setFormData({
+          ...getInitialFormData(),
+          fullName: profile.full_name || '',
+          email: user?.email || '',
+          phone: profile.phone || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validateField = (fieldName: string, value: any): string => {
     switch (fieldName) {
