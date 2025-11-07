@@ -123,26 +123,26 @@ export default function CandidateProfileForm() {
           fullName: candidateData.full_name || profile.full_name || '',
           email: user?.email || '',
           phone: profile.phone || '',
-          birthDate: '',
-          gender: '',
+          birthDate: candidateData.birth_date || '',
+          gender: candidateData.gender || '',
           address: candidateData.location || '',
-          region: '',
+          region: candidateData.nationality || '',
           profilePhoto: null,
-          professionalStatus: '',
+          professionalStatus: candidateData.professional_status || '',
           currentPosition: candidateData.title || '',
-          currentCompany: '',
-          availability: '',
+          currentCompany: candidateData.current_company || '',
+          availability: candidateData.availability || '',
           professionalSummary: candidateData.bio || '',
           experiences: candidateData.work_experience || [],
           formations: candidateData.education || [],
           skills: candidateData.skills || [],
-          languages: [],
-          englishLevel: '',
+          languages: candidateData.languages || [],
+          englishLevel: candidateData.english_level || '',
           cv: null,
           certificates: null,
           visibleInCVTheque: candidateData.visibility === 'public',
-          receiveAlerts: false,
-          professionalGoal: '',
+          receiveAlerts: candidateData.receive_alerts || false,
+          professionalGoal: candidateData.professional_goal || '',
           acceptTerms: false,
           certifyAccuracy: false,
         });
@@ -218,18 +218,72 @@ export default function CandidateProfileForm() {
     setSubmitting(true);
 
     try {
+      // Upload files if provided
+      let profilePhotoUrl = null;
+      let cvUrl = null;
+      let certificatesUrl = null;
+
+      if (formData.profilePhoto) {
+        const photoPath = `${user.id}/photo_${Date.now()}.${formData.profilePhoto.name.split('.').pop()}`;
+        const { error: photoError } = await supabase.storage
+          .from('candidate-profiles')
+          .upload(photoPath, formData.profilePhoto, { upsert: true });
+
+        if (!photoError) {
+          const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(photoPath);
+          profilePhotoUrl = data.publicUrl;
+        }
+      }
+
+      if (formData.cv) {
+        const cvPath = `${user.id}/cv_${Date.now()}.pdf`;
+        const { error: cvError } = await supabase.storage
+          .from('candidate-profiles')
+          .upload(cvPath, formData.cv, { upsert: true });
+
+        if (!cvError) {
+          const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(cvPath);
+          cvUrl = data.publicUrl;
+        }
+      }
+
+      if (formData.certificates) {
+        const certPath = `${user.id}/certificates_${Date.now()}.pdf`;
+        const { error: certError } = await supabase.storage
+          .from('candidate-profiles')
+          .upload(certPath, formData.certificates, { upsert: true });
+
+        if (!certError) {
+          const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(certPath);
+          certificatesUrl = data.publicUrl;
+        }
+      }
+
       // Update or insert candidate profile
       const candidateData = {
         profile_id: profile.id,
         user_id: user.id,
+        full_name: formData.fullName,
+        birth_date: formData.birthDate || null,
+        gender: formData.gender || null,
+        location: formData.address || '',
+        nationality: formData.region || 'Guinéenne',
+        professional_status: formData.professionalStatus || null,
         title: formData.currentPosition || formData.professionalStatus || '',
+        current_company: formData.currentCompany || null,
+        availability: formData.availability || 'Immédiate',
         bio: formData.professionalSummary || '',
         experience_years: formData.experiences.length || 0,
-        skills: formData.skills || [],
-        education: formData.formations || [],
         work_experience: formData.experiences || [],
-        location: formData.address || '',
-        full_name: formData.fullName,
+        education: formData.formations || [],
+        skills: formData.skills || [],
+        languages: formData.languages || [],
+        english_level: formData.englishLevel || null,
+        professional_goal: formData.professionalGoal || null,
+        receive_alerts: formData.receiveAlerts || false,
+        profile_photo_url: profilePhotoUrl,
+        cv_url: cvUrl,
+        certificates_url: certificatesUrl,
         visibility: formData.visibleInCVTheque ? 'public' : 'private',
         last_active_at: new Date().toISOString(),
       };
@@ -237,15 +291,23 @@ export default function CandidateProfileForm() {
       // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('candidate_profiles')
-        .select('id')
+        .select('id, profile_photo_url, cv_url, certificates_url')
         .eq('profile_id', profile.id)
         .maybeSingle();
 
+      // Only update file URLs if new files were uploaded
       if (existingProfile) {
+        const updateData = {
+          ...candidateData,
+          profile_photo_url: profilePhotoUrl || existingProfile.profile_photo_url,
+          cv_url: cvUrl || existingProfile.cv_url,
+          certificates_url: certificatesUrl || existingProfile.certificates_url,
+        };
+
         // Update existing profile
         const { error } = await supabase
           .from('candidate_profiles')
-          .update(candidateData)
+          .update(updateData)
           .eq('profile_id', profile.id);
 
         if (error) throw error;
