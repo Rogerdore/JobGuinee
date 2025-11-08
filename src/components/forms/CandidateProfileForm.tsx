@@ -203,6 +203,23 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
     if (!formData.fullName) newErrors.fullName = 'Ce champ est obligatoire';
     if (!formData.email) newErrors.email = 'Ce champ est obligatoire';
     if (!formData.phone) newErrors.phone = 'Ce champ est obligatoire';
+    if (!formData.birthDate) newErrors.birthDate = 'La date de naissance est obligatoire';
+
+    // Validate birth date is not in the future
+    if (formData.birthDate) {
+      const birthDate = new Date(formData.birthDate);
+      const today = new Date();
+      if (birthDate > today) {
+        newErrors.birthDate = 'La date de naissance ne peut pas être dans le futur';
+      }
+      // Check if age is reasonable (between 16 and 100 years old)
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 16) {
+        newErrors.birthDate = 'Vous devez avoir au moins 16 ans';
+      } else if (age > 100) {
+        newErrors.birthDate = 'Veuillez vérifier la date saisie';
+      }
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -497,6 +514,9 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           label="Date de naissance"
           value={formData.birthDate}
           onChange={(value) => setFormData({ ...formData, birthDate: value })}
+          error={errors.birthDate}
+          required
+          helpText="Votre âge permet aux recruteurs d'évaluer votre profil selon les exigences du poste"
         />
         <Select
           label="Genre"

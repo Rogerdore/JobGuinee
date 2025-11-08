@@ -180,18 +180,53 @@ interface DatePickerProps {
   label: string;
   value?: string;
   onChange?: (value: string) => void;
+  error?: string;
+  required?: boolean;
+  helpText?: string;
 }
 
-export function DatePicker({ label, value, onChange }: DatePickerProps) {
+export function DatePicker({ label, value, onChange, error, required, helpText }: DatePickerProps) {
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-gray-700">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        {helpText && (
+          <button
+            type="button"
+            onMouseEnter={() => setShowHelp(true)}
+            onMouseLeave={() => setShowHelp(false)}
+            className="text-gray-400 hover:text-gray-600 transition relative"
+          >
+            <HelpCircle className="w-4 h-4" />
+            {showHelp && (
+              <div className="absolute right-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-10">
+                {helpText}
+              </div>
+            )}
+          </button>
+        )}
+      </div>
       <input
         type="date"
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
+        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition ${
+          error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+        }`}
+        style={{
+          colorScheme: 'light',
+        }}
       />
+      {error && (
+        <div className="flex items-center gap-1 text-red-600 text-sm">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }
