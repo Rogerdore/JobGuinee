@@ -16,8 +16,13 @@ import {
   Button,
 } from './FormComponents';
 
-export default function CandidateProfileForm() {
+interface CandidateProfileFormProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function CandidateProfileForm({ onNavigate }: CandidateProfileFormProps) {
   const { user, profile } = useAuth();
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('candidateProfileDraft');
     if (saved) {
@@ -330,10 +335,16 @@ export default function CandidateProfileForm() {
         .eq('id', profile.id);
 
       localStorage.removeItem('candidateProfileDraft');
-      alert('Profil enregistré avec succès ! Votre profil est maintenant visible dans la CVThèque.');
 
-      // Reload the profile data
-      await loadExistingProfile();
+      // Show success message
+      setShowSuccessMessage(true);
+
+      // Redirect to candidate dashboard after 2 seconds
+      setTimeout(() => {
+        if (onNavigate) {
+          onNavigate('candidate-dashboard');
+        }
+      }, 2000);
     } catch (error: any) {
       console.error('Error saving profile:', error);
 
@@ -383,13 +394,41 @@ export default function CandidateProfileForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
-      <div className="text-center border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-800">👤 Mon Profil Professionnel</h1>
-        <p className="text-gray-500 mt-2">
-          Complétez les informations ci-dessous pour créer ou mettre à jour votre profil professionnel.
-        </p>
-      </div>
+    <div className="relative">
+      {/* Success Message Overlay */}
+      {showSuccessMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform animate-bounce">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Profil Enregistré !
+              </h2>
+              <p className="text-gray-600 mb-1">
+                Votre profil a été enregistré avec succès.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Redirection vers votre espace candidat...
+              </p>
+              <div className="mt-6">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
+        <div className="text-center border-b pb-4">
+          <h1 className="text-2xl font-bold text-gray-800">👤 Mon Profil Professionnel</h1>
+          <p className="text-gray-500 mt-2">
+            Complétez les informations ci-dessous pour créer ou mettre à jour votre profil professionnel.
+          </p>
+        </div>
 
       {/* Progress Bar */}
       <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
@@ -624,5 +663,6 @@ export default function CandidateProfileForm() {
         </Button>
       </FormSection>
     </form>
+    </div>
   );
 }

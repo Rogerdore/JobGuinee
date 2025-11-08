@@ -71,7 +71,7 @@ function AppContent() {
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
       {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
-      {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
+      {currentPage === 'candidate-profile-form' && <CandidateProfileForm onNavigate={handleNavigate} />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
       {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
