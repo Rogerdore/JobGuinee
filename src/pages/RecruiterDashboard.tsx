@@ -6,7 +6,6 @@ import {
   MessageSquare,
   BarChart3,
   Wand2,
-  Download,
   Sparkles,
   Plus,
   Filter,
@@ -16,6 +15,7 @@ import {
   TrendingUp,
   Settings,
   Target,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -27,6 +27,7 @@ import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
+import ExportApplicationsButton from '../components/recruiter/ExportApplicationsButton';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
@@ -870,13 +871,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </button>
                   </div>
 
-                  <button
-                    onClick={() => alert('Fonctionnalité d\'export disponible prochainement')}
-                    className="px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-700 font-medium rounded-xl transition flex items-center gap-2 shadow-sm"
-                  >
-                    <Download className="w-5 h-5" />
-                    Exporter
-                  </button>
+                  <ExportApplicationsButton applications={filteredApplications} />
                 </div>
               </div>
 
