@@ -754,7 +754,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
 
             {activeTab === 'profile' && (
-              <CandidateProfileForm />
+              <CandidateProfileForm onNavigate={onNavigate} />
             )}
 
             {activeTab === 'formations' && (
@@ -796,13 +796,20 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Mes Documents</h3>
                 <p className="text-gray-600 mb-6">Gérez vos CV, lettres de motivation et autres documents</p>
-                <button
-                  onClick={() => alert('Fonctionnalité de téléchargement de documents disponible prochainement')}
-                  className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2 mx-auto"
-                >
-                  <Upload className="w-5 h-5" />
-                  Télécharger un document
-                </button>
+                <div className="space-y-4 max-w-2xl mx-auto">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800 mb-2">
+                      Vous pouvez gérer vos documents (CV, certificats) directement depuis votre profil.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2 mx-auto"
+                  >
+                    <User className="w-5 h-5" />
+                    Aller au profil
+                  </button>
+                </div>
               </div>
             )}
 
@@ -816,14 +823,23 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
                     Boostez votre recherche d'emploi avec nos services intelligents propulsés par l'IA
                   </p>
-                  <button
-                    onClick={() => onNavigate('premium-ai')}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    Découvrir tous les services IA
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                  <div className="flex gap-4 justify-center">
+                    <button
+                      onClick={() => onNavigate('premium-ai')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Découvrir tous les services IA
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => onNavigate('ai-coach')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-lg"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Chatbot Emploi
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -885,7 +901,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         <div className="text-xl">GNF / mois</div>
                       </div>
                       <button
-                        onClick={() => alert('Paiement: Orange Money • LengoPay • DigitalPay SA')}
+                        onClick={() => {
+                          alert('🚀 Abonnement Premium PRO+\n\nPour souscrire à l\'abonnement Premium PRO+ (350 000 GNF/mois):\n\n📧 Email: premium@jobguinee.gn\n📱 Téléphone: +224 XXX XX XX XX\n💬 WhatsApp: +224 XXX XX XX XX\n\n💳 Modes de paiement acceptés:\n• Orange Money\n• MTN Mobile Money\n• LengoPay\n• DigitalPay SA\n\nVous recevrez vos identifiants Premium sous 24h après confirmation du paiement.');
+                        }}
                         className="w-full px-8 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold text-lg rounded-lg transition shadow-md border-2 border-white"
                       >
                         S'abonner maintenant
@@ -968,7 +986,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                 <button
                   onClick={() => {
-                    alert(`Service: ${selectedService.title}\nPrix: ${selectedService.price}\n\nPour activer ce service, veuillez nous contacter:\n\n📧 Email: premium@jobguinee.com\n📱 WhatsApp: +224 XXX XX XX XX\n\nPaiement accepté via:\n• Orange Money\n• LengoPay\n• DigitalPay SA`);
+                    const message = `🎯 Service: ${selectedService.title}\n💰 Prix: ${selectedService.price}\n\n✨ Pour activer ce service:\n\n📧 Email: premium@jobguinee.gn\n📱 Téléphone: +224 XXX XX XX XX\n💬 WhatsApp: +224 XXX XX XX XX\n\n💳 Modes de paiement:\n• Orange Money\n• MTN Mobile Money\n• LengoPay\n• DigitalPay SA\n\n✅ Activation sous 24h après confirmation du paiement`;
+                    alert(message);
                     setSelectedService(null);
                   }}
                   className="w-full px-6 py-4 bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white rounded-xl font-bold text-lg hover:from-blue-900 hover:to-blue-900 transition-all shadow-lg"
