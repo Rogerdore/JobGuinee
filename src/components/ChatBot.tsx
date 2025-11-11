@@ -150,9 +150,42 @@ export default function ChatBot() {
         }
       }
 
-      // If no FAQ match, use AI (would call edge function here)
+      // If no FAQ match, use AI via edge function
       if (!botResponse) {
-        botResponse = "Je suis désolé, je n'ai pas de réponse précise à votre question pour le moment. Pourriez-vous reformuler ou me poser une autre question? Vous pouvez aussi consulter notre section FAQ ou contacter notre support.";
+        try {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+          const apiUrl = `${supabaseUrl}/functions/v1/chatbot-ai`;
+
+          const conversationMessages = newMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: conversationMessages,
+              sessionId: sessionId
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            botResponse = data.response;
+          } else {
+            console.error('AI API error:', await response.text());
+            botResponse = "Je suis désolé, je n'ai pas de réponse précise à votre question pour le moment. Pourriez-vous reformuler ou me poser une autre question? Vous pouvez aussi consulter notre section FAQ ou contacter notre support.";
+          }
+        } catch (aiError) {
+          console.error('AI call error:', aiError);
+          botResponse = "Je suis désolé, je n'ai pas de réponse précise à votre question pour le moment. Pourriez-vous reformuler ou me poser une autre question? Vous pouvez aussi consulter notre section FAQ ou contacter notre support.";
+        }
       }
 
       const assistantMessage: Message = {

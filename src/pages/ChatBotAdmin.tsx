@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Edit2, Check, X, MessageCircle, Settings, HelpCircle } from 'lucide-react';
+import { Save, Plus, Trash2, Edit2, Check, X, MessageCircle, Settings, HelpCircle, Key, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,6 +14,11 @@ interface ChatBotConfig {
   ai_model: string;
   system_prompt: string;
   max_messages_per_session: number;
+  api_key: string | null;
+  api_provider: 'openai' | 'anthropic' | 'custom';
+  api_endpoint: string | null;
+  temperature: number;
+  max_tokens: number;
 }
 
 interface FAQ {
@@ -34,7 +39,8 @@ export default function ChatBotAdmin() {
   const [saving, setSaving] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   const [showAddFaq, setShowAddFaq] = useState(false);
-  const [activeTab, setActiveTab] = useState<'config' | 'faqs'>('config');
+  const [activeTab, setActiveTab] = useState<'config' | 'faqs' | 'api'>('config');
+  const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
     if (profile?.user_type === 'admin') {
@@ -77,6 +83,11 @@ export default function ChatBotAdmin() {
         ai_model: config.ai_model,
         system_prompt: config.system_prompt,
         max_messages_per_session: config.max_messages_per_session,
+        api_key: config.api_key,
+        api_provider: config.api_provider,
+        api_endpoint: config.api_endpoint,
+        temperature: config.temperature,
+        max_tokens: config.max_tokens,
       })
       .eq('id', config.id);
 
@@ -184,6 +195,17 @@ export default function ChatBotAdmin() {
             >
               <Settings className="w-5 h-5 inline mr-2" />
               Configuration
+            </button>
+            <button
+              onClick={() => setActiveTab('api')}
+              className={`flex-1 px-6 py-4 font-semibold transition ${
+                activeTab === 'api'
+                  ? 'text-[#0E2F56] border-b-2 border-[#0E2F56] bg-blue-50/50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Key className="w-5 h-5 inline mr-2" />
+              Configuration API
             </button>
             <button
               onClick={() => setActiveTab('faqs')}
@@ -299,6 +321,180 @@ export default function ChatBotAdmin() {
               >
                 <Save className="w-5 h-5" />
                 {saving ? 'Sauvegarde...' : 'Sauvegarder la configuration'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* API Tab */}
+        {activeTab === 'api' && config && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Configuration de l'API IA</h3>
+                  <p className="text-sm text-blue-800">
+                    Configurez votre clé API pour activer les réponses intelligentes du chatbot.
+                    Les clés API sont sensibles et doivent être gardées confidentielles.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fournisseur d'API
+                </label>
+                <select
+                  value={config.api_provider}
+                  onChange={(e) => setConfig({ ...config, api_provider: e.target.value as 'openai' | 'anthropic' | 'custom' })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
+                >
+                  <option value="openai">OpenAI (GPT-3.5, GPT-4)</option>
+                  <option value="anthropic">Anthropic (Claude)</option>
+                  <option value="custom">API Personnalisée</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Key className="w-4 h-4 inline mr-1" />
+                  Clé API
+                </label>
+                <div className="relative">
+                  <input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={config.api_key || ''}
+                    onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
+                    placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition font-mono text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition"
+                  >
+                    {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {config.api_provider === 'openai' && 'Obtenez votre clé sur: https://platform.openai.com/api-keys'}
+                  {config.api_provider === 'anthropic' && 'Obtenez votre clé sur: https://console.anthropic.com/'}
+                  {config.api_provider === 'custom' && 'Entrez la clé API fournie par votre service'}
+                </p>
+              </div>
+
+              {config.api_provider === 'custom' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Endpoint API personnalisé
+                  </label>
+                  <input
+                    type="url"
+                    value={config.api_endpoint || ''}
+                    onChange={(e) => setConfig({ ...config, api_endpoint: e.target.value })}
+                    placeholder="https://api.example.com/v1/chat/completions"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Modèle IA
+                </label>
+                <select
+                  value={config.ai_model}
+                  onChange={(e) => setConfig({ ...config, ai_model: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
+                >
+                  {config.api_provider === 'openai' && (
+                    <>
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Rapide & Économique)</option>
+                      <option value="gpt-4">GPT-4 (Plus précis)</option>
+                      <option value="gpt-4-turbo">GPT-4 Turbo (Équilibré)</option>
+                    </>
+                  )}
+                  {config.api_provider === 'anthropic' && (
+                    <>
+                      <option value="claude-3-haiku">Claude 3 Haiku (Rapide)</option>
+                      <option value="claude-3-sonnet">Claude 3 Sonnet (Équilibré)</option>
+                      <option value="claude-3-opus">Claude 3 Opus (Plus puissant)</option>
+                    </>
+                  )}
+                  {config.api_provider === 'custom' && (
+                    <option value="custom">Modèle personnalisé</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Température (Créativité)
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={config.temperature}
+                    onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <span className="w-12 text-center font-mono text-sm bg-gray-100 px-3 py-2 rounded-lg">
+                    {config.temperature.toFixed(1)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  0 = Précis et déterministe, 2 = Créatif et varié
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tokens maximum
+                </label>
+                <input
+                  type="number"
+                  value={config.max_tokens}
+                  onChange={(e) => setConfig({ ...config, max_tokens: parseInt(e.target.value) })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
+                  min="50"
+                  max="4000"
+                  step="50"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Longueur maximale de la réponse (50-4000 tokens)
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-yellow-900 mb-1">Sécurité</h3>
+                  <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+                    <li>Ne partagez jamais votre clé API</li>
+                    <li>Surveillez votre utilisation pour éviter les coûts imprévus</li>
+                    <li>Révoquezla clé immédiatement en cas de compromission</li>
+                    <li>Utilisez des limites de dépenses sur votre compte API</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={handleSaveConfig}
+                disabled={saving}
+                className="px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white font-semibold rounded-xl hover:shadow-lg transition disabled:opacity-50 flex items-center gap-2"
+              >
+                <Save className="w-5 h-5" />
+                {saving ? 'Sauvegarde...' : 'Sauvegarder la configuration API'}
               </button>
             </div>
           </div>
