@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle2, HelpCircle, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { calculateCandidateCompletion } from '../../utils/profileCompletion';
 import {
   Input,
   Select,
@@ -72,25 +73,23 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   }
 
   const calculateProgress = () => {
-    const fields = [
-      formData.fullName,
-      formData.email,
-      formData.phone,
-      formData.birthDate,
-      formData.gender,
-      formData.address,
-      formData.region,
-      formData.professionalStatus,
-      formData.availability,
-      formData.professionalSummary,
-      formData.skills.length > 0,
-      formData.languages.length > 0,
-      formData.englishLevel,
-      formData.experiences.length > 0,
-      formData.formations.length > 0,
-    ];
-    const completed = fields.filter(Boolean).length;
-    return Math.round((completed / fields.length) * 100);
+    const profileData = {
+      full_name: formData.fullName,
+      desired_position: formData.currentPosition || formData.professionalStatus,
+      bio: formData.professionalSummary,
+      phone: formData.phone,
+      location: formData.address,
+      experience_years: formData.experiences.length > 0 ? formData.experiences.length : 0,
+      education_level: formData.formations.length > 0 ? formData.formations[0]?.degree : '',
+      skills: formData.skills,
+      languages: formData.languages,
+      cv_url: formData.cv ? 'temp' : '',
+      linkedin_url: '',
+      portfolio_url: '',
+      desired_salary_min: '',
+      desired_salary_max: '',
+    };
+    return calculateCandidateCompletion(profileData);
   };
 
   useEffect(() => {

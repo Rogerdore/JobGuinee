@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
+import { calculateCandidateCompletion } from '../utils/profileCompletion';
 import MyApplications from '../components/candidate/MyApplications';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 
@@ -188,17 +189,26 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   };
 
   const calculateProfileCompletion = () => {
-    let completion = 0;
-    const fields = [
-      formData.desired_position,
-      formData.education_level,
-      formData.location,
-      formData.skills.length > 0,
-      formData.experience_years > 0,
-      formData.desired_salary_min,
-    ];
-    completion = (fields.filter(Boolean).length / fields.length) * 100;
-    return Math.round(completion);
+    if (!candidateProfile) return 0;
+
+    const profileData = {
+      full_name: candidateProfile.full_name,
+      desired_position: formData.desired_position,
+      bio: candidateProfile.bio,
+      phone: candidateProfile.phone,
+      location: formData.location,
+      experience_years: formData.experience_years,
+      education_level: formData.education_level,
+      skills: formData.skills,
+      languages: candidateProfile.languages,
+      cv_url: candidateProfile.cv_url,
+      linkedin_url: candidateProfile.linkedin_url,
+      portfolio_url: candidateProfile.portfolio_url,
+      desired_salary_min: formData.desired_salary_min,
+      desired_salary_max: formData.desired_salary_max,
+    };
+
+    return calculateCandidateCompletion(profileData);
   };
 
   const getAIScore = () => {
