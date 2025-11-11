@@ -2,6 +2,7 @@ import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
+import ChatBot from './ChatBot';
 
 interface LayoutProps {
   children: ReactNode;
@@ -361,6 +362,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </div>
         </div>
       </footer>
+
+      {/* ChatBot */}
+      <ChatBot />
     </div>
   );
 }
