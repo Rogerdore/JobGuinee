@@ -6,6 +6,7 @@ import { calculateCandidateCompletion } from '../utils/profileCompletion';
 import MyApplications from '../components/candidate/MyApplications';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import DocumentManager from '../components/candidate/DocumentManager';
+import WelcomeCreditsModal from '../components/candidate/WelcomeCreditsModal';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -30,6 +31,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -47,9 +49,22 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     const init = async () => {
       await refreshProfile();
       await loadData();
+      checkForWelcomeModal();
     };
     init();
   }, [profile?.id]);
+
+  const checkForWelcomeModal = () => {
+    // Vérifier si c'est la première visite (dans les dernières 24h de création du compte)
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeCredits');
+    if (!hasSeenWelcome && user) {
+      // Afficher le modal après 2 secondes
+      setTimeout(() => {
+        setShowWelcomeModal(true);
+        localStorage.setItem('hasSeenWelcomeCredits', 'true');
+      }, 2000);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === 'dashboard' || activeTab === 'applications') {
@@ -975,6 +990,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           </div>
         </div>
       )}
+
+      {/* Modal de bienvenue avec crédits gratuits */}
+      <WelcomeCreditsModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        onNavigateToServices={() => onNavigate('premium-ai')}
+      />
     </div>
   );
 }
