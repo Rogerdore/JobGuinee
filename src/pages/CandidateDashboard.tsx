@@ -5,6 +5,7 @@ import { supabase, Application, Job, Company, CandidateProfile } from '../lib/su
 import { calculateCandidateCompletion } from '../utils/profileCompletion';
 import MyApplications from '../components/candidate/MyApplications';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
+import DocumentManager from '../components/candidate/DocumentManager';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -786,27 +787,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               </div>
             )}
 
-            {activeTab === 'documents' && (
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Mes Documents</h3>
-                <p className="text-gray-600 mb-6">Gérez vos CV, lettres de motivation et autres documents</p>
-                <div className="space-y-4 max-w-2xl mx-auto">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800 mb-2">
-                      Vous pouvez gérer vos documents (CV, certificats) directement depuis votre profil.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2 mx-auto"
-                  >
-                    <User className="w-5 h-5" />
-                    Aller au profil
-                  </button>
-                </div>
-              </div>
-            )}
+            {activeTab === 'documents' && <DocumentManager />}
 
             {activeTab === 'premium' && (
               <div className="space-y-8">
