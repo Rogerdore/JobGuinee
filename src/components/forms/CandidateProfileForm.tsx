@@ -344,12 +344,16 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         if (error) throw error;
       }
 
+      // Calculate and update profile completion percentage
+      const completionPercentage = calculateProgress();
+
       // Update main profile
       await supabase
         .from('profiles')
         .update({
           full_name: formData.fullName,
           phone: formData.phone,
+          profile_completion_percentage: completionPercentage,
         })
         .eq('id', profile.id);
 

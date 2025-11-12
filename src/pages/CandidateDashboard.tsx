@@ -189,31 +189,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   };
 
   const calculateProfileCompletion = () => {
-    if (!candidateProfile && !profile) return 0;
-
-    const educationArray = candidateProfile?.education || [];
-    const educationLevel = Array.isArray(educationArray) && educationArray.length > 0
-      ? (educationArray[0]?.degree || formData.education_level || '')
-      : (formData.education_level || '');
-
-    const profileData = {
-      full_name: candidateProfile?.full_name || profile?.full_name || '',
-      desired_position: candidateProfile?.title || formData.desired_position || '',
-      bio: candidateProfile?.bio || profile?.bio || '',
-      phone: profile?.phone || '',
-      location: candidateProfile?.location || formData.location || '',
-      experience_years: candidateProfile?.experience_years || formData.experience_years || 0,
-      education_level: educationLevel,
-      skills: candidateProfile?.skills || formData.skills || [],
-      languages: candidateProfile?.languages || [],
-      cv_url: candidateProfile?.cv_url || '',
-      linkedin_url: candidateProfile?.linkedin_url || '',
-      portfolio_url: candidateProfile?.portfolio_url || '',
-      desired_salary_min: candidateProfile?.desired_salary_min?.toString() || formData.desired_salary_min || '',
-      desired_salary_max: candidateProfile?.desired_salary_max?.toString() || formData.desired_salary_max || '',
-    };
-
-    return calculateCandidateCompletion(profileData);
+    return profile?.profile_completion_percentage || 0;
   };
 
   const getAIScore = () => {
