@@ -41,6 +41,7 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [candidateProfile, setCandidateProfile] = useState<any>(null);
 
   function getInitialFormData() {
     return {
@@ -73,20 +74,25 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   }
 
   const calculateProgress = () => {
+    // Calculate from current form data using the same logic as save
+    // Use number of experiences as approximation of years
+    const totalExperienceYears = formData.experiences?.length || 0;
+
+    const educationLevel = formData.formations && formData.formations.length > 0
+      ? (formData.formations[0]?.['Diplôme obtenu'] || formData.formations[0]?.degree || '')
+      : '';
+
     const profileData = {
       full_name: formData.fullName || '',
       desired_position: formData.currentPosition || formData.professionalStatus || '',
       bio: formData.professionalSummary || '',
       phone: formData.phone || '',
       location: formData.address || '',
-      experience_years: formData.experiences && formData.experiences.length > 0 ? formData.experiences.reduce((sum, exp) => {
-        const years = parseInt(exp.years) || 0;
-        return sum + years;
-      }, 0) : 0,
-      education_level: formData.formations && formData.formations.length > 0 ? (formData.formations[0]?.degree || '') : '',
+      experience_years: totalExperienceYears,
+      education_level: educationLevel,
       skills: formData.skills || [],
       languages: formData.languages || [],
-      cv_url: formData.cv ? 'has_cv' : '',
+      cv_url: formData.cv ? 'has_cv' : (candidateProfile?.cv_url ? 'has_cv' : ''),
       linkedin_url: '',
       portfolio_url: '',
       desired_salary_min: '',
@@ -126,6 +132,7 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         .maybeSingle();
 
       if (candidateData) {
+        setCandidateProfile(candidateData);
         setFormData({
           fullName: candidateData.full_name || profile.full_name || '',
           email: user?.email || '',
@@ -283,6 +290,14 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         }
       }
 
+      // Use number of experiences as approximation of years (simple heuristic)
+      const totalExperienceYears = formData.experiences?.length || 0;
+
+      // Get education level from first formation
+      const educationLevel = formData.formations && formData.formations.length > 0
+        ? (formData.formations[0]?.['Diplôme obtenu'] || formData.formations[0]?.degree || '')
+        : '';
+
       // Update or insert candidate profile
       const candidateData = {
         profile_id: profile.id,
@@ -297,7 +312,7 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         current_company: formData.currentCompany || null,
         availability: formData.availability || 'Immédiate',
         bio: formData.professionalSummary || '',
-        experience_years: formData.experiences.length || 0,
+        experience_years: totalExperienceYears,
         work_experience: formData.experiences || [],
         education: formData.formations || [],
         skills: formData.skills || [],
@@ -344,8 +359,24 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         if (error) throw error;
       }
 
-      // Calculate and update profile completion percentage
-      const completionPercentage = calculateProgress();
+      // Calculate profile completion percentage using the same data we just saved
+      const savedProfileData = {
+        full_name: formData.fullName || '',
+        desired_position: formData.currentPosition || formData.professionalStatus || '',
+        bio: formData.professionalSummary || '',
+        phone: formData.phone || '',
+        location: formData.address || '',
+        experience_years: totalExperienceYears,
+        education_level: educationLevel,
+        skills: formData.skills || [],
+        languages: formData.languages || [],
+        cv_url: cvUrl || candidateProfile?.cv_url || '',
+        linkedin_url: '',
+        portfolio_url: '',
+        desired_salary_min: '',
+        desired_salary_max: '',
+      };
+      const completionPercentage = calculateCandidateCompletion(savedProfileData);
 
       // Update main profile
       await supabase
