@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Phone,
   Copy,
+  Shield,
 } from 'lucide-react';
 
 interface PremiumStatus {
@@ -162,6 +163,25 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
         'Feedback personnalisé détaillé',
         'Préparation questions techniques',
         '3 sessions de coaching',
+      ],
+    },
+    {
+      id: 'verified_badge',
+      name: 'Badge Profil Vérifié',
+      description: 'Certification de votre profil avec badge visible pour augmenter votre crédibilité auprès des recruteurs.',
+      icon: Shield,
+      color: 'from-yellow-500 to-yellow-600',
+      price: 50000,
+      isIncluded: false,
+      serviceType: 'verified_badge',
+      features: [
+        'Vérification d\'identité complète',
+        'Badge visible sur votre profil',
+        'Score de crédibilité IA',
+        'Augmentation de visibilité +30%',
+        'Priorité dans les recherches',
+        'Confiance accrue des recruteurs',
+        'Valable 1 an',
       ],
     },
   ];
