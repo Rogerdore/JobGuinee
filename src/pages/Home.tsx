@@ -8,6 +8,7 @@ import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
 import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -15,6 +16,7 @@ interface HomeProps {
 
 export default function Home({ onNavigate }: HomeProps) {
   const { getSetting, getSection } = useCMS();
+  const { user, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [contractType, setContractType] = useState('');
@@ -100,6 +102,22 @@ export default function Home({ onNavigate }: HomeProps) {
     if (location) params.set('location', location);
     if (contractType) params.set('contract', contractType);
     onNavigate('jobs', params.toString());
+  };
+
+  const handleCandidateClick = () => {
+    if (user && profile) {
+      onNavigate('candidate-dashboard');
+    } else {
+      onNavigate('signup-candidate');
+    }
+  };
+
+  const handleRecruiterClick = () => {
+    if (user && profile) {
+      onNavigate('recruiter-dashboard');
+    } else {
+      onNavigate('signup-recruiter');
+    }
   };
 
   const categories = [
@@ -481,10 +499,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('signup-candidate')}
+                onClick={handleCandidateClick}
                 className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
               >
-                Créer mon profil gratuitement
+                {user ? 'Accéder à mon espace' : 'Créer mon profil gratuitement'}
               </button>
             </div>
 
@@ -515,10 +533,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('signup-recruiter')}
+                onClick={handleRecruiterClick}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
-                Publier une annonce maintenant
+                {user ? 'Accéder à mon espace' : 'Publier une annonce maintenant'}
               </button>
             </div>
           </div>
