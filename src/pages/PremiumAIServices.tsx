@@ -395,6 +395,111 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
         </div>
       )}
 
+      {/* Services Grid - 3 colonnes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map((service) => {
+          const Icon = service.icon;
+          const globalBalance = premiumStatus?.credits?.global_balance?.available || 0;
+          const serviceCost = service.credits || 0;
+          const hasEnoughCredits = globalBalance >= serviceCost;
+
+          return (
+            <div
+              key={service.id}
+              className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300"
+            >
+              {/* En-tête coloré */}
+              <div className={`bg-gradient-to-br ${service.color} p-6 text-white relative`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <Icon className="w-8 h-8" />
+                  </div>
+                  {service.isIncluded ? (
+                    <span className="px-3 py-1 bg-white text-gray-900 rounded-full text-xs font-bold">
+                      Inclus
+                    </span>
+                  ) : service.credits ? (
+                    <span className="px-3 py-1 bg-white bg-opacity-30 backdrop-blur-sm rounded-full text-xs font-bold flex items-center space-x-1">
+                      <span>{service.credits}</span>
+                      <Zap className="w-3 h-3" />
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-white bg-opacity-30 backdrop-blur-sm rounded-full text-xs font-bold">
+                      {formatPrice(service.price)}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xl font-bold mb-2">{service.name}</h3>
+                <p className="text-white text-opacity-90 text-sm">{service.description}</p>
+              </div>
+
+              {/* Contenu */}
+              <div className="p-5 bg-white">
+                {/* Crédits disponibles */}
+                {!service.isIncluded && (
+                  <div className="mb-5 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600">Crédits disponibles</span>
+                      <span className={`text-2xl font-bold ${hasEnoughCredits ? 'text-blue-900' : 'text-red-600'}`}>
+                        {globalBalance}
+                      </span>
+                    </div>
+                    <div className="w-full bg-blue-100 rounded-full h-2 mb-1">
+                      <div
+                        className={`h-2 rounded-full transition-all ${hasEnoughCredits ? 'bg-blue-600' : 'bg-red-500'}`}
+                        style={{
+                          width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      0 / {globalBalance} utilisés
+                    </p>
+                  </div>
+                )}
+
+                {/* Fonctionnalités */}
+                <ul className="space-y-2 mb-5">
+                  {service.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start space-x-2">
+                      <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Boutons d'action */}
+                {service.isIncluded ? (
+                  <button
+                    onClick={() => handleUseService(service)}
+                    className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm">Utiliser le service</span>
+                  </button>
+                ) : hasEnoughCredits ? (
+                  <button
+                    onClick={() => handleUseService(service)}
+                    className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm">Utiliser le service</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handlePurchase(service)}
+                    className="w-full bg-orange-500 text-white px-5 py-3 rounded-lg font-medium hover:bg-orange-600 transition flex items-center justify-center space-x-2"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm">Acheter des crédits</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Modal de paiement */}
       {showPaymentModal && selectedService && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
