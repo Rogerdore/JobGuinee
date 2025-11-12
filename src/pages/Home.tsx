@@ -481,7 +481,7 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('signup')}
+                onClick={() => onNavigate('signup-candidate')}
                 className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
               >
                 Créer mon profil gratuitement
@@ -515,7 +515,7 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('recruiter-dashboard')}
+                onClick={() => onNavigate('signup-recruiter')}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
                 Publier une annonce maintenant

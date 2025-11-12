@@ -25,7 +25,7 @@ import GoldProfileService from './components/ai/GoldProfileService';
 import ChatBotAdmin from './pages/ChatBotAdmin';
 import SocialMediaConfiguration from './pages/SocialMediaConfiguration';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -55,8 +55,10 @@ function AppContent() {
     );
   }
 
-  if (currentPage === 'login' || currentPage === 'signup') {
-    return <Auth mode={currentPage} onNavigate={handleNavigate} />;
+  if (currentPage === 'login' || currentPage === 'signup' || currentPage === 'signup-candidate' || currentPage === 'signup-recruiter') {
+    const mode = currentPage === 'login' ? 'login' : 'signup';
+    const defaultRole = currentPage === 'signup-recruiter' ? 'recruiter' : 'candidate';
+    return <Auth mode={mode} onNavigate={handleNavigate} defaultRole={defaultRole} />;
   }
 
   return (
