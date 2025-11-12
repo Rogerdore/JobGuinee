@@ -18,7 +18,6 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
-  Target,
 } from 'lucide-react';
 
 interface PremiumStatus {
@@ -67,8 +66,9 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       description: 'Score CV vs offre + suggestions formations',
       icon: Brain,
       color: 'from-purple-500 to-purple-600',
-      price: 0,
-      isIncluded: true,
+      price: 25000,
+      isIncluded: false,
+      credits: 50,
       serviceType: 'profile_analysis',
       features: [
         'Analyse complète du profil',
@@ -172,16 +172,52 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.rpc('get_user_premium_status', {
-        p_user_id: user.id,
+      console.log('Loading premium status for user:', user.id);
+
+      // Récupérer le solde de crédits global
+      const { data: balance, error } = await supabase.rpc('get_user_credit_balance', {
+        p_user_id: user.id
       });
 
-      if (error) throw error;
-      if (data) {
-        setPremiumStatus(data);
+      console.log('Balance response:', { balance, error });
+
+      if (error) {
+        console.error('Error loading balance:', error);
+        throw error;
       }
+
+      const creditBalance = balance || 0;
+
+      // Créer un status fictif pour compatibilité avec l'interface
+      setPremiumStatus({
+        subscription_type: creditBalance > 0 ? 'premium' : 'free',
+        status: 'active',
+        credits: {
+          // Le nouveau système utilise un solde global
+          // On simule l'ancien format pour la compatibilité
+          global_balance: {
+            available: creditBalance,
+            used: 0,
+            total: creditBalance
+          }
+        }
+      });
+
+      console.log('Premium status set successfully');
     } catch (error: any) {
-      console.error('Erreur:', error);
+      console.error('Erreur chargement status:', error);
+      // Même en cas d'erreur, on affiche la page avec un solde de 0
+      setPremiumStatus({
+        subscription_type: 'free',
+        status: 'active',
+        credits: {
+          global_balance: {
+            available: 0,
+            used: 0,
+            total: 0
+          }
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -201,7 +237,7 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Acheter les crédits
-      const { data, error } = await supabase.rpc('purchase_service_credits', {
+      const { error } = await supabase.rpc('purchase_service_credits', {
         p_user_id: user.id,
         p_service_type: selectedService.serviceType,
         p_credits: selectedService.credits || 1,
@@ -242,11 +278,6 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       default:
         alert(`Service ${service.name} bientôt disponible!`);
     }
-  };
-
-  const getCreditsForService = (serviceType: string) => {
-    if (!premiumStatus?.credits) return null;
-    return premiumStatus.credits[serviceType];
   };
 
   const formatPrice = (price: number) => {
@@ -319,9 +350,9 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {services.map((service) => {
           const Icon = service.icon;
-          const credits = getCreditsForService(service.serviceType);
-          const hasCredits = credits && credits.available > 0;
-          const canUse = service.isIncluded || hasCredits;
+          const globalBalance = premiumStatus?.credits?.global_balance?.available || 0;
+          const serviceCost = service.credits || 0;
+          const hasEnoughCredits = globalBalance >= serviceCost;
 
           return (
             <div
@@ -338,6 +369,10 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                     <span className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-medium">
                       Inclus
                     </span>
+                  ) : service.credits ? (
+                    <span className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-medium">
+                      {service.credits} ⚡
+                    </span>
                   ) : (
                     <span className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-medium">
                       {formatPrice(service.price)}
@@ -351,24 +386,24 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
               {/* Contenu */}
               <div className="p-6">
                 {/* Crédits */}
-                {credits && (
+                {!service.isIncluded && (
                   <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">Crédits disponibles</span>
-                      <span className="text-2xl font-bold text-blue-900">
-                        {credits.available}
+                      <span className={`text-2xl font-bold ${hasEnoughCredits ? 'text-blue-900' : 'text-red-600'}`}>
+                        {globalBalance}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        className={`h-2 rounded-full transition-all ${hasEnoughCredits ? 'bg-blue-600' : 'bg-red-500'}`}
                         style={{
-                          width: `${(credits.available / credits.total) * 100}%`,
+                          width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
                         }}
                       ></div>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {credits.used} / {credits.total} utilisés
+                      0 / {globalBalance} utilisés
                     </p>
                   </div>
                 )}
@@ -392,13 +427,13 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                     <Zap className="w-5 h-5" />
                     <span>Utiliser le service</span>
                   </button>
-                ) : hasCredits ? (
+                ) : hasEnoughCredits ? (
                   <button
                     onClick={() => handleUseService(service)}
-                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition flex items-center justify-center space-x-2"
+                    className="w-full bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
                   >
                     <Zap className="w-5 h-5" />
-                    <span>Utiliser ({credits?.available} crédits)</span>
+                    <span>Utiliser le service</span>
                   </button>
                 ) : (
                   <button
@@ -406,7 +441,7 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                     className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition flex items-center justify-center space-x-2"
                   >
                     <CreditCard className="w-5 h-5" />
-                    <span>Acheter maintenant</span>
+                    <span>Acheter des crédits</span>
                   </button>
                 )}
               </div>
