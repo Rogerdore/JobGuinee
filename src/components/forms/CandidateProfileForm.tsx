@@ -22,7 +22,7 @@ interface CandidateProfileFormProps {
 }
 
 export default function CandidateProfileForm({ onNavigate }: CandidateProfileFormProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('candidateProfileDraft');
@@ -358,6 +358,9 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         .eq('id', profile.id);
 
       localStorage.removeItem('candidateProfileDraft');
+
+      // Refresh profile to update completion percentage in AuthContext
+      await refreshProfile();
 
       // Show success message
       setShowSuccessMessage(true);

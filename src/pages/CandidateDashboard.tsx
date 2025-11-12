@@ -18,7 +18,7 @@ interface Formation {
 }
 
 export default function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'applications' | 'profile' | 'formations' | 'alerts' | 'messages' | 'documents' | 'premium'>('dashboard');
   const [applications, setApplications] = useState<(Application & { jobs: Job & { companies: Company } })[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
@@ -43,7 +43,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
-    loadData();
+    const init = async () => {
+      await refreshProfile();
+      await loadData();
+    };
+    init();
   }, [profile?.id]);
 
   useEffect(() => {
