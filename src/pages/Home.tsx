@@ -105,17 +105,21 @@ export default function Home({ onNavigate }: HomeProps) {
   };
 
   const handleCandidateClick = () => {
-    if (user && profile) {
+    if (user && profile && profile.user_type === 'candidate') {
+      // Utilisateur connecté ET c'est un candidat → Dashboard candidat
       onNavigate('candidate-dashboard');
     } else {
+      // Non connecté OU pas un candidat → Inscription candidat
       onNavigate('signup-candidate');
     }
   };
 
   const handleRecruiterClick = () => {
-    if (user && profile) {
+    if (user && profile && profile.user_type === 'recruiter') {
+      // Utilisateur connecté ET c'est un recruteur → Dashboard recruteur
       onNavigate('recruiter-dashboard');
     } else {
+      // Non connecté OU pas un recruteur → Inscription recruteur
       onNavigate('signup-recruiter');
     }
   };
@@ -502,7 +506,9 @@ export default function Home({ onNavigate }: HomeProps) {
                 onClick={handleCandidateClick}
                 className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
               >
-                {user ? 'Accéder à mon espace' : 'Créer mon profil gratuitement'}
+                {(user && profile && profile.user_type === 'candidate')
+                  ? 'Accéder à mon espace'
+                  : 'Créer mon profil gratuitement'}
               </button>
             </div>
 
@@ -536,7 +542,9 @@ export default function Home({ onNavigate }: HomeProps) {
                 onClick={handleRecruiterClick}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
-                {user ? 'Accéder à mon espace' : 'Publier une annonce maintenant'}
+                {(user && profile && profile.user_type === 'recruiter')
+                  ? 'Accéder à mon espace'
+                  : 'Publier une annonce maintenant'}
               </button>
             </div>
           </div>
