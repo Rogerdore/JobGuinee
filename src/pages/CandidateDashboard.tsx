@@ -8,6 +8,7 @@ import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import DocumentManager from '../components/candidate/DocumentManager';
 import WelcomeCreditsModal from '../components/candidate/WelcomeCreditsModal';
 import JobAlerts from '../components/candidate/JobAlerts';
+import MessagingSystem from '../components/messaging/MessagingSystem';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -785,14 +786,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
             {activeTab === 'alerts' && <JobAlerts />}
 
-            {activeTab === 'messages' && (
-              <div className="text-center py-12">
-                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Messagerie</h3>
-                <p className="text-gray-600 mb-6">Communiquez directement avec les recruteurs</p>
-                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
-              </div>
-            )}
+            {activeTab === 'messages' && <MessagingSystem userType="candidate" onNavigate={onNavigate} />}
 
             {activeTab === 'documents' && <DocumentManager />}
 

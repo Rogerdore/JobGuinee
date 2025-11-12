@@ -28,6 +28,7 @@ import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
 import ExportApplicationsButton from '../components/recruiter/ExportApplicationsButton';
+import MessagingSystem from '../components/messaging/MessagingSystem';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
@@ -1007,16 +1008,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           )}
 
           {activeTab === 'messages' && (
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-16 text-center">
-              <MessageSquare className="w-20 h-20 text-gray-300 mx-auto mb-6" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Messagerie RH</h3>
-              <p className="text-gray-600 text-lg mb-2">
-                Communiquez directement avec les candidats
-              </p>
-              <p className="text-sm text-gray-500 mt-4 px-4 py-2 bg-gray-50 rounded-lg inline-block">
-                Fonctionnalité disponible prochainement
-              </p>
-            </div>
+            <MessagingSystem userType="recruiter" onNavigate={onNavigate} />
           )}
 
           {activeTab === 'analytics' && (
