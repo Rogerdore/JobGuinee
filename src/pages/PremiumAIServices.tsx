@@ -173,6 +173,7 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       color: 'from-yellow-500 to-yellow-600',
       price: 50000,
       isIncluded: false,
+      credits: 1,
       serviceType: 'verified_badge',
       features: [
         'Vérification d\'identité complète',
