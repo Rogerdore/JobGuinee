@@ -7,6 +7,7 @@ import MyApplications from '../components/candidate/MyApplications';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import DocumentManager from '../components/candidate/DocumentManager';
 import WelcomeCreditsModal from '../components/candidate/WelcomeCreditsModal';
+import JobAlerts from '../components/candidate/JobAlerts';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -782,16 +783,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               </div>
             )}
 
-            {activeTab === 'alerts' && (
-              <div className="text-center py-12">
-                <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Alertes Emploi</h3>
-                <p className="text-gray-600 mb-6">
-                  Configurez des alertes pour recevoir les nouvelles offres par email, SMS ou WhatsApp
-                </p>
-                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
-              </div>
-            )}
+            {activeTab === 'alerts' && <JobAlerts />}
 
             {activeTab === 'messages' && (
               <div className="text-center py-12">
