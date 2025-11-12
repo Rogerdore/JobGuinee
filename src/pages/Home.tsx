@@ -24,6 +24,8 @@ export default function Home({ onNavigate }: HomeProps) {
   const [featuredFormations, setFeaturedFormations] = useState<Formation[]>([]);
   const [stats, setStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalType, setConfirmModalType] = useState<'candidate' | 'recruiter'>('candidate');
 
   useEffect(() => {
     loadData();
@@ -109,8 +111,9 @@ export default function Home({ onNavigate }: HomeProps) {
       // Utilisateur connecté ET c'est un candidat → Dashboard candidat
       onNavigate('candidate-dashboard');
     } else {
-      // Non connecté OU pas un candidat → Inscription candidat
-      onNavigate('signup-candidate');
+      // Non connecté OU pas un candidat → Afficher modal de confirmation
+      setConfirmModalType('candidate');
+      setShowConfirmModal(true);
     }
   };
 
@@ -119,9 +122,23 @@ export default function Home({ onNavigate }: HomeProps) {
       // Utilisateur connecté ET c'est un recruteur → Dashboard recruteur
       onNavigate('recruiter-dashboard');
     } else {
-      // Non connecté OU pas un recruteur → Inscription recruteur
+      // Non connecté OU pas un recruteur → Afficher modal de confirmation
+      setConfirmModalType('recruiter');
+      setShowConfirmModal(true);
+    }
+  };
+
+  const handleConfirmSignup = () => {
+    setShowConfirmModal(false);
+    if (confirmModalType === 'candidate') {
+      onNavigate('signup-candidate');
+    } else {
       onNavigate('signup-recruiter');
     }
+  };
+
+  const handleCancelSignup = () => {
+    setShowConfirmModal(false);
   };
 
   const categories = [
@@ -787,6 +804,75 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+
+      {/* Modal de confirmation pour inscription */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl animate-fade-in">
+            <div className="text-center mb-6">
+              <div className={`w-16 h-16 ${confirmModalType === 'candidate' ? 'bg-[#FF8C00]' : 'bg-[#0E2F56]'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                {confirmModalType === 'candidate' ? (
+                  <Users className="w-8 h-8 text-white" />
+                ) : (
+                  <Building className="w-8 h-8 text-white" />
+                )}
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                {confirmModalType === 'candidate'
+                  ? 'Rejoindre en tant que Candidat'
+                  : 'Rejoindre en tant que Recruteur'}
+              </h3>
+              <p className="text-gray-600">
+                {confirmModalType === 'candidate'
+                  ? 'Vous allez être redirigé vers la page d\'inscription candidat. Vous pourrez créer votre profil, postuler aux offres et accéder à des services IA personnalisés.'
+                  : 'Vous allez être redirigé vers la page d\'inscription recruteur. Vous pourrez publier des offres, accéder à la CVthèque et gérer vos candidatures.'}
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start space-x-3 text-sm text-gray-700">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>
+                  {confirmModalType === 'candidate'
+                    ? 'Accès gratuit à toutes les offres d\'emploi'
+                    : 'Publication d\'offres illimitée'}
+                </span>
+              </div>
+              <div className="flex items-start space-x-3 text-sm text-gray-700">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>
+                  {confirmModalType === 'candidate'
+                    ? '150 000 crédits IA gratuits à l\'inscription'
+                    : 'Accès à la CVthèque complète'}
+                </span>
+              </div>
+              <div className="flex items-start space-x-3 text-sm text-gray-700">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>
+                  {confirmModalType === 'candidate'
+                    ? 'Matching IA avec les meilleures offres'
+                    : 'Outils IA pour trouver les meilleurs candidats'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelSignup}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmSignup}
+                className={`flex-1 px-6 py-3 ${confirmModalType === 'candidate' ? 'bg-[#FF8C00] hover:bg-[#e67e00]' : 'bg-[#0E2F56] hover:bg-[#1a4275]'} text-white font-semibold rounded-xl transition shadow-lg`}
+              >
+                Continuer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
