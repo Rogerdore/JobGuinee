@@ -66,12 +66,47 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [manualPosition, setManualPosition] = useState('');
 
+  // Gestion des crédits
+  const [creditBalance, setCreditBalance] = useState(0);
+  const [serviceCost, setServiceCost] = useState(50);
+  const [loadingCredits, setLoadingCredits] = useState(true);
+
   useEffect(() => {
     if (user) {
       loadAnalyses();
       loadJobs();
+      loadCredits();
     }
   }, [user]);
+
+  const loadCredits = async () => {
+    if (!user) return;
+
+    setLoadingCredits(true);
+    try {
+      // Récupérer le solde
+      const balance = await supabase.rpc('get_user_credit_balance', {
+        p_user_id: user.id
+      });
+
+      setCreditBalance(balance || 0);
+
+      // Récupérer le coût du service
+      const { data: cost } = await supabase
+        .from('service_credit_costs')
+        .select('credits_cost')
+        .eq('service_code', 'profile_analysis')
+        .single();
+
+      if (cost) {
+        setServiceCost(cost.credits_cost);
+      }
+    } catch (error: any) {
+      console.error('Erreur chargement crédits:', error);
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
 
   const loadAnalyses = async () => {
     if (!user) return;
@@ -120,11 +155,36 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
   const analyzeProfile = async (jobId?: string, manual?: string) => {
     if (!user) return;
 
+    // Vérifier les crédits avant de lancer l'analyse
+    if (creditBalance < serviceCost) {
+      setError(`Crédits insuffisants. Requis: ${serviceCost} crédits, Disponibles: ${creditBalance} crédits`);
+      return;
+    }
+
     setAnalyzing(true);
     setError('');
     setShowJobSelection(false);
 
     try {
+      // Utiliser les crédits
+      const { data: creditResult } = await supabase.rpc('use_credits_for_service', {
+        p_user_id: user.id,
+        p_service_code: 'profile_analysis',
+        p_metadata: {
+          offer_id: jobId,
+          manual_position: manual
+        }
+      });
+
+      if (!creditResult.success) {
+        setError(creditResult.message || 'Crédits insuffisants');
+        return;
+      }
+
+      // Mettre à jour le solde
+      setCreditBalance(creditResult.new_balance);
+
+      // Lancer l'analyse
       const { data, error } = await supabase.rpc('analyze_profile_with_ai', {
         p_user_id: user.id,
         p_offer_id: jobId || null,
@@ -386,19 +446,41 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
                 un score de compatibilité détaillé et des recommandations personnalisées.
               </p>
 
+              <div className="mb-6 bg-white bg-opacity-10 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-purple-100">Coût du service:</span>
+                  <span className="text-xl font-bold text-white">{serviceCost} ⚡</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-purple-100">Votre solde:</span>
+                  <span className={`text-xl font-bold ${creditBalance >= serviceCost ? 'text-green-300' : 'text-red-300'}`}>
+                    {loadingCredits ? '...' : creditBalance} ⚡
+                  </span>
+                </div>
+                {creditBalance < serviceCost && !loadingCredits && (
+                  <div className="mt-3 pt-3 border-t border-white border-opacity-20">
+                    <p className="text-xs text-red-200 mb-2">Crédits insuffisants</p>
+                    <button className="w-full bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition text-sm">
+                      Acheter des crédits
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3">
                 <button
                   onClick={() => setShowJobSelection(true)}
-                  className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition flex items-center justify-center space-x-2 shadow-lg"
+                  disabled={analyzing || loadingCredits || creditBalance < serviceCost}
+                  className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg"
                 >
                   <Briefcase className="w-5 h-5" />
-                  <span>Comparer avec une offre</span>
+                  <span>Comparer avec une offre ({serviceCost} ⚡)</span>
                 </button>
 
                 <button
                   onClick={() => analyzeProfile()}
-                  disabled={analyzing}
-                  className="w-full bg-purple-500 text-white px-6 py-4 rounded-lg font-bold hover:bg-purple-400 transition disabled:opacity-50 flex items-center justify-center space-x-2"
+                  disabled={analyzing || loadingCredits || creditBalance < serviceCost}
+                  className="w-full bg-purple-500 text-white px-6 py-4 rounded-lg font-bold hover:bg-purple-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {analyzing ? (
                     <>
@@ -408,7 +490,7 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5" />
-                      <span>Analyse générale</span>
+                      <span>Analyse générale ({serviceCost} ⚡)</span>
                     </>
                   )}
                 </button>
@@ -419,13 +501,6 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
                   <p className="text-sm text-white">{error}</p>
                 </div>
               )}
-
-              <div className="mt-6 bg-white bg-opacity-10 rounded-lg p-4">
-                <p className="text-sm text-purple-100 flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Service inclus gratuitement</span>
-                </p>
-              </div>
             </div>
           </div>
 

@@ -67,7 +67,7 @@ CREATE TABLE service_credit_costs (
 
 | Service | Code | Crédits | Catégorie |
 |---------|------|---------|-----------|
-| Analyse IA de Profil | `profile_analysis` | 0 | IA & Analyse |
+| Analyse IA de Profil | `profile_analysis` | 50 | IA & Analyse |
 | Génération CV IA | `cv_generation` | 50 | Documents |
 | Génération Lettre IA | `cover_letter_generation` | 30 | Documents |
 | Matching IA Emplois | `job_matching` | 20 | IA & Analyse |
@@ -583,7 +583,7 @@ if (!result.success) {
 
 | Service | Crédits | Valeur GNF | Valeur Réelle |
 |---------|---------|------------|---------------|
-| Analyse Profil | 0 | 0 | Gratuit |
+| Analyse IA Profil | 50 | 25,000 | Service premium |
 | CV IA | 50 | 25,000 | Service pro |
 | Lettre IA | 30 | 15,000 | Service pro |
 | Matching | 20 | 10,000 | Recherche |
@@ -598,9 +598,6 @@ if (!result.success) {
 
 ## 📊 Consommation par Service
 
-### Services Gratuits (0 crédit)
-- ✅ Analyse IA de Profil
-
 ### Services Economy (20-40 crédits)
 - ✅ Matching IA Emplois (20)
 - ✅ Génération Lettre IA (30)
@@ -608,6 +605,7 @@ if (!result.success) {
 - ✅ Accès Infos Contact (40)
 
 ### Services Standard (50 crédits)
+- ✅ Analyse IA de Profil (50)
 - ✅ Génération CV IA (50)
 - ✅ Candidature Prioritaire (50)
 
