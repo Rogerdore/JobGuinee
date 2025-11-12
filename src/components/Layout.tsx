@@ -1,8 +1,9 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download, Facebook, Instagram, Youtube, Linkedin, Twitter, Share2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatBot from './ChatBot';
+import { supabase } from '../lib/supabase';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,11 +11,27 @@ interface LayoutProps {
   onNavigate: (page: string) => void;
 }
 
+interface SocialMedia {
+  facebook_url?: string;
+  instagram_url?: string;
+  tiktok_url?: string;
+  youtube_url?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  enable_facebook?: boolean;
+  enable_instagram?: boolean;
+  enable_tiktok?: boolean;
+  enable_youtube?: boolean;
+  enable_linkedin?: boolean;
+  enable_twitter?: boolean;
+}
+
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, profile, signOut, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [socialMedia, setSocialMedia] = useState<SocialMedia | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +53,25 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    loadSocialMedia();
+  }, []);
+
+  const loadSocialMedia = async () => {
+    try {
+      const { data } = await supabase
+        .from('social_media_configuration')
+        .select('*')
+        .single();
+
+      if (data) {
+        setSocialMedia(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement réseaux sociaux:', error);
+    }
+  };
 
   const navigation = [
     { name: 'Accueil', page: 'home', icon: Home },
@@ -92,6 +128,77 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
                 );
               })}
+
+              {socialMedia && (
+                <div className="flex items-center space-x-1 ml-4 pl-4 border-l border-gray-300">
+                  {socialMedia.enable_facebook && socialMedia.facebook_url && (
+                    <a
+                      href={socialMedia.facebook_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      title="Facebook"
+                    >
+                      <Facebook className="w-5 h-5" />
+                    </a>
+                  )}
+                  {socialMedia.enable_instagram && socialMedia.instagram_url && (
+                    <a
+                      href={socialMedia.instagram_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-pink-600 hover:bg-pink-50 rounded-lg transition"
+                      title="Instagram"
+                    >
+                      <Instagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {socialMedia.enable_tiktok && socialMedia.tiktok_url && (
+                    <a
+                      href={socialMedia.tiktok_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-gray-900 hover:bg-gray-50 rounded-lg transition"
+                      title="TikTok"
+                    >
+                      <Share2 className="w-5 h-5" />
+                    </a>
+                  )}
+                  {socialMedia.enable_youtube && socialMedia.youtube_url && (
+                    <a
+                      href={socialMedia.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      title="YouTube"
+                    >
+                      <Youtube className="w-5 h-5" />
+                    </a>
+                  )}
+                  {socialMedia.enable_linkedin && socialMedia.linkedin_url && (
+                    <a
+                      href={socialMedia.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                      title="LinkedIn"
+                    >
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  )}
+                  {socialMedia.enable_twitter && socialMedia.twitter_url && (
+                    <a
+                      href={socialMedia.twitter_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition"
+                      title="Twitter/X"
+                    >
+                      <Twitter className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="hidden md:flex items-center space-x-4">

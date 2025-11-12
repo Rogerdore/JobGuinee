@@ -23,8 +23,9 @@ import AICVGenerator from './components/ai/AICVGenerator';
 import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
 import ChatBotAdmin from './pages/ChatBotAdmin';
+import SocialMediaConfiguration from './pages/SocialMediaConfiguration';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -79,6 +80,7 @@ function AppContent() {
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
       {currentPage === 'chatbot-admin' && <ChatBotAdmin />}
+      {currentPage === 'social-config' && <SocialMediaConfiguration />}
     </Layout>
   );
 }
