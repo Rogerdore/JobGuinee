@@ -65,18 +65,18 @@ export default function FloatingSocialMedia() {
         isVisible ? 'translate-x-0' : '-translate-x-full'
       } hidden lg:block`}
     >
-      <div className="bg-white rounded-r-xl shadow-xl overflow-hidden border-r-2 border-blue-900">
-        <div className="flex flex-col">
+      <div className="bg-white rounded-r-2xl shadow-2xl overflow-hidden border-r-4 border-blue-900">
+        <div className="flex flex-col space-y-0.5">
           {socialMedia.enable_facebook && socialMedia.facebook_url && (
             <a
               href={socialMedia.facebook_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative p-2 text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:pr-4"
+              className="group relative p-3.5 text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:pr-6"
               title="Facebook"
             >
-              <Facebook className="w-4 h-4" />
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <Facebook className="w-5 h-5" />
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">
                 Facebook
               </span>
             </a>
@@ -87,11 +87,11 @@ export default function FloatingSocialMedia() {
               href={socialMedia.instagram_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative p-2 text-white bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 transition-all duration-300 hover:pr-4"
+              className="group relative p-3.5 text-white bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 transition-all duration-300 hover:pr-6"
               title="Instagram"
             >
-              <Instagram className="w-4 h-4" />
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-pink-500 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <Instagram className="w-5 h-5" />
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-2 bg-pink-500 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">
                 Instagram
               </span>
             </a>
@@ -102,11 +102,11 @@ export default function FloatingSocialMedia() {
               href={socialMedia.tiktok_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative p-2 text-white bg-gray-900 hover:bg-black transition-all duration-300 hover:pr-4"
+              className="group relative p-3.5 text-white bg-gray-900 hover:bg-black transition-all duration-300 hover:pr-6"
               title="TikTok"
             >
-              <Share2 className="w-4 h-4" />
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-gray-900 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <Share2 className="w-5 h-5" />
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">
                 TikTok
               </span>
             </a>
@@ -117,11 +117,11 @@ export default function FloatingSocialMedia() {
               href={socialMedia.youtube_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative p-2 text-white bg-red-600 hover:bg-red-700 transition-all duration-300 hover:pr-4"
+              className="group relative p-3.5 text-white bg-red-600 hover:bg-red-700 transition-all duration-300 hover:pr-6"
               title="YouTube"
             >
-              <Youtube className="w-4 h-4" />
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-red-600 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <Youtube className="w-5 h-5" />
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">
                 YouTube
               </span>
             </a>
@@ -132,11 +132,11 @@ export default function FloatingSocialMedia() {
               href={socialMedia.linkedin_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative p-2 text-white bg-blue-700 hover:bg-blue-800 transition-all duration-300 hover:pr-4"
+              className="group relative p-3.5 text-white bg-blue-700 hover:bg-blue-800 transition-all duration-300 hover:pr-6"
               title="LinkedIn"
             >
-              <Linkedin className="w-4 h-4" />
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-blue-700 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <Linkedin className="w-5 h-5" />
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-2 bg-blue-700 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">
                 LinkedIn
               </span>
             </a>
@@ -147,11 +147,11 @@ export default function FloatingSocialMedia() {
               href={socialMedia.twitter_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative p-2 text-white bg-sky-500 hover:bg-sky-600 transition-all duration-300 hover:pr-4"
+              className="group relative p-3.5 text-white bg-sky-500 hover:bg-sky-600 transition-all duration-300 hover:pr-6"
               title="Twitter/X"
             >
-              <Twitter className="w-4 h-4" />
-              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-sky-500 text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <Twitter className="w-5 h-5" />
+              <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-2 bg-sky-500 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">
                 Twitter/X
               </span>
             </a>
