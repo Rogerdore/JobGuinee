@@ -18,6 +18,8 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
+  Phone,
+  Copy,
 } from 'lucide-react';
 
 interface PremiumStatus {
@@ -58,6 +60,8 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   const [selectedService, setSelectedService] = useState<ServiceConfig | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('orange_money');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [adminPhoneNumber, setAdminPhoneNumber] = useState<string>('');
+  const [showDirectPayment, setShowDirectPayment] = useState(false);
 
   const services: ServiceConfig[] = [
     {
@@ -165,8 +169,25 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   useEffect(() => {
     if (user) {
       loadPremiumStatus();
+      loadAdminPhoneNumber();
     }
   }, [user]);
+
+  const loadAdminPhoneNumber = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('user_type', 'admin')
+        .single();
+
+      if (!error && data?.phone) {
+        setAdminPhoneNumber(data.phone);
+      }
+    } catch (error) {
+      console.error('Erreur chargement numéro admin:', error);
+    }
+  };
 
   const loadPremiumStatus = async () => {
     if (!user) return;
@@ -282,6 +303,11 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-GN').format(price) + ' GNF';
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('Numéro copié!');
   };
 
   if (loading) {
@@ -503,70 +529,150 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                   ].map((method) => (
                     <button
                       key={method.value}
-                      onClick={() => setPaymentMethod(method.value)}
+                      onClick={() => {
+                        setPaymentMethod(method.value);
+                        setShowDirectPayment(false);
+                      }}
                       className={`w-full p-4 rounded-lg border-2 transition flex items-center justify-between ${
-                        paymentMethod === method.value
+                        paymentMethod === method.value && !showDirectPayment
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <span className="font-medium text-gray-900">{method.label}</span>
-                      {paymentMethod === method.value && (
+                      {paymentMethod === method.value && !showDirectPayment && (
                         <CheckCircle2 className="w-5 h-5 text-blue-600" />
                       )}
                     </button>
                   ))}
+
+                  {adminPhoneNumber && (
+                    <button
+                      onClick={() => {
+                        setShowDirectPayment(true);
+                        setPaymentMethod('direct_admin');
+                      }}
+                      className={`w-full p-4 rounded-lg border-2 transition ${
+                        showDirectPayment
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Phone className="w-5 h-5 text-orange-600" />
+                          <span className="font-medium text-gray-900">Paiement direct à l'admin</span>
+                        </div>
+                        {showDirectPayment && (
+                          <CheckCircle2 className="w-5 h-5 text-orange-600" />
+                        )}
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Numéro de téléphone
-                </label>
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="Ex: 628 XX XX XX"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+              {showDirectPayment && adminPhoneNumber ? (
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-orange-900 mb-3 flex items-center space-x-2">
+                    <Phone className="w-5 h-5" />
+                    <span>Contactez l'administrateur</span>
+                  </h4>
 
-            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded mb-6">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-3">
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-2">Numéro de téléphone:</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-gray-900">{adminPhoneNumber}</span>
+                        <button
+                          onClick={() => copyToClipboard(adminPhoneNumber)}
+                          className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition"
+                          title="Copier le numéro"
+                        >
+                          <Copy className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-orange-800 space-y-2">
+                      <p className="font-medium">Instructions:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-2">
+                        <li>Appelez ou envoyez un message à ce numéro</li>
+                        <li>Mentionnez le service: <span className="font-semibold">{selectedService.name}</span></li>
+                        <li>Effectuez le paiement de <span className="font-semibold">{formatPrice(selectedService.price)}</span></li>
+                        <li>L'admin activera votre service après confirmation</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div>
-                  <p className="text-sm font-medium text-orange-900">Note</p>
-                  <p className="text-sm text-orange-700 mt-1">
-                    Vous recevrez une notification pour confirmer le paiement sur votre téléphone.
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Numéro de téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Ex: 628 XX XX XX"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+            </div>
+
+            {!showDirectPayment && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Note</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Vous recevrez une notification pour confirmer le paiement sur votre téléphone.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="flex space-x-4">
-              <button
-                onClick={processPayment}
-                disabled={purchasingService !== null || !phoneNumber}
-                className="flex-1 bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {purchasingService ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    <span>Traitement...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5" />
-                    <span>Payer {formatPrice(selectedService.price)}</span>
-                  </>
-                )}
-              </button>
+              {showDirectPayment ? (
+                <button
+                  onClick={() => {
+                    alert('Contactez l\'admin au ' + adminPhoneNumber + ' pour finaliser votre achat. Votre service sera activé après confirmation du paiement.');
+                    setShowPaymentModal(false);
+                    setSelectedService(null);
+                    setShowDirectPayment(false);
+                  }}
+                  className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 transition flex items-center justify-center space-x-2"
+                >
+                  <Phone className="w-5 h-5" />
+                  <span>J'ai compris</span>
+                </button>
+              ) : (
+                <button
+                  onClick={processPayment}
+                  disabled={purchasingService !== null || !phoneNumber}
+                  className="flex-1 bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {purchasingService ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      <span>Traitement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      <span>Payer {formatPrice(selectedService.price)}</span>
+                    </>
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowPaymentModal(false);
                   setSelectedService(null);
+                  setShowDirectPayment(false);
                 }}
                 className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
               >
