@@ -343,58 +343,60 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* En-tête */}
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mb-6">
+    <div className="max-w-7xl mx-auto px-4">
+      {/* En-tête Principal */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-500 rounded-full mb-6">
           <Crown className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Services Premium IA</h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">Services Premium IA</h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Boostez votre recherche d'emploi avec nos services intelligents propulsés par l'IA
         </p>
       </div>
 
-      {/* Boutons d'action */}
-      <div className="flex justify-center space-x-4 mb-12">
+      {/* Boutons d'action principaux */}
+      <div className="flex justify-center gap-4 mb-8">
         <button
           onClick={() => {
-            /* Scroll to services */
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
           }}
-          className="bg-blue-900 text-white px-8 py-4 rounded-xl font-medium hover:bg-blue-800 transition flex items-center space-x-3 shadow-lg"
+          className="bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center space-x-2"
         >
-          <Sparkles className="w-6 h-6" />
+          <Sparkles className="w-5 h-5" />
           <span>Découvrir tous les services IA</span>
-          <ArrowRight className="w-5 h-5" />
+          <ArrowRight className="w-4 h-4" />
         </button>
         <button
-          onClick={() => alert('Chatbot bientôt disponible!')}
-          className="bg-green-600 text-white px-8 py-4 rounded-xl font-medium hover:bg-green-700 transition flex items-center space-x-3 shadow-lg"
+          onClick={() => onNavigate?.('ai-coach')}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition flex items-center space-x-2"
         >
-          <MessageCircle className="w-6 h-6" />
+          <MessageCircle className="w-5 h-5" />
           <span>Chatbot Emploi</span>
         </button>
       </div>
 
-      {/* Statut Premium */}
+      {/* Bannière Abonnement */}
       {premiumStatus && (
-        <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl p-8 mb-12 text-white">
+        <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl p-6 mb-8 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-bold mb-2">
+              <h2 className="text-2xl font-bold mb-1">
                 Abonnement {premiumStatus.subscription_type === 'free' ? 'Gratuit' : 'Premium'}
-              </h3>
+              </h2>
               <p className="text-blue-100">
                 Statut: {premiumStatus.status === 'active' ? 'Actif' : 'Inactif'}
               </p>
             </div>
-            <Crown className="w-16 h-16 text-orange-400" />
+            <div className="bg-orange-500 rounded-xl p-3">
+              <Crown className="w-12 h-12 text-white" />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Services Grid - 3 colonnes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.map((service) => {
           const Icon = service.icon;
           const globalBalance = premiumStatus?.credits?.global_balance?.available || 0;
@@ -404,44 +406,45 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
           return (
             <div
               key={service.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition border-2 border-transparent hover:border-blue-100"
+              className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               {/* En-tête coloré */}
-              <div className={`bg-gradient-to-br ${service.color} p-8 text-white relative`}>
+              <div className={`bg-gradient-to-br ${service.color} p-6 text-white relative`}>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
                     <Icon className="w-8 h-8" />
                   </div>
                   {service.isIncluded ? (
-                    <span className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-medium">
+                    <span className="px-3 py-1 bg-white text-gray-900 rounded-full text-xs font-bold">
                       Inclus
                     </span>
                   ) : service.credits ? (
-                    <span className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-medium">
-                      {service.credits} ⚡
+                    <span className="px-3 py-1 bg-white bg-opacity-30 backdrop-blur-sm rounded-full text-xs font-bold flex items-center space-x-1">
+                      <span>{service.credits}</span>
+                      <Zap className="w-3 h-3" />
                     </span>
                   ) : (
-                    <span className="px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-sm font-medium">
+                    <span className="px-3 py-1 bg-white bg-opacity-30 backdrop-blur-sm rounded-full text-xs font-bold">
                       {formatPrice(service.price)}
                     </span>
                   )}
                 </div>
-                <h3 className="text-2xl font-bold mb-2">{service.name}</h3>
-                <p className="text-white text-opacity-90">{service.description}</p>
+                <h3 className="text-xl font-bold mb-2">{service.name}</h3>
+                <p className="text-white text-opacity-90 text-sm">{service.description}</p>
               </div>
 
               {/* Contenu */}
-              <div className="p-6">
-                {/* Crédits */}
+              <div className="p-5 bg-white">
+                {/* Crédits disponibles */}
                 {!service.isIncluded && (
-                  <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                  <div className="mb-5 p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Crédits disponibles</span>
+                      <span className="text-xs font-medium text-gray-600">Crédits disponibles</span>
                       <span className={`text-2xl font-bold ${hasEnoughCredits ? 'text-blue-900' : 'text-red-600'}`}>
                         {globalBalance}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-blue-100 rounded-full h-2 mb-1">
                       <div
                         className={`h-2 rounded-full transition-all ${hasEnoughCredits ? 'bg-blue-600' : 'bg-red-500'}`}
                         style={{
@@ -449,46 +452,46 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                         }}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500">
                       0 / {globalBalance} utilisés
                     </p>
                   </div>
                 )}
 
                 {/* Fonctionnalités */}
-                <ul className="space-y-3 mb-6">
+                <ul className="space-y-2 mb-5">
                   {service.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start space-x-2">
-                      <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">{feature}</span>
+                      <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs text-gray-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                {/* Actions */}
+                {/* Boutons d'action */}
                 {service.isIncluded ? (
                   <button
                     onClick={() => handleUseService(service)}
-                    className="w-full bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
+                    className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
                   >
-                    <Zap className="w-5 h-5" />
-                    <span>Utiliser le service</span>
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm">Utiliser le service</span>
                   </button>
                 ) : hasEnoughCredits ? (
                   <button
                     onClick={() => handleUseService(service)}
-                    className="w-full bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
+                    className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
                   >
-                    <Zap className="w-5 h-5" />
-                    <span>Utiliser le service</span>
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm">Utiliser le service</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => handlePurchase(service)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition flex items-center justify-center space-x-2"
+                    className="w-full bg-orange-500 text-white px-5 py-3 rounded-lg font-medium hover:bg-orange-600 transition flex items-center justify-center space-x-2"
                   >
-                    <CreditCard className="w-5 h-5" />
-                    <span>Acheter des crédits</span>
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm">Acheter des crédits</span>
                   </button>
                 )}
               </div>
