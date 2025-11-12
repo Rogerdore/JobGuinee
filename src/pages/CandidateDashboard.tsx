@@ -191,14 +191,19 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const calculateProfileCompletion = () => {
     if (!candidateProfile && !profile) return 0;
 
+    const educationArray = candidateProfile?.education || [];
+    const educationLevel = Array.isArray(educationArray) && educationArray.length > 0
+      ? (educationArray[0]?.degree || formData.education_level || '')
+      : (formData.education_level || '');
+
     const profileData = {
       full_name: candidateProfile?.full_name || profile?.full_name || '',
-      desired_position: candidateProfile?.desired_position || formData.desired_position || '',
+      desired_position: candidateProfile?.title || formData.desired_position || '',
       bio: candidateProfile?.bio || profile?.bio || '',
       phone: profile?.phone || '',
       location: candidateProfile?.location || formData.location || '',
       experience_years: candidateProfile?.experience_years || formData.experience_years || 0,
-      education_level: candidateProfile?.education_level || formData.education_level || '',
+      education_level: educationLevel,
       skills: candidateProfile?.skills || formData.skills || [],
       languages: candidateProfile?.languages || [],
       cv_url: candidateProfile?.cv_url || '',

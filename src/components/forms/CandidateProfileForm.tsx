@@ -74,16 +74,19 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
 
   const calculateProgress = () => {
     const profileData = {
-      full_name: formData.fullName,
-      desired_position: formData.currentPosition || formData.professionalStatus,
-      bio: formData.professionalSummary,
-      phone: formData.phone,
-      location: formData.address,
-      experience_years: formData.experiences.length > 0 ? formData.experiences.length : 0,
-      education_level: formData.formations.length > 0 ? formData.formations[0]?.degree : '',
-      skills: formData.skills,
-      languages: formData.languages,
-      cv_url: formData.cv ? 'temp' : '',
+      full_name: formData.fullName || '',
+      desired_position: formData.currentPosition || formData.professionalStatus || '',
+      bio: formData.professionalSummary || '',
+      phone: formData.phone || '',
+      location: formData.address || '',
+      experience_years: formData.experiences && formData.experiences.length > 0 ? formData.experiences.reduce((sum, exp) => {
+        const years = parseInt(exp.years) || 0;
+        return sum + years;
+      }, 0) : 0,
+      education_level: formData.formations && formData.formations.length > 0 ? (formData.formations[0]?.degree || '') : '',
+      skills: formData.skills || [],
+      languages: formData.languages || [],
+      cv_url: formData.cv ? 'has_cv' : '',
       linkedin_url: '',
       portfolio_url: '',
       desired_salary_min: '',
