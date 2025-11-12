@@ -128,9 +128,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
                 );
               })}
+            </div>
 
+            <div className="hidden md:flex items-center space-x-4">
               {socialMedia && (
-                <div className="flex items-center space-x-1 ml-4 pl-4 border-l border-gray-300">
+                <div className="flex items-center space-x-1">
                   {socialMedia.enable_facebook && socialMedia.facebook_url && (
                     <a
                       href={socialMedia.facebook_url}
@@ -199,9 +201,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   )}
                 </div>
               )}
-            </div>
-
-            <div className="hidden md:flex items-center space-x-4">
               {user && <NotificationCenter />}
               {user ? (
                 <div className="relative" ref={accountMenuRef}>
