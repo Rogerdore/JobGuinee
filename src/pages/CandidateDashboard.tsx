@@ -189,23 +189,23 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   };
 
   const calculateProfileCompletion = () => {
-    if (!candidateProfile) return 0;
+    if (!candidateProfile && !profile) return 0;
 
     const profileData = {
-      full_name: candidateProfile.full_name,
-      desired_position: formData.desired_position,
-      bio: candidateProfile.bio,
-      phone: candidateProfile.phone,
-      location: formData.location,
-      experience_years: formData.experience_years,
-      education_level: formData.education_level,
-      skills: formData.skills,
-      languages: candidateProfile.languages,
-      cv_url: candidateProfile.cv_url,
-      linkedin_url: candidateProfile.linkedin_url,
-      portfolio_url: candidateProfile.portfolio_url,
-      desired_salary_min: formData.desired_salary_min,
-      desired_salary_max: formData.desired_salary_max,
+      full_name: candidateProfile?.full_name || profile?.full_name || '',
+      desired_position: candidateProfile?.desired_position || formData.desired_position || '',
+      bio: candidateProfile?.bio || profile?.bio || '',
+      phone: profile?.phone || '',
+      location: candidateProfile?.location || formData.location || '',
+      experience_years: candidateProfile?.experience_years || formData.experience_years || 0,
+      education_level: candidateProfile?.education_level || formData.education_level || '',
+      skills: candidateProfile?.skills || formData.skills || [],
+      languages: candidateProfile?.languages || [],
+      cv_url: candidateProfile?.cv_url || '',
+      linkedin_url: candidateProfile?.linkedin_url || '',
+      portfolio_url: candidateProfile?.portfolio_url || '',
+      desired_salary_min: candidateProfile?.desired_salary_min?.toString() || formData.desired_salary_min || '',
+      desired_salary_max: candidateProfile?.desired_salary_max?.toString() || formData.desired_salary_max || '',
     };
 
     return calculateCandidateCompletion(profileData);
