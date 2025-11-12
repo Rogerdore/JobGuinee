@@ -24,8 +24,10 @@ import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
 import ChatBotAdmin from './pages/ChatBotAdmin';
 import SocialMediaConfiguration from './pages/SocialMediaConfiguration';
+import AdminProfiles from './pages/AdminProfiles';
+import AdminJobs from './pages/AdminJobs';
 
-type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -83,6 +85,8 @@ function AppContent() {
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
       {currentPage === 'chatbot-admin' && <ChatBotAdmin />}
       {currentPage === 'social-config' && <SocialMediaConfiguration />}
+      {currentPage === 'admin-profiles' && <AdminProfiles onNavigate={handleNavigate} />}
+      {currentPage === 'admin-jobs' && <AdminJobs onNavigate={handleNavigate} />}
     </Layout>
   );
 }
