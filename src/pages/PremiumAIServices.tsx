@@ -21,6 +21,7 @@ import {
   Phone,
   Copy,
   Shield,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface PremiumStatus {
@@ -50,9 +51,10 @@ interface ServiceConfig {
 
 interface PremiumAIServicesProps {
   onNavigate?: (page: string) => void;
+  onBack?: () => void;
 }
 
-export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps = {}) {
+export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServicesProps = {}) {
   const { user } = useAuth();
   const [premiumStatus, setPremiumStatus] = useState<PremiumStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -344,6 +346,23 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
 
   return (
     <div className="max-w-7xl mx-auto px-4">
+      {/* Bouton de retour */}
+      <div className="mb-6">
+        <button
+          onClick={() => {
+            if (onBack) {
+              onBack();
+            } else {
+              window.history.back();
+            }
+          }}
+          className="flex items-center space-x-2 text-gray-600 hover:text-blue-900 transition"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Retour</span>
+        </button>
+      </div>
+
       {/* En-tête Principal */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-500 rounded-full mb-6">
