@@ -865,18 +865,34 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           {activeTab === 'applications' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold text-gray-900">
-                  Candidatures reçues ({filteredApplications.length})
-                </h2>
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Candidatures reçues ({filteredApplications.length})
+                  </h2>
+                  {(selectedJobFilter !== 'all' || filterCategory !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSelectedJobFilter('all');
+                        setFilterCategory('all');
+                      }}
+                      className="mt-2 text-sm text-[#FF8C00] hover:text-[#0E2F56] font-medium flex items-center gap-1 transition"
+                    >
+                      <X className="w-4 h-4" />
+                      Réinitialiser les filtres
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
+                  <div className={`flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 shadow-sm transition ${
+                    selectedJobFilter !== 'all' ? 'border-[#FF8C00] bg-orange-50' : 'border-gray-200'
+                  }`}>
                     <Briefcase className="w-5 h-5 text-gray-500" />
                     <select
                       value={selectedJobFilter}
                       onChange={(e) => setSelectedJobFilter(e.target.value)}
-                      className="border-none focus:ring-0 text-sm font-medium"
+                      className="border-none focus:ring-0 text-sm font-medium bg-transparent"
                     >
-                      <option value="all">Tous les projets</option>
+                      <option value="all">Tous les projets ({applications.length})</option>
                       {jobs.map(job => (
                         <option key={job.id} value={job.id}>
                           {job.title} ({applications.filter(app => app.job_id === job.id).length})
@@ -884,17 +900,19 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       ))}
                     </select>
                   </div>
-                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
+                  <div className={`flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 shadow-sm transition ${
+                    filterCategory !== 'all' ? 'border-[#FF8C00] bg-orange-50' : 'border-gray-200'
+                  }`}>
                     <Filter className="w-5 h-5 text-gray-500" />
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="border-none focus:ring-0 text-sm font-medium"
+                      className="border-none focus:ring-0 text-sm font-medium bg-transparent"
                     >
                       <option value="all">Tous les profils</option>
-                      <option value="strong">🟢 Profils forts</option>
-                      <option value="medium">🟡 Profils moyens</option>
-                      <option value="weak">🔴 Profils faibles</option>
+                      <option value="strong">Profils forts</option>
+                      <option value="medium">Profils moyens</option>
+                      <option value="weak">Profils faibles</option>
                     </select>
                   </div>
 
@@ -926,6 +944,43 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   <ExportApplicationsButton applications={filteredApplications} />
                 </div>
               </div>
+
+              {selectedJobFilter === 'all' && applications.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <Briefcase className="w-8 h-8 text-blue-700" />
+                      <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-bold">
+                        Total
+                      </span>
+                    </div>
+                    <div className="text-4xl font-bold text-blue-900 mb-1">{applications.length}</div>
+                    <div className="text-sm text-blue-700 font-medium">Candidatures totales</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-2 border-green-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <Users className="w-8 h-8 text-green-700" />
+                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-bold">
+                        Profils forts
+                      </span>
+                    </div>
+                    <div className="text-4xl font-bold text-green-900 mb-1">
+                      {applications.filter(a => a.ai_category === 'strong').length}
+                    </div>
+                    <div className="text-sm text-green-700 font-medium">Candidats qualifiés</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border-2 border-orange-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <Target className="w-8 h-8 text-orange-700" />
+                      <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-bold">
+                        Projets
+                      </span>
+                    </div>
+                    <div className="text-4xl font-bold text-orange-900 mb-1">{jobs.length}</div>
+                    <div className="text-sm text-orange-700 font-medium">Offres actives</div>
+                  </div>
+                </div>
+              )}
 
               {filteredApplications.length === 0 ? (
                 <div className="bg-white rounded-2xl p-16 text-center">
