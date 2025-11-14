@@ -736,9 +736,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   {jobs.map((job, index) => (
                     <div
                       key={job.id}
-                      className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover cursor-pointer relative overflow-hidden group animate-slide-up"
+                      className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover relative overflow-hidden group animate-slide-up"
                       style={{ animationDelay: `${index * 0.1}s` }}
-                      onClick={() => onNavigate('job-detail', job.id)}
                     >
                       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF8C00]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
@@ -767,16 +766,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mb-4 relative z-20">
+                      <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
                         <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+                          onClick={() => {
                             console.log('🔘 Vues button clicked!');
                             setSelectedJobForViews(job);
                             setShowViewsModal(true);
                           }}
-                          className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer z-30"
+                          className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
                           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/30 rounded-full -mr-8 -mt-8"></div>
                           <div className="relative">
@@ -790,17 +787,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </div>
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+                          onClick={() => {
                             console.log('🔘 Candidatures (big green) button clicked!');
                             setActiveTab('applications');
                             setSelectedJobFilter(job.id);
                           }}
-                          className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer z-30"
+                          className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
                           <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8"></div>
-                          <div className="relative pointer-events-none">
+                          <div className="relative">
                             <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
                               {job.applications_count || 0}
                             </div>
@@ -812,13 +807,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </button>
                       </div>
 
-                      <div className="space-y-3 mb-4 relative z-20">
+                      <div className="space-y-3 mb-4 relative z-10">
                         <div className="grid grid-cols-2 gap-3">
                           <button
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 relative z-30 cursor-pointer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 cursor-pointer"
+                            onClick={() => {
                               console.log('🔘 Candidatures button clicked!');
                               setActiveTab('applications');
                               setSelectedJobFilter(job.id);
@@ -828,10 +821,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             <span>Candidatures</span>
                           </button>
                           <button
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 relative z-30 cursor-pointer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 cursor-pointer"
+                            onClick={() => {
                               console.log('🔘 Analyses button clicked!');
                               setActiveTab('analytics');
                               setSelectedJobAnalytics(job.id);
@@ -842,10 +833,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </button>
                         </div>
                         <button
-                          className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56]"
-                          onClick={(e) => {
+                          className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56] cursor-pointer"
+                          onClick={() => {
                             console.log('🔘 Matching IA button clicked!');
-                            e.stopPropagation();
                             handleStartMatching(job);
                           }}
                         >
@@ -856,9 +846,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       </div>
 
                       <button
-                        className="w-full px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        className="w-full px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400 cursor-pointer"
+                        onClick={() => {
                           onNavigate('job-detail', job.id);
                         }}
                       >
