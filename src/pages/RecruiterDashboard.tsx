@@ -426,6 +426,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       : 0,
   };
 
+  console.log('🎯 RecruiterDashboard RENDER:', {
+    activeTab,
+    applicationsCount: applications.length,
+    jobsCount: jobs.length,
+    loading
+  });
+
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
@@ -584,7 +591,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as Tab)}
+                  onClick={() => {
+                    console.log('🔘 Tab clicked:', tab.id, 'Current:', activeTab);
+                    setActiveTab(tab.id as Tab);
+                    console.log('✅ Tab changed to:', tab.id);
+                  }}
                   className={`px-6 py-4 font-semibold whitespace-nowrap flex items-center gap-3 transition-all ${
                     activeTab === tab.id
                       ? 'border-b-4 border-[#FF8C00] text-[#0E2F56] bg-orange-50'
