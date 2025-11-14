@@ -386,6 +386,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const filteredApplications = applications.filter(app => {
     const categoryMatch = filterCategory === 'all' || app.ai_category === filterCategory;
     const jobMatch = selectedJobFilter === 'all' || app.job_id === selectedJobFilter;
+
+    if (selectedJobFilter !== 'all') {
+      console.log('🔍 Filtering app:', {
+        appId: app.id,
+        appJobId: app.job_id,
+        selectedFilter: selectedJobFilter,
+        matches: jobMatch,
+        fullApp: app
+      });
+    }
+
     return categoryMatch && jobMatch;
   });
 
@@ -793,9 +804,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('🔘 GREEN Candidatures button clicked for job:', job.id, job.title);
+                            console.log('🔘 GREEN Candidatures button clicked!');
+                            console.log('   Job ID:', job.id);
+                            console.log('   Job Title:', job.title);
+                            console.log('   Current activeTab:', activeTab);
+                            console.log('   Current selectedJobFilter:', selectedJobFilter);
+                            console.log('   Total applications:', applications.length);
+                            console.log('   Applications for this job:', applications.filter(a => a.job_id === job.id).length);
                             setActiveTab('applications');
                             setSelectedJobFilter(job.id);
+                            console.log('   ✅ Set activeTab to: applications');
+                            console.log('   ✅ Set selectedJobFilter to:', job.id);
                           }}
                           className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
@@ -820,9 +839,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('🔘 GRAY Candidatures button clicked for job:', job.id, job.title);
+                              console.log('🔘 GRAY Candidatures button clicked!');
+                              console.log('   Job ID:', job.id);
+                              console.log('   Job Title:', job.title);
+                              console.log('   Applications for this job:', applications.filter(a => a.job_id === job.id).length);
                               setActiveTab('applications');
                               setSelectedJobFilter(job.id);
+                              console.log('   ✅ Changed to applications tab with filter:', job.id);
                             }}
                           >
                             <Users className="w-4 h-4" />
