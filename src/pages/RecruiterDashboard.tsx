@@ -400,6 +400,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     return categoryMatch && jobMatch;
   });
 
+  console.log('📊 Filter Results:', {
+    activeTab,
+    selectedJobFilter,
+    totalApplications: applications.length,
+    filteredApplications: filteredApplications.length,
+    filterCategory
+  });
+
   const selectedJob = jobs.find(j => j.id === selectedJobAnalytics);
   const jobApplications = selectedJobAnalytics === 'all'
     ? applications
@@ -1041,14 +1049,25 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 </div>
               )}
 
-              {filteredApplications.length === 0 ? (
+              {(() => {
+                console.log('🎯 Rendering applications section:', {
+                  filteredCount: filteredApplications.length,
+                  totalCount: applications.length,
+                  selectedFilter: selectedJobFilter,
+                  viewMode
+                });
+                return filteredApplications.length === 0;
+              })() ? (
                 <div className="bg-white rounded-2xl p-16 text-center">
                   <Users className="w-20 h-20 text-gray-300 mx-auto mb-6" />
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">
                     Aucune candidature
                   </h3>
                   <p className="text-gray-600">
-                    Les candidatures apparaîtront ici une fois que les candidats postuleront
+                    {selectedJobFilter !== 'all'
+                      ? `Aucune candidature trouvée pour cette offre (ID: ${selectedJobFilter})`
+                      : 'Les candidatures apparaîtront ici une fois que les candidats postuleront'
+                    }
                   </p>
                 </div>
               ) : viewMode === 'kanban' ? (
