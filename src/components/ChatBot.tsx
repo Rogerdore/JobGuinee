@@ -28,6 +28,7 @@ export default function ChatBot() {
   const [config, setConfig] = useState<ChatBotConfig | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [showTooltip, setShowTooltip] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -392,22 +393,44 @@ export default function ChatBot() {
 
       {/* Floating Button */}
       {!isOpen && (
-        <button
-          onClick={() => {
-            setIsOpen(true);
-            setIsMinimized(false);
-          }}
-          className="w-16 h-16 rounded-full text-white shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center group relative overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${config.primary_color}, ${config.primary_color}dd)`,
-            boxShadow: '12px 12px 24px #d1d9e6, -12px -12px 24px #ffffff',
-          }}
-        >
-          <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity rounded-full"></div>
-          <MessageCircle className="w-7 h-7 relative z-10 animate-pulse" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping"></span>
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full"></span>
-        </button>
+        <div className="relative">
+          {/* Tooltip */}
+          <div
+            className={`absolute ${config.position === 'bottom-right' ? 'right-20' : 'left-20'} bottom-4 transition-all duration-300 ${
+              showTooltip ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
+            }`}
+          >
+            <div className="bg-white px-4 py-3 rounded-2xl shadow-xl border border-gray-100 whitespace-nowrap"
+              style={{
+                boxShadow: '8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff',
+              }}
+            >
+              <p className="text-sm font-medium text-gray-700">Besoin d'aide ?</p>
+              <p className="text-xs text-gray-500">Cliquez pour discuter avec moi 💬</p>
+            </div>
+          </div>
+
+          {/* Button */}
+          <button
+            onClick={() => {
+              setIsOpen(true);
+              setIsMinimized(false);
+              setShowTooltip(false);
+            }}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            className="w-16 h-16 rounded-full text-white shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center group relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${config.primary_color}, ${config.primary_color}dd)`,
+              boxShadow: '12px 12px 24px #d1d9e6, -12px -12px 24px #ffffff',
+            }}
+          >
+            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity rounded-full"></div>
+            <MessageCircle className="w-7 h-7 relative z-10 animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping"></span>
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full"></span>
+          </button>
+        </div>
       )}
     </div>
   );
