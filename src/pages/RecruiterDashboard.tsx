@@ -911,6 +911,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
           {activeTab === 'applications' && (
             <div>
+              {console.log('🎨 RENDERING APPLICATIONS TAB', {
+                activeTab,
+                selectedJobFilter,
+                filterCategory,
+                totalApplications: applications.length,
+                filteredCount: filteredApplications.length,
+                jobsCount: jobs.length
+              })}
               {selectedJobFilter !== 'all' && (
                 <div className="mb-6 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-xl p-4 shadow-lg">
                   <div className="flex items-center justify-between">
