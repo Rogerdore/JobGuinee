@@ -25,11 +25,12 @@ interface Application {
 
 interface ApplicationCardProps {
   application: Application;
+  jobTitle?: string;
   onMessage: (appId: string) => void;
   onViewProfile: (appId: string) => void;
 }
 
-export default function ApplicationCard({ application, onMessage, onViewProfile }: ApplicationCardProps) {
+export default function ApplicationCard({ application, jobTitle, onMessage, onViewProfile }: ApplicationCardProps) {
   const getCategoryBadge = (category: string) => {
     const badges = {
       strong: { bg: 'bg-green-100', text: 'text-green-800', icon: '🟢', label: 'Profil fort' },
@@ -60,6 +61,13 @@ export default function ApplicationCard({ application, onMessage, onViewProfile 
               <h3 className="font-bold text-lg text-gray-900 mb-1">
                 {fullName}
               </h3>
+              {jobTitle && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#0E2F56] text-white">
+                    Candidature: {jobTitle}
+                  </span>
+                </div>
+              )}
               {application.candidate_profile?.title && (
                 <p className="text-sm text-gray-600 mb-1">{application.candidate_profile.title}</p>
               )}
@@ -127,13 +135,16 @@ export default function ApplicationCard({ application, onMessage, onViewProfile 
       )}
 
       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <span className="text-sm text-gray-500">
-          {new Date(application.created_at || application.applied_at || '').toLocaleDateString('fr-FR', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </span>
+        <div className="text-sm">
+          <span className="text-gray-600 font-medium">Candidature déposée le </span>
+          <span className="text-gray-900 font-semibold">
+            {new Date(application.created_at || application.applied_at || '').toLocaleDateString('fr-FR', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+        </div>
 
         <div className="flex gap-2">
           {application.cv_url && (

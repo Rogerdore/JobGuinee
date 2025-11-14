@@ -1054,34 +1054,39 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-6">
-                  {filteredApplications.map((app) => (
-                    <ApplicationCard
-                      key={app.id}
-                      application={{
-                        id: app.id,
-                        ai_score: app.ai_score || 0,
-                        ai_category: app.ai_category || 'medium',
-                        workflow_stage: app.workflow_stage || 'received',
-                        applied_at: app.applied_at,
-                        cover_letter: app.cover_letter,
-                        cv_url: app.cv_url,
-                        candidate: {
-                          full_name: app.candidate?.profile?.full_name || 'Candidat',
-                          email: app.candidate?.profile?.email || '',
-                          phone: app.candidate?.profile?.phone,
-                          avatar_url: app.candidate?.profile?.avatar_url,
-                        },
-                        candidate_profile: {
-                          title: app.candidate?.title,
-                          experience_years: app.candidate?.experience_years,
-                          education_level: app.candidate?.education_level,
-                          skills: app.candidate?.skills,
-                        },
-                      }}
-                      onMessage={(appId) => console.log('Message', appId)}
-                      onViewProfile={(appId) => console.log('View profile', appId)}
-                    />
-                  ))}
+                  {filteredApplications.map((app) => {
+                    const job = jobs.find(j => j.id === app.job_id);
+                    return (
+                      <ApplicationCard
+                        key={app.id}
+                        application={{
+                          id: app.id,
+                          first_name: app.first_name || '',
+                          last_name: app.last_name || '',
+                          email: app.email || '',
+                          phone: app.phone || '',
+                          cv_url: app.cv_url || '',
+                          cover_letter_url: app.cover_letter_url,
+                          message: app.message,
+                          ai_score: app.ai_score || 0,
+                          ai_category: app.ai_category || 'medium',
+                          workflow_stage: app.workflow_stage || 'received',
+                          applied_at: app.applied_at,
+                          created_at: app.applied_at,
+                          candidate_profile: app.candidate_profile ? {
+                            id: app.candidate_profile.id,
+                            title: app.candidate_profile.title,
+                            experience_years: app.candidate_profile.experience_years,
+                            education_level: app.candidate_profile.education,
+                            skills: app.candidate_profile.skills,
+                          } : undefined,
+                        }}
+                        jobTitle={job?.title}
+                        onMessage={(appId) => console.log('Message', appId)}
+                        onViewProfile={(appId) => console.log('View profile', appId)}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
