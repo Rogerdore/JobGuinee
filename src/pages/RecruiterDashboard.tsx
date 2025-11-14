@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Download,
   MessageCircle,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -655,7 +656,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {jobs.slice(0, 3).map((job, index) => (
+                      {jobs.slice(0, 3).map((job, index) => {
+                        const publishedDate = job.created_at ? new Date(job.created_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : '';
+                        return (
                         <div
                           key={job.id}
                           className="p-4 border-2 border-gray-200 rounded-xl card-hover cursor-pointer bg-white animate-slide-up"
@@ -672,10 +679,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                               {job.status}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3 flex items-center">
+                          <p className="text-sm text-gray-600 mb-2 flex items-center">
                             <FileText className="w-3.5 h-3.5 mr-1.5" />
                             {job.location}
                           </p>
+                          {publishedDate && (
+                            <p className="text-xs text-gray-500 mb-3 flex items-center">
+                              <Calendar className="w-3.5 h-3.5 mr-1.5" />
+                              Publié le {publishedDate}
+                            </p>
+                          )}
                           <div className="flex items-center gap-4 text-sm">
                             <span className="flex items-center text-blue-600 font-medium">
                               <TrendingUp className="w-4 h-4 mr-1" />
@@ -687,7 +700,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </span>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
