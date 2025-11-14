@@ -173,13 +173,21 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       const jobIds = jobsData.map(j => j.id);
 
       const appsStart = performance.now();
-      const { data: appsData } = await supabase
+      console.log('🔍 Fetching applications for job IDs:', jobIds);
+      const { data: appsData, error: appsError } = await supabase
         .from('applications')
         .select('id, job_id, candidate_id, first_name, last_name, email, phone, cv_url, cover_letter_url, message, ai_score, ai_category, workflow_stage, status, applied_at')
         .in('job_id', jobIds)
         .order('applied_at', { ascending: false });
 
+      console.log('📊 Applications query result:', {
+        count: appsData?.length || 0,
+        error: appsError,
+        data: appsData
+      });
+
       if (!appsData || appsData.length === 0) {
+        console.log('⚠️ No applications found for these jobs');
         setApplications([]);
         setLoading(false);
         console.log('⚡ Total load time:', Math.round(performance.now() - startTime), 'ms');
@@ -220,6 +228,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         };
       });
 
+      console.log('✅ Enriched applications:', enrichedApps);
       setApplications(enrichedApps as any);
       console.log('✅ Total load time:', Math.round(performance.now() - startTime), 'ms');
       console.log('📊 Loaded:', jobsData.length, 'jobs,', enrichedApps.length, 'applications');
@@ -427,6 +436,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     return categoryMatch && jobMatch;
   });
+
+  console.log('📋 All applications:', applications.length);
+  console.log('📋 Filtered applications:', filteredApplications.length);
+  console.log('📋 Filter settings:', { filterCategory, selectedJobFilter });
 
   console.log('📊 Filter Results:', {
     activeTab,
