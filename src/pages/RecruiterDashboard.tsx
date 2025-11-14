@@ -789,15 +789,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </div>
                         </button>
                         <button
-                          onClick={() => {
-                            console.log('🔘 Candidatures (big green) button clicked!');
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔘 GREEN Candidatures button clicked for job:', job.id, job.title);
                             setActiveTab('applications');
                             setSelectedJobFilter(job.id);
                           }}
                           className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8"></div>
-                          <div className="relative">
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8 pointer-events-none"></div>
+                          <div className="relative pointer-events-none">
                             <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
                               {job.applications_count || 0}
                             </div>
@@ -812,9 +815,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       <div className="space-y-3 mb-4 relative z-10">
                         <div className="grid grid-cols-2 gap-3">
                           <button
+                            type="button"
                             className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 cursor-pointer"
-                            onClick={() => {
-                              console.log('🔘 Candidatures button clicked!');
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔘 GRAY Candidatures button clicked for job:', job.id, job.title);
                               setActiveTab('applications');
                               setSelectedJobFilter(job.id);
                             }}
