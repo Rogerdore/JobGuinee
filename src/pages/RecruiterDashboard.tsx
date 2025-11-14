@@ -492,16 +492,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               id: app.id,
               ai_score: app.ai_score || 0,
               ai_category: app.ai_category || 'medium',
+              applied_at: app.applied_at,
               candidate: {
-                full_name: app.candidate?.profile?.full_name || 'Candidat',
-                email: app.candidate?.profile?.email || '',
-                avatar_url: app.candidate?.profile?.avatar_url,
+                full_name: `${app.first_name || ''} ${app.last_name || ''}`.trim() || 'Candidat',
+                email: app.email || '',
+                avatar_url: undefined,
               },
               candidate_profile: {
-                title: app.candidate?.title,
-                experience_years: app.candidate?.experience_years,
-                education_level: app.candidate?.education_level,
-                skills: app.candidate?.skills,
+                title: app.candidate_profile?.title,
+                experience_years: app.candidate_profile?.experience_years,
+                education_level: app.candidate_profile?.education,
+                skills: app.candidate_profile?.skills,
               },
             }))}
           onClose={() => setShowMatchingModal(false)}
