@@ -1084,7 +1084,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </button>
                   </div>
 
-                  <ExportApplicationsButton applications={filteredApplications} />
+                  <ExportApplicationsButton
+                    applications={filteredApplications}
+                    isPremium={isPremium}
+                    jobTitle={selectedJobFilter !== 'all' ? jobs.find(j => j.id === selectedJobFilter)?.title : undefined}
+                  />
                 </div>
               </div>
 

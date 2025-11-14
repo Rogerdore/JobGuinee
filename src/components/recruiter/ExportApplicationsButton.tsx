@@ -22,9 +22,11 @@ interface Application {
 
 interface ExportApplicationsButtonProps {
   applications: Application[];
+  isPremium: boolean;
+  jobTitle?: string;
 }
 
-export default function ExportApplicationsButton({ applications }: ExportApplicationsButtonProps) {
+export default function ExportApplicationsButton({ applications, isPremium, jobTitle }: ExportApplicationsButtonProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +44,7 @@ export default function ExportApplicationsButton({ applications }: ExportApplica
   }, [showMenu]);
 
   const exportToCSV = () => {
-    const data = applications.map(app => ({
+    const formatData = (apps: Application[]) => apps.map(app => ({
       Candidat: app.candidate?.profile?.full_name || 'Candidat',
       Email: app.candidate?.profile?.email || '',
       Téléphone: app.candidate?.profile?.phone || '',
@@ -56,23 +58,49 @@ export default function ExportApplicationsButton({ applications }: ExportApplica
       'Date de candidature': new Date(app.applied_at).toLocaleDateString('fr-FR')
     }));
 
-    const csv = [
-      Object.keys(data[0] || {}).join(','),
-      ...data.map(row => Object.values(row).map(val => `"${val}"`).join(','))
-    ].join('\n');
+    let csvContent = '';
 
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    if (isPremium) {
+      const strongApps = applications.filter(app => app.ai_category === 'strong');
+      const mediumApps = applications.filter(app => app.ai_category === 'medium');
+      const weakApps = applications.filter(app => app.ai_category === 'weak');
+
+      const createSection = (title: string, apps: Application[]) => {
+        if (apps.length === 0) return '';
+        const data = formatData(apps);
+        let section = `\n"${title}",\n`;
+        section += Object.keys(data[0] || {}).join(',') + '\n';
+        section += data.map(row => Object.values(row).map(val => `"${val}"`).join(',')).join('\n');
+        return section + '\n';
+      };
+
+      csvContent = `"${jobTitle || 'Candidatures'}"," - Export Premium avec tri IA"\n`;
+      csvContent += `"Date d'export:",${new Date().toLocaleDateString('fr-FR')}\n`;
+      csvContent += `"Total candidatures:",${applications.length}\n`;
+      csvContent += createSection(`Profils Forts (${strongApps.length})`, strongApps);
+      csvContent += createSection(`Profils Moyens (${mediumApps.length})`, mediumApps);
+      csvContent += createSection(`Profils Faibles (${weakApps.length})`, weakApps);
+    } else {
+      const data = formatData(applications);
+      csvContent = `"${jobTitle || 'Candidatures'}"\n`;
+      csvContent += `"Date d'export:",${new Date().toLocaleDateString('fr-FR')}\n`;
+      csvContent += `"Total candidatures:",${applications.length}\n\n`;
+      csvContent += Object.keys(data[0] || {}).join(',') + '\n';
+      csvContent += data.map(row => Object.values(row).map(val => `"${val}"`).join(',')).join('\n');
+    }
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `candidatures_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `candidatures_${jobTitle?.replace(/\s+/g, '_') || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     setShowMenu(false);
   };
 
   const exportToExcel = () => {
-    const data = applications.map(app => ({
+    const formatData = (apps: Application[]) => apps.map(app => ({
       Candidat: app.candidate?.profile?.full_name || 'Candidat',
       Email: app.candidate?.profile?.email || '',
       Téléphone: app.candidate?.profile?.phone || '',
@@ -86,29 +114,86 @@ export default function ExportApplicationsButton({ applications }: ExportApplica
       'Date de candidature': new Date(app.applied_at).toLocaleDateString('fr-FR')
     }));
 
-    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Candidatures</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta http-equiv="content-type" content="text/plain; charset=UTF-8"/></head><body><table>';
+    const createTable = (title: string, data: any[], bgColor: string) => {
+      let table = `<tr><td colspan="11" style="background-color: ${bgColor}; color: white; font-weight: bold; padding: 12px; font-size: 14px; border: 2px solid #ddd;">${title}</td></tr>`;
 
-    html += '<tr style="background-color: #0E2F56; color: white; font-weight: bold;">';
-    Object.keys(data[0] || {}).forEach(key => {
-      html += `<th style="padding: 8px; border: 1px solid #ddd;">${key}</th>`;
-    });
-    html += '</tr>';
+      if (data.length === 0) {
+        return table + `<tr><td colspan="11" style="padding: 8px; text-align: center; font-style: italic; color: #666;">Aucune candidature</td></tr><tr><td colspan="11" style="height: 20px;"></td></tr>`;
+      }
 
-    data.forEach((row, idx) => {
-      html += `<tr style="background-color: ${idx % 2 === 0 ? '#f9f9f9' : 'white'};">`;
-      Object.values(row).forEach(val => {
-        html += `<td style="padding: 8px; border: 1px solid #ddd;">${val}</td>`;
+      table += '<tr style="background-color: #f0f0f0; font-weight: bold;">';
+      Object.keys(data[0] || {}).forEach(key => {
+        table += `<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">${key}</th>`;
+      });
+      table += '</tr>';
+
+      data.forEach((row, idx) => {
+        table += `<tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9f9f9'};">`;
+        Object.values(row).forEach(val => {
+          table += `<td style="padding: 8px; border: 1px solid #ddd;">${val}</td>`;
+        });
+        table += '</tr>';
+      });
+
+      table += '<tr><td colspan="11" style="height: 20px;"></td></tr>';
+      return table;
+    };
+
+    let worksheets = '';
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>';
+
+    if (isPremium) {
+      const strongApps = applications.filter(app => app.ai_category === 'strong');
+      const mediumApps = applications.filter(app => app.ai_category === 'medium');
+      const weakApps = applications.filter(app => app.ai_category === 'weak');
+
+      worksheets = '<x:ExcelWorksheet><x:Name>Candidatures par Catégorie</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
+
+      html += worksheets + '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta http-equiv="content-type" content="text/plain; charset=UTF-8"/></head><body>';
+
+      html += `<table><tr><td colspan="11" style="background-color: #0E2F56; color: white; font-weight: bold; padding: 16px; font-size: 18px; text-align: center; border: 2px solid #0E2F56;">${jobTitle || 'Candidatures'} - Export Premium avec tri IA</td></tr>`;
+      html += `<tr><td colspan="11" style="padding: 8px; text-align: center;">Date d'export: ${new Date().toLocaleDateString('fr-FR')} | Total: ${applications.length} candidatures</td></tr>`;
+      html += '<tr><td colspan="11" style="height: 20px;"></td></tr>';
+
+      html += createTable(`✅ Profils Forts (${strongApps.length})`, formatData(strongApps), '#16a34a');
+      html += createTable(`⚠️ Profils Moyens (${mediumApps.length})`, formatData(mediumApps), '#ca8a04');
+      html += createTable(`❌ Profils Faibles (${weakApps.length})`, formatData(weakApps), '#dc2626');
+
+      html += '</table>';
+    } else {
+      const data = formatData(applications);
+      worksheets = '<x:ExcelWorksheet><x:Name>Candidatures</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
+
+      html += worksheets + '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta http-equiv="content-type" content="text/plain; charset=UTF-8"/></head><body>';
+
+      html += `<table><tr><td colspan="11" style="background-color: #0E2F56; color: white; font-weight: bold; padding: 16px; font-size: 18px; text-align: center;">${jobTitle || 'Candidatures'}</td></tr>`;
+      html += `<tr><td colspan="11" style="padding: 8px; text-align: center;">Date d'export: ${new Date().toLocaleDateString('fr-FR')} | Total: ${applications.length} candidatures</td></tr>`;
+      html += '<tr><td colspan="11" style="height: 20px;"></td></tr>';
+
+      html += '<tr style="background-color: #0E2F56; color: white; font-weight: bold;">';
+      Object.keys(data[0] || {}).forEach(key => {
+        html += `<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">${key}</th>`;
       });
       html += '</tr>';
-    });
 
-    html += '</table></body></html>';
+      data.forEach((row, idx) => {
+        html += `<tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9f9f9'};">`;
+        Object.values(row).forEach(val => {
+          html += `<td style="padding: 8px; border: 1px solid #ddd;">${val}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</table>';
+    }
+
+    html += '</body></html>';
 
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `candidatures_${new Date().toISOString().split('T')[0]}.xls`;
+    a.download = `candidatures_${jobTitle?.replace(/\s+/g, '_') || 'export'}_${new Date().toISOString().split('T')[0]}.xls`;
     a.click();
     window.URL.revokeObjectURL(url);
     setShowMenu(false);
