@@ -809,16 +809,22 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </button>
                         <button
                           type="button"
+                          data-job-id={job.id}
+                          data-job-title={job.title}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            const jobId = e.currentTarget.getAttribute('data-job-id');
+                            const jobTitle = e.currentTarget.getAttribute('data-job-title');
                             console.log('🔘 GREEN Candidatures button clicked!');
-                            console.log('   Job ID:', job.id);
-                            console.log('   Job Title:', job.title);
+                            console.log('   Job ID from data-attr:', jobId);
+                            console.log('   Job ID from closure:', job.id);
+                            console.log('   Job Title:', jobTitle);
                             console.log('   Current activeTab:', activeTab);
                             console.log('   Current selectedJobFilter:', selectedJobFilter);
                             console.log('   Total applications:', applications.length);
                             console.log('   Applications for this job:', applications.filter(a => a.job_id === job.id).length);
+                            console.log('   All application job_ids:', applications.map(a => ({ id: a.id, job_id: a.job_id })));
                             setActiveTab('applications');
                             setSelectedJobFilter(job.id);
                             console.log('   ✅ Set activeTab to: applications');
