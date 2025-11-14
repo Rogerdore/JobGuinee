@@ -704,7 +704,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {applications.slice(0, 3).map((app, index) => (
+                      {applications.slice(0, 3).map((app, index) => {
+                        const fullName = `${app.first_name || ''} ${app.last_name || ''}`.trim() || 'Candidat';
+                        const appliedDate = app.applied_at ? new Date(app.applied_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '';
+                        return (
                         <div
                           key={app.id}
                           className="p-4 border-2 border-gray-200 rounded-xl card-hover bg-white animate-slide-up overflow-hidden relative"
@@ -714,11 +723,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           <div className="flex items-center justify-between relative z-10">
                             <div className="flex-1">
                               <h4 className="font-semibold text-gray-900 hover:text-[#0E2F56] transition-colors">
-                                {app.candidate?.profile?.full_name || 'Candidat'}
+                                {fullName}
                               </h4>
                               <p className="text-sm text-gray-600">
-                                {app.candidate?.title || 'Profil'}
+                                {app.candidate_profile?.title || 'Profil'}
                               </p>
+                              {appliedDate && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Postulé le {appliedDate}
+                                </p>
+                              )}
                               <div className="mt-2">
                                 <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${
                                   app.ai_category === 'strong'
@@ -741,7 +755,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
