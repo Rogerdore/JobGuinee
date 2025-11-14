@@ -18,6 +18,8 @@ import {
   Database,
   X,
   AlertCircle,
+  Download,
+  MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -92,6 +94,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [selectedJobAnalytics, setSelectedJobAnalytics] = useState<string>('all');
   const [showMatchingModal, setShowMatchingModal] = useState(false);
   const [selectedJobForMatching, setSelectedJobForMatching] = useState<Job | null>(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedApplicationForProfile, setSelectedApplicationForProfile] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -339,6 +345,27 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   };
 
+  const handleViewProfile = (applicationId: string) => {
+    const app = applications.find(a => a.id === applicationId);
+    if (app) {
+      setSelectedApplicationForProfile(app);
+      setShowProfileModal(true);
+    }
+  };
+
+  const handleSendMessage = (applicationId: string) => {
+    setSelectedApplicationForMessage(applicationId);
+    setShowMessageModal(true);
+  };
+
+  const handleDownloadCV = async (cvUrl: string) => {
+    if (!cvUrl) {
+      alert('CV non disponible');
+      return;
+    }
+    window.open(cvUrl, '_blank');
+  };
+
   const handleStartMatching = (job: Job) => {
     console.log('🚀 handleStartMatching called');
     console.log('Job:', job);
@@ -426,12 +453,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       : 0,
   };
 
-  console.log('🎯 RecruiterDashboard RENDER:', {
-    activeTab,
-    applicationsCount: applications.length,
-    jobsCount: jobs.length,
-    loading
-  });
 
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -591,11 +612,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               return (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    console.log('🔘 Tab clicked:', tab.id, 'Current:', activeTab);
-                    setActiveTab(tab.id as Tab);
-                    console.log('✅ Tab changed to:', tab.id);
-                  }}
+                  onClick={() => setActiveTab(tab.id as Tab)}
                   className={`px-6 py-4 font-semibold whitespace-nowrap flex items-center gap-3 transition-all ${
                     activeTab === tab.id
                       ? 'border-b-4 border-[#FF8C00] text-[#0E2F56] bg-orange-50'
@@ -921,20 +938,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
           {activeTab === 'applications' && (
             <div>
-              {console.log('🎨 RENDERING APPLICATIONS TAB', {
-                activeTab,
-                selectedJobFilter,
-                filterCategory,
-                totalApplications: applications.length,
-                filteredCount: filteredApplications.length,
-                jobsCount: jobs.length
-              })}
-
-              {/* Debug Banner - VISIBLE INDICATOR */}
-              <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-4 rounded-lg mb-6 font-bold text-center">
-                ✅ ONGLET CANDIDATURES ACTIF - {applications.length} candidatures totales - {filteredApplications.length} filtrées
-              </div>
-
               {selectedJobFilter !== 'all' && (
                 <div className="mb-6 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-xl p-4 shadow-lg">
                   <div className="flex items-center justify-between">
@@ -1080,15 +1083,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 </div>
               )}
 
-              {(() => {
-                console.log('🎯 Rendering applications section:', {
-                  filteredCount: filteredApplications.length,
-                  totalCount: applications.length,
-                  selectedFilter: selectedJobFilter,
-                  viewMode
-                });
-                return filteredApplications.length === 0;
-              })() ? (
+              {filteredApplications.length === 0 ? (
                 <div className="bg-white rounded-2xl p-16 text-center">
                   <Users className="w-20 h-20 text-gray-300 mx-auto mb-6" />
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">
@@ -1128,8 +1123,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     color: stage.stage_color,
                   }))}
                   onMoveApplication={handleMoveApplication}
-                  onViewProfile={(id) => console.log('View profile', id)}
-                  onMessage={(id) => console.log('Message', id)}
+                  onViewProfile={handleViewProfile}
+                  onMessage={handleSendMessage}
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-6">
@@ -1161,8 +1156,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           } : undefined,
                         }}
                         jobTitle={job?.title}
-                        onMessage={(appId) => console.log('Message', appId)}
-                        onViewProfile={(appId) => console.log('View profile', appId)}
+                        onMessage={handleSendMessage}
+                        onViewProfile={handleViewProfile}
                       />
                     );
                   })}
@@ -1285,6 +1280,141 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           {activeTab === 'profile' && <RecruiterProfileForm />}
           </div>
         </div>
+
+        {/* Profile Modal */}
+        {showProfileModal && selectedApplicationForProfile && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-gradient-to-r from-[#0E2F56] to-blue-700 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Profil du candidat</h2>
+                  <button
+                    onClick={() => setShowProfileModal(false)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-900 mb-2">
+                      {selectedApplicationForProfile.first_name} {selectedApplicationForProfile.last_name}
+                    </h3>
+                    {selectedApplicationForProfile.candidate_profile?.title && (
+                      <p className="text-[#0E2F56] font-medium">{selectedApplicationForProfile.candidate_profile.title}</p>
+                    )}
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-gray-700 mb-2">Coordonnées</h4>
+                    <p className="text-sm text-gray-600">Email: {selectedApplicationForProfile.email}</p>
+                    {selectedApplicationForProfile.phone && (
+                      <p className="text-sm text-gray-600">Téléphone: {selectedApplicationForProfile.phone}</p>
+                    )}
+                  </div>
+
+                  {selectedApplicationForProfile.candidate_profile && (
+                    <>
+                      {selectedApplicationForProfile.candidate_profile.experience_years && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-700 mb-2">Expérience</h4>
+                          <p className="text-sm text-gray-600">{selectedApplicationForProfile.candidate_profile.experience_years} années</p>
+                        </div>
+                      )}
+
+                      {selectedApplicationForProfile.candidate_profile.education && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-700 mb-2">Formation</h4>
+                          <p className="text-sm text-gray-600">{selectedApplicationForProfile.candidate_profile.education}</p>
+                        </div>
+                      )}
+
+                      {selectedApplicationForProfile.candidate_profile.skills && selectedApplicationForProfile.candidate_profile.skills.length > 0 && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-700 mb-2">Compétences</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedApplicationForProfile.candidate_profile.skills.map((skill: string, idx: number) => (
+                              <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {selectedApplicationForProfile.message && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-gray-700 mb-2">Message de motivation</h4>
+                      <p className="text-sm text-gray-600">{selectedApplicationForProfile.message}</p>
+                    </div>
+                  )}
+
+                  <div className="border-t pt-4 flex gap-3">
+                    {selectedApplicationForProfile.cv_url && (
+                      <button
+                        onClick={() => handleDownloadCV(selectedApplicationForProfile.cv_url)}
+                        className="flex-1 px-4 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-5 h-5" />
+                        Télécharger le CV
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowProfileModal(false);
+                        handleSendMessage(selectedApplicationForProfile.id);
+                      }}
+                      className="flex-1 px-4 py-3 bg-[#FF8C00] text-white rounded-lg hover:bg-orange-600 transition font-medium flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Envoyer un message
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && selectedApplicationForMessage && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full">
+              <div className="bg-gradient-to-r from-[#0E2F56] to-blue-700 p-6 text-white rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Envoyer un message</h2>
+                  <button
+                    onClick={() => setShowMessageModal(false)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-600 mb-4">
+                  La messagerie intégrée sera bientôt disponible. Pour l'instant, vous pouvez contacter le candidat par email.
+                </p>
+                <button
+                  onClick={() => {
+                    const app = applications.find(a => a.id === selectedApplicationForMessage);
+                    if (app?.email) {
+                      window.location.href = `mailto:${app.email}`;
+                    }
+                    setShowMessageModal(false);
+                  }}
+                  className="w-full px-4 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium"
+                >
+                  Ouvrir l'email
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
