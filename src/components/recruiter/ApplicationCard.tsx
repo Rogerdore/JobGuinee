@@ -39,8 +39,9 @@ export default function ApplicationCard({ application, onMessage, onViewProfile 
     return badges[category as keyof typeof badges] || badges.medium;
   };
 
-  const fullName = `${application.first_name} ${application.last_name}`;
+  const fullName = `${application.first_name || ''} ${application.last_name || ''}`.trim();
   const badge = getCategoryBadge(application.ai_category || 'medium');
+  const initials = `${(application.first_name || 'U').charAt(0)}${(application.last_name || 'N').charAt(0)}`.toUpperCase();
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
@@ -48,7 +49,7 @@ export default function ApplicationCard({ application, onMessage, onViewProfile 
         <div className="flex-shrink-0">
           <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
             <span className="text-xl font-bold text-blue-900">
-              {application.first_name.charAt(0)}{application.last_name.charAt(0)}
+              {initials}
             </span>
           </div>
         </div>
