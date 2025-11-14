@@ -764,7 +764,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
-                        <div className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedJobForViews(job);
+                            setShowViewsModal(true);
+                          }}
+                          className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                        >
                           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/30 rounded-full -mr-8 -mt-8"></div>
                           <div className="relative">
                             <div className="text-3xl font-bold bg-gradient-to-r from-[#0E2F56] to-blue-600 bg-clip-text text-transparent">
@@ -775,8 +782,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                               Vues
                             </div>
                           </div>
-                        </div>
-                        <div className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden">
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTab('applications');
+                            setSelectedJobFilter(job.id);
+                          }}
+                          className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+                        >
                           <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8"></div>
                           <div className="relative">
                             <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
@@ -787,7 +801,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                               Candidatures
                             </div>
                           </div>
-                        </div>
+                        </button>
                       </div>
 
                       <div className="space-y-3 mb-4 relative z-10">
