@@ -16,6 +16,8 @@ import {
   Settings,
   Target,
   Database,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -865,6 +867,33 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
           {activeTab === 'applications' && (
             <div>
+              {selectedJobFilter !== 'all' && (
+                <div className="mb-6 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-xl p-4 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-6 h-6" />
+                      <div>
+                        <p className="font-bold text-lg">
+                          Filtre actif: {jobs.find(j => j.id === selectedJobFilter)?.title || 'Offre'}
+                        </p>
+                        <p className="text-sm text-white/90">
+                          Affichage de {filteredApplications.length} candidature(s) pour cette offre uniquement
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedJobFilter('all');
+                        setFilterCategory('all');
+                      }}
+                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition flex items-center gap-2 border border-white/30"
+                    >
+                      <X className="w-4 h-4" />
+                      Afficher toutes les candidatures
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">
