@@ -602,9 +602,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               );
             })}
           </div>
-        </div>
 
-        <div className="pb-12">
+          <div className="p-6">
           {activeTab === 'dashboard' && (
             <div>
               <DashboardStats stats={stats} />
@@ -1094,16 +1093,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     workflow_stage: app.workflow_stage || 'received',
                     applied_at: app.applied_at,
                     candidate: {
-                      full_name: app.candidate?.profile?.full_name || 'Candidat',
-                      email: app.candidate?.profile?.email || '',
-                      phone: app.candidate?.profile?.phone,
-                      avatar_url: app.candidate?.profile?.avatar_url,
+                      full_name: `${app.first_name || ''} ${app.last_name || ''}`.trim() || 'Candidat',
+                      email: app.email || '',
+                      phone: app.phone,
+                      avatar_url: undefined,
                     },
                     candidate_profile: {
-                      title: app.candidate?.title,
-                      experience_years: app.candidate?.experience_years,
-                      education_level: app.candidate?.education_level,
-                      skills: app.candidate?.skills,
+                      title: app.candidate_profile?.title,
+                      experience_years: app.candidate_profile?.experience_years,
+                      education_level: app.candidate_profile?.education,
+                      skills: app.candidate_profile?.skills,
                     },
                   }))}
                   stages={workflowStages.map(stage => ({
@@ -1267,6 +1266,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
           {activeTab === 'profile' && <RecruiterProfileForm />}
+          </div>
         </div>
       </div>
     </div>
