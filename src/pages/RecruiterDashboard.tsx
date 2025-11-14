@@ -103,6 +103,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   }, [profile, loading]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
   const loadData = async () => {
     if (!profile?.id) return;
     setLoading(true);
@@ -382,6 +386,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     const jobMatch = selectedJobFilter === 'all' || app.job_id === selectedJobFilter;
     return categoryMatch && jobMatch;
   });
+
+  console.log('🔍 Debug - activeTab:', activeTab);
+  console.log('📊 Debug - applications:', applications.length);
+  console.log('🔎 Debug - filteredApplications:', filteredApplications.length);
+  console.log('🎯 Debug - selectedJobFilter:', selectedJobFilter);
 
   const selectedJob = jobs.find(j => j.id === selectedJobAnalytics);
   const jobApplications = selectedJobAnalytics === 'all'
