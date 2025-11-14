@@ -918,6 +918,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 filteredCount: filteredApplications.length,
                 jobsCount: jobs.length
               })}
+
+              {/* Debug Banner - VISIBLE INDICATOR */}
+              <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-4 rounded-lg mb-6 font-bold text-center">
+                ✅ ONGLET CANDIDATURES ACTIF - {applications.length} candidatures totales - {filteredApplications.length} filtrées
+              </div>
+
               {selectedJobFilter !== 'all' && (
                 <div className="mb-6 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-xl p-4 shadow-lg">
                   <div className="flex items-center justify-between">
