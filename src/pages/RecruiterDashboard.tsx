@@ -29,6 +29,7 @@ import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
 import ExportApplicationsButton from '../components/recruiter/ExportApplicationsButton';
 import MessagingSystem from '../components/messaging/MessagingSystem';
+import SkeletonLoader from '../components/recruiter/SkeletonLoader';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
@@ -105,80 +106,116 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const loadData = async () => {
     if (!profile?.id) return;
     setLoading(true);
+    const startTime = performance.now();
 
-    const { data: companiesData, error: companyError } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('profile_id', profile.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('id, name, logo_url, subscription_tier, profile_id')
+        .eq('profile_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (companyError) {
-      console.error('Error loading company:', companyError);
-    }
-
-    const companyData = companiesData && companiesData.length > 0 ? companiesData[0] : null;
-
-    if (companyData) {
-      console.log('Company loaded:', companyData);
-      console.log('Subscription tier:', companyData.subscription_tier);
-      setCompany(companyData);
-
-      const { data: stagesData } = await supabase
-        .from('workflow_stages')
-        .select('*')
-        .eq('company_id', companyData.id)
-        .order('stage_order');
-
-      if (stagesData && stagesData.length > 0) {
-        setWorkflowStages(stagesData);
-      } else {
+      if (!companiesData) {
         setWorkflowStages(sampleWorkflowStages);
-      }
-
-      const { data: jobsData } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('company_id', companyData.id)
-        .order('created_at', { ascending: false });
-
-      if (jobsData && jobsData.length > 0) {
-        setJobs(jobsData);
-
-        const jobIds = jobsData.map(j => j.id);
-        const { data: appsData } = await supabase
-          .from('applications')
-          .select(`
-            *,
-            jobs:job_id(title),
-            candidate_profile:candidate_profiles!applications_candidate_id_fkey(
-              id,
-              title,
-              experience_years,
-              education_level,
-              skills
-            )
-          `)
-          .in('job_id', jobIds)
-          .order('created_at', { ascending: false });
-
-        if (appsData && appsData.length > 0) {
-          console.log('✅ Loaded applications from DB:', appsData.length);
-          setApplications(appsData);
-        } else {
-          console.log('⚠️ No applications in DB, using sample data');
-          setApplications(sampleApplications);
-        }
-      } else {
         setJobs(sampleJobs);
         setApplications(sampleApplications);
+        setLoading(false);
+        return;
       }
-    } else {
-      setWorkflowStages(sampleWorkflowStages);
-      setJobs(sampleJobs);
-      setApplications(sampleApplications);
-    }
 
-    setLoading(false);
+      setCompany(companiesData);
+      console.log('⚡ Company loaded in', Math.round(performance.now() - startTime), 'ms');
+
+      const loadStart = performance.now();
+      const [stagesResult, jobsResult] = await Promise.all([
+        supabase
+          .from('workflow_stages')
+          .select('id, stage_name, stage_color, stage_order, company_id')
+          .eq('company_id', companiesData.id)
+          .order('stage_order'),
+        supabase
+          .from('jobs')
+          .select('id, title, location, department, status, views_count, applications_count, created_at, company_id')
+          .eq('company_id', companiesData.id)
+          .order('created_at', { ascending: false })
+      ]);
+
+      console.log('⚡ Parallel data loaded in', Math.round(performance.now() - loadStart), 'ms');
+
+      const stagesData = stagesResult.data;
+      const jobsData = jobsResult.data;
+
+      setWorkflowStages(stagesData && stagesData.length > 0 ? stagesData : sampleWorkflowStages);
+
+      if (!jobsData || jobsData.length === 0) {
+        setJobs([]);
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      setJobs(jobsData);
+      const jobIds = jobsData.map(j => j.id);
+
+      const appsStart = performance.now();
+      const { data: appsData } = await supabase
+        .from('applications')
+        .select('id, job_id, candidate_id, first_name, last_name, email, phone, cv_url, cover_letter_url, message, ai_score, ai_category, workflow_stage, status, created_at, applied_at')
+        .in('job_id', jobIds)
+        .order('created_at', { ascending: false });
+
+      if (!appsData || appsData.length === 0) {
+        setApplications([]);
+        setLoading(false);
+        console.log('⚡ Total load time:', Math.round(performance.now() - startTime), 'ms');
+        return;
+      }
+
+      console.log('⚡ Applications loaded in', Math.round(performance.now() - appsStart), 'ms');
+
+      const candidateIds = [...new Set(appsData.map(app => app.candidate_id))];
+
+      const profilesStart = performance.now();
+      const [candidateProfilesResult, userProfilesResult] = await Promise.all([
+        supabase
+          .from('candidate_profiles')
+          .select('user_id, id, title, experience_years, education_level, skills')
+          .in('user_id', candidateIds),
+        supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', candidateIds)
+      ]);
+
+      console.log('⚡ Profiles loaded in', Math.round(performance.now() - profilesStart), 'ms');
+
+      const candidateProfilesMap = new Map(candidateProfilesResult.data?.map(p => [p.user_id, p]) || []);
+      const userProfilesMap = new Map(userProfilesResult.data?.map(p => [p.id, p]) || []);
+
+      const enrichedApps = appsData.map(app => {
+        const userProfile = userProfilesMap.get(app.candidate_id);
+        const names = userProfile?.full_name?.split(' ') || [];
+
+        return {
+          ...app,
+          first_name: app.first_name || names[0] || '',
+          last_name: app.last_name || names.slice(1).join(' ') || '',
+          email: app.email || userProfile?.email || '',
+          candidate_profile: candidateProfilesMap.get(app.candidate_id)
+        };
+      });
+
+      setApplications(enrichedApps as any);
+      console.log('✅ Total load time:', Math.round(performance.now() - startTime), 'ms');
+      console.log('📊 Loaded:', jobsData.length, 'jobs,', enrichedApps.length, 'applications');
+
+    } catch (error) {
+      console.error('❌ Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpenJobForm = () => {
