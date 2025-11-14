@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, FileText, FileSpreadsheet, File } from 'lucide-react';
+import { Download, FileText, FileSpreadsheet, File, Package } from 'lucide-react';
+import JSZip from 'jszip';
 
 interface Application {
   id: string;
@@ -7,6 +8,12 @@ interface Application {
   ai_category: string;
   workflow_stage: string;
   applied_at: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  cv_url?: string;
+  cover_letter_url?: string;
   candidate?: {
     profile?: {
       full_name: string;
@@ -199,6 +206,160 @@ export default function ExportApplicationsButton({ applications, isPremium, jobT
     setShowMenu(false);
   };
 
+  const exportCompleteArchive = async () => {
+    setShowMenu(false);
+
+    try {
+      const zip = new JSZip();
+      const timestamp = new Date().toISOString().split('T')[0];
+      const jobName = jobTitle?.replace(/[^a-z0-9]/gi, '_') || 'candidatures';
+
+      // Créer la liste Excel
+      const formatData = (apps: Application[]) => apps.map(app => ({
+        Candidat: `${app.first_name || ''} ${app.last_name || ''}`.trim() || app.candidate?.profile?.full_name || 'Candidat',
+        Email: app.email || app.candidate?.profile?.email || '',
+        Téléphone: app.phone || app.candidate?.profile?.phone || '',
+        Poste: app.candidate?.title || '',
+        'Expérience (années)': app.candidate?.experience_years || 0,
+        'Niveau d\'études': app.candidate?.education_level || '',
+        Compétences: app.candidate?.skills?.join(', ') || '',
+        'Score IA': `${app.ai_score || 0}%`,
+        Catégorie: app.ai_category === 'strong' ? 'Fort' : app.ai_category === 'medium' ? 'Moyen' : 'Faible',
+        Statut: app.workflow_stage || 'received',
+        'Date de candidature': new Date(app.applied_at).toLocaleDateString('fr-FR')
+      }));
+
+      const createTable = (title: string, data: any[], bgColor: string) => {
+        let table = `<tr><td colspan="11" style="background-color: ${bgColor}; color: white; font-weight: bold; padding: 12px; font-size: 14px; border: 2px solid #ddd;">${title}</td></tr>`;
+
+        if (data.length === 0) {
+          return table + `<tr><td colspan="11" style="padding: 8px; text-align: center; font-style: italic; color: #666;">Aucune candidature</td></tr><tr><td colspan="11" style="height: 20px;"></td></tr>`;
+        }
+
+        table += '<tr style="background-color: #f0f0f0; font-weight: bold;">';
+        Object.keys(data[0] || {}).forEach(key => {
+          table += `<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">${key}</th>`;
+        });
+        table += '</tr>';
+
+        data.forEach((row, idx) => {
+          table += `<tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9f9f9'};">`;
+          Object.values(row).forEach(val => {
+            table += `<td style="padding: 8px; border: 1px solid #ddd;">${val}</td>`;
+          });
+          table += '</tr>';
+        });
+
+        table += '<tr><td colspan="11" style="height: 20px;"></td></tr>';
+        return table;
+      };
+
+      let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Candidatures</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta http-equiv="content-type" content="text/plain; charset=UTF-8"/></head><body>';
+
+      if (isPremium) {
+        const strongApps = applications.filter(app => app.ai_category === 'strong');
+        const mediumApps = applications.filter(app => app.ai_category === 'medium');
+        const weakApps = applications.filter(app => app.ai_category === 'weak');
+
+        html += `<table><tr><td colspan="11" style="background-color: #0E2F56; color: white; font-weight: bold; padding: 16px; font-size: 18px; text-align: center;">${jobTitle || 'Candidatures'} - Export Premium avec tri IA</td></tr>`;
+        html += `<tr><td colspan="11" style="padding: 8px; text-align: center;">Date: ${new Date().toLocaleDateString('fr-FR')} | Total: ${applications.length} candidatures</td></tr>`;
+        html += '<tr><td colspan="11" style="height: 20px;"></td></tr>';
+        html += createTable(`✅ Profils Forts (${strongApps.length})`, formatData(strongApps), '#16a34a');
+        html += createTable(`⚠️ Profils Moyens (${mediumApps.length})`, formatData(mediumApps), '#ca8a04');
+        html += createTable(`❌ Profils Faibles (${weakApps.length})`, formatData(weakApps), '#dc2626');
+        html += '</table>';
+      } else {
+        const data = formatData(applications);
+        html += `<table><tr><td colspan="11" style="background-color: #0E2F56; color: white; font-weight: bold; padding: 16px; font-size: 18px; text-align: center;">${jobTitle || 'Candidatures'}</td></tr>`;
+        html += `<tr><td colspan="11" style="padding: 8px; text-align: center;">Date: ${new Date().toLocaleDateString('fr-FR')} | Total: ${applications.length}</td></tr>`;
+        html += '<tr><td colspan="11" style="height: 20px;"></td></tr>';
+        html += '<tr style="background-color: #0E2F56; color: white; font-weight: bold;">';
+        Object.keys(data[0] || {}).forEach(key => {
+          html += `<th style="padding: 8px; border: 1px solid #ddd; text-align: left;">${key}</th>`;
+        });
+        html += '</tr>';
+        data.forEach((row, idx) => {
+          html += `<tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9f9f9'};">`;
+          Object.values(row).forEach(val => {
+            html += `<td style="padding: 8px; border: 1px solid #ddd;">${val}</td>`;
+          });
+          html += '</tr>';
+        });
+        html += '</table>';
+      }
+
+      html += '</body></html>';
+      zip.file(`liste_candidatures_${jobName}.xls`, html);
+
+      // Télécharger les documents de chaque candidature
+      const downloadFile = async (url: string): Promise<Blob | null> => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) return null;
+          return await response.blob();
+        } catch (error) {
+          console.error('Error downloading file:', error);
+          return null;
+        }
+      };
+
+      const categorizedApps = isPremium ? {
+        'Profils_Forts': applications.filter(app => app.ai_category === 'strong'),
+        'Profils_Moyens': applications.filter(app => app.ai_category === 'medium'),
+        'Profils_Faibles': applications.filter(app => app.ai_category === 'weak')
+      } : {
+        'Candidatures': applications
+      };
+
+      for (const [category, apps] of Object.entries(categorizedApps)) {
+        if (apps.length === 0) continue;
+
+        const categoryFolder = zip.folder(category);
+        if (!categoryFolder) continue;
+
+        for (let i = 0; i < apps.length; i++) {
+          const app = apps[i];
+          const candidateName = `${app.first_name || ''}_${app.last_name || ''}`.trim() ||
+                               app.candidate?.profile?.full_name?.replace(/\s+/g, '_') ||
+                               `Candidat_${i + 1}`;
+          const candidateFolder = categoryFolder.folder(candidateName);
+
+          if (!candidateFolder) continue;
+
+          // Télécharger le CV
+          if (app.cv_url) {
+            const cvBlob = await downloadFile(app.cv_url);
+            if (cvBlob) {
+              const extension = app.cv_url.split('.').pop()?.split('?')[0] || 'pdf';
+              candidateFolder.file(`CV_${candidateName}.${extension}`, cvBlob);
+            }
+          }
+
+          // Télécharger la lettre de motivation
+          if (app.cover_letter_url) {
+            const clBlob = await downloadFile(app.cover_letter_url);
+            if (clBlob) {
+              const extension = app.cover_letter_url.split('.').pop()?.split('?')[0] || 'pdf';
+              candidateFolder.file(`Lettre_motivation_${candidateName}.${extension}`, clBlob);
+            }
+          }
+        }
+      }
+
+      // Générer et télécharger le ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `export_complet_${jobName}_${timestamp}.zip`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    }
+  };
+
   const exportToPDF = () => {
     const data = applications.map(app => ({
       Candidat: app.candidate?.profile?.full_name || 'Candidat',
@@ -380,6 +541,21 @@ export default function ExportApplicationsButton({ applications, isPremium, jobT
 
           <div className="p-2">
             <button
+              onClick={exportCompleteArchive}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-purple-50 rounded-lg transition-colors group text-left border-2 border-purple-200 bg-purple-50/50"
+            >
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                <Package className="w-5 h-5 text-purple-700" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900 text-sm">Archive complète (.zip)</p>
+                <p className="text-xs text-gray-500">Liste + Documents</p>
+              </div>
+            </button>
+
+            <div className="border-t border-gray-200 my-2"></div>
+
+            <button
               onClick={exportToExcel}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-green-50 rounded-lg transition-colors group text-left"
             >
@@ -388,7 +564,7 @@ export default function ExportApplicationsButton({ applications, isPremium, jobT
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-gray-900 text-sm">Excel (.xls)</p>
-                <p className="text-xs text-gray-500">Format tableur</p>
+                <p className="text-xs text-gray-500">Liste uniquement</p>
               </div>
             </button>
 
@@ -401,7 +577,7 @@ export default function ExportApplicationsButton({ applications, isPremium, jobT
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-gray-900 text-sm">PDF</p>
-                <p className="text-xs text-gray-500">Document imprimable</p>
+                <p className="text-xs text-gray-500">Liste uniquement</p>
               </div>
             </button>
 
@@ -414,7 +590,7 @@ export default function ExportApplicationsButton({ applications, isPremium, jobT
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-gray-900 text-sm">CSV</p>
-                <p className="text-xs text-gray-500">Valeurs séparées</p>
+                <p className="text-xs text-gray-500">Liste uniquement</p>
               </div>
             </button>
           </div>
