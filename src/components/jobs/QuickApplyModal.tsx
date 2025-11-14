@@ -66,11 +66,24 @@ export default function QuickApplyModal({ isOpen, onClose, job, onSuccess, onCus
 
       const { data: jobData } = await supabase
         .from('jobs')
-        .select('recruiter_id')
+        .select('recruiter_id, company_id')
         .eq('id', job.id)
         .single();
 
+      // Notification au recruteur
       if (jobData?.recruiter_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: jobData.recruiter_id,
+            type: 'application',
+            title: 'Nouvelle candidature reçue',
+            message: `${profile.full_name} a postulé pour ${job.title}`,
+            link: `/recruiter/applications`,
+            is_read: false
+          });
+
+        // Envoyer aussi par email via edge function
         await supabase.functions.invoke('send-application-notification', {
           body: {
             candidateName: profile.full_name,
@@ -80,6 +93,27 @@ export default function QuickApplyModal({ isOpen, onClose, job, onSuccess, onCus
             recruiterId: jobData.recruiter_id
           }
         });
+      }
+
+      // Notification à l'admin (copie)
+      const { data: adminUsers } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_type', 'admin');
+
+      if (adminUsers && adminUsers.length > 0) {
+        const adminNotifications = adminUsers.map(admin => ({
+          user_id: admin.id,
+          type: 'application',
+          title: `[ADMIN] Nouvelle candidature - ${job.title}`,
+          message: `${profile.full_name} a postulé chez ${job.company}`,
+          link: `/admin/profiles`,
+          is_read: false
+        }));
+
+        await supabase
+          .from('notifications')
+          .insert(adminNotifications);
       }
 
       onSuccess();
