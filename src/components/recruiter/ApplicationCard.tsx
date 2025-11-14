@@ -13,7 +13,7 @@ interface Application {
   ai_category?: string;
   workflow_stage?: string;
   applied_at?: string;
-  created_at: string;
+  created_at?: string;
   candidate_profile?: {
     id?: string;
     title?: string;

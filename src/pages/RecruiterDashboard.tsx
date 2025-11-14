@@ -162,9 +162,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       const appsStart = performance.now();
       const { data: appsData } = await supabase
         .from('applications')
-        .select('id, job_id, candidate_id, first_name, last_name, email, phone, cv_url, cover_letter_url, message, ai_score, ai_category, workflow_stage, status, created_at, applied_at')
+        .select('id, job_id, candidate_id, first_name, last_name, email, phone, cv_url, cover_letter_url, message, ai_score, ai_category, workflow_stage, status, applied_at')
         .in('job_id', jobIds)
-        .order('created_at', { ascending: false });
+        .order('applied_at', { ascending: false });
 
       if (!appsData || appsData.length === 0) {
         setApplications([]);
@@ -181,7 +181,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       const [candidateProfilesResult, userProfilesResult] = await Promise.all([
         supabase
           .from('candidate_profiles')
-          .select('user_id, id, title, experience_years, education_level, skills')
+          .select('user_id, id, title, experience_years, education, skills')
           .in('user_id', candidateIds),
         supabase
           .from('profiles')
