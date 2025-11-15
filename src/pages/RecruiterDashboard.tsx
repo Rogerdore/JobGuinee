@@ -836,7 +836,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   {jobs.map((job, index) => (
                     <div
                       key={job.id}
-                      className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover relative overflow-hidden group animate-slide-up"
+                      onClick={() => onNavigate('job-detail', job.id)}
+                      className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover relative overflow-hidden group animate-slide-up cursor-pointer"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF8C00]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -868,7 +869,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
                       <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             console.log('🔘 Vues button clicked!');
                             setSelectedJobForViews(job);
                             setShowViewsModal(true);
@@ -946,7 +948,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </button>
                           <button
                             className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 cursor-pointer"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               console.log('🔘 Analyses button clicked!');
                               setActiveTab('analytics');
                               setSelectedJobAnalytics(job.id);
@@ -958,7 +961,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </div>
                         <button
                           className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56] cursor-pointer"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             console.log('🔘 Matching IA button clicked!');
                             handleStartMatching(job);
                           }}
@@ -971,7 +975,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
                       <button
                         className="w-full px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400 cursor-pointer"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onNavigate('job-detail', job.id);
                         }}
                       >
