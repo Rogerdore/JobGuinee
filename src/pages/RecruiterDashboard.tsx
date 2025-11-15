@@ -437,6 +437,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     return categoryMatch && jobMatch;
   });
 
+  console.log('📊 RecruiterDashboard State:', {
+    activeTab,
+    totalApplications: applications.length,
+    filteredApplications: filteredApplications.length,
+    selectedJobFilter,
+    filterCategory,
+    applications: applications.map(a => ({ id: a.id, job_id: a.job_id, name: `${a.first_name} ${a.last_name}` }))
+  });
+
   console.log('📋 All applications:', applications.length);
   console.log('📋 Filtered applications:', filteredApplications.length);
   console.log('📋 Filter settings:', { filterCategory, selectedJobFilter });
