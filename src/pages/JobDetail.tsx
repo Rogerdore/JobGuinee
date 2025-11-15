@@ -9,6 +9,7 @@ import { supabase, Job, Company } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
 import ApplicationModal from '../components/jobs/ApplicationModal';
 import QuickApplyModal from '../components/jobs/QuickApplyModal';
+import FormattedJobDescription from '../components/jobs/FormattedJobDescription';
 
 interface JobDetailProps {
   jobId: string;
@@ -391,7 +392,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                   Description complète
                 </h2>
                 <div className="prose prose-blue max-w-none">
-                  <p className="text-gray-700 whitespace-pre-line leading-relaxed">{job.description}</p>
+                  <FormattedJobDescription description={job.description} />
                 </div>
               </div>
 

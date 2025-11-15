@@ -1,5 +1,5 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download, Type } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatBot from './ChatBot';
@@ -120,19 +120,34 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       </div>
 
                       {isAdmin ? (
-                        <button
-                          onClick={() => {
-                            onNavigate('cms-admin');
-                            setAccountMenuOpen(false);
-                          }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <div>
-                            <p className="font-medium">Administration CMS</p>
-                            <p className="text-xs text-gray-500">Gestion du contenu du site</p>
-                          </div>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              onNavigate('cms-admin');
+                              setAccountMenuOpen(false);
+                            }}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                          >
+                            <Settings className="w-4 h-4" />
+                            <div>
+                              <p className="font-medium">Administration CMS</p>
+                              <p className="text-xs text-gray-500">Gestion du contenu du site</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => {
+                              onNavigate('job-formatting');
+                              setAccountMenuOpen(false);
+                            }}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                          >
+                            <Type className="w-4 h-4" />
+                            <div>
+                              <p className="font-medium">Formatage des offres</p>
+                              <p className="text-xs text-gray-500">Style des descriptions</p>
+                            </div>
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={() => {
