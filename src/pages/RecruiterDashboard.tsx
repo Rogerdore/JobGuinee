@@ -328,7 +328,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       deadline: data.deadline,
       languages: data.languages,
       keywords: data.skills,
-      status: 'published',
+      status: 'draft',
       is_featured: data.is_premium,
       ai_generated: false,
     });
@@ -337,7 +337,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
-      alert('✅ Offre publiée avec succès !');
+      alert(
+        '✅ Offre soumise avec succès !\n\n' +
+        '📋 Votre offre a été enregistrée et sera examinée par notre équipe.\n\n' +
+        '👨‍💼 Un administrateur va vérifier et valider votre offre avant sa mise en ligne.\n\n' +
+        '📧 Vous recevrez une notification dès que votre offre sera publiée.\n\n' +
+        'Merci pour votre patience !'
+      );
     } else {
       console.error('Error publishing job:', error);
       alert(`❌ Erreur lors de la publication de l'offre: ${error.message}`);
