@@ -5,6 +5,7 @@ import {
   CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import DocumentImporter from './DocumentImporter';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -467,16 +468,62 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Présentation du poste *
+                  Description complète du poste *
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="Décrivez brièvement le poste..."
+                  rows={12}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none font-mono text-sm"
+                  placeholder="Saisissez la description complète de l'offre ou importez un document...&#10;&#10;Vous pouvez utiliser le format Markdown:&#10;# Titre principal&#10;## Sous-titre&#10;### Titre de niveau 3&#10;&#10;**Texte en gras**&#10;- Liste à puces&#10;- Point 2"
                   required
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
+                <DocumentImporter
+                  onImport={(content) => setFormData({ ...formData, description: content })}
+                  buttonText="Importer depuis PDF/DOCX"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const template = `# ${formData.title || 'TITRE DU POSTE'}
+
+**Catégorie:** ${formData.category || 'Catégorie'} | **Contrat:** ${formData.contract_type || 'Type de contrat'} | **Postes:** 1
+
+## PRÉSENTATION DU POSTE
+Description du poste et du contexte...
+
+## MISSIONS PRINCIPALES
+- Mission 1
+- Mission 2
+- Mission 3
+
+## PROFIL RECHERCHÉ
+Description du profil idéal...
+
+## COMPÉTENCES CLÉS
+- Compétence 1
+- Compétence 2
+- Compétence 3
+
+## QUALIFICATIONS
+- **Niveau d'études:**
+- **Expérience:**
+- **Langues:**
+
+## MODALITÉS DE CANDIDATURE
+- **Email:** ${formData.company_email || 'email@entreprise.com'}
+- **Date limite:** ${formData.deadline || 'À définir'}
+- **Documents requis:** CV, Lettre de motivation`;
+                    setFormData({ ...formData, description: template });
+                  }}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
+                >
+                  <Wand2 className="w-5 h-5" />
+                  Utiliser un modèle
+                </button>
               </div>
 
               <div>
