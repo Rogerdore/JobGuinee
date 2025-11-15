@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { X, Download, FileText, AlertCircle } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
 // Configure PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 interface DocumentViewerProps {
   file: File;
@@ -16,13 +17,12 @@ interface DocumentViewerProps {
 export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) {
   const [fileUrl, setFileUrl] = useState<string>('');
   const [fileType, setFileType] = useState<'pdf' | 'image' | 'document' | 'text'>('document');
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [zoom, setZoom] = useState(100);
   const [pdfDocument, setPdfDocument] = useState<any>(null);
-  const [renderedPage, setRenderedPage] = useState<string>('');
+  const [renderedPages, setRenderedPages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [documentContent, setDocumentContent] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -55,16 +55,19 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
   const loadPDF = async (pdfFile: File) => {
     try {
       setLoading(true);
+      setError('');
       const arrayBuffer = await pdfFile.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
 
       setPdfDocument(pdf);
+      const numPages = Math.min(pdf.numPages, 5);
       setTotalPages(pdf.numPages);
-      await renderPage(pdf, 1);
+      await renderAllPages(pdf, numPages);
       setLoading(false);
-    } catch (error) {
-      console.error('Error loading PDF:', error);
+    } catch (err) {
+      console.error('Error loading PDF:', err);
+      setError('Erreur lors du chargement du PDF. Le fichier est peut-être corrompu.');
       setLoading(false);
     }
   };
@@ -96,34 +99,37 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
     }
   };
 
-  const renderPage = async (pdf: any, pageNumber: number) => {
+  const renderAllPages = async (pdf: any, numPages: number) => {
     try {
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: zoom / 100 });
+      setError('');
+      const pages: string[] = [];
 
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
 
-      if (context) {
-        await page.render({
-          canvasContext: context,
-          viewport: viewport
-        }).promise;
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
 
-        setRenderedPage(canvas.toDataURL());
+        if (context) {
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          }).promise;
+
+          pages.push(canvas.toDataURL());
+        }
       }
-    } catch (error) {
-      console.error('Error rendering page:', error);
+
+      setRenderedPages(pages);
+    } catch (err) {
+      console.error('Error rendering pages:', err);
+      setError('Erreur lors du rendu des pages');
+      setRenderedPages([]);
     }
   };
-
-  useEffect(() => {
-    if (pdfDocument && fileType === 'pdf') {
-      renderPage(pdfDocument, currentPage);
-    }
-  }, [currentPage, zoom, pdfDocument]);
 
   const handleDownload = () => {
     const a = document.createElement('a');
@@ -134,21 +140,6 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
     document.body.removeChild(a);
   };
 
-  const handleZoomIn = () => {
-    if (zoom < 200) setZoom(zoom + 25);
-  };
-
-  const handleZoomOut = () => {
-    if (zoom > 50) setZoom(zoom - 25);
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
 
   return (
     <div className="bg-white border-2 border-gray-300 rounded-xl overflow-hidden shadow-lg">
@@ -186,49 +177,13 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Zoom controls */}
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border-2 border-gray-300">
-              <button
-                onClick={handleZoomOut}
-                disabled={zoom <= 50}
-                className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Zoom arrière"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </button>
-              <span className="text-sm font-semibold min-w-[60px] text-center">{zoom}%</span>
-              <button
-                onClick={handleZoomIn}
-                disabled={zoom >= 200}
-                className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Zoom avant"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Page navigation for PDF */}
-            {fileType === 'pdf' && totalPages > 1 && (
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border-2 border-gray-300">
-                <button
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                  className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Page précédente"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-sm font-semibold min-w-[80px] text-center">
-                  {currentPage} / {totalPages}
+            {/* Page count for PDF */}
+            {fileType === 'pdf' && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border-2 border-gray-300">
+                <span className="text-sm font-semibold">
+                  {Math.min(renderedPages.length, 5)} / {totalPages} pages affichées
+                  {totalPages > 5 && ' (max 5)'}
                 </span>
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Page suivante"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
               </div>
             )}
           </div>
@@ -237,7 +192,24 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
 
       {/* Document viewer */}
       <div className="bg-gray-200 p-6 min-h-[500px] max-h-[700px] overflow-auto">
-        {loading ? (
+        {error ? (
+          <div className="flex items-center justify-center h-[500px]">
+            <div className="bg-white p-8 rounded-lg shadow-lg max-w-md">
+              <div className="text-center">
+                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h4 className="text-lg font-bold text-gray-900 mb-2">Erreur de chargement</h4>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition mx-auto"
+                >
+                  <Download className="w-5 h-5" />
+                  Télécharger le fichier
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center h-[500px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -245,17 +217,24 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
             </div>
           </div>
         ) : fileType === 'pdf' ? (
-          <div className="flex justify-center">
-            {renderedPage ? (
-              <img
-                src={renderedPage}
-                alt={`Page ${currentPage}`}
-                className="max-w-full h-auto shadow-2xl"
-                style={{ width: `${zoom}%` }}
-              />
+          <div className="flex flex-col items-center gap-6">
+            {renderedPages.length > 0 ? (
+              renderedPages.map((pageDataUrl, index) => (
+                <div key={index} className="relative">
+                  <div className="absolute -top-3 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg z-10">
+                    Page {index + 1}
+                  </div>
+                  <img
+                    src={pageDataUrl}
+                    alt={`Page ${index + 1}`}
+                    className="max-w-full h-auto shadow-2xl rounded-lg border-4 border-white"
+                  />
+                </div>
+              ))
             ) : (
               <div className="bg-white p-8 rounded-lg shadow-lg">
-                <p className="text-gray-600">Erreur lors du chargement de la page</p>
+                <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-3" />
+                <p className="text-gray-600 text-center">Le document ne peut pas être affiché</p>
               </div>
             )}
           </div>
