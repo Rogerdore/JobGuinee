@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Download, FileText, AlertCircle, Edit2, Save, XCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Download, FileText, AlertCircle, Edit2, Save, XCircle, Plus, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
@@ -25,6 +25,10 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
   const [error, setError] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<string>('');
+  const [images, setImages] = useState<string[]>([]);
+  const [zoom, setZoom] = useState(100);
+  const [rotation, setRotation] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -38,6 +42,7 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
       loadPDF(file);
     } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
       setFileType('image');
+      setImages([url]);
       setLoading(false);
     } else if (['doc', 'docx'].includes(extension || '')) {
       setFileType('document');
@@ -52,6 +57,11 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
 
     return () => {
       URL.revokeObjectURL(url);
+      images.forEach(imgUrl => {
+        if (imgUrl !== url) {
+          URL.revokeObjectURL(imgUrl);
+        }
+      });
     };
   }, [file]);
 
@@ -186,6 +196,38 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
 
   const isEditable = fileType === 'document' || fileType === 'text';
 
+  const handleAddImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newImageUrls = Array.from(files).map(file => URL.createObjectURL(file));
+      setImages(prev => [...prev, ...newImageUrls]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => {
+      const newImages = [...prev];
+      URL.revokeObjectURL(newImages[index]);
+      newImages.splice(index, 1);
+      return newImages;
+    });
+  };
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 25, 200));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 25, 25));
+  };
+
+  const handleRotate = () => {
+    setRotation(prev => (prev + 90) % 360);
+  };
 
   return (
     <div className="bg-white border-2 border-gray-300 rounded-xl overflow-hidden shadow-lg">
@@ -252,6 +294,42 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Image controls */}
+            {fileType === 'image' && (
+              <>
+                <button
+                  onClick={handleAddImage}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter
+                </button>
+                <button
+                  onClick={handleZoomOut}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition"
+                  disabled={zoom <= 25}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <div className="bg-white px-4 py-2 rounded-lg border-2 border-gray-300">
+                  <span className="text-sm font-semibold">{zoom}%</span>
+                </div>
+                <button
+                  onClick={handleZoomIn}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition"
+                  disabled={zoom >= 200}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleRotate}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </button>
+              </>
+            )}
+
             {/* Page count for PDF */}
             {fileType === 'pdf' && (
               <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border-2 border-gray-300">
@@ -264,6 +342,16 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
           </div>
         </div>
       </div>
+
+      {/* Hidden file input for adding images */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleImageFileChange}
+        className="hidden"
+      />
 
       {/* Document viewer */}
       <div className="bg-gray-200 p-6 min-h-[500px] max-h-[700px] overflow-auto">
@@ -314,12 +402,36 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
             )}
           </div>
         ) : fileType === 'image' ? (
-          <div className="flex justify-center">
-            <img
-              src={fileUrl}
-              alt={file.name}
-              className="max-w-full h-auto shadow-2xl rounded-lg"
-            />
+          <div className="space-y-6">
+            {images.map((imgUrl, index) => (
+              <div key={index} className="relative bg-white p-4 rounded-lg shadow-lg">
+                <button
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-2 transition z-10"
+                  title="Supprimer cette image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex justify-center items-center overflow-hidden">
+                  <img
+                    src={imgUrl}
+                    alt={`Image ${index + 1}`}
+                    className="shadow-2xl rounded-lg transition-all duration-300"
+                    style={{
+                      width: `${zoom}%`,
+                      transform: `rotate(${rotation}deg)`,
+                      maxWidth: '100%',
+                      height: 'auto'
+                    }}
+                  />
+                </div>
+                {images.length > 1 && (
+                  <div className="mt-2 text-center text-sm text-gray-600 font-semibold">
+                    Image {index + 1} / {images.length}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ) : fileType === 'document' ? (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
