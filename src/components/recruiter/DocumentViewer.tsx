@@ -29,6 +29,7 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
     setFileUrl(url);
 
     const extension = file.name.split('.').pop()?.toLowerCase();
+    console.log('Loading file:', file.name, 'Extension:', extension, 'Type:', file.type);
 
     if (extension === 'pdf') {
       setFileType('pdf');
@@ -37,7 +38,7 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
       setFileType('image');
       setLoading(false);
     } else if (['doc', 'docx'].includes(extension || '')) {
-      setFileType('text');
+      setFileType('document');
       loadWordDocument(file);
     } else if (extension === 'txt') {
       setFileType('text');
@@ -75,13 +76,35 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
   const loadWordDocument = async (wordFile: File) => {
     try {
       setLoading(true);
+      setError('');
+      console.log('Loading Word document, size:', wordFile.size, 'bytes');
+
       const arrayBuffer = await wordFile.arrayBuffer();
+      console.log('ArrayBuffer loaded, size:', arrayBuffer.byteLength);
+
       const result = await mammoth.convertToHtml({ arrayBuffer });
-      setDocumentContent(result.value);
+      console.log('Conversion result:', {
+        valueLength: result.value?.length,
+        messagesCount: result.messages?.length,
+        preview: result.value?.substring(0, 100)
+      });
+
+      if (result.value && result.value.trim()) {
+        setDocumentContent(result.value);
+        console.log('Document content set successfully');
+      } else {
+        setDocumentContent('<div class="text-gray-600 text-center p-8"><p>Le document semble vide ou son contenu ne peut pas être extrait.</p></div>');
+        console.warn('Document content is empty');
+      }
+
+      if (result.messages && result.messages.length > 0) {
+        console.warn('Word document conversion warnings:', result.messages);
+      }
+
       setLoading(false);
-    } catch (error) {
-      console.error('Error loading Word document:', error);
-      setDocumentContent('<p class="text-red-600">Erreur lors du chargement du document Word</p>');
+    } catch (err) {
+      console.error('Error loading Word document:', err);
+      setError('Erreur lors du chargement du document Word. Le fichier est peut-être corrompu ou protégé.');
       setLoading(false);
     }
   };
@@ -244,14 +267,19 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
               src={fileUrl}
               alt={file.name}
               className="max-w-full h-auto shadow-2xl rounded-lg"
-              style={{ width: `${zoom}%` }}
+            />
+          </div>
+        ) : fileType === 'document' ? (
+          <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
+            <div
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: documentContent }}
             />
           </div>
         ) : fileType === 'text' ? (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
             <div
               className="prose prose-sm max-w-none"
-              style={{ fontSize: `${zoom}%` }}
               dangerouslySetInnerHTML={{ __html: documentContent }}
             />
           </div>
