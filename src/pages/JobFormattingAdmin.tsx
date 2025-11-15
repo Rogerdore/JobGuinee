@@ -296,62 +296,150 @@ function StyleEditor({
 }) {
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Épaisseur</label>
-        <select
-          value={style.fontWeight || 'normal'}
-          onChange={(e) => onChange('fontWeight', e.target.value)}
-          className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="normal">Normal</option>
-          <option value="500">Semi-gras (500)</option>
-          <option value="600">Gras (600)</option>
-          <option value="bold">Très gras (bold)</option>
-        </select>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            💪 Épaisseur de police
+          </label>
+          <select
+            value={style.fontWeight || 'normal'}
+            onChange={(e) => onChange('fontWeight', e.target.value)}
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium"
+          >
+            <option value="300">Léger (300)</option>
+            <option value="normal">Normal (400)</option>
+            <option value="500">Moyen (500)</option>
+            <option value="600">Semi-gras (600)</option>
+            <option value="bold">Gras (700)</option>
+            <option value="800">Extra-gras (800)</option>
+            <option value="900">Ultra-gras (900)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            📏 Taille de police
+          </label>
+          <select
+            value={style.fontSize || '1rem'}
+            onChange={(e) => onChange('fontSize', e.target.value)}
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="0.875rem">Petit (14px)</option>
+            <option value="1rem">Normal (16px)</option>
+            <option value="1.125rem">Moyen (18px)</option>
+            <option value="1.25rem">Grand (20px)</option>
+            <option value="1.5rem">Très grand (24px)</option>
+            <option value="1.875rem">Énorme (30px)</option>
+            <option value="2.25rem">Géant (36px)</option>
+          </select>
+        </div>
       </div>
 
       {showTransform && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Transformation</label>
-          <select
-            value={style.textTransform || 'none'}
-            onChange={(e) => onChange('textTransform', e.target.value)}
-            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="none">Aucune</option>
-            <option value="uppercase">MAJUSCULES</option>
-            <option value="capitalize">Première Lettre</option>
-            <option value="lowercase">minuscules</option>
-          </select>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            🔤 Transformation du texte
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onChange('textTransform', 'none')}
+              className={`px-4 py-2 rounded-lg border-2 transition font-medium ${
+                style.textTransform === 'none'
+                  ? 'bg-blue-100 border-blue-500 text-blue-700'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              Normal
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange('textTransform', 'uppercase')}
+              className={`px-4 py-2 rounded-lg border-2 transition font-medium ${
+                style.textTransform === 'uppercase'
+                  ? 'bg-blue-100 border-blue-500 text-blue-700'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              MAJUSCULES
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange('textTransform', 'capitalize')}
+              className={`px-4 py-2 rounded-lg border-2 transition font-medium ${
+                style.textTransform === 'capitalize'
+                  ? 'bg-blue-100 border-blue-500 text-blue-700'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              Première Lettre
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange('textTransform', 'lowercase')}
+              className={`px-4 py-2 rounded-lg border-2 transition font-medium ${
+                style.textTransform === 'lowercase'
+                  ? 'bg-blue-100 border-blue-500 text-blue-700'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              minuscules
+            </button>
+          </div>
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Taille</label>
-        <input
-          type="text"
-          value={style.fontSize || '1rem'}
-          onChange={(e) => onChange('fontSize', e.target.value)}
-          placeholder="1rem, 18px, etc."
-          className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Couleur</label>
-        <div className="flex gap-2">
-          <input
-            type="color"
-            value={style.color || '#000000'}
-            onChange={(e) => onChange('color', e.target.value)}
-            className="w-16 h-10 border-2 border-gray-300 rounded-lg cursor-pointer"
-          />
-          <input
-            type="text"
-            value={style.color || '#000000'}
-            onChange={(e) => onChange('color', e.target.value)}
-            className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          🎨 Couleur du texte
+        </label>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={style.color || '#000000'}
+              onChange={(e) => onChange('color', e.target.value)}
+              className="w-20 h-12 border-2 border-gray-300 rounded-lg cursor-pointer"
+            />
+            <input
+              type="text"
+              value={style.color || '#000000'}
+              onChange={(e) => onChange('color', e.target.value)}
+              placeholder="#000000"
+              className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onChange('color', '#0E2F56')}
+              className="flex-1 h-10 rounded-lg border-2 border-gray-300 hover:border-blue-500 transition"
+              style={{ backgroundColor: '#0E2F56' }}
+              title="Bleu foncé"
+            />
+            <button
+              type="button"
+              onClick={() => onChange('color', '#FF8C00')}
+              className="flex-1 h-10 rounded-lg border-2 border-gray-300 hover:border-orange-500 transition"
+              style={{ backgroundColor: '#FF8C00' }}
+              title="Orange"
+            />
+            <button
+              type="button"
+              onClick={() => onChange('color', '#000000')}
+              className="flex-1 h-10 rounded-lg border-2 border-gray-300 hover:border-gray-500 transition"
+              style={{ backgroundColor: '#000000' }}
+              title="Noir"
+            />
+            <button
+              type="button"
+              onClick={() => onChange('color', '#374151')}
+              className="flex-1 h-10 rounded-lg border-2 border-gray-300 hover:border-gray-500 transition"
+              style={{ backgroundColor: '#374151' }}
+              title="Gris foncé"
+            />
+          </div>
         </div>
       </div>
     </div>
