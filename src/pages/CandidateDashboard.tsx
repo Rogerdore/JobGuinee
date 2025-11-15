@@ -466,7 +466,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           <div className="flex border-b border-gray-200 overflow-x-auto">
             {[
               { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
-              { id: 'applications', label: `Candidatures (${applications.length})`, icon: Briefcase },
+              { id: 'applications', label: 'Candidatures', icon: Briefcase, count: applications.length },
               { id: 'profile', label: 'Mon profil', icon: Settings },
               { id: 'formations', label: 'Formations', icon: BookOpen },
               { id: 'alerts', label: 'Alertes emploi', icon: Bell },
@@ -479,7 +479,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 transition ${
+                  className={`px-6 py-4 font-semibold whitespace-nowrap flex items-center gap-3 transition-all ${
                     activeTab === tab.id
                       ? 'border-b-2 border-[#0E2F56] text-[#0E2F56] bg-blue-50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -487,6 +487,15 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 >
                   <Icon className="w-5 h-5" />
                   <span>{tab.label}</span>
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className={`flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold ${
+                      activeTab === tab.id
+                        ? 'bg-[#0E2F56] text-white'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
