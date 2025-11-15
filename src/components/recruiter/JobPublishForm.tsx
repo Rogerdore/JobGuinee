@@ -490,11 +490,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-                <DocumentImporter
-                  onImport={(content) => setFormData({ ...formData, description: content })}
-                  buttonText="Importer depuis PDF/DOCX"
-                />
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
                 <button
                   type="button"
                   onClick={() => {
