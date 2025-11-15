@@ -5,7 +5,8 @@ import {
   CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import DocumentImporter from './DocumentImporter';
+import StructuredDocumentImporter from './StructuredDocumentImporter';
+import { ParsedJobData } from '../../utils/jobParser';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -326,23 +327,32 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-            <div>
-              <label htmlFor="file-import" className="cursor-pointer">
-                <div className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition shadow-md">
-                  <UploadIcon className="w-5 h-5" />
-                  <span>{importingFile ? 'Import en cours...' : 'Importer depuis PDF/DOCX'}</span>
-                </div>
-              </label>
-              <input
-                id="file-import"
-                type="file"
-                accept=".pdf,.docx,.doc"
-                onChange={handleImportFile}
-                className="hidden"
-                disabled={importingFile}
-              />
-              <p className="text-xs text-gray-600 mt-2 text-center">Remplir automatiquement depuis un fichier</p>
-            </div>
+            <StructuredDocumentImporter
+              onImport={(parsedData, rawText) => {
+                setFormData({
+                  ...formData,
+                  title: parsedData.title || formData.title,
+                  description: parsedData.description || rawText,
+                  location: parsedData.location || formData.location,
+                  contract_type: parsedData.contract_type || formData.contract_type,
+                  salary_min: parsedData.salary_min || formData.salary_min,
+                  salary_max: parsedData.salary_max || formData.salary_max,
+                  sector: parsedData.sector || formData.sector,
+                  experience_level: parsedData.experience_level || formData.experience_level,
+                  education_level: parsedData.education_level || formData.education_level,
+                  responsibilities: parsedData.responsibilities || formData.responsibilities,
+                  requirements: parsedData.requirements || formData.requirements,
+                  benefits: parsedData.benefits || formData.benefits,
+                  company_name: parsedData.company_name || formData.company_name,
+                  company_description: parsedData.company_description || formData.company_description,
+                  company_email: parsedData.company_email || formData.company_email,
+                  deadline: parsedData.deadline || formData.deadline,
+                  skills: parsedData.skills || formData.skills,
+                  languages: parsedData.languages || formData.languages,
+                });
+              }}
+              buttonText="Importer une offre (PDF/Word/Texte)"
+            />
 
             <div>
               <button
