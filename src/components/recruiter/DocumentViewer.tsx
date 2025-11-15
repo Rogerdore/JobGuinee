@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Download, FileText, AlertCircle } from 'lucide-react';
+import { X, Download, FileText, AlertCircle, Edit2, Save, XCircle } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
@@ -23,6 +23,8 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
   const [loading, setLoading] = useState(true);
   const [documentContent, setDocumentContent] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState<string>('');
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -90,7 +92,10 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
       });
 
       if (result.value && result.value.trim()) {
-        setDocumentContent(result.value);
+        const htmlContent = result.value;
+        setDocumentContent(htmlContent);
+        const textContent = htmlContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+        setEditedContent(textContent);
         console.log('Document content set successfully');
       } else {
         setDocumentContent('<div class="text-gray-600 text-center p-8"><p>Le document semble vide ou son contenu ne peut pas être extrait.</p></div>');
@@ -114,6 +119,7 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
       setLoading(true);
       const text = await textFile.text();
       setDocumentContent(`<pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`);
+      setEditedContent(text);
       setLoading(false);
     } catch (error) {
       console.error('Error loading text file:', error);
@@ -163,6 +169,23 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
     document.body.removeChild(a);
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    const textContent = documentContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+    setEditedContent(textContent);
+  };
+
+  const handleSaveEdit = () => {
+    setDocumentContent(`<pre style="white-space: pre-wrap; font-family: inherit;">${editedContent}</pre>`);
+    setIsEditing(false);
+  };
+
+  const isEditable = fileType === 'document' || fileType === 'text';
+
 
   return (
     <div className="bg-white border-2 border-gray-300 rounded-xl overflow-hidden shadow-lg">
@@ -197,6 +220,35 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
               <Download className="w-4 h-4" />
               Télécharger
             </button>
+
+            {isEditable && !isEditing && (
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+              >
+                <Edit2 className="w-4 h-4" />
+                Éditer
+              </button>
+            )}
+
+            {isEditing && (
+              <>
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"
+                >
+                  <Save className="w-4 h-4" />
+                  Enregistrer
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Annuler
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -271,17 +323,35 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
           </div>
         ) : fileType === 'document' ? (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
-            <div
-              className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: documentContent }}
-            />
+            {isEditing ? (
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full min-h-[500px] p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                placeholder="Contenu du document..."
+              />
+            ) : (
+              <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: documentContent }}
+              />
+            )}
           </div>
         ) : fileType === 'text' ? (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
-            <div
-              className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: documentContent }}
-            />
+            {isEditing ? (
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full min-h-[500px] p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                placeholder="Contenu du document..."
+              />
+            ) : (
+              <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: documentContent }}
+              />
+            )}
           </div>
         ) : (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
