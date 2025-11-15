@@ -244,14 +244,19 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handleOpenJobForm = () => {
-    console.log('🔍 Checking company profile...', company);
+    console.log('🔍 Opening job form...');
+    console.log('Company:', company);
+    console.log('Profile:', profile);
+    console.log('Profile completed:', profile?.profile_completed);
 
     if (!company?.id) {
+      console.log('❌ No company found - redirecting to profile');
       alert("⚠️ Profil entreprise requis\n\nVeuillez d'abord compléter votre profil entreprise dans l'onglet 'Profil' avant de publier une offre d'emploi.");
       setActiveTab('profile');
       return;
     }
 
+    console.log('✅ Opening job form');
     setShowJobForm(true);
   };
 
