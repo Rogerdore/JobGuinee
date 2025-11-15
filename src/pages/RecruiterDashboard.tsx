@@ -21,6 +21,7 @@ import {
   Download,
   MessageCircle,
   Calendar,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -99,6 +100,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedApplicationForProfile, setSelectedApplicationForProfile] = useState<any>(null);
+  const [showPaymentContactModal, setShowPaymentContactModal] = useState(false);
+  const [selectedJobForPayment, setSelectedJobForPayment] = useState<Job | null>(null);
 
   useEffect(() => {
     loadData();
@@ -531,6 +534,110 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      {showPaymentContactModal && selectedJobForPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-[#FF8C00] to-orange-600 rounded-xl">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Contacter l'administration</h2>
+                  <p className="text-sm text-gray-600">Pour finaliser la publication de votre offre</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPaymentContactModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-6 mb-6">
+              <h3 className="font-bold text-lg text-gray-900 mb-3">📋 Offre en attente</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><span className="font-semibold">Titre:</span> {selectedJobForPayment.title}</p>
+                <p><span className="font-semibold">Localisation:</span> {selectedJobForPayment.location}</p>
+                <p className="text-sm text-orange-700 font-medium mt-3">
+                  💰 Frais de publication: 50 000 GNF
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-blue-600" />
+                  Options de contact
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <MessageCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">WhatsApp</p>
+                      <a href="https://wa.me/224620000000" target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline text-sm">
+                        +224 620 00 00 00
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Mail className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Email</p>
+                      <a href="mailto:admin@emploi-guinee.gn" className="text-blue-600 hover:underline text-sm">
+                        admin@emploi-guinee.gn
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-5">
+                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-green-600" />
+                  Abonnement Premium
+                </h3>
+                <p className="text-sm text-gray-700 mb-3">
+                  Publiez des offres illimitées sans frais supplémentaires !
+                </p>
+                <button
+                  onClick={() => {
+                    setShowPaymentContactModal(false);
+                    setActiveTab('premium');
+                  }}
+                  className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-all duration-200"
+                >
+                  Voir les offres Premium
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPaymentContactModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
+              >
+                Fermer
+              </button>
+              <a
+                href="https://wa.me/224620000000?text=Bonjour, je souhaite publier mon offre d'emploi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-[#FF8C00]/90 hover:to-orange-600/90 text-white font-semibold rounded-xl transition text-center"
+              >
+                Contacter maintenant
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showJobForm && (
         <JobPublishForm
           onPublish={handlePublishJob}
@@ -993,6 +1100,19 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           <Sparkles className="w-4 h-4" />
                           <span>Matching IA</span>
                         </button>
+                        {job.status === 'draft' && (
+                          <button
+                            className="w-full px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-[#FF8C00]/90 hover:to-orange-600/90 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-orange-500 cursor-pointer shadow-lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedJobForPayment(job);
+                              setShowPaymentContactModal(true);
+                            }}
+                          >
+                            <MessageCircle className="w-5 h-5" />
+                            <span>Contacter l'admin pour paiement</span>
+                          </button>
+                        )}
                       </div>
 
                       <button
