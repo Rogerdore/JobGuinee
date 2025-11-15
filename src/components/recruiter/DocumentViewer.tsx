@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {
@@ -14,13 +15,14 @@ interface DocumentViewerProps {
 
 export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) {
   const [fileUrl, setFileUrl] = useState<string>('');
-  const [fileType, setFileType] = useState<'pdf' | 'image' | 'document'>('document');
+  const [fileType, setFileType] = useState<'pdf' | 'image' | 'document' | 'text'>('document');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [zoom, setZoom] = useState(100);
   const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [renderedPage, setRenderedPage] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [documentContent, setDocumentContent] = useState<string>('');
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -34,6 +36,12 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
     } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
       setFileType('image');
       setLoading(false);
+    } else if (['doc', 'docx'].includes(extension || '')) {
+      setFileType('text');
+      loadWordDocument(file);
+    } else if (extension === 'txt') {
+      setFileType('text');
+      loadTextFile(file);
     } else {
       setFileType('document');
       setLoading(false);
@@ -57,6 +65,33 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
       setLoading(false);
     } catch (error) {
       console.error('Error loading PDF:', error);
+      setLoading(false);
+    }
+  };
+
+  const loadWordDocument = async (wordFile: File) => {
+    try {
+      setLoading(true);
+      const arrayBuffer = await wordFile.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      setDocumentContent(result.value);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading Word document:', error);
+      setDocumentContent('<p class="text-red-600">Erreur lors du chargement du document Word</p>');
+      setLoading(false);
+    }
+  };
+
+  const loadTextFile = async (textFile: File) => {
+    try {
+      setLoading(true);
+      const text = await textFile.text();
+      setDocumentContent(`<pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading text file:', error);
+      setDocumentContent('<p class="text-red-600">Erreur lors du chargement du fichier texte</p>');
       setLoading(false);
     }
   };
@@ -231,6 +266,14 @@ export default function DocumentViewer({ file, onRemove }: DocumentViewerProps) 
               alt={file.name}
               className="max-w-full h-auto shadow-2xl rounded-lg"
               style={{ width: `${zoom}%` }}
+            />
+          </div>
+        ) : fileType === 'text' ? (
+          <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
+            <div
+              className="prose prose-sm max-w-none"
+              style={{ fontSize: `${zoom}%` }}
+              dangerouslySetInnerHTML={{ __html: documentContent }}
             />
           </div>
         ) : (
