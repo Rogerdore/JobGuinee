@@ -26,6 +26,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
+  const handleGoBack = () => {
+    if (isRecruiter) {
+      onNavigate('recruiter-dashboard');
+    } else {
+      onNavigate('jobs');
+    }
+  };
+
   useEffect(() => {
     loadJob();
     incrementViews();
@@ -153,10 +161,10 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
         <div className="text-center">
           <p className="text-gray-600 mb-4">Offre non trouvée</p>
           <button
-            onClick={() => onNavigate('jobs')}
+            onClick={handleGoBack}
             className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition"
           >
-            Retour aux offres
+            Retour
           </button>
         </div>
       </div>
@@ -200,11 +208,11 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => onNavigate('jobs')}
+            onClick={handleGoBack}
             className="flex items-center space-x-2 text-[#0E2F56] hover:text-[#1a4275] font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Retour aux offres</span>
+            <span>{isRecruiter ? 'Retour au tableau de bord' : 'Retour aux offres'}</span>
           </button>
 
         </div>
