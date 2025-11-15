@@ -46,34 +46,46 @@ export default function MyApplications() {
   const loadApplications = async () => {
     setLoading(true);
 
-    let query = supabase
-      .from('applications')
-      .select(`
-        *,
-        jobs!inner(
-          id,
-          title,
-          location,
-          contract_type,
-          companies(name)
-        )
-      `)
-      .eq('candidate_id', user!.id)
-      .order('applied_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('applications')
+        .select(`
+          *,
+          jobs!inner(
+            id,
+            title,
+            location,
+            contract_type,
+            companies!inner(
+              name
+            )
+          )
+        `)
+        .eq('candidate_id', user!.id)
+        .order('applied_at', { ascending: false });
 
-    if (filter !== 'all') {
-      query = query.eq('status', filter);
+      if (filter !== 'all') {
+        query = query.eq('status', filter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error loading applications:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+      } else {
+        console.log('Applications loaded:', data);
+        setApplications(data || []);
+      }
+    } catch (err) {
+      console.error('Unexpected error loading applications:', err);
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error loading applications:', error);
-    } else {
-      setApplications(data || []);
-    }
-
-    setLoading(false);
   };
 
   const getStatusBadge = (status: string) => {
