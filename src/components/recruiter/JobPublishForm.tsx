@@ -163,165 +163,40 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     }
   };
 
-  const extractDataFromText = (text: string) => {
-    const extracted: Partial<JobFormData> = {};
-
-    const titlePatterns = [
-      /(?:titre|poste|position)[:\s]+(.+?)(?:\n|$)/i,
-      /^(.+?)(?:\n|$)/
-    ];
-    for (const pattern of titlePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.title = match[1].trim();
-        break;
-      }
-    }
-
-    const locationPatterns = [
-      /(?:localisation|lieu|location|ville)[:\s]+(.+?)(?:\n|$)/i,
-      /(?:à|basé à)[:\s]*(.+?)(?:\n|$)/i
-    ];
-    for (const pattern of locationPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.location = match[1].trim();
-        break;
-      }
-    }
-
-    const contractPatterns = [
-      /(?:type de contrat|contrat)[:\s]+(.+?)(?:\n|$)/i
-    ];
-    for (const pattern of contractPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        const contractType = match[1].trim();
-        if (contractType.match(/cdi/i)) extracted.contract_type = 'CDI';
-        else if (contractType.match(/cdd/i)) extracted.contract_type = 'CDD';
-        else if (contractType.match(/stage/i)) extracted.contract_type = 'Stage';
-        break;
-      }
-    }
-
-    const descriptionPatterns = [
-      /(?:description|présentation)[:\s]+([\s\S]+?)(?:\n\n|responsabilit|profil|compétence)/i
-    ];
-    for (const pattern of descriptionPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.description = match[1].trim();
-        break;
-      }
-    }
-
-    const responsibilitiesPatterns = [
-      /(?:responsabilit|missions|tâches)[:\s]+([\s\S]+?)(?:\n\n|profil|compétence|qualif)/i
-    ];
-    for (const pattern of responsibilitiesPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.responsibilities = match[1].trim();
-        break;
-      }
-    }
-
-    const profilePatterns = [
-      /(?:profil|candidat|qualification)[:\s]+([\s\S]+?)(?:\n\n|compétence|formation|expérience)/i
-    ];
-    for (const pattern of profilePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.profile = match[1].trim();
-        break;
-      }
-    }
-
-    const experiencePatterns = [
-      /(?:expérience|années)[:\s]+(.+?)(?:\n|$)/i
-    ];
-    for (const pattern of experiencePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.experience_required = match[1].trim();
-        break;
-      }
-    }
-
-    const educationPatterns = [
-      /(?:formation|diplôme|niveau)[:\s]+(.+?)(?:\n|$)/i
-    ];
-    for (const pattern of educationPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.education_level = match[1].trim();
-        break;
-      }
-    }
-
-    const salaryPatterns = [
-      /(?:salaire|rémunération)[:\s]+(.+?)(?:\n|$)/i
-    ];
-    for (const pattern of salaryPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]?.trim()) {
-        extracted.salary_range = match[1].trim();
-        break;
-      }
-    }
-
-    const skillsPatterns = [
-      /(?:compétence|skills)[:\s]+([\s\S]+?)(?:\n\n|formation|avantage|date)/i
-    ];
-    for (const pattern of skillsPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        const skillsText = match[1];
-        const skills = skillsText
-          .split(/[,;\n•\-]/)
-          .map(s => s.trim())
-          .filter(s => s.length > 2 && s.length < 100);
-        if (skills.length > 0) {
-          extracted.skills = skills;
-          break;
-        }
-      }
-    }
-
-    return extracted;
-  };
-
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const fileType = file.name.split('.').pop()?.toLowerCase();
-    if (fileType !== 'pdf' && fileType !== 'docx' && fileType !== 'doc' && fileType !== 'txt') {
-      alert('Format non supporté. Veuillez importer un fichier PDF, DOCX ou TXT.');
+    if (fileType !== 'pdf' && fileType !== 'docx' && fileType !== 'doc') {
+      alert('Format non supporté. Veuillez importer un fichier PDF ou DOCX.');
       return;
     }
 
     setImportingFile(true);
-    setImportedFile(file);
 
     const reader = new FileReader();
     reader.onload = async (event) => {
       const text = event.target?.result as string;
-      const extractedData = extractDataFromText(text);
+
+      const extractedTitle = text.match(/Titre[:\s]+(.+)/i)?.[1] || formData.title;
+      const extractedLocation = text.match(/Localisation[:\s]+(.+)/i)?.[1] || formData.location;
+      const extractedDescription = text.substring(0, 500);
 
       setFormData({
         ...formData,
-        ...extractedData,
-        skills: [...new Set([...formData.skills, ...(extractedData.skills || [])])],
+        title: extractedTitle.trim(),
+        location: extractedLocation.trim(),
+        description: extractedDescription.trim(),
       });
 
       setImportingFile(false);
-      alert('✅ Fichier importé avec succès ! Les champs ont été pré-remplis. Veuillez vérifier et compléter les informations manquantes.');
+      alert('Fichier importé avec succès ! Veuillez vérifier et compléter les informations.');
     };
 
     reader.onerror = () => {
       setImportingFile(false);
-      alert('❌ Erreur lors de l\'import du fichier.');
+      alert('Erreur lors de l\'import du fichier.');
     };
 
     reader.readAsText(file);
@@ -394,40 +269,21 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     alert('✨ Offre générée avec succès par l\'IA ! Vérifiez et ajustez les informations si nécessaire.');
   };
 
-  const getRequiredFields = () => {
-    const required = [
-      { field: 'title', label: 'Titre du poste', value: formData.title },
-      { field: 'location', label: 'Localisation', value: formData.location },
-      { field: 'description', label: 'Présentation du poste', value: formData.description },
-      { field: 'responsibilities', label: 'Responsabilités', value: formData.responsibilities },
-      { field: 'profile', label: 'Profil recherché', value: formData.profile },
-      { field: 'company_name', label: 'Nom de l\'entreprise', value: formData.company_name },
-      { field: 'company_description', label: 'Description de l\'entreprise', value: formData.company_description },
-      { field: 'application_email', label: 'Email de candidature', value: formData.application_email },
-      { field: 'deadline', label: 'Date limite', value: formData.deadline },
-      { field: 'legal_compliance', label: 'Conformité légale', value: formData.legal_compliance },
-    ];
-
-    return required;
-  };
-
-  const getMissingFields = () => {
-    return getRequiredFields().filter(item => !item.value);
-  };
-
-  const isFormValid = () => {
-    return getMissingFields().length === 0;
-  };
-
   const handlePublish = async () => {
     console.log('🔄 handlePublish called');
     console.log('Form data:', formData);
 
-    const missingFields = getMissingFields();
+    const missingFields = [];
+    if (!formData.title) missingFields.push('Titre du poste');
+    if (!formData.location) missingFields.push('Localisation');
+    if (!formData.description) missingFields.push('Présentation du poste');
+    if (!formData.company_name) missingFields.push('Nom de l\'entreprise');
+    if (!formData.application_email) missingFields.push('Email de candidature');
+    if (!formData.deadline) missingFields.push('Date limite');
+    if (!formData.legal_compliance) missingFields.push('Conformité légale (case à cocher)');
 
     if (missingFields.length > 0) {
-      const fieldsList = missingFields.map(f => `• ${f.label}`).join('\n');
-      alert(`⚠️ Veuillez remplir tous les champs obligatoires avant de publier l'offre:\n\n${fieldsList}\n\n📝 Total: ${missingFields.length} champ(s) manquant(s)`);
+      alert(`Veuillez remplir les champs obligatoires manquants:\n\n• ${missingFields.join('\n• ')}`);
       return;
     }
 
@@ -1115,27 +971,6 @@ Description du profil idéal...
             </div>
           </FormSection>
 
-          {!isFormValid() && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-red-900 mb-2">
-                    Champs obligatoires manquants ({getMissingFields().length})
-                  </h4>
-                  <ul className="space-y-1 text-sm text-red-800">
-                    {getMissingFields().map((field, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full"></span>
-                        {field.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
             <button
               type="button"
@@ -1147,9 +982,8 @@ Description du profil idéal...
             <button
               type="button"
               onClick={handlePublish}
-              disabled={!isFormValid() || loading}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
-              title={!isFormValid() ? `${getMissingFields().length} champ(s) obligatoire(s) manquant(s)` : ''}
+              disabled={!formData.title || !formData.location || !formData.description || !formData.company_name || !formData.application_email || !formData.deadline || !formData.legal_compliance || loading}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -1160,11 +994,6 @@ Description du profil idéal...
                 <>
                   <CheckCircle2 className="w-5 h-5" />
                   Publier mon offre
-                  {!isFormValid() && (
-                    <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-                      {getMissingFields().length}
-                    </span>
-                  )}
                 </>
               )}
             </button>
