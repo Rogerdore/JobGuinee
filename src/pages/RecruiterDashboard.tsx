@@ -314,7 +314,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
 
-    const { error } = await supabase.from('jobs').insert({
+    const { data: jobData, error } = await supabase.from('jobs').insert({
       user_id: profile?.id,
       company_id: company.id,
       title: data.title,
@@ -331,22 +331,38 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       status: 'draft',
       is_featured: data.is_premium,
       ai_generated: false,
-    });
+    }).select().single();
 
-    if (!error) {
+    if (!error && jobData) {
+      const { data: publicationResult } = await supabase.rpc('handle_job_publication', {
+        p_job_id: jobData.id,
+        p_company_id: company.id
+      });
+
       setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
-      alert(
-        '✅ Offre soumise avec succès !\n\n' +
-        '📋 Votre offre a été enregistrée et sera examinée par notre équipe.\n\n' +
-        '👨‍💼 Un administrateur va vérifier et valider votre offre avant sa mise en ligne.\n\n' +
-        '📧 Vous recevrez une notification dès que votre offre sera publiée.\n\n' +
-        'Merci pour votre patience !'
-      );
+
+      if (publicationResult?.auto_approved) {
+        alert(
+          '✅ Offre publiée avec succès !\n\n' +
+          '🎉 Votre entreprise dispose d\'un abonnement premium actif.\n\n' +
+          '🚀 Votre offre a été automatiquement publiée et est maintenant visible par tous les candidats.\n\n' +
+          'Vous pouvez commencer à recevoir des candidatures immédiatement !'
+        );
+      } else {
+        alert(
+          '✅ Offre soumise avec succès !\n\n' +
+          '📋 Votre offre a été enregistrée et sera examinée par notre équipe.\n\n' +
+          '💰 Publication payante (50 000 GNF) ou abonnez-vous pour des publications illimitées !\n\n' +
+          '👨‍💼 Un administrateur va vérifier et valider votre offre avant sa mise en ligne.\n\n' +
+          '📧 Vous recevrez une notification dès que votre offre sera publiée.\n\n' +
+          'Merci pour votre patience !'
+        );
+      }
     } else {
       console.error('Error publishing job:', error);
-      alert(`❌ Erreur lors de la publication de l'offre: ${error.message}`);
+      alert(`❌ Erreur lors de la publication de l'offre: ${error?.message || 'Erreur inconnue'}`);
     }
   };
 
