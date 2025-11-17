@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Upload, Image as ImageIcon, FileText, X, Trash2,
-  Move, Maximize2, Eraser, Save, Download, Sparkles
+  Move, Maximize2, Eraser, Save, Download, Sparkles, Link as LinkIcon
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -81,6 +81,23 @@ export default function RichTextEditor({
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    // Configure existing links on mount and when content changes
+    if (editorRef.current) {
+      const links = editorRef.current.querySelectorAll('a');
+      links.forEach(link => {
+        if (!link.hasAttribute('data-configured')) {
+          link.setAttribute('target', '_blank');
+          link.setAttribute('rel', 'noopener noreferrer');
+          link.setAttribute('data-configured', 'true');
+          link.style.color = '#0066cc';
+          link.style.textDecoration = 'underline';
+          link.style.cursor = 'pointer';
+        }
+      });
+    }
+  }, [value]);
 
   useEffect(() => {
     if (!isResizing || !selectedImage || !resizeStart || !resizeHandle) return;
@@ -224,6 +241,40 @@ export default function RichTextEditor({
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     updateContent();
+  };
+
+  const handleCreateLink = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.toString().trim() === '') {
+      alert('⚠️ Veuillez sélectionner du texte avant de créer un lien');
+      return;
+    }
+
+    const url = prompt('Entrez l\'URL du lien:', 'https://');
+    if (url && url.trim()) {
+      execCommand('createLink', url.trim());
+
+      // Ouvrir les liens dans un nouvel onglet
+      setTimeout(() => {
+        if (editorRef.current) {
+          const links = editorRef.current.querySelectorAll('a');
+          links.forEach(link => {
+            if (!link.hasAttribute('data-configured')) {
+              link.setAttribute('target', '_blank');
+              link.setAttribute('rel', 'noopener noreferrer');
+              link.setAttribute('data-configured', 'true');
+              link.style.color = '#0066cc';
+              link.style.textDecoration = 'underline';
+              link.style.cursor = 'pointer';
+            }
+          });
+        }
+      }, 100);
+    }
+  };
+
+  const handleRemoveLink = () => {
+    execCommand('unlink');
   };
 
   const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -1025,6 +1076,25 @@ export default function RichTextEditor({
           </button>
         </div>
 
+        <div className="flex items-center gap-1 border-r pr-2">
+          <button
+            type="button"
+            onClick={handleCreateLink}
+            className="p-2 hover:bg-gray-200 rounded transition"
+            title="Insérer un lien hypertexte"
+          >
+            <LinkIcon className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRemoveLink}
+            className="p-2 hover:bg-gray-200 rounded transition text-red-600"
+            title="Supprimer le lien"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
         <div className="flex items-center gap-2 border-r pr-2">
           <label className="text-xs text-gray-600 font-medium">Couleur:</label>
           <input
@@ -1337,6 +1407,7 @@ export default function RichTextEditor({
         <span className="font-semibold">💡 Astuces:</span>
         <ul className="list-disc list-inside mt-1 space-y-1">
           <li>Formats supportés: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, WEBP, SVG</li>
+          <li><strong>Créer un lien:</strong> Sélectionnez du texte, cliquez sur le bouton 🔗, puis entrez l'URL (le lien s'ouvrira dans un nouvel onglet)</li>
           <li><strong>Coller une image:</strong> Positionnez le curseur où vous voulez, puis Ctrl+V - l'image apparaît exactement à cet endroit</li>
           <li><strong>Déplacer une image:</strong> Glissez-déposez l'image avec la souris pour la repositionner dans le texte</li>
           <li>Cliquez sur une image pour la redimensionner avec les poignées ou les contrôles de la barre d'outils</li>
