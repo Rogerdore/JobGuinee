@@ -91,15 +91,64 @@ export default function FormattedJobDescription({ description }: { description: 
     return htmlTags.test(text);
   };
 
+  const parseInlineFormatting = (text: string): JSX.Element[] => {
+    const elements: JSX.Element[] = [];
+    const parts = text.split(/(##\s|#\s|\*\*)/g);
+    let isHeading2 = false;
+    let isHeading1 = false;
+    let isBold = false;
+    let key = 0;
+
+    parts.forEach((part, index) => {
+      if (part === '## ') {
+        isHeading2 = !isHeading2;
+        return;
+      }
+      if (part === '# ') {
+        isHeading1 = !isHeading1;
+        return;
+      }
+      if (part === '**') {
+        isBold = !isBold;
+        return;
+      }
+
+      if (part.trim()) {
+        if (isHeading2) {
+          elements.push(
+            <span key={key++} style={config.heading_level_2_style}>
+              {part}
+            </span>
+          );
+          isHeading2 = false;
+        } else if (isHeading1) {
+          elements.push(
+            <span key={key++} style={config.heading_level_1_style}>
+              {part}
+            </span>
+          );
+          isHeading1 = false;
+        } else if (isBold) {
+          elements.push(<strong key={key++}>{part}</strong>);
+          isBold = false;
+        } else {
+          elements.push(<span key={key++}>{part}</span>);
+        }
+      }
+    });
+
+    return elements;
+  };
+
   const renderLine = (line: string, index: number) => {
-    if (line.startsWith('# ')) {
+    if (line.startsWith('# ') && !line.includes('##')) {
       return (
         <h1 key={index} style={config.heading_level_1_style}>
           {line.replace('# ', '')}
         </h1>
       );
     }
-    if (line.startsWith('## ')) {
+    if (line.startsWith('## ') && !line.includes('# ')) {
       return (
         <h2 key={index} style={config.heading_level_2_style}>
           {line.replace('## ', '')}
@@ -116,28 +165,25 @@ export default function FormattedJobDescription({ description }: { description: 
     if (line.startsWith('- ')) {
       return (
         <li key={index} style={config.list_style}>
-          {line.replace('- ', '')}
+          {parseInlineFormatting(line.replace('- ', ''))}
         </li>
-      );
-    }
-    if (line.startsWith('**') && line.endsWith('**')) {
-      return (
-        <p key={index} style={{ ...config.text_style, fontWeight: 'bold' }}>
-          {line.replace(/\*\*/g, '')}
-        </p>
       );
     }
     if (line.trim() === '') {
       return <div key={index} style={{ height: '0.5rem' }} />;
     }
+
+    if (line.includes('##') || line.includes('**')) {
+      return (
+        <p key={index} style={config.text_style}>
+          {parseInlineFormatting(line)}
+        </p>
+      );
+    }
+
     return (
       <p key={index} style={config.text_style}>
-        {line.split('**').map((part, i) => {
-          if (i % 2 === 1) {
-            return <strong key={i}>{part}</strong>;
-          }
-          return part;
-        })}
+        {line}
       </p>
     );
   };
