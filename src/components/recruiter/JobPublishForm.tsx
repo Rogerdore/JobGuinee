@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
-  GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
+  GraduationCap, FileText, Users, Mail, Eye, Globe, Share2,
   CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -617,27 +617,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
             </p>
           </div>
 
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-            <button
-              type="button"
-              onClick={handleGenerateWithAI}
-              disabled={isGeneratingAI || !isPremium}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold rounded-xl transition shadow-md ${
-                isPremium
-                  ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
-            >
-              <Sparkles className="w-5 h-5" />
-              <span>{isGeneratingAI ? 'Génération IA...' : 'Générer avec IA'}</span>
-              {!isPremium && <span className="text-xs">(Premium)</span>}
-            </button>
-            <p className="text-xs text-gray-600 mt-2 text-center">
-              {isPremium ? 'Remplir automatiquement avec l\'IA' : 'Abonnement Premium requis'}
-            </p>
-          </div>
-
           <FormSection title="1. Informations générales" icon={FileText}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
@@ -749,6 +728,9 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                   value={formData.description}
                   onChange={(value) => setFormData({ ...formData, description: value })}
                   placeholder="Commencez à rédiger la description de l'offre... Vous pouvez également coller du texte ou importer des fichiers PDF/Images."
+                  onGenerateWithAI={handleGenerateWithAI}
+                  isGeneratingAI={isGeneratingAI}
+                  isPremium={isPremium}
                 />
               </div>
 

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Upload, Image as ImageIcon, FileText, X, Trash2,
-  Move, Maximize2, Eraser, Save, Download
+  Move, Maximize2, Eraser, Save, Download, Sparkles
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -16,6 +16,9 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onGenerateWithAI?: () => void;
+  isGeneratingAI?: boolean;
+  isPremium?: boolean;
 }
 
 interface AttachedFile {
@@ -37,7 +40,14 @@ interface ImageSettings {
   marginRight: number;
 }
 
-export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export default function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  onGenerateWithAI,
+  isGeneratingAI = false,
+  isPremium = false
+}: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -1086,6 +1096,24 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             <Download className="w-4 h-4" />
             <span>Télécharger</span>
           </button>
+
+          {onGenerateWithAI && (
+            <button
+              type="button"
+              onClick={onGenerateWithAI}
+              disabled={isGeneratingAI || !isPremium}
+              className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition ${
+                isPremium
+                  ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              title={!isPremium ? 'Fonctionnalité Premium uniquement' : 'Générer avec IA'}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>{isGeneratingAI ? 'Génération...' : 'Générer avec IA'}</span>
+              {!isPremium && <span className="text-xs">(Premium)</span>}
+            </button>
+          )}
         </div>
       </div>
 
