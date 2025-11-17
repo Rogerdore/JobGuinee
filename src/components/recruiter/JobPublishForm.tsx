@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import SimpleDocumentImporter from './SimpleDocumentImporter';
 import DocumentViewer from './DocumentViewer';
+import RichTextEditor from './RichTextEditor';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -467,19 +468,19 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
             </div>
           </FormSection>
 
-          <FormSection title="2. Description du poste" icon={FileText}>
+          <FormSection title="2. Description de l'offre" icon={FileText}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description complète du poste *
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Description complète de l'offre *
                 </label>
-                <textarea
+                <p className="text-xs text-gray-600 mb-3">
+                  Utilisez l'éditeur ci-dessous pour rédiger, formater, coller du texte, et importer des PDF, images ou scans.
+                </p>
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={12}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none font-mono text-sm"
-                  placeholder="Saisissez la description complète de l'offre ou importez un document...&#10;&#10;Vous pouvez utiliser le format Markdown:&#10;# Titre principal&#10;## Sous-titre&#10;### Titre de niveau 3&#10;&#10;**Texte en gras**&#10;- Liste à puces&#10;- Point 2"
-                  required
+                  onChange={(value) => setFormData({ ...formData, description: value })}
+                  placeholder="Commencez à rédiger la description de l'offre... Vous pouvez également coller du texte ou importer des fichiers PDF/Images."
                 />
               </div>
 
@@ -487,41 +488,48 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                 <button
                   type="button"
                   onClick={() => {
-                    const template = `# ${formData.title || 'TITRE DU POSTE'}
+                    const template = `<h1 style="color: #0E2F56; margin-bottom: 16px;">${formData.title || 'TITRE DU POSTE'}</h1>
+<p style="margin-bottom: 16px;"><strong>Catégorie:</strong> ${formData.category || 'Catégorie'} | <strong>Contrat:</strong> ${formData.contract_type || 'Type de contrat'} | <strong>Postes:</strong> 1</p>
 
-**Catégorie:** ${formData.category || 'Catégorie'} | **Contrat:** ${formData.contract_type || 'Type de contrat'} | **Postes:** 1
+<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">PRÉSENTATION DU POSTE</h2>
+<p>Description du poste et du contexte...</p>
 
-## PRÉSENTATION DU POSTE
-Description du poste et du contexte...
+<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">MISSIONS PRINCIPALES</h2>
+<ul>
+  <li>Mission 1</li>
+  <li>Mission 2</li>
+  <li>Mission 3</li>
+</ul>
 
-## MISSIONS PRINCIPALES
-- Mission 1
-- Mission 2
-- Mission 3
+<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">PROFIL RECHERCHÉ</h2>
+<p>Description du profil idéal...</p>
 
-## PROFIL RECHERCHÉ
-Description du profil idéal...
+<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">COMPÉTENCES CLÉS</h2>
+<ul>
+  <li>Compétence 1</li>
+  <li>Compétence 2</li>
+  <li>Compétence 3</li>
+</ul>
 
-## COMPÉTENCES CLÉS
-- Compétence 1
-- Compétence 2
-- Compétence 3
+<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">QUALIFICATIONS</h2>
+<ul>
+  <li><strong>Niveau d'études:</strong> À compléter</li>
+  <li><strong>Expérience:</strong> À compléter</li>
+  <li><strong>Langues:</strong> À compléter</li>
+</ul>
 
-## QUALIFICATIONS
-- **Niveau d'études:**
-- **Expérience:**
-- **Langues:**
-
-## MODALITÉS DE CANDIDATURE
-- **Email:** ${formData.company_email || 'email@entreprise.com'}
-- **Date limite:** ${formData.deadline || 'À définir'}
-- **Documents requis:** CV, Lettre de motivation`;
+<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">MODALITÉS DE CANDIDATURE</h2>
+<ul>
+  <li><strong>Email:</strong> ${formData.application_email || 'email@entreprise.com'}</li>
+  <li><strong>Date limite:</strong> ${formData.deadline || 'À définir'}</li>
+  <li><strong>Documents requis:</strong> CV, Lettre de motivation</li>
+</ul>`;
                     setFormData({ ...formData, description: template });
                   }}
-                  className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
                 >
                   <Wand2 className="w-5 h-5" />
-                  Utiliser un modèle
+                  Utiliser un modèle professionnel
                 </button>
               </div>
 
