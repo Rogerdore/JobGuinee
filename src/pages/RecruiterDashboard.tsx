@@ -108,10 +108,22 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [selectedJobForPayment, setSelectedJobForPayment] = useState<Job | null>(null);
   const [showPublicationSuccessModal, setShowPublicationSuccessModal] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
   }, [profile?.id]);
+
+  // Check if we need to open the edit form from localStorage
+  useEffect(() => {
+    const editJobId = localStorage.getItem('editJobId');
+    if (editJobId) {
+      setEditingJobId(editJobId);
+      setShowJobForm(true);
+      setActiveTab('projects');
+      localStorage.removeItem('editJobId');
+    }
+  }, []);
 
   useEffect(() => {
     if (profile && !loading && profile.user_type === 'recruiter') {
@@ -267,7 +279,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handlePublishJob = async (data: JobFormData) => {
-    console.log('📤 Publishing job...', { company, data });
+    console.log(editingJobId ? '📝 Updating job...' : '📤 Publishing job...', { company, data });
 
     if (!company?.id) {
       alert("Veuillez d'abord créer votre profil entreprise dans l'onglet 'Profil'");
@@ -276,92 +288,98 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       return;
     }
 
-    let fullDescription = `# ${data.title}\n\n`;
-    fullDescription += `**Catégorie:** ${data.category} | **Contrat:** ${data.contract_type} | **Postes:** ${data.position_count}\n\n`;
+    // Prepare description (use the description directly from the form if it's already formatted)
+    const description = data.description;
 
-    fullDescription += `## Présentation du poste\n${data.description}\n\n`;
-
-    if (data.responsibilities) {
-      fullDescription += `## Missions principales\n${data.responsibilities}\n\n`;
-    }
-
-    if (data.profile) {
-      fullDescription += `## Profil recherché\n${data.profile}\n\n`;
-    }
-
-    if (data.skills.length > 0) {
-      fullDescription += `## Compétences clés\n${data.skills.join(' • ')}\n\n`;
-    }
-
-    fullDescription += `## Qualifications\n`;
-    fullDescription += `- **Niveau d'études:** ${data.education_level}\n`;
-    fullDescription += `- **Expérience:** ${data.experience_required}\n`;
-    if (data.languages.length > 0) {
-      fullDescription += `- **Langues:** ${data.languages.join(', ')}\n`;
-    }
-    fullDescription += `\n`;
-
-    if (data.salary_range) {
-      fullDescription += `## Rémunération\n`;
-      fullDescription += `- **Salaire:** ${data.salary_range}\n`;
-      fullDescription += `- **Type:** ${data.salary_type}\n`;
-      if (data.benefits.length > 0) {
-        fullDescription += `- **Avantages:** ${data.benefits.join(', ')}\n`;
-      }
-      fullDescription += `\n`;
-    }
-
-    if (data.company_description) {
-      fullDescription += `## À propos de l'entreprise\n${data.company_description}\n\n`;
-    }
-
-    fullDescription += `## Modalités de candidature\n`;
-    fullDescription += `- **Email:** ${data.application_email}\n`;
-    fullDescription += `- **Date limite:** ${data.deadline}\n`;
-    if (data.required_documents.length > 0) {
-      fullDescription += `- **Documents requis:** ${data.required_documents.join(', ')}\n`;
-    }
-    if (data.application_instructions) {
-      fullDescription += `\n${data.application_instructions}\n`;
-    }
-    fullDescription += `\n`;
-
-    fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
-
-    const { data: jobData, error } = await supabase.from('jobs').insert({
+    // Prepare job data
+    const jobPayload = {
       user_id: profile?.id,
       company_id: company.id,
+      recruiter_id: profile?.id,
       title: data.title,
-      description: fullDescription,
+      description: description,
       location: data.location,
       contract_type: data.contract_type,
       sector: data.sector,
       department: data.company_name,
       experience_level: data.experience_required,
       education_level: data.education_level,
-      deadline: data.deadline,
+      application_deadline: data.deadline,
       languages: data.languages,
-      keywords: data.skills,
-      status: 'draft',
+      required_skills: data.skills,
+      benefits: data.benefits,
+      application_email: data.application_email,
+      receive_applications_in_platform: data.receive_in_platform,
+      required_documents: data.required_documents,
+      application_instructions: data.application_instructions,
+      visibility: data.visibility,
+      is_premium: data.is_premium,
+      language: data.announcement_language,
+      auto_share_social: data.auto_share,
+      publication_duration: data.publication_duration,
+      auto_renewal: data.auto_renewal,
       is_featured: data.is_premium,
       ai_generated: false,
-    }).select().single();
+    };
+
+    // Parse salary
+    if (data.salary_range) {
+      const salaryParts = data.salary_range.split('-');
+      if (salaryParts.length === 2) {
+        jobPayload.salary_min = parseInt(salaryParts[0]);
+        jobPayload.salary_max = parseInt(salaryParts[1]);
+      } else {
+        jobPayload.salary_min = parseInt(data.salary_range);
+      }
+    }
+
+    let jobData, error;
+
+    if (editingJobId) {
+      // Update existing job
+      const result = await supabase
+        .from('jobs')
+        .update(jobPayload)
+        .eq('id', editingJobId)
+        .select()
+        .single();
+
+      jobData = result.data;
+      error = result.error;
+    } else {
+      // Create new job
+      jobPayload.status = 'draft';
+      const result = await supabase
+        .from('jobs')
+        .insert(jobPayload)
+        .select()
+        .single();
+
+      jobData = result.data;
+      error = result.error;
+    }
 
     if (!error && jobData) {
-      const { data: publicationResult } = await supabase.rpc('handle_job_publication', {
-        p_job_id: jobData.id,
-        p_company_id: company.id
-      });
+      if (!editingJobId) {
+        // Only handle publication for new jobs
+        const { data: publicationResult } = await supabase.rpc('handle_job_publication', {
+          p_job_id: jobData.id,
+          p_company_id: company.id
+        });
+
+        setIsSubscribed(publicationResult?.auto_approved || false);
+        setShowPublicationSuccessModal(true);
+      } else {
+        alert('✅ Offre modifiée avec succès!');
+      }
 
       setShowJobForm(false);
+      setEditingJobId(null);
       await loadData();
       setActiveTab('projects');
-
-      setIsSubscribed(publicationResult?.auto_approved || false);
-      setShowPublicationSuccessModal(true);
     } else {
-      console.error('Error publishing job:', error);
-      alert(`❌ Erreur lors de la publication de l'offre: ${error?.message || 'Erreur inconnue'}`);
+      console.error('Error publishing/updating job:', error);
+      alert(`❌ Erreur: ${error?.message || 'Erreur inconnue'}`);
     }
   };
 
@@ -637,7 +655,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       {showJobForm && (
         <JobPublishForm
           onPublish={handlePublishJob}
-          onClose={() => setShowJobForm(false)}
+          onClose={() => {
+            setShowJobForm(false);
+            setEditingJobId(null);
+          }}
           companyData={company ? {
             name: company.name,
             description: company.description,
@@ -647,6 +668,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             email: company.email,
             benefits: company.benefits
           } : undefined}
+          editJobId={editingJobId}
         />
       )}
 

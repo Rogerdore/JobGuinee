@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Eye, Globe, Share2,
   CheckCircle2, Upload as UploadIcon, Download, Wand2, Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
 
 interface JobPublishFormProps {
@@ -19,6 +20,7 @@ interface JobPublishFormProps {
     email?: string;
     benefits?: string[];
   };
+  editJobId?: string | null;
 }
 
 export interface JobFormData {
@@ -67,7 +69,7 @@ const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any
   </div>
 );
 
-export default function JobPublishForm({ onPublish, onClose, companyData }: JobPublishFormProps) {
+export default function JobPublishForm({ onPublish, onClose, companyData, editJobId }: JobPublishFormProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -78,6 +80,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [previousDescription, setPreviousDescription] = useState<string>('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -113,6 +116,79 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     auto_renewal: false,
     legal_compliance: false,
   });
+
+  // Load job data if editing
+  useEffect(() => {
+    if (editJobId) {
+      loadJobData(editJobId);
+    }
+  }, [editJobId]);
+
+  const loadJobData = async (jobId: string) => {
+    try {
+      setLoading(true);
+      const { data: job, error } = await supabase
+        .from('jobs')
+        .select('*, companies(*)')
+        .eq('id', jobId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (job) {
+        setIsEditMode(true);
+
+        // Parse salary range
+        let salaryRange = '';
+        let salaryType = 'Fixe';
+        if (job.salary_min && job.salary_max) {
+          salaryRange = `${job.salary_min}-${job.salary_max}`;
+          salaryType = 'Fourchette';
+        } else if (job.salary_min) {
+          salaryRange = job.salary_min.toString();
+          salaryType = 'Minimum';
+        }
+
+        setFormData({
+          title: job.title || '',
+          category: job.category || 'Ressources Humaines',
+          contract_type: job.contract_type || 'CDI',
+          position_count: job.positions_available || 1,
+          position_level: job.experience_level || 'Intermédiaire',
+          deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().split('T')[0] : '',
+          description: job.description || '',
+          skills: job.required_skills || [],
+          education_level: job.education_level || 'Licence',
+          experience_required: job.experience_required || '3–5 ans',
+          languages: job.languages || [],
+          company_name: job.companies?.company_name || '',
+          sector: job.sector || 'Mines',
+          location: job.location || '',
+          company_description: job.companies?.description || '',
+          website: job.companies?.website || '',
+          salary_range: salaryRange,
+          salary_type: salaryType,
+          benefits: job.benefits || [],
+          application_email: job.application_email || '',
+          receive_in_platform: job.receive_applications_in_platform || true,
+          required_documents: job.required_documents || [],
+          application_instructions: job.application_instructions || '',
+          visibility: job.visibility || 'public',
+          is_premium: job.is_premium || false,
+          announcement_language: job.language || 'Français',
+          auto_share: job.auto_share_social || false,
+          publication_duration: job.publication_duration || '30 jours',
+          auto_renewal: job.auto_renewal || false,
+          legal_compliance: false,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading job data:', error);
+      alert('Erreur lors du chargement des données de l\'offre');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
@@ -624,8 +700,12 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
               <Briefcase className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Publier une offre d'emploi</h2>
-              <p className="text-sm text-blue-100">Créez votre annonce professionnelle complète</p>
+              <h2 className="text-2xl font-bold">
+                {isEditMode ? 'Modifier l\'offre d\'emploi' : 'Publier une offre d\'emploi'}
+              </h2>
+              <p className="text-sm text-blue-100">
+                {isEditMode ? 'Modifiez les informations de votre annonce' : 'Créez votre annonce professionnelle complète'}
+              </p>
             </div>
           </div>
           <button
@@ -1342,12 +1422,12 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
               {loading ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
-                  Publication en cours...
+                  {isEditMode ? 'Enregistrement...' : 'Publication en cours...'}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-5 h-5" />
-                  Publier mon offre
+                  {isEditMode ? 'Enregistrer les modifications' : 'Publier mon offre'}
                 </>
               )}
             </button>

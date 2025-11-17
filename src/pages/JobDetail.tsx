@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft,
   FileText, Users, GraduationCap, Globe, Mail, CheckCircle2,
-  Clock, Tag, Languages
+  Clock, Tag, Languages, Edit
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
@@ -26,12 +26,22 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
+  const isJobOwner = isRecruiter && job && user && job.recruiter_id === user.id;
 
   const handleGoBack = () => {
     if (isRecruiter) {
       onNavigate('recruiter-dashboard');
     } else {
       onNavigate('jobs');
+    }
+  };
+
+  const handleEditJob = () => {
+    if (isJobOwner) {
+      // Navigate to recruiter dashboard with edit mode
+      onNavigate('recruiter-dashboard');
+      // Store the job ID to edit in localStorage so the dashboard can open the edit form
+      localStorage.setItem('editJobId', jobId);
     }
   };
 
@@ -216,6 +226,15 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             <span>{isRecruiter ? 'Retour au tableau de bord' : 'Retour aux offres'}</span>
           </button>
 
+          {isJobOwner && (
+            <button
+              onClick={handleEditJob}
+              className="flex items-center space-x-2 px-6 py-3 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-lg transition shadow-lg"
+            >
+              <Edit className="w-4 h-4" />
+              <span>Modifier l'offre</span>
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
