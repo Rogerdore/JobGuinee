@@ -22,6 +22,10 @@ import {
   MessageCircle,
   Calendar,
   Mail,
+  CheckCircle,
+  Bell,
+  ShieldCheck,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -102,6 +106,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [selectedApplicationForProfile, setSelectedApplicationForProfile] = useState<any>(null);
   const [showPaymentContactModal, setShowPaymentContactModal] = useState(false);
   const [selectedJobForPayment, setSelectedJobForPayment] = useState<Job | null>(null);
+  const [showPublicationSuccessModal, setShowPublicationSuccessModal] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -351,23 +357,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       await loadData();
       setActiveTab('projects');
 
-      if (publicationResult?.auto_approved) {
-        alert(
-          '✅ Offre publiée avec succès !\n\n' +
-          '🎉 Votre entreprise dispose d\'un abonnement premium actif.\n\n' +
-          '🚀 Votre offre a été automatiquement publiée et est maintenant visible par tous les candidats.\n\n' +
-          'Vous pouvez commencer à recevoir des candidatures immédiatement !'
-        );
-      } else {
-        alert(
-          '✅ Offre soumise avec succès !\n\n' +
-          '📋 Votre offre a été enregistrée et sera examinée par notre équipe.\n\n' +
-          '💰 Publication payante (50 000 GNF) ou abonnez-vous pour des publications illimitées !\n\n' +
-          '👨‍💼 Un administrateur va vérifier et valider votre offre avant sa mise en ligne.\n\n' +
-          '📧 Vous recevrez une notification dès que votre offre sera publiée.\n\n' +
-          'Merci pour votre patience !'
-        );
-      }
+      setIsSubscribed(publicationResult?.auto_approved || false);
+      setShowPublicationSuccessModal(true);
     } else {
       console.error('Error publishing job:', error);
       alert(`❌ Erreur lors de la publication de l'offre: ${error?.message || 'Erreur inconnue'}`);
@@ -1618,6 +1609,185 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 >
                   Ouvrir l'email
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPublicationSuccessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-100 p-3 rounded-full">
+                      <CheckCircle className="w-8 h-8 text-green-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {isSubscribed ? 'Offre publiée avec succès !' : 'Offre soumise avec succès !'}
+                      </h2>
+                      <p className="text-gray-600 mt-1">
+                        {isSubscribed ? 'Votre annonce est maintenant en ligne' : 'Votre annonce est en cours de validation'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowPublicationSuccessModal(false)}
+                    className="text-gray-400 hover:text-gray-600 transition"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {isSubscribed ? (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-green-100 p-2 rounded-lg">
+                          <Sparkles className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-green-900 text-lg mb-2">
+                            Abonnement Premium Actif
+                          </h3>
+                          <p className="text-green-800">
+                            Votre entreprise dispose d'un abonnement premium actif. Votre offre a été automatiquement publiée et est maintenant visible par tous les candidats.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                      <div className="flex items-start gap-3">
+                        <Target className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-blue-900 mb-1">Offre en ligne immédiatement</h4>
+                          <p className="text-blue-800 text-sm">
+                            Vous pouvez commencer à recevoir des candidatures dès maintenant. Les candidats peuvent voir et postuler à votre offre.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
+                      <div className="flex items-start gap-3">
+                        <Bell className="w-5 h-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-purple-900 mb-1">Notifications actives</h4>
+                          <p className="text-purple-800 text-sm">
+                            Vous recevrez une notification pour chaque nouvelle candidature reçue.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-blue-100 p-2 rounded-lg">
+                          <FileText className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-blue-900 text-lg mb-2">
+                            Offre enregistrée
+                          </h3>
+                          <p className="text-blue-800">
+                            Votre offre a été enregistrée et sera examinée par notre équipe d'administration avant sa publication.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-amber-100 p-2 rounded-lg">
+                          <CreditCard className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-amber-900 text-lg mb-2">
+                            Options de publication
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex items-start gap-2">
+                              <div className="bg-amber-200 rounded-full w-2 h-2 mt-2"></div>
+                              <p className="text-amber-900">
+                                <span className="font-semibold">Publication unique :</span> 50 000 GNF par offre
+                              </p>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <div className="bg-amber-200 rounded-full w-2 h-2 mt-2"></div>
+                              <p className="text-amber-900">
+                                <span className="font-semibold">Abonnement Premium :</span> Publications illimitées + validation automatique
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                      <div className="flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-gray-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-1">Validation administrative</h4>
+                          <p className="text-gray-700 text-sm">
+                            Un administrateur va vérifier et valider votre offre avant sa mise en ligne. Ce processus garantit la qualité des offres sur notre plateforme.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+                      <div className="flex items-start gap-3">
+                        <Bell className="w-5 h-5 text-green-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-green-900 mb-1">Notification de publication</h4>
+                          <p className="text-green-800 text-sm">
+                            Vous recevrez une notification dès que votre offre sera publiée et visible par les candidats.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Sparkles className="w-6 h-6" />
+                        <h4 className="font-bold text-lg">Passez au Premium dès maintenant !</h4>
+                      </div>
+                      <p className="text-blue-100 mb-4">
+                        Bénéficiez de publications illimitées, de validations automatiques et d'outils de recrutement avancés.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setShowPublicationSuccessModal(false);
+                          setActiveTab('subscription');
+                        }}
+                        className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+                      >
+                        Découvrir les offres Premium
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="bg-gray-50 rounded-lg p-4 text-center">
+                    <p className="text-gray-600 font-medium">
+                      Merci pour votre patience et votre confiance ! 🙏
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowPublicationSuccessModal(false)}
+                    className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition font-semibold"
+                  >
+                    Fermer
+                  </button>
+                </div>
               </div>
             </div>
           </div>
