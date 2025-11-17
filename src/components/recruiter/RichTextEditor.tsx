@@ -302,6 +302,82 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     }
   };
 
+  const handleImageDragStart = (e: DragEvent) => {
+    const img = e.target as HTMLImageElement;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', img.outerHTML);
+      img.style.opacity = '0.4';
+    }
+  };
+
+  const handleImageDragEnd = (e: DragEvent) => {
+    const img = e.target as HTMLImageElement;
+    img.style.opacity = '1';
+  };
+
+  const handleEditorDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleEditorDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const html = e.dataTransfer.getData('text/html');
+    if (html && html.includes('editor-image')) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const droppedImg = tempDiv.querySelector('img');
+
+      if (droppedImg && editorRef.current) {
+        const allImages = editorRef.current.querySelectorAll('img.editor-image');
+        allImages.forEach(img => {
+          if (img.getAttribute('src') === droppedImg.getAttribute('src')) {
+            img.remove();
+          }
+        });
+
+        const selection = window.getSelection();
+        let range: Range;
+
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+        }
+
+        const newImg = document.createElement('img');
+        newImg.src = droppedImg.src;
+        newImg.alt = droppedImg.alt;
+        newImg.style.cssText = droppedImg.style.cssText;
+        newImg.draggable = true;
+        newImg.className = 'editor-image';
+        newImg.style.cursor = 'move';
+
+        newImg.addEventListener('dragstart', handleImageDragStart);
+        newImg.addEventListener('dragend', handleImageDragEnd);
+
+        range.insertNode(newImg);
+        range.setStartAfter(newImg);
+        range.collapse(true);
+
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+
+        updateContent();
+      }
+    }
+  };
+
   const insertImageToEditor = (imageUrl: string, imageName: string) => {
     if (editorRef.current) {
       const img = document.createElement('img');
@@ -310,13 +386,31 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       img.style.width = '400px';
       img.style.height = 'auto';
       img.style.maxWidth = '100%';
-      img.style.margin = '10px 0';
+      img.style.margin = '10px';
       img.style.borderRadius = '8px';
-      img.style.cursor = 'pointer';
-      img.style.display = 'block';
+      img.style.cursor = 'move';
+      img.style.display = 'inline-block';
+      img.style.verticalAlign = 'middle';
+      img.draggable = true;
       img.className = 'editor-image';
 
-      editorRef.current.appendChild(img);
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(img);
+
+        range.setStartAfter(img);
+        range.setEndAfter(img);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        editorRef.current.appendChild(img);
+      }
+
+      img.addEventListener('dragstart', handleImageDragStart);
+      img.addEventListener('dragend', handleImageDragEnd);
+
       updateContent();
     }
   };
@@ -1069,6 +1163,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         onInput={updateContent}
         onPaste={handlePaste}
         onClick={handleImageClick}
+        onDragOver={handleEditorDragOver}
+        onDrop={handleEditorDrop}
         dangerouslySetInnerHTML={{ __html: value }}
         className="w-full min-h-[400px] max-h-[600px] overflow-y-auto p-4 focus:outline-none prose prose-sm max-w-none"
         style={{
@@ -1089,9 +1185,10 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         <span className="font-semibold">💡 Astuces:</span>
         <ul className="list-disc list-inside mt-1 space-y-1">
           <li>Formats supportés: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, WEBP, SVG</li>
-          <li>Cliquez sur une image pour la redimensionner avec les poignées ou les contrôles</li>
+          <li><strong>Coller une image:</strong> Positionnez le curseur où vous voulez, puis Ctrl+V - l'image apparaît exactement à cet endroit</li>
+          <li><strong>Déplacer une image:</strong> Glissez-déposez l'image avec la souris pour la repositionner dans le texte</li>
+          <li>Cliquez sur une image pour la redimensionner avec les poignées ou les contrôles de la barre d'outils</li>
           <li>Les documents Word et TXT sont éditables directement dans l'éditeur</li>
-          <li>Glissez-collez (Ctrl+V) pour insérer du texte ou des images depuis le presse-papiers</li>
         </ul>
       </div>
     </div>
