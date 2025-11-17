@@ -1382,6 +1382,7 @@ export default function RichTextEditor({
       <div
         ref={editorRef}
         contentEditable
+        dir="ltr"
         onInput={updateContent}
         onPaste={handlePaste}
         onClick={handleImageClick}
@@ -1391,7 +1392,10 @@ export default function RichTextEditor({
         className="w-full min-h-[400px] max-h-[600px] overflow-y-auto p-4 focus:outline-none prose prose-sm max-w-none"
         style={{
           minHeight: '400px',
-          maxHeight: '600px'
+          maxHeight: '600px',
+          direction: 'ltr',
+          textAlign: 'left',
+          unicodeBidi: 'plaintext'
         }}
       />
 
