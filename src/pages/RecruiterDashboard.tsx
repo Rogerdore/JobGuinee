@@ -721,25 +721,36 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         </div>
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <div className="animate-fade-in">
-              <h1 className="text-5xl font-bold mb-3 flex items-center">
-                <Sparkles className="w-12 h-12 mr-3 text-[#FF8C00] animate-pulse" />
-                Espace Recruteur ATS
-              </h1>
-              <p className="text-blue-100 text-lg">
-                Gestion intelligente du processus de recrutement avec IA
-              </p>
-              {company ? (
-                <div className="mt-2 flex items-center text-sm text-blue-200">
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  {company.name}
-                </div>
-              ) : (
-                <div className="mt-2 flex items-center text-sm text-[#FF8C00] font-semibold">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Mode Démonstration
+            <div className="animate-fade-in flex items-start gap-4">
+              {company?.logo_url && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={company.logo_url}
+                    alt={company.name}
+                    className="w-24 h-24 rounded-xl bg-white object-cover border-4 border-white/30 shadow-lg"
+                  />
                 </div>
               )}
+              <div>
+                <h1 className="text-5xl font-bold mb-3 flex items-center">
+                  <Sparkles className="w-12 h-12 mr-3 text-[#FF8C00] animate-pulse" />
+                  Espace Recruteur ATS
+                </h1>
+                <p className="text-blue-100 text-lg">
+                  Gestion intelligente du processus de recrutement avec IA
+                </p>
+                {company ? (
+                  <div className="mt-2 flex items-center text-sm text-blue-200">
+                    <Briefcase className="w-4 h-4 mr-2" />
+                    {company.name}
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center text-sm text-[#FF8C00] font-semibold">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Mode Démonstration
+                  </div>
+                )}
+              </div>
             </div>
             <button
               onClick={handleOpenJobForm}
