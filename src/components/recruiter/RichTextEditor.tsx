@@ -54,19 +54,161 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     marginRight: 0
   });
   const [showImageToolbar, setShowImageToolbar] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<'se' | 'sw' | 'ne' | 'nw' | 'e' | 'w' | 's' | 'n' | null>(null);
+  const [resizeStart, setResizeStart] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName !== 'IMG' && !target.closest('.image-toolbar')) {
+      if (target.tagName !== 'IMG' && !target.closest('.image-toolbar') && !target.closest('.resize-handle')) {
         setSelectedImage(null);
         setShowImageToolbar(false);
+        removeResizeHandles();
       }
     };
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isResizing || !selectedImage || !resizeStart || !resizeHandle) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+
+      let newWidth = resizeStart.width;
+      let newHeight = resizeStart.height;
+
+      switch (resizeHandle) {
+        case 'se':
+          newWidth = Math.max(50, resizeStart.width + deltaX);
+          break;
+        case 'sw':
+          newWidth = Math.max(50, resizeStart.width - deltaX);
+          break;
+        case 'ne':
+          newWidth = Math.max(50, resizeStart.width + deltaX);
+          break;
+        case 'nw':
+          newWidth = Math.max(50, resizeStart.width - deltaX);
+          break;
+        case 'e':
+          newWidth = Math.max(50, resizeStart.width + deltaX);
+          break;
+        case 'w':
+          newWidth = Math.max(50, resizeStart.width - deltaX);
+          break;
+      }
+
+      selectedImage.style.width = `${newWidth}px`;
+      selectedImage.style.height = 'auto';
+
+      setImageSettings(prev => ({
+        ...prev,
+        width: newWidth,
+        height: Math.round(newWidth * (resizeStart.height / resizeStart.width))
+      }));
+
+      updateResizeHandles();
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setResizeHandle(null);
+      updateContent();
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, selectedImage, resizeStart, resizeHandle]);
+
+  const addResizeHandles = (img: HTMLImageElement) => {
+    removeResizeHandles();
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'image-resize-wrapper';
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'inline-block';
+    wrapper.style.border = '2px solid #3b82f6';
+    wrapper.style.boxShadow = '0 0 0 1px rgba(59, 130, 246, 0.5)';
+
+    img.parentNode?.insertBefore(wrapper, img);
+    wrapper.appendChild(img);
+
+    const handles = [
+      { position: 'nw', cursor: 'nw-resize', top: '-6px', left: '-6px' },
+      { position: 'ne', cursor: 'ne-resize', top: '-6px', right: '-6px' },
+      { position: 'sw', cursor: 'sw-resize', bottom: '-6px', left: '-6px' },
+      { position: 'se', cursor: 'se-resize', bottom: '-6px', right: '-6px' },
+      { position: 'n', cursor: 'n-resize', top: '-6px', left: '50%', transform: 'translateX(-50%)' },
+      { position: 's', cursor: 's-resize', bottom: '-6px', left: '50%', transform: 'translateX(-50%)' },
+      { position: 'w', cursor: 'w-resize', top: '50%', left: '-6px', transform: 'translateY(-50%)' },
+      { position: 'e', cursor: 'e-resize', top: '50%', right: '-6px', transform: 'translateY(-50%)' }
+    ];
+
+    handles.forEach(({ position, cursor, top, right, bottom, left, transform }) => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle resize-handle-${position}`;
+      handle.style.position = 'absolute';
+      handle.style.width = '12px';
+      handle.style.height = '12px';
+      handle.style.backgroundColor = '#3b82f6';
+      handle.style.border = '2px solid white';
+      handle.style.borderRadius = '50%';
+      handle.style.cursor = cursor;
+      handle.style.zIndex = '1000';
+      handle.style.boxShadow = '0 0 0 1px rgba(0, 0, 0, 0.1)';
+
+      if (top) handle.style.top = top;
+      if (right) handle.style.right = right;
+      if (bottom) handle.style.bottom = bottom;
+      if (left) handle.style.left = left;
+      if (transform) handle.style.transform = transform;
+
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        setResizeHandle(position as any);
+        setResizeStart({
+          x: e.clientX,
+          y: e.clientY,
+          width: img.offsetWidth,
+          height: img.offsetHeight
+        });
+      });
+
+      wrapper.appendChild(handle);
+    });
+  };
+
+  const removeResizeHandles = () => {
+    const wrappers = editorRef.current?.querySelectorAll('.image-resize-wrapper');
+    wrappers?.forEach(wrapper => {
+      const img = wrapper.querySelector('img');
+      if (img && wrapper.parentNode) {
+        wrapper.parentNode.insertBefore(img, wrapper);
+        wrapper.remove();
+      }
+    });
+  };
+
+  const updateResizeHandles = () => {
+    if (selectedImage) {
+      const wrapper = selectedImage.closest('.image-resize-wrapper');
+      if (wrapper) {
+        // Les handles sont automatiquement repositionnés car ils sont en position absolute
+      }
+    }
+  };
 
   const execCommand = (command: string, value: string = '') => {
     document.execCommand(command, false, value);
@@ -81,13 +223,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   const updateContent = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
-      const filesHtml = attachedFiles.map(file => {
-        if (file.type === 'pdf') {
-          return `<div class="attached-pdf" style="background: #f3f4f6; padding: 16px; margin: 10px 0; border-radius: 8px; border: 2px solid #e5e7eb;">${file.content || ''}</div>`;
-        }
-        return '';
-      }).join('');
-      onChange(html + filesHtml);
+      onChange(html);
     }
   };
 
@@ -97,8 +233,11 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       e.preventDefault();
       e.stopPropagation();
       const img = target as HTMLImageElement;
+
+      removeResizeHandles();
       setSelectedImage(img);
       setShowImageToolbar(true);
+      addResizeHandles(img);
 
       const computedStyle = window.getComputedStyle(img);
       const currentSettings: ImageSettings = {
@@ -148,11 +287,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       }
     }
 
+    removeResizeHandles();
+    addResizeHandles(selectedImage);
     updateContent();
   };
 
   const deleteSelectedImage = () => {
     if (selectedImage) {
+      removeResizeHandles();
       selectedImage.remove();
       setSelectedImage(null);
       setShowImageToolbar(false);
@@ -207,6 +349,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           let pdfContent = `<h4 style="color: #0E2F56; margin-bottom: 8px;">📄 ${file.name}</h4>`;
 
           const numPages = Math.min(pdf.numPages, 3);
+          const pdfImages: string[] = [];
+
           for (let i = 1; i <= numPages; i++) {
             const page = await pdf.getPage(i);
             const viewport = page.getViewport({ scale: 1.5 });
@@ -222,12 +366,53 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
               }).promise;
 
               const pageDataUrl = canvas.toDataURL();
-              pdfContent += `<div style="margin: 8px 0;"><img src="${pageDataUrl}" style="max-width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 4px;" /></div>`;
+              pdfImages.push(pageDataUrl);
             }
           }
 
-          if (pdf.numPages > 3) {
-            pdfContent += `<p style="color: #6b7280; font-size: 14px; margin-top: 8px;">... et ${pdf.numPages - 3} page(s) supplémentaire(s)</p>`;
+          if (editorRef.current) {
+            const pdfContainer = document.createElement('div');
+            pdfContainer.className = 'pdf-container';
+            pdfContainer.style.margin = '16px 0';
+            pdfContainer.style.padding = '16px';
+            pdfContainer.style.background = '#f9fafb';
+            pdfContainer.style.border = '2px solid #e5e7eb';
+            pdfContainer.style.borderRadius = '8px';
+
+            const title = document.createElement('h4');
+            title.textContent = `📄 ${file.name}`;
+            title.style.color = '#0E2F56';
+            title.style.marginBottom = '12px';
+            title.style.fontSize = '16px';
+            title.style.fontWeight = '600';
+            pdfContainer.appendChild(title);
+
+            pdfImages.forEach((dataUrl, index) => {
+              const img = document.createElement('img');
+              img.src = dataUrl;
+              img.alt = `${file.name} - Page ${index + 1}`;
+              img.style.width = '600px';
+              img.style.height = 'auto';
+              img.style.maxWidth = '100%';
+              img.style.margin = '8px 0';
+              img.style.border = '1px solid #e5e7eb';
+              img.style.borderRadius = '4px';
+              img.style.cursor = 'pointer';
+              img.style.display = 'block';
+              img.className = 'editor-image pdf-page';
+              pdfContainer.appendChild(img);
+            });
+
+            if (pdf.numPages > 3) {
+              const moreText = document.createElement('p');
+              moreText.textContent = `... et ${pdf.numPages - 3} page(s) supplémentaire(s)`;
+              moreText.style.color = '#6b7280';
+              moreText.style.fontSize = '14px';
+              moreText.style.marginTop = '8px';
+              pdfContainer.appendChild(moreText);
+            }
+
+            editorRef.current.appendChild(pdfContainer);
           }
 
           const newFile: AttachedFile = {
@@ -235,7 +420,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             type: 'pdf',
             url: fileUrl,
             name: file.name,
-            content: pdfContent
+            content: ''
           };
           setAttachedFiles(prev => [...prev, newFile]);
         } catch (error) {
