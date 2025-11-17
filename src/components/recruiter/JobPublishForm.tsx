@@ -642,14 +642,48 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
-                  <option value="Ressources Humaines">Ressources Humaines</option>
+                  <option value="Administration">Administration</option>
+                  <option value="Agriculture">Agriculture / Agroalimentaire</option>
+                  <option value="Architecture">Architecture / Urbanisme</option>
+                  <option value="Assurance">Assurance</option>
+                  <option value="Audit">Audit / Conseil</option>
+                  <option value="Automobile">Automobile</option>
+                  <option value="Banque">Banque</option>
+                  <option value="BTP">BTP / Construction</option>
+                  <option value="Commerce">Commerce / Distribution</option>
+                  <option value="Communication">Communication / Marketing</option>
+                  <option value="Comptabilité">Comptabilité / Gestion</option>
+                  <option value="Culture">Culture / Arts</option>
+                  <option value="Défense">Défense / Sécurité</option>
+                  <option value="Design">Design / Création</option>
+                  <option value="Droit">Droit / Juridique</option>
+                  <option value="Éducation">Éducation / Formation</option>
+                  <option value="Énergie">Énergie / Utilities</option>
+                  <option value="Environnement">Environnement / Développement Durable</option>
                   <option value="Finance">Finance</option>
-                  <option value="Mines">Mines</option>
-                  <option value="Sécurité">Sécurité</option>
-                  <option value="Transport">Transport</option>
+                  <option value="Hôtellerie">Hôtellerie / Restauration</option>
+                  <option value="Immobilier">Immobilier</option>
+                  <option value="Industrie">Industrie / Manufacturing</option>
+                  <option value="Ingénierie">Ingénierie</option>
                   <option value="IT">IT / Informatique</option>
-                  <option value="BTP">BTP</option>
-                  <option value="Santé">Santé</option>
+                  <option value="Logistique">Logistique / Supply Chain</option>
+                  <option value="Médias">Médias / Presse</option>
+                  <option value="Mines">Mines / Métallurgie</option>
+                  <option value="ONG">ONG / Humanitaire</option>
+                  <option value="Pétrole">Pétrole / Gaz</option>
+                  <option value="Pharmacie">Pharmacie</option>
+                  <option value="Production">Production / Manufacturing</option>
+                  <option value="Qualité">Qualité / HSE</option>
+                  <option value="Recherche">Recherche & Développement</option>
+                  <option value="Ressources Humaines">Ressources Humaines</option>
+                  <option value="Santé">Santé / Médical</option>
+                  <option value="Services">Services aux Entreprises</option>
+                  <option value="Sport">Sport / Loisirs</option>
+                  <option value="Télécommunications">Télécommunications</option>
+                  <option value="Tourisme">Tourisme</option>
+                  <option value="Transport">Transport / Logistique</option>
+                  <option value="Vente">Vente / Commercial</option>
+                  <option value="Autre">Autre</option>
                 </select>
               </div>
 
@@ -887,13 +921,48 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                   onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
-                  <option value="Mines">Mines</option>
-                  <option value="BTP">BTP</option>
-                  <option value="RH">Ressources Humaines</option>
-                  <option value="Comptabilité">Comptabilité</option>
-                  <option value="Sécurité">Sécurité</option>
-                  <option value="Transport">Transport</option>
+                  <option value="Administration">Administration</option>
+                  <option value="Agriculture">Agriculture / Agroalimentaire</option>
+                  <option value="Architecture">Architecture / Urbanisme</option>
+                  <option value="Assurance">Assurance</option>
+                  <option value="Audit">Audit / Conseil</option>
+                  <option value="Automobile">Automobile</option>
+                  <option value="Banque">Banque</option>
+                  <option value="BTP">BTP / Construction</option>
+                  <option value="Commerce">Commerce / Distribution</option>
+                  <option value="Communication">Communication / Marketing</option>
+                  <option value="Comptabilité">Comptabilité / Gestion</option>
+                  <option value="Culture">Culture / Arts</option>
+                  <option value="Défense">Défense / Sécurité</option>
+                  <option value="Design">Design / Création</option>
+                  <option value="Droit">Droit / Juridique</option>
+                  <option value="Éducation">Éducation / Formation</option>
+                  <option value="Énergie">Énergie / Utilities</option>
+                  <option value="Environnement">Environnement / Développement Durable</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Hôtellerie">Hôtellerie / Restauration</option>
+                  <option value="Immobilier">Immobilier</option>
+                  <option value="Industrie">Industrie / Manufacturing</option>
+                  <option value="Ingénierie">Ingénierie</option>
                   <option value="IT">IT / Informatique</option>
+                  <option value="Logistique">Logistique / Supply Chain</option>
+                  <option value="Médias">Médias / Presse</option>
+                  <option value="Mines">Mines / Métallurgie</option>
+                  <option value="ONG">ONG / Humanitaire</option>
+                  <option value="Pétrole">Pétrole / Gaz</option>
+                  <option value="Pharmacie">Pharmacie</option>
+                  <option value="Production">Production / Manufacturing</option>
+                  <option value="Qualité">Qualité / HSE</option>
+                  <option value="Recherche">Recherche & Développement</option>
+                  <option value="RH">Ressources Humaines</option>
+                  <option value="Santé">Santé / Médical</option>
+                  <option value="Services">Services aux Entreprises</option>
+                  <option value="Sport">Sport / Loisirs</option>
+                  <option value="Télécommunications">Télécommunications</option>
+                  <option value="Tourisme">Tourisme</option>
+                  <option value="Transport">Transport / Logistique</option>
+                  <option value="Vente">Vente / Commercial</option>
+                  <option value="Autre">Autre</option>
                 </select>
               </div>
 
