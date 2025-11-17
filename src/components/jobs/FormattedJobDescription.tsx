@@ -23,7 +23,7 @@ interface FormattingConfig {
 
 const defaultConfig: FormattingConfig = {
   heading_level_1_style: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     textTransform: 'uppercase',
     fontSize: '1.5rem',
     color: '#0E2F56',
@@ -31,7 +31,7 @@ const defaultConfig: FormattingConfig = {
     marginBottom: '1rem',
   },
   heading_level_2_style: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     textTransform: 'uppercase',
     fontSize: '1.25rem',
     color: '#FF8C00',
@@ -39,7 +39,7 @@ const defaultConfig: FormattingConfig = {
     marginBottom: '0.75rem',
   },
   heading_level_3_style: {
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'capitalize',
     fontSize: '1.1rem',
     color: '#0E2F56',

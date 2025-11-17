@@ -235,7 +235,7 @@
 
   .rich-text-content h1 {
     font-size: 1.875rem;
-    font-weight: 700;
+    font-weight: 700 !important;
     color: #0E2F56;
     margin-top: 1.5rem;
     margin-bottom: 1rem;
@@ -243,7 +243,7 @@
 
   .rich-text-content h2 {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 700 !important;
     color: #0E2F56;
     margin-top: 1.25rem;
     margin-bottom: 0.75rem;
@@ -251,7 +251,7 @@
 
   .rich-text-content h3 {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700 !important;
     color: #374151;
     margin-top: 1rem;
     margin-bottom: 0.5rem;
@@ -259,7 +259,40 @@
 
   .rich-text-content h4 {
     font-size: 1.125rem;
-    font-weight: 600;
+    font-weight: 700 !important;
+    color: #374151;
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Styles for formatted description (non-HTML content) */
+  .formatted-description h1 {
+    font-size: 1.875rem;
+    font-weight: 700 !important;
+    color: #0E2F56;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .formatted-description h2 {
+    font-size: 1.5rem;
+    font-weight: 700 !important;
+    color: #0E2F56;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .formatted-description h3 {
+    font-size: 1.25rem;
+    font-weight: 700 !important;
+    color: #374151;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .formatted-description h4 {
+    font-size: 1.125rem;
+    font-weight: 700 !important;
     color: #374151;
     margin-top: 0.75rem;
     margin-bottom: 0.5rem;
