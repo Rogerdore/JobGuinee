@@ -86,6 +86,11 @@ export default function FormattedJobDescription({ description }: { description: 
     setLoading(false);
   };
 
+  const isHtmlContent = (text: string): boolean => {
+    const htmlTags = /<\/?[a-z][\s\S]*>/i;
+    return htmlTags.test(text);
+  };
+
   const renderLine = (line: string, index: number) => {
     if (line.startsWith('# ')) {
       return (
@@ -144,6 +149,19 @@ export default function FormattedJobDescription({ description }: { description: 
         <div className="h-4 bg-gray-200 rounded w-full"></div>
         <div className="h-4 bg-gray-200 rounded w-5/6"></div>
       </div>
+    );
+  }
+
+  if (isHtmlContent(description)) {
+    return (
+      <div
+        className="formatted-description rich-text-content"
+        dangerouslySetInnerHTML={{ __html: description }}
+        style={{
+          lineHeight: '1.6',
+          color: '#374151',
+        }}
+      />
     );
   }
 

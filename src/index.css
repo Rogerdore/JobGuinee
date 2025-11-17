@@ -218,4 +218,136 @@
     -webkit-mask-composite: xor;
     mask-composite: exclude;
   }
+
+  /* Styles for rich text content from editor */
+  .rich-text-content {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .rich-text-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 16px 0;
+    display: block;
+  }
+
+  .rich-text-content h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #0E2F56;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .rich-text-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0E2F56;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .rich-text-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .rich-text-content h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .rich-text-content p {
+    margin-bottom: 0.75rem;
+    color: #374151;
+  }
+
+  .rich-text-content ul,
+  .rich-text-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .rich-text-content li {
+    margin-bottom: 0.5rem;
+  }
+
+  .rich-text-content strong {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .rich-text-content em {
+    font-style: italic;
+  }
+
+  .rich-text-content u {
+    text-decoration: underline;
+  }
+
+  .rich-text-content a {
+    color: #0E2F56;
+    text-decoration: underline;
+  }
+
+  .rich-text-content a:hover {
+    color: #FF8C00;
+  }
+
+  .rich-text-content blockquote {
+    border-left: 4px solid #FF8C00;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    color: #6b7280;
+  }
+
+  .rich-text-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .rich-text-content th,
+  .rich-text-content td {
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem;
+    text-align: left;
+  }
+
+  .rich-text-content th {
+    background-color: #f9fafb;
+    font-weight: 600;
+  }
+
+  /* Styles for Word/PDF containers */
+  .rich-text-content .word-container,
+  .rich-text-content .txt-container,
+  .rich-text-content .pdf-container {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    background: #f9fafb;
+  }
+
+  .rich-text-content .word-container h4,
+  .rich-text-content .txt-container h4,
+  .rich-text-content .pdf-container h3 {
+    color: #0E2F56;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .rich-text-content .editor-image {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
 }
