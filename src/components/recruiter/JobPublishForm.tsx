@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon, Download, Wand2
+  CheckCircle2, Upload as UploadIcon, Download, Wand2, Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from './RichTextEditor';
@@ -77,6 +77,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
   const [importingFile, setImportingFile] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [previousDescription, setPreviousDescription] = useState<string>('');
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -133,6 +134,31 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
 
   const handleRemoveBenefit = (benefit: string) => {
     setFormData({ ...formData, benefits: formData.benefits.filter(b => b !== benefit) });
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Le logo ne doit pas dépasser 2 MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner un fichier image');
+        return;
+      }
+      setFormData({ ...formData, company_logo: file });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData({ ...formData, company_logo: undefined });
+    setLogoPreview(null);
   };
 
   const toggleLanguage = (lang: string) => {
@@ -910,6 +936,52 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                   placeholder="Ex : Winning Consortium"
                   required
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-[#FF8C00]" />
+                  Logo de l'entreprise
+                </label>
+                <div className="flex items-start gap-4">
+                  {logoPreview ? (
+                    <div className="relative">
+                      <img
+                        src={logoPreview}
+                        alt="Logo preview"
+                        className="w-24 h-24 object-contain border-2 border-gray-300 rounded-lg bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                      <div className="px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-semibold rounded-xl transition shadow-md text-center">
+                        <UploadIcon className="w-4 h-4 inline-block mr-2" />
+                        {logoPreview ? 'Changer le logo' : 'Uploader le logo'}
+                      </div>
+                    </label>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Format : JPG, PNG, SVG • Taille max : 2 MB • Recommandé : 200x200px
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div>
