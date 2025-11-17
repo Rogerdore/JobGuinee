@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Upload, Image as ImageIcon, FileText, X, Trash2,
-  Move, Maximize2
+  Move, Maximize2, Eraser, Save, Download
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -799,6 +799,100 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     setTimeout(updateContent, 100);
   };
 
+  const handleClearEditor = () => {
+    if (confirm('Êtes-vous sûr de vouloir vider tout le contenu de l\'éditeur ?')) {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = '';
+        onChange('');
+      }
+
+      attachedFiles.forEach(file => {
+        URL.revokeObjectURL(file.url);
+      });
+      setAttachedFiles([]);
+      setSelectedImage(null);
+      setShowImageToolbar(false);
+      removeResizeHandles();
+    }
+  };
+
+  const handleSaveContent = () => {
+    const content = editorRef.current?.innerHTML || '';
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `contenu-editeur-${Date.now()}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadContent = () => {
+    const content = editorRef.current?.innerHTML || '';
+
+    const fullHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document exporté</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      color: #333;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .pdf-container, .word-container, .txt-container {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      background: #f9fafb;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      color: #1f2937;
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+    ul, ol {
+      padding-left: 24px;
+    }
+    li {
+      margin: 8px 0;
+    }
+    p {
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
+  ${content}
+</body>
+</html>`;
+
+    const blob = new Blob([fullHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `document-complet-${Date.now()}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
 
@@ -962,6 +1056,36 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             onChange={handleFileUpload}
             className="hidden"
           />
+
+          <button
+            type="button"
+            onClick={handleClearEditor}
+            className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition"
+            title="Vider tout le contenu de l'éditeur"
+          >
+            <Eraser className="w-4 h-4" />
+            <span>Vider</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaveContent}
+            className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition"
+            title="Enregistrer le contenu (HTML simple)"
+          >
+            <Save className="w-4 h-4" />
+            <span>Enregistrer</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownloadContent}
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
+            title="Télécharger le document complet (HTML formaté)"
+          >
+            <Download className="w-4 h-4" />
+            <span>Télécharger</span>
+          </button>
         </div>
       </div>
 
