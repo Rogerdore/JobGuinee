@@ -80,6 +80,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [importingFile, setImportingFile] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [previousDescription, setPreviousDescription] = useState<string>('');
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -162,6 +163,20 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     if (e.key === 'Enter') {
       e.preventDefault();
       action();
+    }
+  };
+
+  const applyTemplate = (template: string) => {
+    // Sauvegarder l'état actuel avant d'appliquer le modèle
+    setPreviousDescription(formData.description);
+    setFormData({ ...formData, description: template });
+    setShowTemplateModal(false);
+  };
+
+  const undoTemplate = () => {
+    if (previousDescription !== undefined) {
+      setFormData({ ...formData, description: previousDescription });
+      setPreviousDescription('');
     }
   };
 
@@ -583,10 +598,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
             <div className="p-6 space-y-4">
               {/* Version 1 - Débutant */}
               <div
-                onClick={() => {
-                  setFormData({ ...formData, description: getBeginnerTemplate() });
-                  setShowTemplateModal(false);
-                }}
+                onClick={() => applyTemplate(getBeginnerTemplate())}
                 className="border-2 border-green-200 rounded-xl p-6 hover:border-green-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-green-50 to-green-100"
               >
                 <div className="flex items-start gap-4">
@@ -608,10 +620,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
 
               {/* Version 2 - Intermédiaire */}
               <div
-                onClick={() => {
-                  setFormData({ ...formData, description: getIntermediateTemplate() });
-                  setShowTemplateModal(false);
-                }}
+                onClick={() => applyTemplate(getIntermediateTemplate())}
                 className="border-2 border-blue-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-blue-50 to-blue-100"
               >
                 <div className="flex items-start gap-4">
@@ -634,10 +643,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
 
               {/* Version 3 - Senior */}
               <div
-                onClick={() => {
-                  setFormData({ ...formData, description: getSeniorTemplate() });
-                  setShowTemplateModal(false);
-                }}
+                onClick={() => applyTemplate(getSeniorTemplate())}
                 className="border-2 border-orange-200 rounded-xl p-6 hover:border-orange-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-orange-50 to-orange-100"
               >
                 <div className="flex items-start gap-4">
@@ -661,9 +667,18 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
             </div>
 
             <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200">
-              <p className="text-sm text-gray-600 text-center">
+              <p className="text-sm text-gray-600 text-center mb-3">
                 💡 <strong>Astuce :</strong> Choisissez le modèle qui correspond au niveau d'expérience recherché. Vous pourrez ensuite modifier le contenu dans l'éditeur.
               </p>
+              {formData.description && (
+                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-3 text-center">
+                  <p className="text-sm text-yellow-800 font-medium">
+                    ⚠️ <strong>Attention :</strong> Vous avez déjà du contenu dans l'éditeur.
+                    Appliquer un modèle remplacera votre texte actuel.
+                    Vous pourrez ensuite cliquer sur "Annuler" pour le récupérer.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -853,14 +868,33 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
               </div>
 
               <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-                <button
-                  type="button"
-                  onClick={() => setShowTemplateModal(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
-                >
-                  <Wand2 className="w-5 h-5" />
-                  Utiliser un modèle professionnel
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateModal(true)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
+                  >
+                    <Wand2 className="w-5 h-5" />
+                    Utiliser un modèle professionnel
+                  </button>
+
+                  {previousDescription && (
+                    <button
+                      type="button"
+                      onClick={undoTemplate}
+                      className="flex items-center gap-2 px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition shadow-md"
+                      title="Annuler le modèle et revenir à la version précédente"
+                    >
+                      <X className="w-5 h-5" />
+                      Annuler
+                    </button>
+                  )}
+                </div>
+                {previousDescription && (
+                  <p className="text-xs text-orange-600 mt-2 text-center font-medium">
+                    💡 Un modèle a été appliqué. Cliquez sur "Annuler" pour revenir à la version précédente.
+                  </p>
+                )}
               </div>
 
               <div>
