@@ -5,8 +5,6 @@ import {
   CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import SimpleDocumentImporter from './SimpleDocumentImporter';
-import DocumentViewer from './DocumentViewer';
 import RichTextEditor from './RichTextEditor';
 
 interface JobPublishFormProps {
@@ -114,8 +112,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     auto_renewal: false,
     legal_compliance: false,
   });
-
-  const [importedFile, setImportedFile] = useState<File | null>(null);
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
@@ -621,46 +617,26 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-            <SimpleDocumentImporter
-              onImport={(file) => {
-                console.log('📄 Document imported:', file.name);
-                setImportedFile(file);
-              }}
-              buttonText="Importer une offre (PDF/Word/Image/Texte)"
-            />
-
-            <div>
-              <button
-                type="button"
-                onClick={handleGenerateWithAI}
-                disabled={isGeneratingAI || !isPremium}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold rounded-xl transition shadow-md ${
-                  isPremium
-                    ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
-              >
-                <Sparkles className="w-5 h-5" />
-                <span>{isGeneratingAI ? 'Génération IA...' : 'Générer avec IA'}</span>
-                {!isPremium && <span className="text-xs">(Premium)</span>}
-              </button>
-              <p className="text-xs text-gray-600 mt-2 text-center">
-                {isPremium ? 'Remplir automatiquement avec l\'IA' : 'Abonnement Premium requis'}
-              </p>
-            </div>
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
+            <button
+              type="button"
+              onClick={handleGenerateWithAI}
+              disabled={isGeneratingAI || !isPremium}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold rounded-xl transition shadow-md ${
+                isPremium
+                  ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>{isGeneratingAI ? 'Génération IA...' : 'Générer avec IA'}</span>
+              {!isPremium && <span className="text-xs">(Premium)</span>}
+            </button>
+            <p className="text-xs text-gray-600 mt-2 text-center">
+              {isPremium ? 'Remplir automatiquement avec l\'IA' : 'Abonnement Premium requis'}
+            </p>
           </div>
-
-          {/* Document Viewer */}
-          {importedFile && (
-            <div className="mt-6">
-              <DocumentViewer
-                file={importedFile}
-                onRemove={() => setImportedFile(null)}
-              />
-            </div>
-          )}
 
           <FormSection title="1. Informations générales" icon={FileText}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
