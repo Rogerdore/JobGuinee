@@ -91,51 +91,42 @@ export default function FormattedJobDescription({ description }: { description: 
     return htmlTags.test(text);
   };
 
-  const parseInlineFormatting = (text: string): JSX.Element[] => {
-    const elements: JSX.Element[] = [];
-    const parts = text.split(/(##\s|#\s|\*\*)/g);
-    let isHeading2 = false;
-    let isHeading1 = false;
-    let isBold = false;
+  const parseInlineFormatting = (text: string): (JSX.Element | string)[] => {
+    const elements: (JSX.Element | string)[] = [];
+    const regex = /(##\s[^#]+?)(?=\s##|\s\*\*|$)|(\*\*[^*]+?\*\*)/g;
+    let lastIndex = 0;
     let key = 0;
+    let match;
 
-    parts.forEach((part, index) => {
-      if (part === '## ') {
-        isHeading2 = !isHeading2;
-        return;
-      }
-      if (part === '# ') {
-        isHeading1 = !isHeading1;
-        return;
-      }
-      if (part === '**') {
-        isBold = !isBold;
-        return;
-      }
-
-      if (part.trim()) {
-        if (isHeading2) {
-          elements.push(
-            <span key={key++} style={config.heading_level_2_style}>
-              {part}
-            </span>
-          );
-          isHeading2 = false;
-        } else if (isHeading1) {
-          elements.push(
-            <span key={key++} style={config.heading_level_1_style}>
-              {part}
-            </span>
-          );
-          isHeading1 = false;
-        } else if (isBold) {
-          elements.push(<strong key={key++}>{part}</strong>);
-          isBold = false;
-        } else {
-          elements.push(<span key={key++}>{part}</span>);
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        const normalText = text.substring(lastIndex, match.index);
+        if (normalText.trim()) {
+          elements.push(normalText);
         }
       }
-    });
+
+      if (match[1]) {
+        const headingText = match[1].replace('## ', '').trim();
+        elements.push(
+          <span key={key++} style={config.heading_level_2_style}>
+            {headingText}
+          </span>
+        );
+      } else if (match[2]) {
+        const boldText = match[2].replace(/\*\*/g, '').trim();
+        elements.push(<strong key={key++}>{boldText}</strong>);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      const remainingText = text.substring(lastIndex);
+      if (remainingText.trim()) {
+        elements.push(remainingText);
+      }
+    }
 
     return elements;
   };
@@ -211,37 +202,120 @@ export default function FormattedJobDescription({ description }: { description: 
     );
   }
 
-  const lines = description.split('\n');
-  let inList = false;
-  const elements: JSX.Element[] = [];
+  const splitBySections = (text: string): string[] => {
+    const sections: string[] = [];
+    const regex = /(##\s[^#]+?)(?=\s##|$)/g;
+    let lastIndex = 0;
+    let match;
 
-  lines.forEach((line, index) => {
-    if (line.startsWith('- ')) {
-      if (!inList) {
-        inList = true;
-        const listItems: JSX.Element[] = [];
-        let currentIndex = index;
-        while (currentIndex < lines.length && lines[currentIndex].startsWith('- ')) {
-          listItems.push(
-            <li key={currentIndex} style={config.list_style}>
-              {lines[currentIndex].replace('- ', '')}
-            </li>
-          );
-          currentIndex++;
-        }
-        elements.push(
-          <ul key={`list-${index}`} style={config.list_style}>
-            {listItems}
-          </ul>
-        );
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        const beforeText = text.substring(lastIndex, match.index).trim();
+        if (beforeText) sections.push(beforeText);
       }
-    } else {
-      inList = false;
-      if (!lines[index - 1]?.startsWith('- ') || !line.startsWith('- ')) {
-        elements.push(renderLine(line, index));
-      }
+      sections.push(match[1].trim());
+      lastIndex = regex.lastIndex;
     }
-  });
 
-  return <div className="formatted-description">{elements}</div>;
+    if (lastIndex < text.length) {
+      const remaining = text.substring(lastIndex).trim();
+      if (remaining) sections.push(remaining);
+    }
+
+    return sections.length > 0 ? sections : [text];
+  };
+
+  const processText = (): JSX.Element[] => {
+    const elements: JSX.Element[] = [];
+    let key = 0;
+
+    if (description.includes('##')) {
+      const sections = splitBySections(description);
+      sections.forEach((section, idx) => {
+        if (section.startsWith('## ')) {
+          const content = section.substring(3).trim();
+          const parts = content.split(/\s-\s|\s•\s/);
+
+          elements.push(
+            <h2 key={key++} style={config.heading_level_2_style} className="mt-6 mb-3">
+              {parts[0].split('**')[0].trim()}
+            </h2>
+          );
+
+          if (parts.length > 1) {
+            const items = parts.slice(1).filter(p => p.trim());
+            if (items.length > 0) {
+              elements.push(
+                <ul key={key++} style={config.list_style} className="space-y-2">
+                  {items.map((item, i) => {
+                    const boldMatch = item.match(/\*\*([^*]+)\*\*/);
+                    return (
+                      <li key={i} style={config.list_style}>
+                        {boldMatch ? (
+                          <>
+                            <strong>{boldMatch[1]}</strong>
+                            {item.replace(boldMatch[0], '')}
+                          </>
+                        ) : (
+                          item
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            }
+          }
+        } else if (section.includes('**')) {
+          elements.push(
+            <p key={key++} style={config.text_style} className="mb-2">
+              {parseInlineFormatting(section)}
+            </p>
+          );
+        } else {
+          elements.push(
+            <p key={key++} style={config.text_style} className="mb-2">
+              {section}
+            </p>
+          );
+        }
+      });
+      return elements;
+    }
+
+    const lines = description.split('\n');
+    let inList = false;
+
+    lines.forEach((line, index) => {
+      if (line.startsWith('- ')) {
+        if (!inList) {
+          inList = true;
+          const listItems: JSX.Element[] = [];
+          let currentIndex = index;
+          while (currentIndex < lines.length && lines[currentIndex].startsWith('- ')) {
+            listItems.push(
+              <li key={currentIndex} style={config.list_style}>
+                {parseInlineFormatting(lines[currentIndex].replace('- ', ''))}
+              </li>
+            );
+            currentIndex++;
+          }
+          elements.push(
+            <ul key={`list-${index}`} style={config.list_style}>
+              {listItems}
+            </ul>
+          );
+        }
+      } else {
+        inList = false;
+        if (!lines[index - 1]?.startsWith('- ') || !line.startsWith('- ')) {
+          elements.push(renderLine(line, key++));
+        }
+      }
+    });
+
+    return elements;
+  };
+
+  return <div className="formatted-description">{processText()}</div>;
 }

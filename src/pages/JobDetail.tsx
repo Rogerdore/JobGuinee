@@ -403,7 +403,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     Exigences et compétences
                   </h2>
                   <div className="prose prose-blue max-w-none">
-                    <p className="text-gray-700 whitespace-pre-line leading-relaxed">{job.requirements}</p>
+                    <FormattedJobDescription description={job.requirements} />
                   </div>
                 </div>
               )}
