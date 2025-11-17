@@ -379,13 +379,48 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             pdfContainer.style.border = '2px solid #e5e7eb';
             pdfContainer.style.borderRadius = '8px';
 
+            const titleWrapper = document.createElement('div');
+            titleWrapper.style.display = 'flex';
+            titleWrapper.style.alignItems = 'center';
+            titleWrapper.style.justifyContent = 'space-between';
+            titleWrapper.style.marginBottom = '12px';
+            titleWrapper.style.paddingBottom = '8px';
+            titleWrapper.style.borderBottom = '1px solid #e5e7eb';
+
             const title = document.createElement('h4');
             title.textContent = `📄 ${file.name}`;
             title.style.color = '#0E2F56';
-            title.style.marginBottom = '12px';
             title.style.fontSize = '16px';
             title.style.fontWeight = '600';
-            pdfContainer.appendChild(title);
+            title.style.margin = '0';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.style.padding = '4px 8px';
+            deleteBtn.style.background = '#fee2e2';
+            deleteBtn.style.border = '1px solid #fca5a5';
+            deleteBtn.style.borderRadius = '6px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.fontSize = '16px';
+            deleteBtn.title = 'Supprimer ce document';
+
+            deleteBtn.addEventListener('mouseenter', () => {
+              deleteBtn.style.background = '#fecaca';
+            });
+
+            deleteBtn.addEventListener('mouseleave', () => {
+              deleteBtn.style.background = '#fee2e2';
+            });
+
+            deleteBtn.addEventListener('click', () => {
+              pdfContainer.remove();
+              updateContent();
+            });
+
+            titleWrapper.appendChild(title);
+            titleWrapper.appendChild(deleteBtn);
+            pdfContainer.appendChild(titleWrapper);
 
             pdfImages.forEach((dataUrl, index) => {
               const img = document.createElement('img');
@@ -433,19 +468,212 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           const result = await mammoth.convertToHtml({ arrayBuffer });
 
           if (result.value && result.value.trim()) {
-            const wordContent = `<div style="background: white; padding: 16px; border: 2px solid #e5e7eb; border-radius: 8px; margin: 10px 0;">${result.value}</div>`;
+            if (editorRef.current) {
+              const wordContainer = document.createElement('div');
+              wordContainer.className = 'word-container';
+              wordContainer.style.background = 'white';
+              wordContainer.style.padding = '16px';
+              wordContainer.style.border = '2px solid #e5e7eb';
+              wordContainer.style.borderRadius = '8px';
+              wordContainer.style.margin = '16px 0';
+              wordContainer.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+
+              const title = document.createElement('div');
+              title.style.display = 'flex';
+              title.style.alignItems = 'center';
+              title.style.justifyContent = 'space-between';
+              title.style.marginBottom = '12px';
+              title.style.paddingBottom = '8px';
+              title.style.borderBottom = '1px solid #e5e7eb';
+
+              const titleText = document.createElement('h4');
+              titleText.style.color = '#0E2F56';
+              titleText.style.fontSize = '16px';
+              titleText.style.fontWeight = '600';
+              titleText.style.display = 'flex';
+              titleText.style.alignItems = 'center';
+              titleText.style.gap = '8px';
+              titleText.style.margin = '0';
+              titleText.innerHTML = `<span style="font-size: 20px;">📄</span> ${file.name}`;
+
+              const deleteBtn = document.createElement('button');
+              deleteBtn.type = 'button';
+              deleteBtn.innerHTML = '🗑️';
+              deleteBtn.style.padding = '4px 8px';
+              deleteBtn.style.background = '#fee2e2';
+              deleteBtn.style.border = '1px solid #fca5a5';
+              deleteBtn.style.borderRadius = '6px';
+              deleteBtn.style.cursor = 'pointer';
+              deleteBtn.style.fontSize = '16px';
+              deleteBtn.title = 'Supprimer ce document';
+
+              deleteBtn.addEventListener('mouseenter', () => {
+                deleteBtn.style.background = '#fecaca';
+              });
+
+              deleteBtn.addEventListener('mouseleave', () => {
+                deleteBtn.style.background = '#fee2e2';
+              });
+
+              deleteBtn.addEventListener('click', () => {
+                wordContainer.remove();
+                updateContent();
+              });
+
+              title.appendChild(titleText);
+              title.appendChild(deleteBtn);
+              wordContainer.appendChild(title);
+
+              const contentDiv = document.createElement('div');
+              contentDiv.innerHTML = result.value;
+              contentDiv.style.lineHeight = '1.6';
+              contentDiv.contentEditable = 'true';
+              contentDiv.style.outline = 'none';
+              contentDiv.style.padding = '8px';
+              contentDiv.style.minHeight = '100px';
+              contentDiv.style.borderRadius = '4px';
+              contentDiv.className = 'editable-content';
+
+              contentDiv.addEventListener('focus', () => {
+                contentDiv.style.background = '#f0f9ff';
+                contentDiv.style.border = '1px solid #3b82f6';
+              });
+
+              contentDiv.addEventListener('blur', () => {
+                contentDiv.style.background = 'transparent';
+                contentDiv.style.border = '1px solid transparent';
+              });
+
+              contentDiv.addEventListener('input', () => {
+                updateContent();
+              });
+
+              wordContainer.appendChild(contentDiv);
+
+              editorRef.current.appendChild(wordContainer);
+            }
+
             const newFile: AttachedFile = {
               id: Math.random().toString(36).substr(2, 9),
               type: 'pdf',
               url: fileUrl,
               name: file.name,
-              content: wordContent
+              content: ''
             };
             setAttachedFiles(prev => [...prev, newFile]);
           }
         } catch (error) {
           console.error('Error loading Word document:', error);
           alert('Erreur lors du chargement du document Word');
+        }
+      } else if (fileExtension === 'txt') {
+        try {
+          const text = await file.text();
+
+          if (text && text.trim()) {
+            if (editorRef.current) {
+              const txtContainer = document.createElement('div');
+              txtContainer.className = 'txt-container';
+              txtContainer.style.background = '#f9fafb';
+              txtContainer.style.padding = '16px';
+              txtContainer.style.border = '2px solid #e5e7eb';
+              txtContainer.style.borderRadius = '8px';
+              txtContainer.style.margin = '16px 0';
+              txtContainer.style.fontFamily = 'monospace';
+              txtContainer.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+
+              const title = document.createElement('div');
+              title.style.display = 'flex';
+              title.style.alignItems = 'center';
+              title.style.justifyContent = 'space-between';
+              title.style.marginBottom = '12px';
+              title.style.paddingBottom = '8px';
+              title.style.borderBottom = '1px solid #e5e7eb';
+
+              const titleText = document.createElement('h4');
+              titleText.style.color = '#0E2F56';
+              titleText.style.fontSize = '16px';
+              titleText.style.fontWeight = '600';
+              titleText.style.display = 'flex';
+              titleText.style.alignItems = 'center';
+              titleText.style.gap = '8px';
+              titleText.style.margin = '0';
+              titleText.innerHTML = `<span style="font-size: 20px;">📝</span> ${file.name}`;
+
+              const deleteBtn = document.createElement('button');
+              deleteBtn.type = 'button';
+              deleteBtn.innerHTML = '🗑️';
+              deleteBtn.style.padding = '4px 8px';
+              deleteBtn.style.background = '#fee2e2';
+              deleteBtn.style.border = '1px solid #fca5a5';
+              deleteBtn.style.borderRadius = '6px';
+              deleteBtn.style.cursor = 'pointer';
+              deleteBtn.style.fontSize = '16px';
+              deleteBtn.title = 'Supprimer ce document';
+
+              deleteBtn.addEventListener('mouseenter', () => {
+                deleteBtn.style.background = '#fecaca';
+              });
+
+              deleteBtn.addEventListener('mouseleave', () => {
+                deleteBtn.style.background = '#fee2e2';
+              });
+
+              deleteBtn.addEventListener('click', () => {
+                txtContainer.remove();
+                updateContent();
+              });
+
+              title.appendChild(titleText);
+              title.appendChild(deleteBtn);
+              txtContainer.appendChild(title);
+
+              const contentDiv = document.createElement('div');
+              contentDiv.textContent = text;
+              contentDiv.contentEditable = 'true';
+              contentDiv.style.whiteSpace = 'pre-wrap';
+              contentDiv.style.wordWrap = 'break-word';
+              contentDiv.style.margin = '0';
+              contentDiv.style.fontSize = '14px';
+              contentDiv.style.lineHeight = '1.6';
+              contentDiv.style.color = '#374151';
+              contentDiv.style.outline = 'none';
+              contentDiv.style.padding = '8px';
+              contentDiv.style.minHeight = '100px';
+              contentDiv.style.borderRadius = '4px';
+              contentDiv.className = 'editable-content';
+
+              contentDiv.addEventListener('focus', () => {
+                contentDiv.style.background = '#f0f9ff';
+                contentDiv.style.border = '1px solid #3b82f6';
+              });
+
+              contentDiv.addEventListener('blur', () => {
+                contentDiv.style.background = 'transparent';
+                contentDiv.style.border = '1px solid transparent';
+              });
+
+              contentDiv.addEventListener('input', () => {
+                updateContent();
+              });
+
+              txtContainer.appendChild(contentDiv);
+
+              editorRef.current.appendChild(txtContainer);
+            }
+
+            const newFile: AttachedFile = {
+              id: Math.random().toString(36).substr(2, 9),
+              type: 'pdf',
+              url: fileUrl,
+              name: file.name,
+              content: ''
+            };
+            setAttachedFiles(prev => [...prev, newFile]);
+          }
+        } catch (error) {
+          console.error('Error loading TXT file:', error);
+          alert('Erreur lors du chargement du fichier TXT');
         }
       }
     }
@@ -604,7 +832,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             onClick={() => fileInputRef.current?.click()}
             disabled={loading}
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
-            title="Importer des fichiers"
+            title="Formats acceptés: PDF, DOC, DOCX, TXT, JPG, PNG"
           >
             {loading ? (
               <>
@@ -614,14 +842,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                <span>Importer PDF/Images</span>
+                <span>Importer Documents</span>
               </>
             )}
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.doc,.docx,image/*"
+            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp,.svg"
             multiple
             onChange={handleFileUpload}
             className="hidden"
@@ -844,7 +1072,13 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
       {/* Help Text */}
       <div className="bg-gray-50 border-t-2 border-gray-300 px-4 py-2 text-xs text-gray-600">
-        <span className="font-semibold">💡 Astuce:</span> Vous pouvez coller du texte ou des images, importer des PDF/Word/Images. Cliquez sur une image pour la redimensionner et la positionner.
+        <span className="font-semibold">💡 Astuces:</span>
+        <ul className="list-disc list-inside mt-1 space-y-1">
+          <li>Formats supportés: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, WEBP, SVG</li>
+          <li>Cliquez sur une image pour la redimensionner avec les poignées ou les contrôles</li>
+          <li>Les documents Word et TXT sont éditables directement dans l'éditeur</li>
+          <li>Glissez-collez (Ctrl+V) pour insérer du texte ou des images depuis le presse-papiers</li>
+        </ul>
       </div>
     </div>
   );
