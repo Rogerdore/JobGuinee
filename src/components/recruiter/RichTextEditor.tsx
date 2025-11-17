@@ -82,14 +82,33 @@ export default function RichTextEditor({
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Initialize content once on mount
   useEffect(() => {
-    // Force LTR direction and configure existing links on mount and when content changes
+    if (editorRef.current && editorRef.current.innerHTML === '') {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, []);
+
+  // Force LTR on every render - fixes text jumping issue
+  useEffect(() => {
     if (editorRef.current) {
-      // Force LTR direction
+      // Force LTR with bidi-override to prevent text from moving
       editorRef.current.setAttribute('dir', 'ltr');
-      editorRef.current.style.direction = 'ltr';
-      editorRef.current.style.textAlign = 'left';
-      editorRef.current.style.unicodeBidi = 'plaintext';
+      editorRef.current.style.setProperty('direction', 'ltr', 'important');
+      editorRef.current.style.setProperty('text-align', 'left', 'important');
+      editorRef.current.style.setProperty('unicode-bidi', 'bidi-override', 'important');
+      editorRef.current.style.setProperty('white-space', 'pre-wrap', 'important');
+
+      // Force LTR on all child text nodes and elements
+      const allElements = editorRef.current.querySelectorAll('*');
+      allElements.forEach((el: Element) => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.tagName !== 'IMG') {
+          htmlEl.setAttribute('dir', 'ltr');
+          htmlEl.style.setProperty('direction', 'ltr', 'important');
+          htmlEl.style.setProperty('unicode-bidi', 'bidi-override', 'important');
+        }
+      });
 
       // Configure existing links
       const links = editorRef.current.querySelectorAll('a');
@@ -104,7 +123,7 @@ export default function RichTextEditor({
         }
       });
     }
-  }, [value]);
+  });
 
   useEffect(() => {
     if (!isResizing || !selectedImage || !resizeStart || !resizeHandle) return;
@@ -1422,15 +1441,23 @@ export default function RichTextEditor({
         onDragOver={handleEditorDragOver}
         onDrop={handleEditorDrop}
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: value }}
-        className="w-full min-h-[400px] max-h-[600px] overflow-y-auto p-4 focus:outline-none prose prose-sm max-w-none"
+        className="w-full min-h-[400px] max-h-[600px] overflow-y-auto p-4 focus:outline-none"
         style={{
           minHeight: '400px',
           maxHeight: '600px',
           direction: 'ltr',
           textAlign: 'left',
-          unicodeBidi: 'embed',
-          writingMode: 'horizontal-tb'
+          unicodeBidi: 'bidi-override',
+          writingMode: 'horizontal-tb',
+          whiteSpace: 'pre-wrap',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          display: 'block',
+          position: 'relative',
+          fontFamily: 'inherit',
+          fontSize: '14px',
+          lineHeight: '1.5',
+          color: 'inherit'
         }}
       />
 
