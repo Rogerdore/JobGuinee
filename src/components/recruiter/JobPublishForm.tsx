@@ -31,8 +31,6 @@ export interface JobFormData {
   position_level: string;
   deadline: string;
   description: string;
-  responsibilities: string;
-  profile: string;
   skills: string[];
   education_level: string;
   experience_required: string;
@@ -92,8 +90,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     position_level: 'Intermédiaire',
     deadline: '',
     description: '',
-    responsibilities: '',
-    profile: '',
     skills: [],
     education_level: 'Licence',
     experience_required: '3–5 ans',
@@ -194,20 +190,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
 <h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
 <p style="line-height: 1.8;">Bref résumé du rôle, du service, et de l'objectif principal du poste. Expliquez en quelques phrases ce que le candidat fera au quotidien.</p>
 
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">✅ MISSIONS DE BASE</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Mission 1 :</strong> Tâche simple et claire (ex: saisie de données, classement)</li>
-  <li><strong>Mission 2 :</strong> Tâche répétitive ou encadrée (ex: suivi de dossiers)</li>
-  <li><strong>Mission 3 :</strong> Support ou assistance (ex: aide aux équipes)</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">👤 PROFIL RECHERCHÉ</h2>
-<ul style="line-height: 1.8;">
-  <li>Motivation et volonté d'apprendre</li>
-  <li>Sens de l'organisation</li>
-  <li>Capacité à appliquer des consignes</li>
-</ul>
-
 <h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES REQUISES</h2>
 <p style="margin-bottom: 8px;"><strong>Compétences techniques :</strong></p>
 <ul style="line-height: 1.8; margin-bottom: 16px;">
@@ -249,35 +231,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
 
 <h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
 <p style="line-height: 1.8;">Description du contexte, de la finalité du poste et des enjeux. Précisez comment ce poste s'inscrit dans la stratégie de l'entreprise et quel sera son impact.</p>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎯 MISSIONS & RESPONSABILITÉS</h2>
-
-<p style="margin-bottom: 8px; margin-top: 16px;"><strong>Mission 1 — Gestion opérationnelle</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li>Responsabilité 1 : Pilotage des activités quotidiennes</li>
-  <li>Responsabilité 2 : Suivi des indicateurs de performance</li>
-</ul>
-
-<p style="margin-bottom: 8px;"><strong>Mission 2 — Coordination et amélioration</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li>Responsabilité 1 : Animation des équipes projet</li>
-  <li>Responsabilité 2 : Optimisation des processus</li>
-</ul>
-
-<p style="margin-bottom: 8px;"><strong>Mission 3 — Reporting et communication</strong></p>
-<ul style="line-height: 1.8;">
-  <li>Contribution transversale avec les autres services</li>
-  <li>Reporting régulier à la hiérarchie</li>
-  <li>Coordination des actions prioritaires</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">👤 PROFIL RECHERCHÉ</h2>
-<ul style="line-height: 1.8;">
-  <li>Bonnes capacités d'analyse et de synthèse</li>
-  <li>Autonomie partielle avec capacité à escalader</li>
-  <li>Proactivité et sens des priorités</li>
-  <li>Esprit d'équipe et bonnes relations interpersonnelles</li>
-</ul>
 
 <h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES CLÉS</h2>
 <p style="margin-bottom: 8px;"><strong>Hard skills :</strong></p>
@@ -346,38 +299,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
 </ul>
 <p style="line-height: 1.8; margin-top: 12px;"><strong>Impact sur l'organisation :</strong> Ce poste stratégique a un impact direct sur la performance globale de l'entreprise et contribue activement aux décisions de la Direction Générale.</p>
 <p style="line-height: 1.8; margin-top: 12px;"><strong>Interactions hiérarchiques :</strong> Rattachement direct à la Direction Générale. Coordination étroite avec les Directeurs de département.</p>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎯 MISSIONS STRATÉGIQUES</h2>
-
-<p style="margin-bottom: 8px; margin-top: 16px; font-size: 18px;"><strong>A. Responsabilités principales</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li><strong>Pilotage stratégique :</strong> Définition et déploiement de la vision à moyen/long terme</li>
-  <li><strong>Supervision opérationnelle :</strong> Garantir l'excellence de la livraison et le respect des objectifs</li>
-  <li><strong>Prise de décision :</strong> Arbitrage sur les orientations majeures et allocation des ressources</li>
-</ul>
-
-<p style="margin-bottom: 8px; font-size: 18px;"><strong>B. Management & coordination</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li><strong>Encadrement d'équipe :</strong> Management hiérarchique de [X] collaborateurs</li>
-  <li><strong>Animation des réunions :</strong> CODIR, comités techniques, réunions stratégiques</li>
-  <li><strong>Reporting stratégique :</strong> Présentation régulière des KPIs et plans d'action à la Direction</li>
-</ul>
-
-<p style="margin-bottom: 8px; font-size: 18px;"><strong>C. Projets & indicateurs</strong></p>
-<ul style="line-height: 1.8;">
-  <li><strong>Conduite de projets transverses :</strong> Pilotage de projets stratégiques multi-départements</li>
-  <li><strong>Amélioration continue :</strong> Innovation, optimisation des coûts, digitalisation</li>
-  <li><strong>KPIs attendus :</strong> Performance opérationnelle, satisfaction client, rentabilité</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">👤 PROFIL RECHERCHÉ</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Leadership affirmé :</strong> Capacité à inspirer, fédérer et faire grandir les équipes</li>
-  <li><strong>Vision stratégique :</strong> Anticipation des enjeux, pensée long terme</li>
-  <li><strong>Excellentes capacités relationnelles :</strong> Communication avec tous les niveaux hiérarchiques</li>
-  <li><strong>Forte adaptabilité :</strong> Compréhension du contexte guinéen / africain / industriel</li>
-  <li><strong>Intégrité et éthique professionnelle exemplaire</strong></li>
-</ul>
 
 <h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES REQUISES</h2>
 
@@ -496,16 +417,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     const aiGeneratedData = {
       description: `Nous recherchons un(e) ${formData.title} talentueux(se) pour rejoindre notre équipe dynamique basée à ${formData.location}. Ce poste stratégique offre l'opportunité de contribuer activement au développement de nos activités dans un environnement professionnel stimulant.`,
 
-      responsibilities: `• Assurer la gestion quotidienne des activités du département ${formData.category}
-• Piloter et coordonner les projets stratégiques en lien avec le poste
-• Développer et mettre en œuvre des processus d'amélioration continue
-• Collaborer étroitement avec les équipes transverses
-• Garantir le respect des standards de qualité et des procédures internes
-• Participer activement aux réunions de coordination et de reporting
-• Contribuer à l'innovation et à l'optimisation des pratiques`,
-
-      profile: `Nous recherchons un profil dynamique et rigoureux, doté d'excellentes compétences en ${formData.category.toLowerCase()}. Le candidat idéal possède une forte capacité d'adaptation, un excellent sens de l'organisation et une aptitude avérée à travailler en équipe. Autonome et proactif, vous faites preuve d'un engagement sans faille dans l'atteinte des objectifs fixés.`,
-
       skills: [
         'Leadership',
         'Gestion de projet',
@@ -533,8 +444,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
     setFormData({
       ...formData,
       description: aiGeneratedData.description,
-      responsibilities: aiGeneratedData.responsibilities,
-      profile: aiGeneratedData.profile,
       skills: [...new Set([...formData.skills, ...aiGeneratedData.skills])],
       benefits: [...new Set([...formData.benefits, ...aiGeneratedData.benefits])],
       company_description: aiGeneratedData.company_description || formData.company_description,
@@ -895,32 +804,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
                     💡 Un modèle a été appliqué. Cliquez sur "Annuler" pour revenir à la version précédente.
                   </p>
                 )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Missions principales
-                </label>
-                <textarea
-                  value={formData.responsibilities}
-                  onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Profil recherché
-                </label>
-                <textarea
-                  value={formData.profile}
-                  onChange={(e) => setFormData({ ...formData, profile: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="Indiquez le type de profil souhaité..."
-                />
               </div>
 
               <div>
