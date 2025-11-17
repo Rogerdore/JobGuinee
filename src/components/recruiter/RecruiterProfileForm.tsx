@@ -79,6 +79,16 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
     setCompletionPercentage(percentage);
   }, [profileData, companyData]);
 
+  // Auto-dismiss message after 5 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const loadData = async () => {
     if (!user) return;
 
@@ -288,6 +298,9 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
       await refreshProfile();
       setMessage({ type: 'success', text: 'Profil enregistré avec succès!' });
 
+      // Scroll to top to show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       if (onProfileComplete) {
         setTimeout(() => {
           onProfileComplete();
@@ -296,6 +309,9 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
     } catch (error: any) {
       console.error('Error saving profile:', error);
       setMessage({ type: 'error', text: error.message || 'Erreur lors de la sauvegarde' });
+
+      // Scroll to top to show error message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
     }
@@ -376,15 +392,32 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
       )}
 
       {message && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${
-          message.type === 'success' ? 'bg-green-50 text-green-900 border border-green-200' : 'bg-red-50 text-red-900 border border-red-200'
+        <div className={`p-6 rounded-xl shadow-lg flex items-center gap-4 animate-fade-in border-2 ${
+          message.type === 'success'
+            ? 'bg-gradient-to-r from-green-50 to-green-100 text-green-900 border-green-400'
+            : 'bg-gradient-to-r from-red-50 to-red-100 text-red-900 border-red-400'
         }`}>
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-600" />
-          ) : (
-            <X className="w-5 h-5 text-red-600" />
-          )}
-          <span className="font-medium">{message.text}</span>
+          <div className={`flex-shrink-0 p-2 rounded-full ${
+            message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          }`}>
+            {message.type === 'success' ? (
+              <CheckCircle className="w-6 h-6 text-white" />
+            ) : (
+              <AlertCircle className="w-6 h-6 text-white" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-lg">
+              {message.type === 'success' ? '✅ Succès !' : '❌ Erreur'}
+            </p>
+            <p className="text-sm mt-1">{message.text}</p>
+          </div>
+          <button
+            onClick={() => setMessage(null)}
+            className="flex-shrink-0 p-2 hover:bg-white/50 rounded-lg transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
       )}
 
