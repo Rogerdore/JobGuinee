@@ -79,6 +79,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
   const [benefitInput, setBenefitInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [importingFile, setImportingFile] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -162,6 +163,265 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
       e.preventDefault();
       action();
     }
+  };
+
+  const getBeginnerTemplate = () => {
+    return `<h1 style="color: #0E2F56; font-size: 28px; margin-bottom: 20px;">${formData.title || 'TITRE DU POSTE'}</h1>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📋 INFORMATIONS GÉNÉRALES</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Contrat :</strong> ${formData.contract_type || 'CDI'}</li>
+  <li><strong>Localisation :</strong> ${formData.location || 'Conakry'}</li>
+  <li><strong>Catégorie :</strong> ${formData.category || 'À définir'}</li>
+  <li><strong>Nombre de postes :</strong> ${formData.position_count || '1'}</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
+<p style="line-height: 1.8;">Bref résumé du rôle, du service, et de l'objectif principal du poste. Expliquez en quelques phrases ce que le candidat fera au quotidien.</p>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">✅ MISSIONS DE BASE</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Mission 1 :</strong> Tâche simple et claire (ex: saisie de données, classement)</li>
+  <li><strong>Mission 2 :</strong> Tâche répétitive ou encadrée (ex: suivi de dossiers)</li>
+  <li><strong>Mission 3 :</strong> Support ou assistance (ex: aide aux équipes)</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">👤 PROFIL RECHERCHÉ</h2>
+<ul style="line-height: 1.8;">
+  <li>Motivation et volonté d'apprendre</li>
+  <li>Sens de l'organisation</li>
+  <li>Capacité à appliquer des consignes</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES REQUISES</h2>
+<p style="margin-bottom: 8px;"><strong>Compétences techniques :</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li>Compétence 1 (niveau débutant)</li>
+  <li>Compétence 2 (notions de base suffisantes)</li>
+</ul>
+<p style="margin-bottom: 8px;"><strong>Compétences comportementales :</strong></p>
+<ul style="line-height: 1.8;">
+  <li>Ponctualité</li>
+  <li>Travail en équipe</li>
+  <li>Rigueur</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎓 QUALIFICATIONS</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Niveau d'études :</strong> Bac / BTS / Licence débutant</li>
+  <li><strong>Expérience :</strong> Pas d'expérience requise ou 0–1 an</li>
+  <li><strong>Langues :</strong> Français (courant)</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📩 MODALITÉS DE CANDIDATURE</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Email :</strong> ${formData.application_email || 'recrutement@entreprise.com'}</li>
+  <li><strong>Date limite :</strong> ${formData.deadline || 'À définir'}</li>
+  <li><strong>Documents requis :</strong> CV + Lettre de motivation</li>
+</ul>`;
+  };
+
+  const getIntermediateTemplate = () => {
+    return `<h1 style="color: #0E2F56; font-size: 28px; margin-bottom: 20px;">${formData.title || 'TITRE DU POSTE'}</h1>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📋 INFORMATIONS GÉNÉRALES</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Département :</strong> ${formData.category || 'À définir'}</li>
+  <li><strong>Type de contrat :</strong> ${formData.contract_type || 'CDI'}</li>
+  <li><strong>Localisation :</strong> ${formData.location || 'Conakry'}</li>
+  <li><strong>Nombre de postes :</strong> ${formData.position_count || '1'}</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
+<p style="line-height: 1.8;">Description du contexte, de la finalité du poste et des enjeux. Précisez comment ce poste s'inscrit dans la stratégie de l'entreprise et quel sera son impact.</p>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎯 MISSIONS & RESPONSABILITÉS</h2>
+
+<p style="margin-bottom: 8px; margin-top: 16px;"><strong>Mission 1 — Gestion opérationnelle</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li>Responsabilité 1 : Pilotage des activités quotidiennes</li>
+  <li>Responsabilité 2 : Suivi des indicateurs de performance</li>
+</ul>
+
+<p style="margin-bottom: 8px;"><strong>Mission 2 — Coordination et amélioration</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li>Responsabilité 1 : Animation des équipes projet</li>
+  <li>Responsabilité 2 : Optimisation des processus</li>
+</ul>
+
+<p style="margin-bottom: 8px;"><strong>Mission 3 — Reporting et communication</strong></p>
+<ul style="line-height: 1.8;">
+  <li>Contribution transversale avec les autres services</li>
+  <li>Reporting régulier à la hiérarchie</li>
+  <li>Coordination des actions prioritaires</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">👤 PROFIL RECHERCHÉ</h2>
+<ul style="line-height: 1.8;">
+  <li>Bonnes capacités d'analyse et de synthèse</li>
+  <li>Autonomie partielle avec capacité à escalader</li>
+  <li>Proactivité et sens des priorités</li>
+  <li>Esprit d'équipe et bonnes relations interpersonnelles</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES CLÉS</h2>
+<p style="margin-bottom: 8px;"><strong>Hard skills :</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li>Compétence technique 1 (niveau intermédiaire)</li>
+  <li>Compétence technique 2 (maîtrise confirmée)</li>
+  <li>Maîtrise des outils bureautiques (Excel intermédiaire/avancé)</li>
+</ul>
+<p style="margin-bottom: 8px;"><strong>Soft skills :</strong></p>
+<ul style="line-height: 1.8;">
+  <li>Organisation et gestion du temps</li>
+  <li>Communication efficace</li>
+  <li>Capacité à résoudre des problèmes</li>
+  <li>Adaptabilité</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎓 QUALIFICATIONS</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Niveau d'études :</strong> Licence / Master</li>
+  <li><strong>Expérience :</strong> 2–5 ans dans un poste similaire</li>
+  <li><strong>Langues :</strong> Français (courant), Anglais (atout)</li>
+  <li><strong>Outils :</strong> Logiciels métier / Excel avancé</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🏢 CONDITIONS DE TRAVAIL</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Environnement :</strong> Bureau moderne avec équipements adaptés</li>
+  <li><strong>Horaires :</strong> Du lundi au vendredi, 8h-17h</li>
+  <li><strong>Avantages :</strong> Assurance santé, primes de performance, formation continue</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📩 MODALITÉS DE CANDIDATURE</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Email :</strong> ${formData.application_email || 'recrutement@entreprise.com'}</li>
+  <li><strong>Date limite :</strong> ${formData.deadline || 'À définir'}</li>
+  <li><strong>Pièces à fournir :</strong> CV détaillé, Lettre de motivation, Diplômes</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🔄 PROCESSUS DE RECRUTEMENT</h2>
+<p style="line-height: 1.8;">Analyse des dossiers → Test technique → Entretien RH → Entretien avec le manager → Décision finale</p>`;
+  };
+
+  const getSeniorTemplate = () => {
+    return `<h1 style="color: #0E2F56; font-size: 32px; margin-bottom: 20px;">${formData.title || 'TITRE DU POSTE'}</h1>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎯 INFORMATIONS CLÉS</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Direction / Département :</strong> ${formData.category || 'Direction Générale'}</li>
+  <li><strong>Référence de l'offre :</strong> ${formData.title?.toUpperCase().replace(/\s+/g, '-') || 'REF-001'}-2024</li>
+  <li><strong>Type de contrat :</strong> ${formData.contract_type || 'CDI'}</li>
+  <li><strong>Localisation stratégique :</strong> ${formData.location || 'Conakry'}</li>
+  <li><strong>Nombre de postes :</strong> ${formData.position_count || '1'}</li>
+  <li><strong>Prise de fonction :</strong> Dès que possible</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🏢 PRÉSENTATION DE L'ENTREPRISE</h2>
+<p style="line-height: 1.8;">${formData.company_description || 'Leader dans son secteur d\'activité, notre entreprise se distingue par son excellence opérationnelle, son innovation constante et son engagement envers le développement économique. Nous recherchons des talents d\'exception pour accompagner notre croissance stratégique.'}</p>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
+<p style="line-height: 1.8;"><strong>Contexte :</strong> Dans le cadre de notre expansion et de la structuration de nos opérations, nous recrutons un profil senior pour piloter des initiatives stratégiques majeures.</p>
+<p style="line-height: 1.8; margin-top: 12px;"><strong>Objectifs stratégiques :</strong></p>
+<ul style="line-height: 1.8;">
+  <li>Définir et mettre en œuvre la stratégie du département</li>
+  <li>Optimiser la performance opérationnelle et financière</li>
+  <li>Assurer la conformité et l'excellence des processus</li>
+</ul>
+<p style="line-height: 1.8; margin-top: 12px;"><strong>Impact sur l'organisation :</strong> Ce poste stratégique a un impact direct sur la performance globale de l'entreprise et contribue activement aux décisions de la Direction Générale.</p>
+<p style="line-height: 1.8; margin-top: 12px;"><strong>Interactions hiérarchiques :</strong> Rattachement direct à la Direction Générale. Coordination étroite avec les Directeurs de département.</p>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎯 MISSIONS STRATÉGIQUES</h2>
+
+<p style="margin-bottom: 8px; margin-top: 16px; font-size: 18px;"><strong>A. Responsabilités principales</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li><strong>Pilotage stratégique :</strong> Définition et déploiement de la vision à moyen/long terme</li>
+  <li><strong>Supervision opérationnelle :</strong> Garantir l'excellence de la livraison et le respect des objectifs</li>
+  <li><strong>Prise de décision :</strong> Arbitrage sur les orientations majeures et allocation des ressources</li>
+</ul>
+
+<p style="margin-bottom: 8px; font-size: 18px;"><strong>B. Management & coordination</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li><strong>Encadrement d'équipe :</strong> Management hiérarchique de [X] collaborateurs</li>
+  <li><strong>Animation des réunions :</strong> CODIR, comités techniques, réunions stratégiques</li>
+  <li><strong>Reporting stratégique :</strong> Présentation régulière des KPIs et plans d'action à la Direction</li>
+</ul>
+
+<p style="margin-bottom: 8px; font-size: 18px;"><strong>C. Projets & indicateurs</strong></p>
+<ul style="line-height: 1.8;">
+  <li><strong>Conduite de projets transverses :</strong> Pilotage de projets stratégiques multi-départements</li>
+  <li><strong>Amélioration continue :</strong> Innovation, optimisation des coûts, digitalisation</li>
+  <li><strong>KPIs attendus :</strong> Performance opérationnelle, satisfaction client, rentabilité</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">👤 PROFIL RECHERCHÉ</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Leadership affirmé :</strong> Capacité à inspirer, fédérer et faire grandir les équipes</li>
+  <li><strong>Vision stratégique :</strong> Anticipation des enjeux, pensée long terme</li>
+  <li><strong>Excellentes capacités relationnelles :</strong> Communication avec tous les niveaux hiérarchiques</li>
+  <li><strong>Forte adaptabilité :</strong> Compréhension du contexte guinéen / africain / industriel</li>
+  <li><strong>Intégrité et éthique professionnelle exemplaire</strong></li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES REQUISES</h2>
+
+<p style="margin-bottom: 8px;"><strong>Hard skills :</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li>Expertise technique avancée dans le domaine ${formData.category || '[secteur]'}</li>
+  <li>Maîtrise des méthodologies professionnelles (Lean, Six Sigma, Agile, etc.)</li>
+  <li>Connaissance approfondie des normes et réglementations applicables</li>
+</ul>
+
+<p style="margin-bottom: 8px;"><strong>Soft skills :</strong></p>
+<ul style="line-height: 1.8; margin-bottom: 16px;">
+  <li>Leadership et influence</li>
+  <li>Gestion de conflit et négociation</li>
+  <li>Prise de décision sous pression</li>
+  <li>Pensée analytique et stratégique</li>
+</ul>
+
+<p style="margin-bottom: 8px;"><strong>Outils & technologies :</strong></p>
+<ul style="line-height: 1.8;">
+  <li>ERP / Systèmes de gestion métier (SAP, Oracle, etc.)</li>
+  <li>Tableaux de bord avancés (Power BI, Tableau)</li>
+  <li>Excel expert (VBA, modélisation financière)</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎓 QUALIFICATIONS</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Niveau d'études :</strong> Master / MBA / équivalent (Grande École ou Université reconnue)</li>
+  <li><strong>Expérience :</strong> 5–10+ ans d'expérience sur des postes similaires avec responsabilités managériales</li>
+  <li><strong>Langues :</strong> Français obligatoire (courant), Anglais professionnel exigé</li>
+  <li><strong>Certifications / spécialités :</strong> PMP, Six Sigma Black Belt, ou équivalent (atout majeur)</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💰 CONDITIONS & AVANTAGES</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Rémunération :</strong> Package compétitif aligné sur le marché international</li>
+  <li><strong>Primes / avantages sociaux :</strong> Primes de performance, bonus annuel, assurance santé premium</li>
+  <li><strong>Autres avantages :</strong> Véhicule de fonction, logement (si applicable), voyages professionnels</li>
+  <li><strong>Environnement :</strong> Poste stratégique avec forte visibilité et impact</li>
+</ul>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🔄 PROCESSUS DE RECRUTEMENT</h2>
+<ol style="line-height: 1.8;">
+  <li><strong>Présélection :</strong> Analyse approfondie des dossiers</li>
+  <li><strong>Entretien Direction / RH :</strong> Évaluation du fit culturel et des motivations</li>
+  <li><strong>Évaluation technique :</strong> Étude de cas / Assessment center</li>
+  <li><strong>Validation Direction Générale :</strong> Entretien final avec le DG</li>
+  <li><strong>Offre :</strong> Proposition et négociation du package</li>
+</ol>
+
+<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📩 MODALITÉS DE CANDIDATURE</h2>
+<ul style="line-height: 1.8;">
+  <li><strong>Email :</strong> ${formData.application_email || 'recrutement.senior@entreprise.com'}</li>
+  <li><strong>Objet :</strong> Candidature ${formData.title || '[Poste]'} - [NOM Prénom]</li>
+  <li><strong>Deadline :</strong> ${formData.deadline || 'À définir'}</li>
+  <li><strong>Dossier complet :</strong> CV détaillé, Lettre de motivation, Copies des diplômes, Attestations de travail, Références professionnelles</li>
+</ul>
+
+<p style="margin-top: 24px; padding: 16px; background-color: #f3f4f6; border-left: 4px solid #FF8C00; line-height: 1.8;"><strong>Note :</strong> Seuls les candidats présélectionnés seront contactés. Toute candidature incomplète sera automatiquement rejetée. La confidentialité des dossiers est garantie.</p>`;
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,8 +562,116 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
+    <>
+      {/* Template Selection Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
+              <div>
+                <h3 className="text-2xl font-bold">Choisissez votre modèle</h3>
+                <p className="text-sm text-purple-100">Sélectionnez le modèle adapté au niveau du poste</p>
+              </div>
+              <button
+                onClick={() => setShowTemplateModal(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Version 1 - Débutant */}
+              <div
+                onClick={() => {
+                  setFormData({ ...formData, description: getBeginnerTemplate() });
+                  setShowTemplateModal(false);
+                }}
+                className="border-2 border-green-200 rounded-xl p-6 hover:border-green-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-green-50 to-green-100"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-xl font-bold text-green-900 mb-2">VERSION DÉBUTANT</h4>
+                    <p className="text-sm text-green-800 mb-3">Simple, claire et guidée - Idéale pour les profils junior ou sans expérience</p>
+                    <ul className="text-sm text-green-700 space-y-1">
+                      <li>✅ Structure simplifiée</li>
+                      <li>✅ Missions de base</li>
+                      <li>✅ Compétences comportementales</li>
+                      <li>✅ Expérience : 0-1 an</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Version 2 - Intermédiaire */}
+              <div
+                onClick={() => {
+                  setFormData({ ...formData, description: getIntermediateTemplate() });
+                  setShowTemplateModal(false);
+                }}
+                className="border-2 border-blue-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-blue-50 to-blue-100"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-xl font-bold text-blue-900 mb-2">VERSION INTERMÉDIAIRE</h4>
+                    <p className="text-sm text-blue-800 mb-3">Plus détaillée, orientée responsabilités - Pour profils confirmés</p>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>✅ Missions & responsabilités détaillées</li>
+                      <li>✅ Hard skills et Soft skills</li>
+                      <li>✅ Conditions de travail</li>
+                      <li>✅ Processus de recrutement</li>
+                      <li>✅ Expérience : 2-5 ans</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Version 3 - Senior */}
+              <div
+                onClick={() => {
+                  setFormData({ ...formData, description: getSeniorTemplate() });
+                  setShowTemplateModal(false);
+                }}
+                className="border-2 border-orange-200 rounded-xl p-6 hover:border-orange-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-orange-50 to-orange-100"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-xl font-bold text-orange-900 mb-2">VERSION SENIOR</h4>
+                    <p className="text-sm text-orange-800 mb-3">Avancée, stratégique et complète - Pour postes de direction</p>
+                    <ul className="text-sm text-orange-700 space-y-1">
+                      <li>✅ Présentation de l'entreprise</li>
+                      <li>✅ Missions stratégiques (3 niveaux)</li>
+                      <li>✅ Leadership & management</li>
+                      <li>✅ Conditions & avantages détaillés</li>
+                      <li>✅ Processus de recrutement complet</li>
+                      <li>✅ Expérience : 5-10+ ans</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200">
+              <p className="text-sm text-gray-600 text-center">
+                💡 <strong>Astuce :</strong> Choisissez le modèle qui correspond au niveau d'expérience recherché. Vous pourrez ensuite modifier le contenu dans l'éditeur.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Form */}
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
         <div className="sticky top-0 bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
@@ -487,45 +855,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
               <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
                 <button
                   type="button"
-                  onClick={() => {
-                    const template = `<h1 style="color: #0E2F56; margin-bottom: 16px;">${formData.title || 'TITRE DU POSTE'}</h1>
-<p style="margin-bottom: 16px;"><strong>Catégorie:</strong> ${formData.category || 'Catégorie'} | <strong>Contrat:</strong> ${formData.contract_type || 'Type de contrat'} | <strong>Postes:</strong> 1</p>
-
-<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">PRÉSENTATION DU POSTE</h2>
-<p>Description du poste et du contexte...</p>
-
-<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">MISSIONS PRINCIPALES</h2>
-<ul>
-  <li>Mission 1</li>
-  <li>Mission 2</li>
-  <li>Mission 3</li>
-</ul>
-
-<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">PROFIL RECHERCHÉ</h2>
-<p>Description du profil idéal...</p>
-
-<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">COMPÉTENCES CLÉS</h2>
-<ul>
-  <li>Compétence 1</li>
-  <li>Compétence 2</li>
-  <li>Compétence 3</li>
-</ul>
-
-<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">QUALIFICATIONS</h2>
-<ul>
-  <li><strong>Niveau d'études:</strong> À compléter</li>
-  <li><strong>Expérience:</strong> À compléter</li>
-  <li><strong>Langues:</strong> À compléter</li>
-</ul>
-
-<h2 style="color: #FF8C00; margin-top: 24px; margin-bottom: 12px;">MODALITÉS DE CANDIDATURE</h2>
-<ul>
-  <li><strong>Email:</strong> ${formData.application_email || 'email@entreprise.com'}</li>
-  <li><strong>Date limite:</strong> ${formData.deadline || 'À définir'}</li>
-  <li><strong>Documents requis:</strong> CV, Lettre de motivation</li>
-</ul>`;
-                    setFormData({ ...formData, description: template });
-                  }}
+                  onClick={() => setShowTemplateModal(true)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
                 >
                   <Wand2 className="w-5 h-5" />
@@ -1008,6 +1338,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData }: JobP
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
