@@ -83,8 +83,15 @@ export default function RichTextEditor({
   }, []);
 
   useEffect(() => {
-    // Configure existing links on mount and when content changes
+    // Force LTR direction and configure existing links on mount and when content changes
     if (editorRef.current) {
+      // Force LTR direction
+      editorRef.current.setAttribute('dir', 'ltr');
+      editorRef.current.style.direction = 'ltr';
+      editorRef.current.style.textAlign = 'left';
+      editorRef.current.style.unicodeBidi = 'plaintext';
+
+      // Configure existing links
       const links = editorRef.current.querySelectorAll('a');
       links.forEach(link => {
         if (!link.hasAttribute('data-configured')) {
@@ -283,8 +290,32 @@ export default function RichTextEditor({
 
   const updateContent = () => {
     if (editorRef.current) {
+      // Ensure LTR direction is maintained
+      editorRef.current.setAttribute('dir', 'ltr');
+      editorRef.current.style.direction = 'ltr';
+
       const html = editorRef.current.innerHTML;
       onChange(html);
+    }
+  };
+
+  const handleEditorFocus = () => {
+    if (editorRef.current) {
+      // Force LTR on focus
+      editorRef.current.setAttribute('dir', 'ltr');
+      editorRef.current.style.direction = 'ltr';
+      editorRef.current.style.textAlign = 'left';
+    }
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Prevent any keyboard shortcuts that might change text direction
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'Shift' || e.shiftKey)) {
+      // Block Ctrl+Shift shortcuts that might toggle RTL/LTR
+      const blockedKeys = ['[', ']'];
+      if (blockedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
     }
   };
 
@@ -1386,8 +1417,11 @@ export default function RichTextEditor({
         onInput={updateContent}
         onPaste={handlePaste}
         onClick={handleImageClick}
+        onFocus={handleEditorFocus}
+        onKeyDown={handleEditorKeyDown}
         onDragOver={handleEditorDragOver}
         onDrop={handleEditorDrop}
+        suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: value }}
         className="w-full min-h-[400px] max-h-[600px] overflow-y-auto p-4 focus:outline-none prose prose-sm max-w-none"
         style={{
@@ -1395,7 +1429,8 @@ export default function RichTextEditor({
           maxHeight: '600px',
           direction: 'ltr',
           textAlign: 'left',
-          unicodeBidi: 'plaintext'
+          unicodeBidi: 'embed',
+          writingMode: 'horizontal-tb'
         }}
       />
 
