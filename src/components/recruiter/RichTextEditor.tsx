@@ -325,6 +325,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    console.log('Files selected:', files.length);
     setLoading(true);
 
     for (const file of Array.from(files)) {
@@ -345,8 +346,6 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           const arrayBuffer = await file.arrayBuffer();
           const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
           const pdf = await loadingTask.promise;
-
-          let pdfContent = `<h4 style="color: #0E2F56; margin-bottom: 8px;">📄 ${file.name}</h4>`;
 
           const numPages = Math.min(pdf.numPages, 3);
           const pdfImages: string[] = [];
@@ -829,7 +828,10 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              console.log('Import button clicked');
+              fileInputRef.current?.click();
+            }}
             disabled={loading}
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
             title="Formats acceptés: PDF, DOC, DOCX, TXT, JPG, PNG"
