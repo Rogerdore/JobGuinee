@@ -403,6 +403,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             deleteBtn.style.cursor = 'pointer';
             deleteBtn.style.fontSize = '16px';
             deleteBtn.title = 'Supprimer ce document';
+            deleteBtn.contentEditable = 'false';
 
             deleteBtn.addEventListener('mouseenter', () => {
               deleteBtn.style.background = '#fecaca';
@@ -412,13 +413,16 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
               deleteBtn.style.background = '#fee2e2';
             });
 
-            deleteBtn.addEventListener('click', () => {
+            deleteBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
               pdfContainer.remove();
               updateContent();
             });
 
             titleWrapper.appendChild(title);
             titleWrapper.appendChild(deleteBtn);
+            titleWrapper.contentEditable = 'false';
             pdfContainer.appendChild(titleWrapper);
 
             pdfImages.forEach((dataUrl, index) => {
@@ -505,6 +509,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
               deleteBtn.style.cursor = 'pointer';
               deleteBtn.style.fontSize = '16px';
               deleteBtn.title = 'Supprimer ce document';
+              deleteBtn.contentEditable = 'false';
 
               deleteBtn.addEventListener('mouseenter', () => {
                 deleteBtn.style.background = '#fecaca';
@@ -514,13 +519,16 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
                 deleteBtn.style.background = '#fee2e2';
               });
 
-              deleteBtn.addEventListener('click', () => {
+              deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 wordContainer.remove();
                 updateContent();
               });
 
               title.appendChild(titleText);
               title.appendChild(deleteBtn);
+              title.contentEditable = 'false';
               wordContainer.appendChild(title);
 
               const contentDiv = document.createElement('div');
@@ -609,6 +617,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
               deleteBtn.style.cursor = 'pointer';
               deleteBtn.style.fontSize = '16px';
               deleteBtn.title = 'Supprimer ce document';
+              deleteBtn.contentEditable = 'false';
 
               deleteBtn.addEventListener('mouseenter', () => {
                 deleteBtn.style.background = '#fecaca';
@@ -618,13 +627,16 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
                 deleteBtn.style.background = '#fee2e2';
               });
 
-              deleteBtn.addEventListener('click', () => {
+              deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 txtContainer.remove();
                 updateContent();
               });
 
               title.appendChild(titleText);
               title.appendChild(deleteBtn);
+              title.contentEditable = 'false';
               txtContainer.appendChild(title);
 
               const contentDiv = document.createElement('div');
