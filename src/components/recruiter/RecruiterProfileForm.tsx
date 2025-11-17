@@ -33,6 +33,8 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
   const [company, setCompany] = useState<any>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const [profileData, setProfileData] = useState({
     full_name: '',
@@ -122,6 +124,11 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
                 instagram: ''
               }
             });
+
+            // Set logo preview if exists
+            if (companyData.logo_url) {
+              setLogoPreview(companyData.logo_url);
+            }
           }
         }
       }
@@ -130,6 +137,65 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('L\'image ne doit pas dépasser 2MB');
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      const filePath = `company-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      // Update company data state
+      setCompanyData({ ...companyData, logo_url: publicUrl });
+
+      setMessage({ type: 'success', text: 'Logo téléchargé avec succès!' });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      setMessage({ type: 'error', text: 'Erreur lors du téléchargement du logo' });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoPreview(null);
+    setCompanyData({ ...companyData, logo_url: '' });
   };
 
   const handleSaveProfile = async () => {
@@ -419,6 +485,65 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Logo de l'entreprise
+            </label>
+            <div className="space-y-3">
+              {logoPreview ? (
+                <div className="relative">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                  <ImageIcon className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
+              <div>
+                <input
+                  type="file"
+                  id="logo-upload"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  disabled={uploadingLogo}
+                />
+                <label
+                  htmlFor="logo-upload"
+                  className={`inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer ${
+                    uploadingLogo ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {uploadingLogo ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Téléchargement...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4" />
+                      {logoPreview ? 'Changer le logo' : 'Télécharger le logo'}
+                    </>
+                  )}
+                </label>
+                <p className="text-xs text-gray-500 mt-1">PNG, JPG jusqu'à 2MB</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Secteur d'activité *
