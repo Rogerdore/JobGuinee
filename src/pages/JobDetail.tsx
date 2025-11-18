@@ -56,15 +56,21 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   }, [jobId, user]);
 
   const loadJob = async () => {
-    const { data } = await supabase
+    console.log('🔍 Loading job with ID:', jobId);
+    const { data, error } = await supabase
       .from('jobs')
       .select('*, companies(*)')
       .eq('id', jobId)
       .maybeSingle();
 
+    console.log('📦 Job data received:', data);
+    console.log('❌ Job error:', error);
+
     if (data) {
+      console.log('✅ Setting job data');
       setJob(data as any);
     } else if (jobId.startsWith('sample-')) {
+      console.log('📋 Loading sample job');
       const sampleJob = sampleJobs.find(j => j.id === jobId);
       if (sampleJob) {
         setJob({
@@ -77,6 +83,8 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
           }
         } as any);
       }
+    } else {
+      console.log('⚠️ No job found for ID:', jobId);
     }
     setLoading(false);
   };
@@ -186,7 +194,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     );
   }
 
-  const sections = parseJobDescription(job.description);
+  const sections = job.description ? parseJobDescription(job.description) : {};
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -198,7 +206,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             job={{
               id: job.id,
               title: job.title,
-              company: job.companies?.name || job.company || ''
+              company: job.companies?.company_name || job.department || ''
             }}
             onSuccess={handleApplicationSuccess}
             onCustomApply={() => {
@@ -213,7 +221,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             job={{
               id: job.id,
               title: job.title,
-              company: job.companies?.name || job.company || ''
+              company: job.companies?.company_name || job.department || ''
             }}
             onSuccess={handleApplicationSuccess}
           />
