@@ -518,13 +518,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'profile', label: 'Mon Profil', icon: Settings },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
     { id: 'applications', label: 'Candidatures', icon: Users, count: applications.length },
     { id: 'ai-generator', label: 'Publier une offre', icon: Plus },
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
     { id: 'premium', label: 'Premium', icon: Sparkles },
-    { id: 'profile', label: 'Mon Profil', icon: Settings },
   ];
 
   if (loading) {
