@@ -10,6 +10,7 @@ import RichTextEditor from './RichTextEditor';
 import AutocompleteInput from '../forms/AutocompleteInput';
 import AutocompleteTagsInput from '../forms/AutocompleteTagsInput';
 import { useAutocomplete, useJobTemplates } from '../../hooks/useAutocomplete';
+import { useFormConfiguration } from '../../hooks/useFormConfiguration';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -60,9 +61,19 @@ export interface JobFormData {
   legal_compliance: boolean;
 }
 
-const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+const FormSection = ({
+  title,
+  icon: Icon,
+  children,
+  titleClass
+}: {
+  title: string;
+  icon: any;
+  children: React.ReactNode;
+  titleClass?: string;
+}) => (
   <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+    <h3 className={`${titleClass || 'text-xl font-bold uppercase text-gray-800'} mb-4 flex items-center gap-2`}>
       <Icon className="w-6 h-6 text-[#FF8C00]" />
       {title}
     </h3>
@@ -93,6 +104,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const { suggestions: benefitSuggestions, incrementFrequency: incrementBenefit } = useAutocomplete('benefit');
   const { suggestions: languageSuggestions } = useAutocomplete('language');
   const { templates, saveTemplate, incrementTemplateUsage } = useJobTemplates();
+  const { getSectionConfig, getTitleClasses } = useFormConfiguration();
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
@@ -733,7 +745,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </p>
           </div>
 
-          <FormSection title="1. Informations générales" icon={FileText}>
+          <FormSection
+            title={getSectionConfig('general_info')?.section_title || '1. INFORMATIONS GÉNÉRALES'}
+            icon={FileText}
+            titleClass={getTitleClasses('general_info')}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <AutocompleteInput
@@ -867,7 +883,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection title="2. Description de l'offre" icon={FileText}>
+          <FormSection
+            title={getSectionConfig('job_details')?.section_title || '2. DÉTAILS DU POSTE'}
+            icon={FileText}
+            titleClass={getTitleClasses('job_details')}
+          >
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -988,7 +1008,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection title="3. Informations sur l'entreprise" icon={Building2}>
+          <FormSection
+            title={getSectionConfig('company_info')?.section_title || '3. INFORMATIONS ENTREPRISE'}
+            icon={Building2}
+            titleClass={getTitleClasses('company_info')}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1148,7 +1172,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection title="4. Rémunération et avantages" icon={DollarSign}>
+          <FormSection
+            title={getSectionConfig('salary_benefits')?.section_title || '4. RÉMUNÉRATION ET AVANTAGES'}
+            icon={DollarSign}
+            titleClass={getTitleClasses('salary_benefits')}
+          >
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1194,7 +1222,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection title="5. Modalités de candidature" icon={Mail}>
+          <FormSection
+            title={getSectionConfig('application_details')?.section_title || '5. MODALITÉS DE CANDIDATURE'}
+            icon={Mail}
+            titleClass={getTitleClasses('application_details')}
+          >
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1256,7 +1288,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection title="6. Options de visibilité" icon={Eye}>
+          <FormSection
+            title={getSectionConfig('publication_settings')?.section_title || '6. PARAMÈTRES DE PUBLICATION'}
+            icon={Eye}
+            titleClass={getTitleClasses('publication_settings')}
+          >
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1320,7 +1356,11 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection title="7. Publication et validation" icon={CheckCircle2}>
+          <FormSection
+            title={getSectionConfig('legal_compliance')?.section_title || '7. CONFORMITÉ ET VALIDATION'}
+            icon={CheckCircle2}
+            titleClass={getTitleClasses('legal_compliance')}
+          >
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">

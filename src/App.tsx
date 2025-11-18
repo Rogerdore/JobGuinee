@@ -27,8 +27,9 @@ import SocialMediaConfiguration from './pages/SocialMediaConfiguration';
 import AdminProfiles from './pages/AdminProfiles';
 import AdminJobs from './pages/AdminJobs';
 import JobFormattingAdmin from './pages/JobFormattingAdmin';
+import JobFormConfiguration from './pages/JobFormConfiguration';
 
-type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -89,6 +90,7 @@ function AppContent() {
       {currentPage === 'admin-profiles' && <AdminProfiles onNavigate={handleNavigate} />}
       {currentPage === 'admin-jobs' && <AdminJobs onNavigate={handleNavigate} />}
       {currentPage === 'job-formatting' && <JobFormattingAdmin />}
+      {currentPage === 'job-form-config' && <JobFormConfiguration />}
     </Layout>
   );
 }
