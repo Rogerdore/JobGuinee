@@ -37,7 +37,7 @@ export default function FloatingSocialMedia() {
       const { data } = await supabase
         .from('social_media_configuration')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (data) {
         setSocialMedia(data);

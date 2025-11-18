@@ -55,7 +55,7 @@ export default function ChatBot() {
     const { data } = await supabase
       .from('chatbot_config')
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (data) {
       setConfig(data);
@@ -70,7 +70,7 @@ export default function ChatBot() {
       .select('messages')
       .eq('user_id', user.id)
       .eq('session_id', sessionId)
-      .single();
+      .maybeSingle();
 
     if (data?.messages) {
       setMessages(data.messages);
@@ -85,7 +85,7 @@ export default function ChatBot() {
       .select('id')
       .eq('user_id', user.id)
       .eq('session_id', sessionId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       await supabase

@@ -770,37 +770,39 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       )}
 
       {/* Section 5: Entreprises qui recrutent */}
-      <div className="bg-white py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Entreprises qui recrutent</h2>
-            <p className="text-sm text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
-          </div>
+      {recruitingCompanies.length > 0 && (
+        <div className="bg-white py-12">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Entreprises qui recrutent</h2>
+              <p className="text-sm text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
+            </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {recruitingCompanies.map((company) => (
-              <div
-                key={company.id}
-                className="bg-gray-50 rounded-lg p-4 text-center hover:shadow-lg hover:bg-white transition-all card-hover cursor-pointer"
-                onClick={() => {
-                  setSector(company.sector);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                <div className="w-14 h-14 mx-auto mb-3 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                  <img src={company.logo} alt={company.name} className="w-full h-full object-cover" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {recruitingCompanies.map((company) => (
+                <div
+                  key={company.id}
+                  className="bg-gray-50 rounded-lg p-4 text-center hover:shadow-lg hover:bg-white transition-all card-hover cursor-pointer"
+                  onClick={() => {
+                    setSector(company.sector);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  <div className="w-14 h-14 mx-auto mb-3 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
+                    <img src={company.logo} alt={company.name} className="w-full h-full object-cover" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-1 text-xs leading-tight line-clamp-2">{company.name}</h3>
+                  <p className="text-[10px] text-gray-600 mb-2 truncate">{company.sector}</p>
+                  <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0E2F56] text-white text-[10px] font-semibold rounded-full">
+                    <Briefcase className="w-3 h-3" />
+                    <span>{company.activeJobs} offres</span>
+                  </div>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1 text-xs leading-tight line-clamp-2">{company.name}</h3>
-                <p className="text-[10px] text-gray-600 mb-2 truncate">{company.sector}</p>
-                <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0E2F56] text-white text-[10px] font-semibold rounded-full">
-                  <Briefcase className="w-3 h-3" />
-                  <span>{company.activeJobs} offres</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Section 6: Statistiques */}
       <div className="bg-gradient-to-br from-[#0E2F56] to-[#1a4275] py-16 text-white">
@@ -832,63 +834,65 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       </div>
 
       {/* Section 7: Témoignages */}
-      <div className="bg-gray-50 py-16">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Ils ont trouvé leur emploi avec nous</h2>
-            <p className="text-gray-600">Découvrez les success stories de notre communauté</p>
-          </div>
-
-          <div className="relative">
-            <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-              <Quote className="w-12 h-12 text-[#FF8C00] mb-6" />
-              <p className="text-gray-700 text-lg mb-6 leading-relaxed">{testimonials[currentTestimonial].content}</p>
-              <div className="flex items-center gap-4">
-                <img
-                  src={testimonials[currentTestimonial].avatar}
-                  alt={testimonials[currentTestimonial].name}
-                  className="w-16 h-16 rounded-full"
-                />
-                <div>
-                  <div className="font-bold text-gray-900">{testimonials[currentTestimonial].name}</div>
-                  <div className="text-sm text-gray-600">{testimonials[currentTestimonial].role}</div>
-                  <div className="text-sm text-[#FF8C00]">{testimonials[currentTestimonial].company}</div>
-                </div>
-                <div className="ml-auto flex gap-1">
-                  {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-              </div>
+      {testimonials.length > 0 && (
+        <div className="bg-gray-50 py-16">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Ils ont trouvé leur emploi avec nous</h2>
+              <p className="text-gray-600">Découvrez les success stories de notre communauté</p>
             </div>
 
-            <button
-              onClick={prevTestimonial}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
-            </button>
-            <button
-              onClick={nextTestimonial}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
-            >
-              <ChevronRight className="w-6 h-6 text-gray-600" />
-            </button>
+            <div className="relative">
+              <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+                <Quote className="w-12 h-12 text-[#FF8C00] mb-6" />
+                <p className="text-gray-700 text-lg mb-6 leading-relaxed">{testimonials[currentTestimonial].content}</p>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={testimonials[currentTestimonial].avatar}
+                    alt={testimonials[currentTestimonial].name}
+                    className="w-16 h-16 rounded-full"
+                  />
+                  <div>
+                    <div className="font-bold text-gray-900">{testimonials[currentTestimonial].name}</div>
+                    <div className="text-sm text-gray-600">{testimonials[currentTestimonial].role}</div>
+                    <div className="text-sm text-[#FF8C00]">{testimonials[currentTestimonial].company}</div>
+                  </div>
+                  <div className="ml-auto flex gap-1">
+                    {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex justify-center gap-2 mt-6">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-2 h-2 rounded-full transition ${
-                    index === currentTestimonial ? 'bg-[#FF8C00] w-8' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
+              <button
+                onClick={prevTestimonial}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+              >
+                <ChevronLeft className="w-6 h-6 text-gray-600" />
+              </button>
+              <button
+                onClick={nextTestimonial}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition"
+              >
+                <ChevronRight className="w-6 h-6 text-gray-600" />
+              </button>
+
+              <div className="flex justify-center gap-2 mt-6">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentTestimonial(index)}
+                    className={`w-2 h-2 rounded-full transition ${
+                      index === currentTestimonial ? 'bg-[#FF8C00] w-8' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Section 8: CTA Recruteur */}
       <div className="bg-gradient-to-r from-[#FF8C00] to-orange-600 py-16 text-white">
