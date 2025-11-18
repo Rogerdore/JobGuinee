@@ -100,16 +100,20 @@ export default function Resources() {
   };
 
   const loadSuccessStories = async () => {
-    const { data } = await supabase
-      .from('success_stories')
-      .select('*')
-      .eq('published', true)
-      .order('view_count', { ascending: false })
-      .limit(6);
+    try {
+      const { data } = await supabase
+        .from('success_stories')
+        .select('*')
+        .eq('published', true)
+        .order('view_count', { ascending: false })
+        .limit(6);
 
-    if (data && data.length > 0) {
-      setSuccessStories(data);
-    } else {
+      if (data && data.length > 0) {
+        setSuccessStories(data);
+      } else {
+        setSuccessStories(sampleSuccessStories as any);
+      }
+    } catch (error) {
       setSuccessStories(sampleSuccessStories as any);
     }
     setStoriesLoading(false);

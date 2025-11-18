@@ -2,6 +2,8 @@ export const testimonials = [];
 
 export const companies = [];
 
+export const recruitingCompanies = [];
+
 export const jobCategories = [
   { id: '1', name: 'Mines', count: 0, icon: 'Truck' },
   { id: '2', name: 'IT', count: 0, icon: 'Code' },

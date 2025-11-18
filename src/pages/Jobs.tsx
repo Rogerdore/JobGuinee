@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { sampleJobs } from '../utils/sampleJobsData';
+import { testimonials, recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
