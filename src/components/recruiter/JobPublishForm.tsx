@@ -7,6 +7,9 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import RichTextEditor from './RichTextEditor';
+import AutocompleteInput from '../forms/AutocompleteInput';
+import AutocompleteTagsInput from '../forms/AutocompleteTagsInput';
+import { useAutocomplete, useJobTemplates } from '../../hooks/useAutocomplete';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -83,6 +86,13 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const [isEditMode, setIsEditMode] = useState(false);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
+
+  const { suggestions: jobTitleSuggestions, incrementFrequency: incrementJobTitle } = useAutocomplete('job_title');
+  const { suggestions: skillSuggestions, incrementFrequency: incrementSkill } = useAutocomplete('skill');
+  const { suggestions: locationSuggestions, incrementFrequency: incrementLocation } = useAutocomplete('location');
+  const { suggestions: benefitSuggestions, incrementFrequency: incrementBenefit } = useAutocomplete('benefit');
+  const { suggestions: languageSuggestions } = useAutocomplete('language');
+  const { templates, saveTemplate, incrementTemplateUsage } = useJobTemplates();
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
@@ -726,16 +736,18 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
           <FormSection title="1. Informations générales" icon={FileText}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Titre du poste *
-                </label>
-                <input
-                  type="text"
+                <AutocompleteInput
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                  onChange={(value) => {
+                    setFormData({ ...formData, title: value });
+                    if (value) incrementJobTitle(value);
+                  }}
+                  suggestions={jobTitleSuggestions}
+                  label="Titre du poste"
                   placeholder="Ex : Superviseur Ressources Humaines"
                   required
+                  icon={Briefcase}
+                  allowCustom={true}
                 />
               </div>
 
@@ -905,43 +917,17 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Compétences clés
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, handleAddSkill)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                    placeholder="Ex: Excel, Leadership, Gestion de projet..."
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddSkill}
-                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="hover:text-blue-900 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                <AutocompleteTagsInput
+                  values={formData.skills}
+                  onChange={(skills) => {
+                    setFormData({ ...formData, skills });
+                    skills.forEach(skill => incrementSkill(skill));
+                  }}
+                  suggestions={skillSuggestions}
+                  label="Compétences clés"
+                  placeholder="Ex: Excel, Leadership, Gestion de projet..."
+                  maxTags={15}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1119,17 +1105,18 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                  <MapPin className="w-4 h-4 mr-2 text-[#FF8C00]" />
-                  Localisation du poste *
-                </label>
-                <input
-                  type="text"
+                <AutocompleteInput
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                  onChange={(value) => {
+                    setFormData({ ...formData, location: value });
+                    if (value) incrementLocation(value);
+                  }}
+                  suggestions={locationSuggestions}
+                  label="Localisation du poste"
                   placeholder="Ex : Boké, Kamsar"
                   required
+                  icon={MapPin}
+                  allowCustom={true}
                 />
               </div>
 
@@ -1192,43 +1179,17 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Avantages
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={benefitInput}
-                    onChange={(e) => setBenefitInput(e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, handleAddBenefit)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                    placeholder="Ex: logement, repas, transport, couverture santé..."
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddBenefit}
-                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.benefits.map((benefit, index) => (
-                    <span
-                      key={index}
-                      className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2"
-                    >
-                      {benefit}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBenefit(benefit)}
-                        className="hover:text-green-900 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                <AutocompleteTagsInput
+                  values={formData.benefits}
+                  onChange={(benefits) => {
+                    setFormData({ ...formData, benefits });
+                    benefits.forEach(benefit => incrementBenefit(benefit));
+                  }}
+                  suggestions={benefitSuggestions}
+                  label="Avantages"
+                  placeholder="Ex: logement, repas, transport, couverture santé..."
+                  maxTags={10}
+                />
               </div>
             </div>
           </FormSection>
