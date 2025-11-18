@@ -41,7 +41,6 @@ import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
 import ExportApplicationsButton from '../components/recruiter/ExportApplicationsButton';
 import MessagingSystem from '../components/messaging/MessagingSystem';
 import SkeletonLoader from '../components/recruiter/SkeletonLoader';
-import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;

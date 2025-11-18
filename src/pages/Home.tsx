@@ -5,8 +5,6 @@ import {
   Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
-import { sampleJobs } from '../utils/sampleJobsData';
-import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 
