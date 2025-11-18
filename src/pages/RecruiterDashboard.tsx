@@ -26,6 +26,7 @@ import {
   Bell,
   ShieldCheck,
   CreditCard,
+  Edit2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -1117,6 +1118,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             <span>Analyses</span>
                           </button>
                         </div>
+                        <button
+                          className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log('🔘 Modifier button clicked!');
+                            setEditingJobId(job.id);
+                            setShowJobForm(true);
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>Modifier l'offre</span>
+                        </button>
                         <button
                           className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56] cursor-pointer"
                           onClick={(e) => {
