@@ -113,18 +113,20 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   useEffect(() => {
     loadData();
-  }, [profile?.id]);
 
-  // Check if we need to open the edit form from localStorage
-  useEffect(() => {
+    // Also check for edit job request each time we load data
+    console.log('🔍 Checking localStorage for editJobId after data load');
     const editJobId = localStorage.getItem('editJobId');
+    console.log('   Found editJobId in localStorage:', editJobId);
     if (editJobId) {
+      console.log('   ✅ Opening edit form for job:', editJobId);
       setEditingJobId(editJobId);
       setShowJobForm(true);
       setActiveTab('projects');
       localStorage.removeItem('editJobId');
+      console.log('   ✅ State updated and localStorage cleared');
     }
-  }, []);
+  }, [profile?.id]);
 
   useEffect(() => {
     if (profile && !loading && profile.user_type === 'recruiter') {

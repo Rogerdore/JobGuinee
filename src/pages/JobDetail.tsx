@@ -38,10 +38,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   const handleEditJob = () => {
     if (isJobOwner) {
-      // Navigate to recruiter dashboard with edit mode
-      onNavigate('recruiter-dashboard');
-      // Store the job ID to edit in localStorage so the dashboard can open the edit form
+      console.log('🔧 Edit job button clicked');
+      console.log('   Job ID:', jobId);
+      // Store the job ID to edit in localStorage BEFORE navigating
       localStorage.setItem('editJobId', jobId);
+      console.log('   ✅ Stored editJobId in localStorage:', jobId);
+      // Navigate to recruiter dashboard with edit mode
+      console.log('   🔄 Navigating to recruiter-dashboard');
+      onNavigate('recruiter-dashboard');
     }
   };
 
