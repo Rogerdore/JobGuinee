@@ -26,7 +26,6 @@ export default function Home({ onNavigate }: HomeProps) {
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalType, setConfirmModalType] = useState<'candidate' | 'recruiter'>('candidate');
-  const [companyLogos, setCompanyLogos] = useState<Array<{ id: string; name: string; logo_url: string | null }>>([]);
 
   useEffect(() => {
     loadData();
@@ -50,7 +49,7 @@ export default function Home({ onNavigate }: HomeProps) {
   }, [stats]);
 
   const loadData = async () => {
-    const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount, companiesData] = await Promise.all([
+    const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount] = await Promise.all([
       supabase
         .from('jobs')
         .select('*, companies(*)')
@@ -66,11 +65,6 @@ export default function Home({ onNavigate }: HomeProps) {
       supabase.from('companies').select('id', { count: 'exact', head: true }),
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'candidate'),
       supabase.from('formations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase
-        .from('companies')
-        .select('id, name, logo_url')
-        .not('logo_url', 'is', null)
-        .limit(8),
     ]);
 
     // Use sample data if database is empty
@@ -102,11 +96,6 @@ export default function Home({ onNavigate }: HomeProps) {
       candidates: candidatesCount.count || 1250,
       formations: formationsCount.count || 8,
     });
-
-    // Set company logos
-    if (companiesData.data && companiesData.data.length > 0) {
-      setCompanyLogos(companiesData.data as any);
-    }
   };
 
   const handleSearch = () => {
@@ -245,30 +234,9 @@ export default function Home({ onNavigate }: HomeProps) {
               <span className="text-[#FF8C00]">{getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[1] || 'trouvez votre emploi'}</span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto">
               {getSetting('homepage_hero_subtitle', 'La première plateforme guinéenne de recrutement digital connectant talents et opportunités')}
             </p>
-
-            {companyLogos.length > 0 && (
-              <div className="mb-12">
-                <p className="text-sm text-blue-200 mb-4 font-medium">Ils nous font confiance</p>
-                <div className="flex items-center justify-center gap-6 flex-wrap max-w-4xl mx-auto">
-                  {companyLogos.slice(0, 6).map((company) => (
-                    <div
-                      key={company.id}
-                      className="bg-white rounded-lg p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                      style={{ minWidth: '80px', height: '60px' }}
-                    >
-                      <img
-                        src={company.logo_url || ''}
-                        alt={company.name}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-4 md:p-6">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
