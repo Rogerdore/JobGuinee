@@ -661,7 +661,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <h4 className="font-bold text-gray-900 mb-1">{app.jobs?.title}</h4>
-                              <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.company_name}</p>
+                              <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.name}</p>
                               {app.ai_match_score && (
                                 <div className="flex items-center gap-2">
                                   <div className="flex items-center gap-1 text-xs text-gray-600">
@@ -724,7 +724,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             >
                               {app.jobs?.title}
                             </h3>
-                            <p className="text-gray-600 mb-2 font-medium">{app.jobs?.companies?.company_name}</p>
+                            <p className="text-gray-600 mb-2 font-medium">{app.jobs?.companies?.name}</p>
                             {app.jobs?.location && (
                               <div className="flex items-center space-x-2 text-gray-500 text-sm">
                                 <MapPin className="w-4 h-4" />

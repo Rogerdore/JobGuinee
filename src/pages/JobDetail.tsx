@@ -206,7 +206,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             job={{
               id: job.id,
               title: job.title,
-              company: job.companies?.company_name || job.department || ''
+              company: job.companies?.name || job.department || ''
             }}
             onSuccess={handleApplicationSuccess}
             onCustomApply={() => {
@@ -221,7 +221,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             job={{
               id: job.id,
               title: job.title,
-              company: job.companies?.company_name || job.department || ''
+              company: job.companies?.name || job.department || ''
             }}
             onSuccess={handleApplicationSuccess}
           />
@@ -263,7 +263,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                 </div>
                 <div className="flex items-center space-x-2 mb-2">
                   <Building className="w-5 h-5" />
-                  <span className="text-xl">{job.companies?.company_name || job.department}</span>
+                  <span className="text-xl">{job.companies?.name || job.department}</span>
                 </div>
                 {job.location && (
                   <div className="flex items-center space-x-2 text-blue-100">
@@ -275,7 +275,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
               {job.companies?.logo_url && (
                 <img
                   src={job.companies.logo_url}
-                  alt={job.companies.company_name}
+                  alt={job.companies.name}
                   className="w-24 h-24 rounded-xl bg-white object-cover border-4 border-white/20"
                 />
               )}
@@ -521,12 +521,12 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     {job.companies.logo_url && (
                       <img
                         src={job.companies.logo_url}
-                        alt={job.companies.company_name}
+                        alt={job.companies.name}
                         className="w-20 h-20 rounded-xl object-cover border-2 border-gray-300"
                       />
                     )}
                     <div className="flex-1">
-                      <h3 className="font-bold text-xl text-gray-900 mb-2">{job.companies.company_name}</h3>
+                      <h3 className="font-bold text-xl text-gray-900 mb-2">{job.companies.name}</h3>
                       {job.companies.description && (
                         <p className="text-gray-700 mb-3 leading-relaxed">{job.companies.description}</p>
                       )}

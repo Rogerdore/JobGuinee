@@ -191,7 +191,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
           education_level: job.education_level || 'Licence',
           experience_required: job.experience_required || '3–5 ans',
           languages: job.languages || [],
-          company_name: job.companies?.company_name || '',
+          company_name: job.companies?.name || '',
           sector: job.sector || 'Mines',
           location: job.location || '',
           company_description: job.companies?.description || '',

@@ -155,7 +155,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
   const shareJob = (job: Job, e: React.MouseEvent) => {
     e.stopPropagation();
-    const text = `${job.title} - ${job.companies?.company_name}\n📍 ${job.location}\n💼 ${job.contract_type}\n\nPostulez sur JobGuinée`;
+    const text = `${job.title} - ${job.companies?.name}\n📍 ${job.location}\n💼 ${job.contract_type}\n\nPostulez sur JobGuinée`;
     const url = window.location.origin;
 
     if (navigator.share) {
@@ -171,7 +171,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       !searchQuery ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.companies?.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.companies?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.keywords?.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesLocation = !location || job.location?.toLowerCase().includes(location.toLowerCase());
@@ -562,7 +562,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                         <div className="flex-shrink-0">
                           <img
                             src={job.companies.logo_url}
-                            alt={job.companies.company_name}
+                            alt={job.companies.name}
                             className="w-16 h-16 rounded-xl object-cover border-2 border-gray-100 group-hover:border-[#FF8C00] transition-colors"
                           />
                         </div>
@@ -591,7 +591,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
                         <div className="flex items-center gap-2 mb-2">
                           <Building className="w-4 h-4 text-[#FF8C00]" />
-                          <span className="font-semibold text-gray-800">{job.companies?.company_name}</span>
+                          <span className="font-semibold text-gray-800">{job.companies?.name}</span>
                         </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
@@ -746,7 +746,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                     )}
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 line-clamp-1">{job.title}</h3>
-                      <p className="text-sm text-gray-600">{job.companies?.company_name}</p>
+                      <p className="text-sm text-gray-600">{job.companies?.name}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">

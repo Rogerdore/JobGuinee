@@ -409,7 +409,7 @@ export default function Home({ onNavigate }: HomeProps) {
                       </h3>
                       <div className="flex items-center space-x-2 text-gray-700 mb-1">
                         <Building className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-sm font-medium line-clamp-1">{job.companies?.company_name}</span>
+                        <span className="text-sm font-medium line-clamp-1">{job.companies?.name}</span>
                       </div>
                       {job.location && (
                         <div className="flex items-center space-x-2 text-gray-500">
