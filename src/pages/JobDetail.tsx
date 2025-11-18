@@ -387,6 +387,42 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                   </div>
                 </div>
               )}
+
+              {job.category && (
+                <div className="flex items-center space-x-3 bg-teal-50 p-4 rounded-xl border-2 border-teal-100">
+                  <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
+                    <Tag className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 font-medium">Catégorie</div>
+                    <div className="font-bold text-gray-900">{job.category}</div>
+                  </div>
+                </div>
+              )}
+
+              {job.positions_available && job.positions_available > 1 && (
+                <div className="flex items-center space-x-3 bg-cyan-50 p-4 rounded-xl border-2 border-cyan-100">
+                  <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 font-medium">Postes disponibles</div>
+                    <div className="font-bold text-gray-900">{job.positions_available}</div>
+                  </div>
+                </div>
+              )}
+
+              {job.experience_required && (
+                <div className="flex items-center space-x-3 bg-amber-50 p-4 rounded-xl border-2 border-amber-100">
+                  <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 font-medium">Expérience requise</div>
+                    <div className="font-bold text-gray-900">{job.experience_required}</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {job.required_skills && job.required_skills.length > 0 && (
@@ -403,6 +439,42 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     >
                       {skill}
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {job.languages && job.languages.length > 0 && (
+              <div className="mb-8 p-6 bg-green-50 border-2 border-green-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <Languages className="w-5 h-5 text-green-700" />
+                  <h3 className="text-lg font-bold text-gray-900">Langues requises</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {job.languages.map((language, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium"
+                    >
+                      {language}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {job.benefits && job.benefits.length > 0 && (
+              <div className="mb-8 p-6 bg-orange-50 border-2 border-orange-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-5 h-5 text-[#FF8C00]" />
+                  <h3 className="text-lg font-bold text-gray-900">Avantages</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {job.benefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 text-[#FF8C00] flex-shrink-0" />
+                      <span>{benefit}</span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -478,6 +550,62 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {(job.application_email || job.required_documents || job.application_instructions) && (
+                <div className="border-t-2 border-gray-200 pt-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Mail className="w-6 h-6 text-[#FF8C00]" />
+                    Comment postuler
+                  </h2>
+                  <div className="bg-blue-50 p-6 rounded-xl border-2 border-blue-200 space-y-4">
+                    {job.application_email && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Email de candidature :</p>
+                        <a
+                          href={`mailto:${job.application_email}`}
+                          className="text-[#0E2F56] hover:text-[#1a4275] font-medium flex items-center gap-2"
+                        >
+                          <Mail className="w-4 h-4" />
+                          {job.application_email}
+                        </a>
+                      </div>
+                    )}
+
+                    {job.required_documents && job.required_documents.length > 0 && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Documents requis :</p>
+                        <div className="flex flex-wrap gap-2">
+                          {job.required_documents.map((doc, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1.5 bg-white border-2 border-blue-300 text-gray-800 rounded-lg text-sm font-medium flex items-center gap-1"
+                            >
+                              <FileText className="w-4 h-4" />
+                              {doc}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {job.application_instructions && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Instructions de candidature :</p>
+                        <p className="text-gray-700 leading-relaxed">{job.application_instructions}</p>
+                      </div>
+                    )}
+
+                    {job.receive_applications_in_platform && (
+                      <div className="bg-green-100 border-2 border-green-300 rounded-lg p-3">
+                        <p className="text-sm text-green-800 font-medium flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Vous pouvez également postuler directement via la plateforme
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
