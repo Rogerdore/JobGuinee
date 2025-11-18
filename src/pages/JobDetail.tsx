@@ -342,7 +342,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                 </div>
               </div>
 
-              {job.application_deadline && (
+              {job.deadline && (
                 <div className="flex items-center space-x-3 bg-red-50 p-4 rounded-xl border-2 border-red-100">
                   <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                     <Clock className="w-5 h-5 text-white" />
@@ -350,7 +350,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                   <div>
                     <div className="text-xs text-gray-500 font-medium">Date limite</div>
                     <div className="font-bold text-gray-900 text-sm">
-                      {new Date(job.application_deadline).toLocaleDateString('fr-FR', {
+                      {new Date(job.deadline).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric'

@@ -304,7 +304,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       department: data.company_name,
       experience_level: data.experience_required,
       education_level: data.education_level,
-      application_deadline: data.deadline,
+      deadline: data.deadline,
       languages: data.languages,
       required_skills: data.skills,
       benefits: data.benefits,

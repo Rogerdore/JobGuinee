@@ -155,7 +155,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
           contract_type: job.contract_type || 'CDI',
           position_count: job.positions_available || 1,
           position_level: job.experience_level || 'Intermédiaire',
-          deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().split('T')[0] : '',
+          deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
           description: job.description || '',
           skills: job.required_skills || [],
           education_level: job.education_level || 'Licence',
