@@ -654,23 +654,26 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       )}
 
       {showJobForm && (
-        <JobPublishForm
-          onPublish={handlePublishJob}
-          onClose={() => {
-            setShowJobForm(false);
-            setEditingJobId(null);
-          }}
-          companyData={company ? {
-            name: company.name,
-            description: company.description,
-            location: company.location,
-            website: company.website,
-            industry: company.industry,
-            email: company.email,
-            benefits: company.benefits
-          } : undefined}
-          editJobId={editingJobId}
-        />
+        <>
+          {console.log('🎨 Rendering JobPublishForm', { showJobForm, editingJobId, hasCompany: !!company })}
+          <JobPublishForm
+            onPublish={handlePublishJob}
+            onClose={() => {
+              setShowJobForm(false);
+              setEditingJobId(null);
+            }}
+            companyData={company ? {
+              name: company.name,
+              description: company.description,
+              location: company.location,
+              website: company.website,
+              industry: company.industry,
+              email: company.email,
+              benefits: company.benefits
+            } : undefined}
+            editJobId={editingJobId}
+          />
+        </>
       )}
 
       {showMatchingModal && selectedJobForMatching ? (
@@ -1123,8 +1126,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           onClick={(e) => {
                             e.stopPropagation();
                             console.log('🔘 Modifier button clicked!');
+                            console.log('   Job ID:', job.id);
+                            console.log('   Current showJobForm:', showJobForm);
+                            console.log('   Current editingJobId:', editingJobId);
                             setEditingJobId(job.id);
                             setShowJobForm(true);
+                            console.log('   ✅ Set editingJobId to:', job.id);
+                            console.log('   ✅ Set showJobForm to: true');
                           }}
                         >
                           <Edit2 className="w-4 h-4" />

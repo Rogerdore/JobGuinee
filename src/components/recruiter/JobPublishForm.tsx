@@ -84,6 +84,8 @@ const FormSection = ({
 );
 
 export default function JobPublishForm({ onPublish, onClose, companyData, editJobId }: JobPublishFormProps) {
+  console.log('🎯 JobPublishForm rendered with props:', { editJobId, hasCompanyData: !!companyData });
+
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -141,13 +143,16 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
 
   // Load job data if editing
   useEffect(() => {
+    console.log('📝 JobPublishForm useEffect - editJobId:', editJobId);
     if (editJobId) {
+      console.log('📥 Loading job data for editing:', editJobId);
       loadJobData(editJobId);
     }
   }, [editJobId]);
 
   const loadJobData = async (jobId: string) => {
     try {
+      console.log('🔄 loadJobData called with jobId:', jobId);
       setLoading(true);
       const { data: job, error } = await supabase
         .from('jobs')
@@ -155,9 +160,12 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
         .eq('id', jobId)
         .maybeSingle();
 
+      console.log('📊 Job data loaded:', { job, error });
+
       if (error) throw error;
 
       if (job) {
+        console.log('✅ Setting edit mode and form data');
         setIsEditMode(true);
 
         // Parse salary range
