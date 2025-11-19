@@ -160,18 +160,17 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
 
     try {
       console.log('Tentative de mise à jour du statut vers published...');
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('jobs')
         .update({ status: 'published' })
-        .eq('id', jobId)
-        .select();
+        .eq('id', jobId);
 
       if (error) {
         console.error('Erreur Supabase:', error);
         throw error;
       }
 
-      console.log('Offre mise à jour avec succès:', data);
+      console.log('Offre mise à jour avec succès');
       alert('Offre approuvée et publiée avec succès!');
       await loadJobs();
     } catch (error: any) {
