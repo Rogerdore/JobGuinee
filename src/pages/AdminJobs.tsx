@@ -73,7 +73,7 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
           id,
           title,
           company_id,
-          companies!inner(name),
+          companies(name),
           location,
           contract_type,
           salary_min,
@@ -87,7 +87,13 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
         )
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
+
+      console.log('Jobs chargés depuis Supabase:', data?.length || 0);
+      console.log('Offres draft:', data?.filter(j => j.status === 'draft').length || 0);
 
       const formattedJobs = (data || []).map((job: any) => ({
         ...job,
