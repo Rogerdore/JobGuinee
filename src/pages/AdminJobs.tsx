@@ -151,18 +151,29 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
   };
 
   const handleApproveJob = async (jobId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir approuver et publier cette offre ?')) return;
+    console.log('handleApproveJob appelé avec jobId:', jobId);
+
+    if (!confirm('Êtes-vous sûr de vouloir approuver et publier cette offre ?')) {
+      console.log('Approbation annulée par l\'utilisateur');
+      return;
+    }
 
     try {
-      const { error } = await supabase
+      console.log('Tentative de mise à jour du statut vers published...');
+      const { data, error } = await supabase
         .from('jobs')
         .update({ status: 'published' })
-        .eq('id', jobId);
+        .eq('id', jobId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
 
+      console.log('Offre mise à jour avec succès:', data);
       alert('Offre approuvée et publiée avec succès!');
-      loadJobs();
+      await loadJobs();
     } catch (error: any) {
       console.error('Erreur approbation offre:', error);
       alert('Erreur lors de l\'approbation: ' + error.message);
