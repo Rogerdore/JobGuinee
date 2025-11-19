@@ -28,6 +28,8 @@ export default function JobPricingAdmin({ onNavigate }: { onNavigate: (page: str
   const [premiumOptions, setPremiumOptions] = useState<PremiumOption[]>([]);
   const [editingBase, setEditingBase] = useState(false);
   const [baseForm, setBaseForm] = useState({ price: 500000, duration_days: 30 });
+  const [editingPremium, setEditingPremium] = useState<string | null>(null);
+  const [premiumForm, setPremiumForm] = useState({ price: 0, duration_days: 0 });
 
   useEffect(() => {
     loadData();
@@ -54,6 +56,17 @@ export default function JobPricingAdmin({ onNavigate }: { onNavigate: (page: str
 
   const togglePremium = async (id: string, active: boolean) => {
     await supabase.from('job_premium_pricing').update({ is_active: !active }).eq('id', id);
+    loadData();
+  };
+
+  const startEditPremium = (opt: PremiumOption) => {
+    setEditingPremium(opt.id);
+    setPremiumForm({ price: opt.price, duration_days: opt.duration_days });
+  };
+
+  const savePremiumPricing = async (id: string) => {
+    await supabase.from('job_premium_pricing').update(premiumForm).eq('id', id);
+    setEditingPremium(null);
     loadData();
   };
 
@@ -125,23 +138,67 @@ export default function JobPricingAdmin({ onNavigate }: { onNavigate: (page: str
             <div className="space-y-3">
               {premiumOptions.map(opt => (
                 <div key={opt.id} className={`p-4 rounded-lg border-2 ${opt.is_active ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                  {editingPremium === opt.id ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
                         {opt.feature_type === 'pinned' && <Pin className="w-4 h-4 text-purple-600" />}
                         {opt.feature_type === 'featured' && <Star className="w-4 h-4 text-amber-600" />}
                         {opt.feature_type === 'both' && <Sparkles className="w-4 h-4 text-blue-600" />}
                         <span className="font-bold">{opt.name}</span>
                       </div>
-                      <div className="text-sm text-gray-600">{opt.price.toLocaleString()} GNF · {opt.duration_days}j</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Prix (GNF)</label>
+                          <input
+                            type="number"
+                            value={premiumForm.price}
+                            onChange={e => setPremiumForm({ ...premiumForm, price: parseFloat(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Durée (jours)</label>
+                          <input
+                            type="number"
+                            value={premiumForm.duration_days}
+                            onChange={e => setPremiumForm({ ...premiumForm, duration_days: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => savePremiumPricing(opt.id)} className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setEditingPremium(null)} className="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => togglePremium(opt.id, opt.is_active)}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium ${opt.is_active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
-                    >
-                      {opt.is_active ? 'Actif' : 'Inactif'}
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {opt.feature_type === 'pinned' && <Pin className="w-4 h-4 text-purple-600" />}
+                          {opt.feature_type === 'featured' && <Star className="w-4 h-4 text-amber-600" />}
+                          {opt.feature_type === 'both' && <Sparkles className="w-4 h-4 text-blue-600" />}
+                          <span className="font-bold">{opt.name}</span>
+                        </div>
+                        <div className="text-sm text-gray-600">{opt.price.toLocaleString()} GNF · {opt.duration_days}j</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => startEditPremium(opt)} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => togglePremium(opt.id, opt.is_active)}
+                          className={`px-3 py-1 rounded-lg text-xs font-medium ${opt.is_active ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
+                        >
+                          {opt.is_active ? 'Actif' : 'Inactif'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
