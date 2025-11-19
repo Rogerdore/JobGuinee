@@ -1013,9 +1013,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             {job.location}
                           </p>
                           {job.department && (
-                            <p className="text-sm text-gray-500 flex items-center">
+                            <p className="text-sm text-gray-500 flex items-center mb-1">
                               <Briefcase className="w-3.5 h-3.5 mr-1" />
                               {job.department}
+                            </p>
+                          )}
+                          {job.deadline && (
+                            <p className="text-sm font-medium text-red-600 flex items-center">
+                              <Calendar className="w-3.5 h-3.5 mr-1" />
+                              Date limite: {new Date(job.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </p>
                           )}
                         </div>
