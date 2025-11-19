@@ -461,11 +461,12 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
 
     try {
       const fileExt = logoFile.name.split('.').pop();
-      const fileName = `logo.${fileExt}`;
+      const timestamp = Date.now();
+      const fileName = `logo-${timestamp}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('site-assets')
-        .upload(fileName, logoFile, { upsert: true });
+        .upload(fileName, logoFile);
 
       if (uploadError) throw uploadError;
 
@@ -488,11 +489,12 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
 
     try {
       const fileExt = faviconFile.name.split('.').pop();
-      const fileName = `favicon.${fileExt}`;
+      const timestamp = Date.now();
+      const fileName = `favicon-${timestamp}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('site-assets')
-        .upload(fileName, faviconFile, { upsert: true });
+        .upload(fileName, faviconFile);
 
       if (uploadError) throw uploadError;
 
