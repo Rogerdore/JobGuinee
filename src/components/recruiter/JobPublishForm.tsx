@@ -98,6 +98,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const [previousDescription, setPreviousDescription] = useState<string>('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [basePricing, setBasePricing] = useState<any>(null);
   const [pricingOptions, setPricingOptions] = useState<any[]>([]);
   const [selectedPremium, setSelectedPremium] = useState<string | null>(null);
 
@@ -112,11 +113,15 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const { getSectionConfig, getTitleClasses } = useFormConfiguration();
 
   useEffect(() => {
-    const loadPricingOptions = async () => {
-      const { data } = await supabase.from('job_premium_pricing').select('*').eq('is_active', true).order('display_order');
-      setPricingOptions(data || []);
+    const loadPricing = async () => {
+      const [base, premium] = await Promise.all([
+        supabase.from('job_publication_base_pricing').select('*').eq('is_active', true).maybeSingle(),
+        supabase.from('job_premium_pricing').select('*').eq('is_active', true).order('display_order')
+      ]);
+      setBasePricing(base.data);
+      setPricingOptions(premium.data || []);
     };
-    loadPricingOptions();
+    loadPricing();
   }, []);
 
   const [formData, setFormData] = useState<JobFormData>({
@@ -616,12 +621,18 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
       console.log('📤 Calling onPublish...');
       await onPublish(formData);
 
-      if (selectedPremium) {
-        const option = pricingOptions.find(o => o.id === selectedPremium);
-        if (option) {
-          alert(`Option premium sélectionnée: ${option.name}\nMontant à payer: ${option.price.toLocaleString()} GNF\n\nVeuillez effectuer le paiement pour activer cette option.`);
-        }
+      const baseAmount = basePricing?.price || 500000;
+      const premiumOption = selectedPremium ? pricingOptions.find(o => o.id === selectedPremium) : null;
+      const premiumAmount = premiumOption?.price || 0;
+      const totalAmount = baseAmount + premiumAmount;
+
+      let message = `Publication créée avec succès!\n\n`;
+      message += `Coût de publication: ${baseAmount.toLocaleString()} GNF\n`;
+      if (premiumOption) {
+        message += `Option premium (${premiumOption.name}): ${premiumAmount.toLocaleString()} GNF\n`;
       }
+      message += `\nMontant total à payer: ${totalAmount.toLocaleString()} GNF`;
+      alert(message);
 
       console.log('✅ onPublish completed');
     } catch (error) {
@@ -1342,10 +1353,24 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                 </div>
               </div>
 
+              <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border-2 border-orange-300">
+                <h4 className="font-bold text-lg mb-3 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-orange-600" />
+                  Coût de Publication
+                </h4>
+                {basePricing && (
+                  <div className="bg-white rounded-lg p-4 mb-4">
+                    <div className="font-bold text-2xl text-orange-600">{basePricing.price.toLocaleString()} GNF</div>
+                    <div className="text-sm text-gray-600 mt-1">{basePricing.description}</div>
+                    <div className="text-xs text-gray-500 mt-1">Durée: {basePricing.duration_days} jours</div>
+                  </div>
+                )}
+              </div>
+
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
                 <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-blue-600" />
-                  Options Premium
+                  Options Premium (Optionnel)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {pricingOptions.map(opt => (
@@ -1358,16 +1383,15 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                         <div className="flex-1">
                           <div className="font-bold text-gray-900">{opt.name}</div>
                           <div className="text-sm text-gray-600 mt-1">{opt.description}</div>
-                          <div className="font-bold text-blue-600 mt-2">{opt.price.toLocaleString()} GNF</div>
+                          <div className="font-bold text-blue-600 mt-2">+{opt.price.toLocaleString()} GNF</div>
                         </div>
                       </div>
                     </label>
                   ))}
                   <label className="cursor-pointer p-4 rounded-lg border-2 border-gray-300 bg-white hover:border-blue-400 transition">
                     <input type="radio" name="premium" checked={!selectedPremium} onChange={() => setSelectedPremium(null)} className="hidden" />
-                    <div className="font-bold text-gray-900">Sans option premium</div>
-                    <div className="text-sm text-gray-600 mt-1">Publication standard</div>
-                    <div className="font-bold text-gray-600 mt-2">Gratuit</div>
+                    <div className="font-bold text-gray-900">Sans option</div>
+                    <div className="text-sm text-gray-600 mt-1">Publication standard uniquement</div>
                   </label>
                 </div>
               </div>
