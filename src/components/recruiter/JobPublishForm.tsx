@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon, Download, Wand2, Image as ImageIcon
+  CheckCircle2, Upload as UploadIcon, Download, Wand2, Image as ImageIcon,
+  Star, Pin, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -97,6 +98,8 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const [previousDescription, setPreviousDescription] = useState<string>('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [pricingOptions, setPricingOptions] = useState<any[]>([]);
+  const [selectedPremium, setSelectedPremium] = useState<string | null>(null);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -107,6 +110,14 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const { suggestions: languageSuggestions } = useAutocomplete('language');
   const { templates, saveTemplate, incrementTemplateUsage } = useJobTemplates();
   const { getSectionConfig, getTitleClasses } = useFormConfiguration();
+
+  useEffect(() => {
+    const loadPricingOptions = async () => {
+      const { data } = await supabase.from('job_premium_pricing').select('*').eq('is_active', true).order('display_order');
+      setPricingOptions(data || []);
+    };
+    loadPricingOptions();
+  }, []);
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
@@ -604,6 +615,14 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
       setLoading(true);
       console.log('📤 Calling onPublish...');
       await onPublish(formData);
+
+      if (selectedPremium) {
+        const option = pricingOptions.find(o => o.id === selectedPremium);
+        if (option) {
+          alert(`Option premium sélectionnée: ${option.name}\nMontant à payer: ${option.price.toLocaleString()} GNF\n\nVeuillez effectuer le paiement pour activer cette option.`);
+        }
+      }
+
       console.log('✅ onPublish completed');
     } catch (error) {
       console.error('❌ Error in handlePublish:', error);
@@ -1323,16 +1342,34 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                 </div>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_premium}
-                    onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Mettre l'annonce en avant (Premium)</span>
-                </label>
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
+                <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                  Options Premium
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pricingOptions.map(opt => (
+                    <label key={opt.id} className={`cursor-pointer p-4 rounded-lg border-2 transition ${selectedPremium === opt.id ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white hover:border-blue-400'}`}>
+                      <input type="radio" name="premium" checked={selectedPremium === opt.id} onChange={() => setSelectedPremium(opt.id)} className="hidden" />
+                      <div className="flex items-start gap-3">
+                        {opt.feature_type === 'pinned' && <Pin className="w-5 h-5 text-purple-600 mt-1" />}
+                        {opt.feature_type === 'featured' && <Star className="w-5 h-5 text-amber-600 mt-1" />}
+                        {opt.feature_type === 'both' && <Sparkles className="w-5 h-5 text-blue-600 mt-1" />}
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900">{opt.name}</div>
+                          <div className="text-sm text-gray-600 mt-1">{opt.description}</div>
+                          <div className="font-bold text-blue-600 mt-2">{opt.price.toLocaleString()} GNF</div>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                  <label className="cursor-pointer p-4 rounded-lg border-2 border-gray-300 bg-white hover:border-blue-400 transition">
+                    <input type="radio" name="premium" checked={!selectedPremium} onChange={() => setSelectedPremium(null)} className="hidden" />
+                    <div className="font-bold text-gray-900">Sans option premium</div>
+                    <div className="text-sm text-gray-600 mt-1">Publication standard</div>
+                    <div className="font-bold text-gray-600 mt-2">Gratuit</div>
+                  </label>
+                </div>
               </div>
 
               <div>
