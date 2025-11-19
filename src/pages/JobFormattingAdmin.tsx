@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Type, Save, Eye, RefreshCw, Check } from 'lucide-react';
+import { Type, Save, Eye, RefreshCw, Check, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -26,7 +26,11 @@ interface FormattingConfig {
   is_active: boolean;
 }
 
-export default function JobFormattingAdmin() {
+interface JobFormattingAdminProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function JobFormattingAdmin({ onNavigate }: JobFormattingAdminProps = {}) {
   const { profile } = useAuth();
   const [config, setConfig] = useState<FormattingConfig>({
     name: 'Configuration personnalisée',
@@ -178,6 +182,15 @@ Le candidat doit être rigoureux, organisé et capable de gérer plusieurs deman
       <div className="max-w-7xl mx-auto px-4">
         <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-[#0E2F56] to-blue-700 px-8 py-6">
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('cms-admin')}
+                className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Retour à l'administration</span>
+              </button>
+            )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">

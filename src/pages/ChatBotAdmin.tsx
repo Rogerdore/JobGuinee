@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Edit2, Check, X, MessageCircle, Settings, HelpCircle, Key, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Save, Plus, Trash2, Edit2, Check, X, MessageCircle, Settings, HelpCircle, Key, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -31,7 +31,11 @@ interface FAQ {
   priority: number;
 }
 
-export default function ChatBotAdmin() {
+interface ChatBotAdminProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function ChatBotAdmin({ onNavigate }: ChatBotAdminProps = {}) {
   const { profile } = useAuth();
   const [config, setConfig] = useState<ChatBotConfig | null>(null);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -154,6 +158,15 @@ export default function ChatBotAdmin() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('cms-admin')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Retour à l'administration</span>
+            </button>
+          )}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

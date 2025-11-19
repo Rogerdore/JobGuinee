@@ -11,6 +11,7 @@ import {
   Youtube,
   Linkedin,
   Twitter,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface SocialMediaConfig {
@@ -29,7 +30,11 @@ interface SocialMediaConfig {
   enable_twitter: boolean;
 }
 
-export default function SocialMediaConfiguration() {
+interface SocialMediaConfigurationProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function SocialMediaConfiguration({ onNavigate }: SocialMediaConfigurationProps = {}) {
   const [config, setConfig] = useState<SocialMediaConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -226,6 +231,15 @@ export default function SocialMediaConfiguration() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="bg-white rounded-2xl shadow-lg p-8">
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('cms-admin')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-medium">Retour à l'administration</span>
+          </button>
+        )}
         <div className="flex items-center space-x-4 mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
             <Share2 className="w-8 h-8 text-white" />

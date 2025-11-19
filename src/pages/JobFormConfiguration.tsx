@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, Eye, EyeOff, ChevronUp, ChevronDown, Settings } from 'lucide-react';
+import { Save, RefreshCw, Eye, EyeOff, ChevronUp, ChevronDown, Settings, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
@@ -56,7 +56,11 @@ const colorOptions = [
   { value: 'purple-600', label: 'Violet', bg: 'bg-purple-600' }
 ];
 
-export default function JobFormConfiguration() {
+interface JobFormConfigurationProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function JobFormConfiguration({ onNavigate }: JobFormConfigurationProps = {}) {
   const { profile } = useAuth();
   const [sections, setSections] = useState<FormSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,6 +158,15 @@ export default function JobFormConfiguration() {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('cms-admin')}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Retour à l'administration</span>
+              </button>
+            )}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">

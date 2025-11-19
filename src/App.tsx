@@ -86,12 +86,12 @@ function AppContent() {
       {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
-      {currentPage === 'chatbot-admin' && <ChatBotAdmin />}
-      {currentPage === 'social-config' && <SocialMediaConfiguration />}
+      {currentPage === 'chatbot-admin' && <ChatBotAdmin onNavigate={handleNavigate} />}
+      {currentPage === 'social-config' && <SocialMediaConfiguration onNavigate={handleNavigate} />}
       {currentPage === 'admin-profiles' && <AdminProfiles onNavigate={handleNavigate} />}
       {currentPage === 'admin-jobs' && <AdminJobs onNavigate={handleNavigate} />}
-      {currentPage === 'job-formatting' && <JobFormattingAdmin />}
-      {currentPage === 'job-form-config' && <JobFormConfiguration />}
+      {currentPage === 'job-formatting' && <JobFormattingAdmin onNavigate={handleNavigate} />}
+      {currentPage === 'job-form-config' && <JobFormConfiguration onNavigate={handleNavigate} />}
       {currentPage === 'system-settings' && <SystemSettings />}
     </Layout>
   );
