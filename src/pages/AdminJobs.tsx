@@ -346,201 +346,255 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Rechercher par titre, entreprise ou localisation..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setFilterStatus('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-                  filterStatus === 'all'
-                    ? 'bg-blue-900 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Briefcase className="w-4 h-4" />
-                Toutes ({stats.total})
-              </button>
-              <button
-                onClick={() => setFilterStatus('draft')}
-                className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-                  filterStatus === 'draft'
-                    ? 'bg-yellow-500 text-white shadow-lg'
-                    : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
-                }`}
-              >
-                <AlertCircle className="w-4 h-4" />
-                En attente ({stats.draft})
-              </button>
-              <button
-                onClick={() => setFilterStatus('published')}
-                className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-                  filterStatus === 'published'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
-                }`}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Publiées ({stats.published})
-              </button>
-              <button
-                onClick={() => setFilterStatus('closed')}
-                className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-                  filterStatus === 'closed'
-                    ? 'bg-gray-600 text-white shadow-lg'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                <XCircle className="w-4 h-4" />
-                Fermées ({stats.closed})
-              </button>
-            </div>
+        {/* Search Bar */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Rechercher par titre, entreprise ou localisation..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
         </div>
 
-        {/* Jobs List */}
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
-            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucune offre trouvée</h3>
-            <p className="text-gray-600">Commencez par publier une nouvelle offre</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredJobs.map((job) => (
-              <div
-                key={job.id}
-                className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-lg ${
-                  job.status === 'draft'
-                    ? 'border-yellow-200 bg-yellow-50/30'
-                    : job.status === 'published'
-                    ? 'border-green-200'
-                    : 'border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <h3 className="text-xl font-bold text-gray-900">{job.title}</h3>
-                      {getStatusBadge(job.status)}
+        {/* Jobs List with Tabs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <>
+              {/* Tab Header */}
+              <div className="border-b border-gray-200 bg-gray-50">
+                <div className="flex space-x-1 p-2">
+                  <button
+                    onClick={() => setFilterStatus('all')}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                      filterStatus === 'all'
+                        ? 'bg-blue-900 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Briefcase className="w-5 h-5" />
+                      <span>Toutes</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        filterStatus === 'all' ? 'bg-white/20' : 'bg-gray-200 text-gray-700'
+                      }`}>
+                        {stats.total}
+                      </span>
                     </div>
+                  </button>
 
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
-                      <div className="flex items-center space-x-1">
-                        <Building2 className="w-4 h-4" />
-                        <span className="font-medium">{job.company_name}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{job.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{job.employment_type}</span>
-                      </div>
-                      {job.salary_min && job.salary_max && (
-                        <div className="flex items-center space-x-1">
-                          <DollarSign className="w-4 h-4" />
-                          <span>
-                            {job.salary_min.toLocaleString()} - {job.salary_max.toLocaleString()} GNF
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        <span className="font-semibold text-blue-700">{job.applications_count || 0}</span>
-                      </div>
+                  <button
+                    onClick={() => setFilterStatus('draft')}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                      filterStatus === 'draft'
+                        ? 'bg-yellow-500 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-yellow-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <AlertCircle className="w-5 h-5" />
+                      <span>En attente</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        filterStatus === 'draft' ? 'bg-white/20' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {stats.draft}
+                      </span>
                     </div>
+                  </button>
 
-                    <p className="text-gray-700 line-clamp-2 mb-3">{job.description}</p>
-
-                    <div className="flex items-center space-x-2 text-xs text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      <span>Créé le {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
+                  <button
+                    onClick={() => setFilterStatus('published')}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                      filterStatus === 'published'
+                        ? 'bg-green-600 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-green-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Publiées</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        filterStatus === 'published' ? 'bg-white/20' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {stats.published}
+                      </span>
                     </div>
-                  </div>
+                  </button>
 
-                  <div className="flex flex-col gap-2 ml-4">
-                    {job.status === 'draft' && (
-                      <>
-                        <button
-                          onClick={() => handleApproveJob(job.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 shadow-sm"
-                          title="Approuver et publier"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span className="text-sm font-medium">Approuver</span>
-                        </button>
-                        <button
-                          onClick={() => handleRejectJob(job.id)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 shadow-sm"
-                          title="Rejeter l'offre"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">Rejeter</span>
-                        </button>
-                      </>
-                    )}
-
-                    {job.status === 'published' && (
-                      <button
-                        onClick={() => handleCloseJob(job.id)}
-                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center gap-2 shadow-sm"
-                        title="Fermer l'offre"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">Fermer</span>
-                      </button>
-                    )}
-
-                    {job.status === 'closed' && (
-                      <button
-                        onClick={() => handleReopenJob(job.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 shadow-sm"
-                        title="Réouvrir l'offre"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span className="text-sm font-medium">Réouvrir</span>
-                      </button>
-                    )}
-
-                    <div className="flex gap-2 pt-2 border-t border-gray-200">
-                      <button
-                        onClick={() => onNavigate(`job-detail/${job.id}`)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteJob(job.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                  <button
+                    onClick={() => setFilterStatus('closed')}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                      filterStatus === 'closed'
+                        ? 'bg-gray-600 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <XCircle className="w-5 h-5" />
+                      <span>Fermées</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        filterStatus === 'closed' ? 'bg-white/20' : 'bg-gray-200 text-gray-700'
+                      }`}>
+                        {stats.closed}
+                      </span>
                     </div>
-                  </div>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              {/* Tab Content */}
+              <div className="p-6">
+                {filteredJobs.length === 0 ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      Aucune offre {filterStatus !== 'all' && (
+                        filterStatus === 'draft' ? 'en attente' :
+                        filterStatus === 'published' ? 'publiée' : 'fermée'
+                      )}
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      {filterStatus === 'draft' && 'Les offres soumises par les recruteurs apparaîtront ici'}
+                      {filterStatus === 'published' && 'Publiez une nouvelle offre pour commencer'}
+                      {filterStatus === 'closed' && 'Les offres fermées seront archivées ici'}
+                      {filterStatus === 'all' && 'Aucune offre disponible pour le moment'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredJobs.map((job) => (
+                      <div
+                        key={job.id}
+                        className={`rounded-lg p-5 border-2 transition-all hover:shadow-md ${
+                          job.status === 'draft'
+                            ? 'border-yellow-200 bg-yellow-50/50 hover:bg-yellow-50'
+                            : job.status === 'published'
+                            ? 'border-green-200 bg-green-50/30 hover:bg-green-50/50'
+                            : 'border-gray-200 bg-gray-50/30 hover:bg-gray-50/50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Job Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-bold text-gray-900 truncate">{job.title}</h3>
+                              {getStatusBadge(job.status)}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
+                              <div className="flex items-center gap-1">
+                                <Building2 className="w-4 h-4 flex-shrink-0" />
+                                <span className="font-medium">{job.company_name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                <span>{job.location}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                <span>{job.employment_type}</span>
+                              </div>
+                              {job.salary_min && job.salary_max && (
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                  <span>{job.salary_min.toLocaleString()} - {job.salary_max.toLocaleString()} GNF</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 bg-blue-100 px-2 py-0.5 rounded">
+                                <Users className="w-4 h-4 text-blue-700" />
+                                <span className="font-semibold text-blue-700">{job.applications_count || 0}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>Créé le {new Date(job.created_at).toLocaleDateString('fr-FR', {
+                                day: 'numeric', month: 'long', year: 'numeric'
+                              })}</span>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            {/* Toggle Status Button */}
+                            {job.status === 'draft' && (
+                              <button
+                                onClick={() => handleApproveJob(job.id)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-sm font-medium"
+                                title="Activer (Approuver et publier)"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                                Activer
+                              </button>
+                            )}
+
+                            {job.status === 'published' && (
+                              <button
+                                onClick={() => handleCloseJob(job.id)}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm font-medium"
+                                title="Désactiver (Fermer)"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                Désactiver
+                              </button>
+                            )}
+
+                            {job.status === 'closed' && (
+                              <button
+                                onClick={() => handleReopenJob(job.id)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-sm font-medium"
+                                title="Activer (Réouvrir)"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                                Activer
+                              </button>
+                            )}
+
+                            {/* Action Buttons */}
+                            <button
+                              onClick={() => onNavigate(`job-detail/${job.id}`)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                              title="Voir les détails"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+
+                            {job.status === 'draft' && (
+                              <button
+                                onClick={() => handleRejectJob(job.id)}
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                title="Rejeter"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+
+                            {job.status !== 'draft' && (
+                              <button
+                                onClick={() => handleDeleteJob(job.id)}
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Job Publish Form */}
         {showCreateModal && (
