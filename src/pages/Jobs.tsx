@@ -607,14 +607,6 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                             <Clock className="w-4 h-4 text-[#FF8C00]" />
                             <span>{getTimeAgo(job.created_at)}</span>
                           </div>
-                          {job.deadline && (
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="w-4 h-4 text-red-500" />
-                              <span className="font-medium text-red-600">
-                                Jusqu'au {new Date(job.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                              </span>
-                            </div>
-                          )}
                           <div className="flex items-center gap-1.5">
                             <TrendingUp className="w-4 h-4 text-blue-500" />
                             <span>{job.views_count} vues</span>
