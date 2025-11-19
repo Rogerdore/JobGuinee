@@ -73,7 +73,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 onClick={() => onNavigate('home')}
                 className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
               >
-                <Briefcase className="w-8 h-8" />
+                {settings.site_logo ? (
+                  <img
+                    src={settings.site_logo}
+                    alt={settings.site_name || 'Logo'}
+                    className="h-10 w-auto object-contain"
+                  />
+                ) : (
+                  <Briefcase className="w-8 h-8" />
+                )}
                 <span>{settings.site_name || 'JobGuinée'}</span>
               </button>
             </div>
@@ -332,7 +340,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <Briefcase className="w-8 h-8" />
+                {settings.site_logo ? (
+                  <img
+                    src={settings.site_logo}
+                    alt={settings.site_name || 'Logo'}
+                    className="h-10 w-auto object-contain"
+                  />
+                ) : (
+                  <Briefcase className="w-8 h-8" />
+                )}
                 <span className="text-xl font-bold">{settings.site_name || 'JobGuinée'}</span>
               </div>
               <p className="text-gray-400 mb-4">

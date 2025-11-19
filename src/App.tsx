@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CMSProvider } from './contexts/CMSContext';
 import Layout from './components/Layout';
+import DynamicHead from './components/DynamicHead';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
 import Jobs from './pages/Jobs';
@@ -69,8 +70,10 @@ function AppContent() {
   }
 
   return (
-    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
-      {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
+    <>
+      <DynamicHead />
+      <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+        {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
       {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
       {currentPage === 'job-detail' && <JobDetail jobId={selectedJobId} onNavigate={handleNavigate} />}
       {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}
@@ -97,7 +100,8 @@ function AppContent() {
       {currentPage === 'system-settings' && <SystemSettings />}
       {currentPage === 'job-pricing' && <JobPricingAdmin onNavigate={handleNavigate} />}
       {currentPage === 'premium-services-admin' && <PremiumServicesAdmin onNavigate={handleNavigate} />}
-    </Layout>
+      </Layout>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCMS } from '../contexts/CMSContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -9,6 +10,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) {
   const { profile, signOut } = useAuth();
+  const { settings } = useCMS();
 
   const handleSignOut = async () => {
     try {
@@ -29,7 +31,15 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
                 onClick={() => onNavigate('cms-admin')}
                 className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
               >
-                <Settings className="w-8 h-8" />
+                {settings.site_logo ? (
+                  <img
+                    src={settings.site_logo}
+                    alt={settings.site_name || 'Logo'}
+                    className="h-10 w-auto object-contain"
+                  />
+                ) : (
+                  <Settings className="w-8 h-8" />
+                )}
                 <span>Administration</span>
               </button>
             </div>
@@ -145,8 +155,16 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Briefcase className="w-6 h-6" />
-              <span className="font-bold">JobGuinée - Administration</span>
+              {settings.site_logo ? (
+                <img
+                  src={settings.site_logo}
+                  alt={settings.site_name || 'Logo'}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                <Briefcase className="w-6 h-6" />
+              )}
+              <span className="font-bold">{settings.site_name || 'JobGuinée'} - Administration</span>
             </div>
             <p className="text-gray-400 text-sm">&copy; 2025 Tous droits réservés</p>
           </div>
