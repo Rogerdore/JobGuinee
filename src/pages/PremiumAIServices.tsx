@@ -65,8 +65,9 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
   const [phoneNumber, setPhoneNumber] = useState('');
   const [adminPhoneNumber, setAdminPhoneNumber] = useState<string>('');
   const [showDirectPayment, setShowDirectPayment] = useState(false);
+  const [services, setServices] = useState<ServiceConfig[]>([]);
 
-  const services: ServiceConfig[] = [
+  const defaultServices: ServiceConfig[] = [
     {
       id: 'profile_analysis',
       name: 'Analyse IA de profil',
@@ -190,11 +191,40 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
   ];
 
   useEffect(() => {
+    loadServicesFromDB();
     if (user) {
       loadPremiumStatus();
       loadAdminPhoneNumber();
     }
   }, [user]);
+
+  const loadServicesFromDB = async () => {
+    try {
+      const { data: creditCosts } = await supabase
+        .from('service_credit_costs')
+        .select('*')
+        .eq('is_active', true);
+
+      if (creditCosts && creditCosts.length > 0) {
+        const updatedServices = defaultServices.map(service => {
+          const dbService = creditCosts.find(c => c.service_code === service.serviceType);
+          if (dbService) {
+            return {
+              ...service,
+              credits: dbService.credits_cost,
+            };
+          }
+          return service;
+        });
+        setServices(updatedServices);
+      } else {
+        setServices(defaultServices);
+      }
+    } catch (error) {
+      console.error('Error loading services from DB:', error);
+      setServices(defaultServices);
+    }
+  };
 
   const loadAdminPhoneNumber = async () => {
     try {

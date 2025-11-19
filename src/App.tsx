@@ -30,8 +30,9 @@ import JobFormattingAdmin from './pages/JobFormattingAdmin';
 import JobFormConfiguration from './pages/JobFormConfiguration';
 import SystemSettings from './pages/SystemSettings';
 import JobPricingAdmin from './pages/JobPricingAdmin';
+import PremiumServicesAdmin from './pages/PremiumServicesAdmin';
 
-type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -95,6 +96,7 @@ function AppContent() {
       {currentPage === 'job-form-config' && <JobFormConfiguration onNavigate={handleNavigate} />}
       {currentPage === 'system-settings' && <SystemSettings />}
       {currentPage === 'job-pricing' && <JobPricingAdmin onNavigate={handleNavigate} />}
+      {currentPage === 'premium-services-admin' && <PremiumServicesAdmin onNavigate={handleNavigate} />}
     </Layout>
   );
 }
