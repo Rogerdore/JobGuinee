@@ -512,19 +512,27 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
+      console.log('Starting save settings...');
+
       if (logoFile) {
+        console.log('Uploading logo...');
         const logoUrl = await uploadLogo();
         if (logoUrl) {
+          console.log('Logo uploaded:', logoUrl);
           editingSettings['site_logo'] = logoUrl;
         }
       }
 
       if (faviconFile) {
+        console.log('Uploading favicon...');
         const faviconUrl = await uploadFavicon();
         if (faviconUrl) {
+          console.log('Favicon uploaded:', faviconUrl);
           editingSettings['site_favicon'] = faviconUrl;
         }
       }
+
+      console.log('Editing settings to save:', editingSettings);
 
       const updates = Object.entries(editingSettings).map(([key, value]) => ({
         setting_key: key,
@@ -532,23 +540,36 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
         updated_at: new Date().toISOString(),
       }));
 
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('site_settings')
-          .update({ setting_value: update.setting_value })
-          .eq('setting_key', update.setting_key);
+      console.log('Updates to apply:', updates);
 
-        if (error) throw error;
+      for (const update of updates) {
+        console.log('Updating setting:', update.setting_key);
+        const { data, error } = await supabase
+          .from('site_settings')
+          .update({
+            setting_value: update.setting_value,
+            updated_at: update.updated_at
+          })
+          .eq('setting_key', update.setting_key)
+          .select();
+
+        if (error) {
+          console.error('Error updating setting:', update.setting_key, error);
+          throw error;
+        }
+        console.log('Successfully updated:', update.setting_key, data);
       }
 
       await refreshSettings();
       await loadAllSettings();
       setLogoFile(null);
       setFaviconFile(null);
+      setLogoPreview('');
+      setFaviconPreview('');
       alert('Paramètres enregistrés avec succès');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving settings:', error);
-      alert('Erreur lors de l\'enregistrement');
+      alert(`Erreur lors de l'enregistrement: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setSaving(false);
     }

@@ -73,7 +73,9 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
   const handleUpdatePremiumService = async (service: PremiumService) => {
     setSaving(true);
     try {
-      const { error } = await supabase
+      console.log('Updating premium service:', service);
+
+      const { data, error } = await supabase
         .from('premium_services')
         .update({
           name: service.name,
@@ -83,16 +85,21 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
           features: service.features,
           updated_at: new Date().toISOString()
         })
-        .eq('id', service.id);
+        .eq('id', service.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Update successful:', data);
       await loadServices();
       setEditingService(null);
       alert('Service mis à jour avec succès');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating service:', error);
-      alert('Erreur lors de la mise à jour');
+      alert(`Erreur lors de la mise à jour: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setSaving(false);
     }
@@ -101,7 +108,9 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
   const handleUpdateCreditService = async (service: ServiceCreditCost) => {
     setSaving(true);
     try {
-      const { error } = await supabase
+      console.log('Updating credit service:', service);
+
+      const { data, error } = await supabase
         .from('service_credit_costs')
         .update({
           service_name: service.service_name,
@@ -110,16 +119,21 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
           is_active: service.is_active,
           updated_at: new Date().toISOString()
         })
-        .eq('id', service.id);
+        .eq('id', service.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Update successful:', data);
       await loadServices();
       setEditingCreditService(null);
       alert('Service mis à jour avec succès');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating service:', error);
-      alert('Erreur lors de la mise à jour');
+      alert(`Erreur lors de la mise à jour: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setSaving(false);
     }
