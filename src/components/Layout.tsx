@@ -1,6 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download, Type } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCMS } from '../contexts/CMSContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatBot from './ChatBot';
 import FloatingSocialMedia from './FloatingSocialMedia';
@@ -13,6 +14,7 @@ interface LayoutProps {
 
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, profile, signOut, isAdmin } = useAuth();
+  const { settings } = useCMS();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -367,9 +369,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div>
               <h3 className="font-semibold mb-4">Contact</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>Email: contact@jobguinee.com</li>
-                <li>Tel: +224 XXX XX XX XX</li>
-                <li>Conakry, Guinée</li>
+                <li>Email: {settings.contact_email || 'contact@jobguinee.com'}</li>
+                <li>Tel: {settings.contact_phone || '+224 XXX XX XX XX'}</li>
+                <li>{settings.contact_address || 'Conakry, Guinée'}</li>
               </ul>
             </div>
           </div>
