@@ -23,6 +23,8 @@ import {
   XCircle,
   FileText,
   TrendingUp,
+  Star,
+  Pin,
 } from 'lucide-react';
 
 interface Job {
@@ -39,6 +41,8 @@ interface Job {
   status: string;
   created_at: string;
   applications_count: number;
+  is_featured: boolean;
+  is_pinned: boolean;
 }
 
 interface Company {
@@ -82,9 +86,13 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
           requirements,
           status,
           created_at,
-          applications_count
+          applications_count,
+          is_featured,
+          is_pinned
         `
         )
+        .order('is_pinned', { ascending: false })
+        .order('is_featured', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -234,6 +242,40 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
     } catch (error: any) {
       console.error('Erreur réouverture offre:', error);
       alert('Erreur lors de la réouverture: ' + error.message);
+    }
+  };
+
+  const handleToggleFeatured = async (jobId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ is_featured: !currentValue })
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      alert(currentValue ? 'Offre retirée de la une' : 'Offre mise à la une!');
+      loadJobs();
+    } catch (error: any) {
+      console.error('Erreur toggle featured:', error);
+      alert('Erreur lors de la mise à jour: ' + error.message);
+    }
+  };
+
+  const handleTogglePinned = async (jobId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ is_pinned: !currentValue })
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      alert(currentValue ? 'Offre désépinglée' : 'Offre épinglée!');
+      loadJobs();
+    } catch (error: any) {
+      console.error('Erreur toggle pinned:', error);
+      alert('Erreur lors de la mise à jour: ' + error.message);
     }
   };
 
@@ -502,6 +544,18 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
                             <div className="flex items-center gap-3 mb-2">
                               <h3 className="text-lg font-bold text-gray-900 truncate">{job.title}</h3>
                               {getStatusBadge(job.status)}
+                              {job.is_pinned && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  <Pin className="w-3 h-3 mr-1" />
+                                  Épinglée
+                                </span>
+                              )}
+                              {job.is_featured && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  À la une
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
@@ -571,6 +625,35 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
                                 <CheckCircle2 className="w-4 h-4" />
                                 Activer
                               </button>
+                            )}
+
+                            {/* Featured and Pinned Buttons - Only for published jobs */}
+                            {job.status === 'published' && (
+                              <>
+                                <button
+                                  onClick={() => handleToggleFeatured(job.id, job.is_featured)}
+                                  className={`p-2 rounded-lg transition-colors ${
+                                    job.is_featured
+                                      ? 'text-amber-600 bg-amber-100 hover:bg-amber-200'
+                                      : 'text-gray-600 hover:bg-amber-50'
+                                  }`}
+                                  title={job.is_featured ? 'Retirer de la une' : 'Mettre à la une'}
+                                >
+                                  <Star className={`w-5 h-5 ${job.is_featured ? 'fill-amber-600' : ''}`} />
+                                </button>
+
+                                <button
+                                  onClick={() => handleTogglePinned(job.id, job.is_pinned)}
+                                  className={`p-2 rounded-lg transition-colors ${
+                                    job.is_pinned
+                                      ? 'text-purple-600 bg-purple-100 hover:bg-purple-200'
+                                      : 'text-gray-600 hover:bg-purple-50'
+                                  }`}
+                                  title={job.is_pinned ? 'Désépingler' : 'Épingler'}
+                                >
+                                  <Pin className={`w-5 h-5 ${job.is_pinned ? 'fill-purple-600' : ''}`} />
+                                </button>
+                              </>
                             )}
 
                             {/* Action Buttons */}
