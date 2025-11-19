@@ -109,6 +109,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [showPublicationSuccessModal, setShowPublicationSuccessModal] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const [showViewsModal, setShowViewsModal] = useState(false);
+  const [selectedJobForViews, setSelectedJobForViews] = useState<Job | null>(null);
 
   useEffect(() => {
     loadData();
@@ -649,6 +651,109 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               >
                 Contacter maintenant
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showViewsModal && selectedJobForViews && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Statistiques des vues</h2>
+                  <p className="text-sm text-gray-600">{selectedJobForViews.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowViewsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-6">
+                <div className="text-center">
+                  <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
+                    {selectedJobForViews.views_count || 0}
+                  </div>
+                  <p className="text-gray-700 font-medium">Vues totales</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-5">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-gray-600" />
+                  Informations sur l'offre
+                </h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Localisation:</span>
+                    <span>{selectedJobForViews.location}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Type de contrat:</span>
+                    <span>{selectedJobForViews.contract_type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Candidatures:</span>
+                    <span className="font-semibold text-green-600">{selectedJobForViews.applications_count || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Publiée le:</span>
+                    <span>{new Date(selectedJobForViews.created_at).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  {selectedJobForViews.deadline && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Date limite:</span>
+                      <span className="text-red-600 font-medium">
+                        {new Date(selectedJobForViews.deadline).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
+                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-blue-600" />
+                  Taux de conversion
+                </h3>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600 mb-1">
+                    {selectedJobForViews.views_count > 0
+                      ? ((selectedJobForViews.applications_count / selectedJobForViews.views_count) * 100).toFixed(1)
+                      : 0}%
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {selectedJobForViews.applications_count || 0} candidatures sur {selectedJobForViews.views_count || 0} vues
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowViewsModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={() => {
+                  setShowViewsModal(false);
+                  onNavigate('job-detail', selectedJobForViews.id);
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition"
+              >
+                Voir l'offre
+              </button>
             </div>
           </div>
         </div>
