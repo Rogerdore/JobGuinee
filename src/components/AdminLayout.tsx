@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -81,6 +81,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <FileEdit className="w-4 h-4" />
                 <span>Formulaire</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('job-pricing')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <DollarSign className="w-4 h-4" />
+                <span>Tarifs</span>
               </button>
 
               <button
