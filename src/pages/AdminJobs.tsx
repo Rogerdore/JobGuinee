@@ -31,7 +31,7 @@ interface Job {
   company_id: string;
   company_name: string;
   location: string;
-  employment_type: string;
+  contract_type: string;
   salary_min: number;
   salary_max: number;
   description: string;
@@ -75,7 +75,7 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
           company_id,
           companies!inner(name),
           location,
-          employment_type,
+          contract_type,
           salary_min,
           salary_max,
           description,
@@ -499,7 +499,7 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="w-4 h-4 flex-shrink-0" />
-                                <span>{job.employment_type}</span>
+                                <span>{job.contract_type}</span>
                               </div>
                               {job.salary_min && job.salary_max && (
                                 <div className="flex items-center gap-1">
