@@ -469,6 +469,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       }
 
       await refreshSettings();
+      await loadAllSettings();
       alert('Paramètres enregistrés avec succès');
     } catch (error) {
       console.error('Error saving settings:', error);
