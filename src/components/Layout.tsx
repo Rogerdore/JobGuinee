@@ -74,7 +74,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
               >
                 <Briefcase className="w-8 h-8" />
-                <span>JobGuinée</span>
+                <span>{settings.site_name || 'JobGuinée'}</span>
               </button>
             </div>
 
@@ -333,10 +333,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
                 <Briefcase className="w-8 h-8" />
-                <span className="text-xl font-bold">JobGuinée</span>
+                <span className="text-xl font-bold">{settings.site_name || 'JobGuinée'}</span>
               </div>
               <p className="text-gray-400 mb-4">
-                La plateforme de recrutement moderne pour digitaliser le marché de l'emploi en Guinée.
+                {settings.site_description || 'La plateforme de recrutement moderne pour digitaliser le marché de l\'emploi en Guinée.'}
               </p>
             </div>
 
@@ -377,7 +377,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-            <p>&copy; 2025 JobGuinée. Tous droits réservés.</p>
+            <p>&copy; 2025 {settings.site_name || 'JobGuinée'}. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
