@@ -63,6 +63,11 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     is_active: true
   });
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string>('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     loadAllSettings();
@@ -450,9 +455,77 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     }
   };
 
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile || !user) return null;
+    setUploadingLogo(true);
+
+    try {
+      const fileExt = logoFile.name.split('.').pop();
+      const fileName = `logo.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(fileName, logoFile, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      return null;
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const uploadFavicon = async (): Promise<string | null> => {
+    if (!faviconFile || !user) return null;
+    setUploadingLogo(true);
+
+    try {
+      const fileExt = faviconFile.name.split('.').pop();
+      const fileName = `favicon.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(fileName, faviconFile, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading favicon:', error);
+      return null;
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
+      if (logoFile) {
+        const logoUrl = await uploadLogo();
+        if (logoUrl) {
+          editingSettings['site_logo'] = logoUrl;
+        }
+      }
+
+      if (faviconFile) {
+        const faviconUrl = await uploadFavicon();
+        if (faviconUrl) {
+          editingSettings['site_favicon'] = faviconUrl;
+        }
+      }
+
       const updates = Object.entries(editingSettings).map(([key, value]) => ({
         setting_key: key,
         setting_value: { value },
@@ -470,6 +543,8 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
 
       await refreshSettings();
       await loadAllSettings();
+      setLogoFile(null);
+      setFaviconFile(null);
       alert('Paramètres enregistrés avec succès');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -660,7 +735,105 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             {setting.description || setting.setting_key}
                           </label>
-                          {typeof editingSettings[setting.setting_key] === 'boolean' ? (
+                          {setting.setting_key === 'site_logo' ? (
+                            <div className="space-y-4">
+                              {(logoPreview || editingSettings[setting.setting_key]) && (
+                                <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-white flex items-center justify-center">
+                                  <img
+                                    src={logoPreview || editingSettings[setting.setting_key]}
+                                    alt="Logo"
+                                    className="max-h-full max-w-full object-contain p-2"
+                                  />
+                                  {logoPreview && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setLogoFile(null);
+                                        setLogoPreview('');
+                                      }}
+                                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                                <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                                  <Image className="w-8 h-8 text-gray-400 mb-1" />
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-semibold">Cliquer pour uploader</span>
+                                  </p>
+                                  <p className="text-xs text-gray-500">PNG, JPG ou SVG</p>
+                                </div>
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file && file.type.startsWith('image/')) {
+                                      setLogoFile(file);
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        setLogoPreview(reader.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          ) : setting.setting_key === 'site_favicon' ? (
+                            <div className="space-y-4">
+                              {(faviconPreview || editingSettings[setting.setting_key]) && (
+                                <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-200 bg-white flex items-center justify-center">
+                                  <img
+                                    src={faviconPreview || editingSettings[setting.setting_key]}
+                                    alt="Favicon"
+                                    className="max-h-full max-w-full object-contain p-2"
+                                  />
+                                  {faviconPreview && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFaviconFile(null);
+                                        setFaviconPreview('');
+                                      }}
+                                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                                <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                                  <Image className="w-8 h-8 text-gray-400 mb-1" />
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-semibold">Cliquer pour uploader</span>
+                                  </p>
+                                  <p className="text-xs text-gray-500">ICO, PNG (32x32)</p>
+                                </div>
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept="image/*,.ico"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      setFaviconFile(file);
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        setFaviconPreview(reader.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          ) : typeof editingSettings[setting.setting_key] === 'boolean' ? (
                             <label className="flex items-center space-x-2 cursor-pointer">
                               <input
                                 type="checkbox"
@@ -687,11 +860,11 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 <div className="flex justify-end pt-6 border-t border-gray-200">
                   <button
                     onClick={handleSaveSettings}
-                    disabled={saving}
+                    disabled={saving || uploadingLogo}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 text-white font-semibold rounded-xl transition shadow-lg disabled:opacity-50"
                   >
                     <Save className="w-5 h-5" />
-                    {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                    {uploadingLogo ? 'Upload en cours...' : saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
                   </button>
                 </div>
               </div>
