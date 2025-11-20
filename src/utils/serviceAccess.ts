@@ -1,11 +1,71 @@
 import { supabase } from '../lib/supabase';
 
+export async function useServiceCredits(
+  userId: string,
+  serviceCode: string,
+  amount: number = 1
+): Promise<{ success: boolean; newBalance: number; error?: string }> {
+  try {
+    const { data: serviceData } = await supabase
+      .from('premium_services')
+      .select('id')
+      .eq('code', serviceCode)
+      .single();
+
+    if (!serviceData) {
+      return { success: false, newBalance: 0, error: 'Service not found' };
+    }
+
+    const { data: creditsData } = await supabase
+      .from('user_service_credits')
+      .select('credits_balance')
+      .eq('user_id', userId)
+      .eq('service_id', serviceData.id)
+      .maybeSingle();
+
+    const currentBalance = creditsData?.credits_balance || 0;
+
+    if (currentBalance < amount) {
+      return { success: false, newBalance: currentBalance, error: 'Insufficient credits' };
+    }
+
+    const newBalance = currentBalance - amount;
+
+    const { error: updateError } = await supabase
+      .from('user_service_credits')
+      .update({ credits_balance: newBalance, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('service_id', serviceData.id);
+
+    if (updateError) {
+      return { success: false, newBalance: currentBalance, error: updateError.message };
+    }
+
+    await supabase
+      .from('user_service_credit_transactions')
+      .insert({
+        user_id: userId,
+        service_id: serviceData.id,
+        amount: -amount,
+        balance_after: newBalance,
+        transaction_type: 'usage',
+        performed_by: userId
+      });
+
+    return { success: true, newBalance };
+  } catch (error: any) {
+    console.error('Error using service credits:', error);
+    return { success: false, newBalance: 0, error: error.message };
+  }
+}
+
 export interface ServiceAccessInfo {
   hasAccess: boolean;
   isGrantedByAdmin: boolean;
   isExpired: boolean;
   expiresAt: string | null;
   needsCredits: boolean;
+  creditsBalance: number;
 }
 
 export async function checkServiceAccess(
@@ -13,51 +73,53 @@ export async function checkServiceAccess(
   serviceCode: string
 ): Promise<ServiceAccessInfo> {
   try {
-    const { data, error } = await supabase.rpc('user_has_service_access', {
-      p_user_id: userId,
-      p_service_code: serviceCode
-    });
+    const { data: serviceData } = await supabase
+      .from('premium_services')
+      .select('id')
+      .eq('code', serviceCode)
+      .single();
 
-    if (error) {
-      console.error('Error checking service access:', error);
+    if (!serviceData) {
       return {
         hasAccess: false,
         isGrantedByAdmin: false,
         isExpired: false,
         expiresAt: null,
-        needsCredits: true
+        needsCredits: true,
+        creditsBalance: 0
       };
     }
 
-    const hasAdminAccess = data === true;
+    const { data: creditsData } = await supabase
+      .from('user_service_credits')
+      .select('credits_balance')
+      .eq('user_id', userId)
+      .eq('service_id', serviceData.id)
+      .maybeSingle();
 
-    if (hasAdminAccess) {
-      const { data: accessData } = await supabase
-        .from('user_service_access')
-        .select('expires_at, is_active')
-        .eq('user_id', userId)
-        .eq('service_code', serviceCode)
-        .single();
+    const creditsBalance = creditsData?.credits_balance || 0;
 
-      const isExpired = accessData?.expires_at
-        ? new Date(accessData.expires_at) < new Date()
-        : false;
+    const { data: adminAccess } = await supabase
+      .from('user_service_access')
+      .select('expires_at, is_active')
+      .eq('user_id', userId)
+      .eq('service_code', serviceCode)
+      .maybeSingle();
 
-      return {
-        hasAccess: true,
-        isGrantedByAdmin: true,
-        isExpired,
-        expiresAt: accessData?.expires_at || null,
-        needsCredits: false
-      };
-    }
+    const hasAdminAccess = adminAccess?.is_active || false;
+    const isExpired = adminAccess?.expires_at
+      ? new Date(adminAccess.expires_at) < new Date()
+      : false;
+
+    const hasAccess = (hasAdminAccess && !isExpired) || creditsBalance > 0;
 
     return {
-      hasAccess: false,
-      isGrantedByAdmin: false,
-      isExpired: false,
-      expiresAt: null,
-      needsCredits: true
+      hasAccess,
+      isGrantedByAdmin: hasAdminAccess,
+      isExpired,
+      expiresAt: adminAccess?.expires_at || null,
+      needsCredits: creditsBalance === 0,
+      creditsBalance
     };
   } catch (error) {
     console.error('Error in checkServiceAccess:', error);
@@ -66,13 +128,29 @@ export async function checkServiceAccess(
       isGrantedByAdmin: false,
       isExpired: false,
       expiresAt: null,
-      needsCredits: true
+      needsCredits: true,
+      creditsBalance: 0
     };
   }
 }
 
 export async function getUserServiceAccessList(userId: string): Promise<Record<string, ServiceAccessInfo>> {
   try {
+    const { data: services } = await supabase
+      .from('premium_services')
+      .select('id, code');
+
+    if (!services) return {};
+
+    const { data: creditsData } = await supabase
+      .from('user_service_credits')
+      .select('service_id, credits_balance')
+      .eq('user_id', userId);
+
+    const creditsMap = new Map(
+      (creditsData || []).map(c => [c.service_id, c.credits_balance])
+    );
+
     const { data: accessList } = await supabase
       .from('user_service_access')
       .select('service_code, is_active, expires_at')
@@ -81,20 +159,24 @@ export async function getUserServiceAccessList(userId: string): Promise<Record<s
 
     const serviceAccessMap: Record<string, ServiceAccessInfo> = {};
 
-    if (accessList) {
-      for (const access of accessList) {
-        const isExpired = access.expires_at
-          ? new Date(access.expires_at) < new Date()
-          : false;
+    for (const service of services) {
+      const adminAccess = accessList?.find(a => a.service_code === service.code);
+      const creditsBalance = creditsMap.get(service.id) || 0;
+      const isExpired = adminAccess?.expires_at
+        ? new Date(adminAccess.expires_at) < new Date()
+        : false;
 
-        serviceAccessMap[access.service_code] = {
-          hasAccess: !isExpired,
-          isGrantedByAdmin: true,
-          isExpired,
-          expiresAt: access.expires_at,
-          needsCredits: isExpired
-        };
-      }
+      const hasAdminAccess = adminAccess && !isExpired;
+      const hasAccess = hasAdminAccess || creditsBalance > 0;
+
+      serviceAccessMap[service.code] = {
+        hasAccess: Boolean(hasAccess),
+        isGrantedByAdmin: Boolean(hasAdminAccess),
+        isExpired,
+        expiresAt: adminAccess?.expires_at || null,
+        needsCredits: creditsBalance === 0,
+        creditsBalance
+      };
     }
 
     return serviceAccessMap;
