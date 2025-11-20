@@ -66,7 +66,7 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
   const [phoneNumber, setPhoneNumber] = useState('');
   const [adminPhoneNumber, setAdminPhoneNumber] = useState<string>('');
   const [showDirectPayment, setShowDirectPayment] = useState(false);
-  const [services, setServices] = useState<ServiceConfig[]>([]);
+  const [grantedServices, setGrantedServices] = useState<Record<string, ServiceAccessInfo>>({});
 
   const defaultServices: ServiceConfig[] = [
     {
@@ -191,6 +191,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
     },
   ];
 
+  const [services, setServices] = useState<ServiceConfig[]>(defaultServices);
+
   useEffect(() => {
     const loadAll = async () => {
       await loadServicesFromDB();
@@ -198,6 +200,20 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
         await loadPremiumStatus();
         await loadAdminPhoneNumber();
         await loadGrantedServices();
+      } else {
+        // Si pas d'utilisateur, afficher quand même la page avec services par défaut
+        setPremiumStatus({
+          subscription_type: 'free',
+          status: 'active',
+          credits: {
+            global_balance: {
+              available: 0,
+              used: 0,
+              total: 0
+            }
+          }
+        });
+        setLoading(false);
       }
     };
     loadAll();
