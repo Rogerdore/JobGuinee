@@ -1,7 +1,7 @@
 import {
   Briefcase, Users, BookOpen, FileText, GraduationCap,
   Mail, Phone, MapPin, Facebook, Twitter, Linkedin,
-  Instagram, Youtube, ExternalLink
+  Instagram, Youtube
 } from 'lucide-react';
 import { useCMS } from '../contexts/CMSContext';
 
@@ -74,24 +74,6 @@ export default function Footer({ onNavigate }: FooterProps) {
       icon: Youtube,
       url: getSetting('social_youtube') || '#',
       color: 'hover:text-red-600'
-    },
-  ];
-
-  const partnerSites = [
-    {
-      name: 'Ministère du Travail Guinée',
-      url: 'https://www.gouvernement.gov.gn',
-      description: 'Site officiel du gouvernement'
-    },
-    {
-      name: 'AGUIPE',
-      url: 'https://aguipe.org',
-      description: 'Agence guinéenne pour la promotion de l\'emploi'
-    },
-    {
-      name: 'LinkedIn Guinée',
-      url: 'https://www.linkedin.com/jobs/guinea-jobs',
-      description: 'Emplois en Guinée sur LinkedIn'
     },
   ];
 
@@ -191,27 +173,6 @@ export default function Footer({ onNavigate }: FooterProps) {
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-blue-700 pt-8 mb-8">
-          <h3 className="font-bold text-lg mb-4 text-[#FF8C00]">Partenaires et liens externes</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {partnerSites.map((partner, index) => (
-              <a
-                key={index}
-                href={partner.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="flex items-start space-x-2 text-blue-200 hover:text-white transition p-3 bg-white/5 rounded-lg hover:bg-white/10"
-              >
-                <ExternalLink className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-medium text-sm">{partner.name}</div>
-                  <div className="text-xs opacity-75">{partner.description}</div>
-                </div>
-              </a>
-            ))}
           </div>
         </div>
 
