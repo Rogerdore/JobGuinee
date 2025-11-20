@@ -41,6 +41,8 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [jobSearchParams, setJobSearchParams] = useState<string>('');
+  const [selectedJobForCV, setSelectedJobForCV] = useState<any>(null);
+  const [returnToCV, setReturnToCV] = useState(false);
   const { loading } = useAuth();
 
   const handleNavigate = (page: string, param?: string) => {
@@ -78,7 +80,18 @@ function AppContent() {
       <DynamicHead />
       <Layout currentPage={currentPage} onNavigate={handleNavigate}>
         {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
-      {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
+      {currentPage === 'jobs' && (
+        <Jobs
+          onNavigate={handleNavigate}
+          initialSearch={jobSearchParams}
+          selectMode={returnToCV}
+          onSelectJob={(job) => {
+            setSelectedJobForCV(job);
+            setReturnToCV(false);
+            handleNavigate('ai-cv-generator');
+          }}
+        />
+      )}
       {currentPage === 'job-detail' && <JobDetail jobId={selectedJobId} onNavigate={handleNavigate} />}
       {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}
       {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
@@ -92,7 +105,22 @@ function AppContent() {
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm onNavigate={handleNavigate} />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} onBack={() => handleNavigate('candidate-dashboard')} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
-      {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
+      {currentPage === 'ai-cv-generator' && (
+        <AICVGenerator
+          onNavigate={handleNavigate}
+          onNavigateToJobs={() => {
+            setSelectedJobForCV(null);
+            setReturnToCV(true);
+            handleNavigate('jobs');
+          }}
+          preSelectedJob={selectedJobForCV}
+          onBack={() => {
+            setSelectedJobForCV(null);
+            setReturnToCV(false);
+            handleNavigate('premium-ai');
+          }}
+        />
+      )}
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
       {currentPage === 'chatbot-admin' && <ChatBotAdmin onNavigate={handleNavigate} />}

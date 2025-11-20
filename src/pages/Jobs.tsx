@@ -14,9 +14,11 @@ import DynamicHead from '../components/DynamicHead';
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
   initialSearch?: string;
+  selectMode?: boolean;
+  onSelectJob?: (job: any) => void;
 }
 
-export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
+export default function Jobs({ onNavigate, initialSearch, selectMode, onSelectJob }: JobsProps) {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<(Job & { companies: Company })[]>([]);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
@@ -366,6 +368,27 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 -mt-8 relative z-20">
+        {selectMode && (
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-6 mb-6 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Target className="w-8 h-8" />
+                <div>
+                  <h3 className="text-xl font-bold">Mode Sélection d'Offre</h3>
+                  <p className="text-blue-100 text-sm">Choisissez une offre pour générer votre CV/Lettre de motivation</p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate('ai-cv-generator')}
+                className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-medium flex items-center space-x-2"
+              >
+                <X className="w-5 h-5" />
+                <span>Annuler</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {showFilters && (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
@@ -704,20 +727,36 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                           <Share2 className="w-5 h-5" />
                         </button>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('Navigating to job:', job.id);
-                          onNavigate('job-detail', job.id);
-                        }}
-                        className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg group"
-                      >
-                        <span className="flex items-center justify-center">
-                          Voir l'offre
-                          <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                        </span>
-                      </button>
+                      {selectMode ? (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onSelectJob?.(job);
+                          }}
+                          className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg group"
+                        >
+                          <span className="flex items-center justify-center">
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            Sélectionner cette offre
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Navigating to job:', job.id);
+                            onNavigate('job-detail', job.id);
+                          }}
+                          className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg group"
+                        >
+                          <span className="flex items-center justify-center">
+                            Voir l'offre
+                            <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
