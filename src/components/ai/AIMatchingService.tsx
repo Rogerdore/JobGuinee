@@ -85,9 +85,11 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
     setLoadingCredits(true);
     try {
       // Récupérer le solde
-      const balance = await supabase.rpc('get_user_credit_balance', {
+      const { data: balance, error } = await supabase.rpc('get_user_credit_balance', {
         p_user_id: user.id
       });
+
+      if (error) throw error;
 
       setCreditBalance(balance || 0);
 

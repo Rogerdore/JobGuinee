@@ -249,18 +249,18 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
       console.log('Loading premium status for user:', user.id);
 
       // Récupérer le solde de crédits global
-      const { data: balance, error } = await supabase.rpc('get_user_credit_balance', {
+      const { data, error } = await supabase.rpc('get_user_credit_balance', {
         p_user_id: user.id
       });
 
-      console.log('Balance response:', { balance, error });
+      console.log('Balance response:', { data, error });
 
       if (error) {
         console.error('Error loading balance:', error);
         throw error;
       }
 
-      const creditBalance = balance || 0;
+      const creditBalance = data || 0;
 
       // Créer un status fictif pour compatibilité avec l'interface
       setPremiumStatus({
