@@ -18,6 +18,20 @@ interface JobDetailProps {
   onNavigate: (page: string) => void;
 }
 
+const parseJsonField = (field: any): string[] => {
+  if (!field) return [];
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'string') {
+    try {
+      const parsed = JSON.parse(field);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   console.log('🎯 JobDetail component rendered with jobId:', jobId);
 
@@ -473,14 +487,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
               )}
             </div>
 
-            {job.required_skills && job.required_skills.length > 0 && (
+            {parseJsonField(job.required_skills).length > 0 && (
               <div className="mb-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <Tag className="w-5 h-5 text-[#0E2F56]" />
                   <h3 className="text-lg font-bold text-gray-900">Compétences requises</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {job.required_skills.map((skill, index) => (
+                  {parseJsonField(job.required_skills).map((skill, index) => (
                     <span
                       key={index}
                       className="px-4 py-2 bg-[#0E2F56] text-white rounded-full text-sm font-medium"
@@ -492,14 +506,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
               </div>
             )}
 
-            {job.languages && job.languages.length > 0 && (
+            {parseJsonField(job.languages).length > 0 && (
               <div className="mb-8 p-6 bg-green-50 border-2 border-green-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <Languages className="w-5 h-5 text-green-700" />
                   <h3 className="text-lg font-bold text-gray-900">Langues requises</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {job.languages.map((language, index) => (
+                  {parseJsonField(job.languages).map((language, index) => (
                     <span
                       key={index}
                       className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium"
@@ -511,14 +525,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
               </div>
             )}
 
-            {job.benefits && job.benefits.length > 0 && (
+            {parseJsonField(job.benefits).length > 0 && (
               <div className="mb-8 p-6 bg-orange-50 border-2 border-orange-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="w-5 h-5 text-[#FF8C00]" />
                   <h3 className="text-lg font-bold text-gray-900">Avantages</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {job.benefits.map((benefit, index) => (
+                  {parseJsonField(job.benefits).map((benefit, index) => (
                     <div key={index} className="flex items-center gap-2 text-gray-700">
                       <CheckCircle2 className="w-4 h-4 text-[#FF8C00] flex-shrink-0" />
                       <span>{benefit}</span>
@@ -622,11 +636,11 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                       </div>
                     )}
 
-                    {job.required_documents && job.required_documents.length > 0 && (
+                    {parseJsonField(job.required_documents).length > 0 && (
                       <div>
                         <p className="text-sm font-semibold text-gray-700 mb-2">Documents requis :</p>
                         <div className="flex flex-wrap gap-2">
-                          {job.required_documents.map((doc, index) => (
+                          {parseJsonField(job.required_documents).map((doc, index) => (
                             <span
                               key={index}
                               className="px-3 py-1.5 bg-white border-2 border-blue-300 text-gray-800 rounded-lg text-sm font-medium flex items-center gap-1"
