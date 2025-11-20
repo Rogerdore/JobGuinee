@@ -676,10 +676,33 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           value={formData.region}
           onChange={(value) => setFormData({ ...formData, region: value })}
         />
-        <Upload
-          label="Photo de profil"
-          onChange={(file) => setFormData({ ...formData, profilePhoto: file })}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Photo de profil
+          </label>
+          <div className="flex items-center gap-4">
+            {(formData.profilePhoto || candidateProfile?.profile_photo_url) && (
+              <div className="relative">
+                <img
+                  src={
+                    formData.profilePhoto
+                      ? URL.createObjectURL(formData.profilePhoto)
+                      : candidateProfile?.profile_photo_url || ''
+                  }
+                  alt="Aperçu photo de profil"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                />
+              </div>
+            )}
+            <Upload
+              label=""
+              onChange={(file) => setFormData({ ...formData, profilePhoto: file })}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Format recommandé : JPG ou PNG, taille maximale 5 MB
+          </p>
+        </div>
       </FormSection>
 
       <FormSection title="2️⃣ Situation professionnelle actuelle">

@@ -413,9 +413,22 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       <div className="bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
-              <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
+            <div className="flex items-center gap-4">
+              {candidateProfile?.profile_photo_url ? (
+                <img
+                  src={candidateProfile.profile_photo_url}
+                  alt={profile?.full_name || 'Photo de profil'}
+                  className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-white/20 border-4 border-white shadow-lg flex items-center justify-center">
+                  <User className="w-10 h-10 text-white" />
+                </div>
+              )}
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
+                <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
+              </div>
             </div>
             {isPremium && (
               <div className="flex items-center gap-2 px-4 py-2 bg-[#FF8C00] rounded-full">
