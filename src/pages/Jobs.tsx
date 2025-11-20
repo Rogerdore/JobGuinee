@@ -21,6 +21,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [jobs, setJobs] = useState<(Job & { companies: Company })[]>([]);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const stripHtmlTags = (html: string): string => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  };
   const [searchQuery, setSearchQuery] = useState(initialSearch || '');
   const [location, setLocation] = useState('');
   const [contractType, setContractType] = useState('');
@@ -632,7 +638,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
                     {job.description && (
                       <p className="text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed">
-                        {job.description}
+                        {stripHtmlTags(job.description)}
                       </p>
                     )}
 
