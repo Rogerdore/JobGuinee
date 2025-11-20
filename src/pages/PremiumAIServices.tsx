@@ -425,20 +425,54 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
         </button>
       </div>
 
-      {/* Bannière Abonnement */}
+      {/* Bannière Abonnement et Crédits */}
       {premiumStatus && (
-        <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl p-6 mb-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-1">
-                Abonnement {premiumStatus.subscription_type === 'free' ? 'Gratuit' : 'Premium'}
-              </h2>
-              <p className="text-blue-100">
-                Statut: {premiumStatus.status === 'active' ? 'Actif' : 'Inactif'}
-              </p>
+        <div className="space-y-4 mb-8">
+          <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-1">
+                  Abonnement {premiumStatus.subscription_type === 'free' ? 'Gratuit' : 'Premium'}
+                </h2>
+                <p className="text-blue-100">
+                  Statut: {premiumStatus.status === 'active' ? 'Actif' : 'Inactif'}
+                </p>
+              </div>
+              <div className="bg-orange-500 rounded-xl p-3">
+                <Crown className="w-12 h-12 text-white" />
+              </div>
             </div>
-            <div className="bg-orange-500 rounded-xl p-3">
-              <Crown className="w-12 h-12 text-white" />
+          </div>
+
+          {/* Bannière Solde de Crédits */}
+          <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Solde de Crédits
+                </h3>
+                <p className="text-3xl font-bold mb-1">
+                  {premiumStatus.credits.global_balance.available.toLocaleString()}
+                </p>
+                <p className="text-green-100 text-sm">
+                  crédits disponibles pour tous les services IA
+                </p>
+              </div>
+              <div className="text-right">
+                <CreditCard className="w-12 h-12 text-white opacity-80 mb-2" />
+                {premiumStatus.credits.global_balance.available > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Actif
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs bg-red-500 bg-opacity-80 px-3 py-1 rounded-full">
+                    <AlertCircle className="w-3 h-3" />
+                    Épuisé
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -485,25 +519,48 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
               {/* Contenu */}
               <div className="p-5 bg-white">
                 {/* Crédits disponibles */}
-                {!service.isIncluded && (
-                  <div className="mb-5 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-gray-600">Crédits disponibles</span>
-                      <span className={`text-2xl font-bold ${hasEnoughCredits ? 'text-blue-900' : 'text-red-600'}`}>
-                        {globalBalance}
-                      </span>
-                    </div>
-                    <div className="w-full bg-blue-100 rounded-full h-2 mb-1">
-                      <div
-                        className={`h-2 rounded-full transition-all ${hasEnoughCredits ? 'bg-blue-600' : 'bg-red-500'}`}
-                        style={{
-                          width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      0 / {globalBalance} utilisés
-                    </p>
+                {!service.isIncluded && !hasAdminAccess && (
+                  <div className="mb-5">
+                    {hasEnoughCredits ? (
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                            <span className="text-sm font-semibold text-blue-800">Crédits suffisants</span>
+                          </div>
+                          <span className="text-2xl font-bold text-blue-900">
+                            {globalBalance}
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-700">
+                          Coût du service : <strong>{serviceCost}</strong> crédit(s)
+                        </p>
+                        <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                          <div
+                            className="h-2 rounded-full bg-blue-600 transition-all"
+                            style={{
+                              width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
+                            <span className="text-sm font-semibold text-red-800">Crédits insuffisants</span>
+                          </div>
+                          <span className="text-2xl font-bold text-red-600">
+                            {globalBalance}
+                          </span>
+                        </div>
+                        <p className="text-xs text-red-700">
+                          Coût du service : <strong>{serviceCost}</strong> crédit(s)<br/>
+                          Il vous manque : <strong>{serviceCost - globalBalance}</strong> crédit(s)
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -518,21 +575,15 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                 </ul>
 
                 {/* Boutons d'action */}
-                {service.isIncluded ? (
+                {hasAdminAccess || service.isIncluded || hasEnoughCredits ? (
                   <button
                     onClick={() => handleUseService(service)}
                     className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
                   >
                     <Zap className="w-4 h-4" />
-                    <span className="text-sm">Utiliser le service</span>
-                  </button>
-                ) : hasEnoughCredits ? (
-                  <button
-                    onClick={() => handleUseService(service)}
-                    className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span className="text-sm">Utiliser le service</span>
+                    <span className="text-sm">
+                      {hasAdminAccess ? 'Utiliser (Accès Admin)' : 'Utiliser le service'}
+                    </span>
                   </button>
                 ) : (
                   <button
