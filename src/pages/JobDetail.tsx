@@ -10,6 +10,7 @@ import { sampleJobs } from '../utils/sampleJobsData';
 import ApplicationModal from '../components/jobs/ApplicationModal';
 import QuickApplyModal from '../components/jobs/QuickApplyModal';
 import FormattedJobDescription from '../components/jobs/FormattedJobDescription';
+import DynamicHead from '../components/DynamicHead';
 
 interface JobDetailProps {
   jobId: string;
@@ -196,8 +197,34 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   const sections = job.description ? parseJobDescription(job.description) : {};
 
+  const jobTitle = job ? `${job.title} - ${job.companies?.name || job.department || 'Emploi Guinée'}` : 'Offre d\'emploi';
+  const jobDescription = job ? `Postulez pour ${job.title} à ${job.location}. ${job.contract_type} - ${job.experience_level || 'Tous niveaux'}` : '';
+  const jobKeywords = job ? [
+    job.title,
+    job.location,
+    job.contract_type,
+    job.department || '',
+    job.category || '',
+    'emploi guinée',
+    'offre emploi',
+    'recrutement guinée',
+    ...(job.keywords || [])
+  ].filter(Boolean).join(', ') : '';
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {job && (
+        <DynamicHead
+          title={jobTitle}
+          description={jobDescription}
+          keywords={jobKeywords}
+          ogTitle={job.title}
+          ogDescription={`${job.title} chez ${job.companies?.name || job.department || 'Emploi Guinée'}. ${job.location} - ${job.contract_type}`}
+          ogType="article"
+          canonical={`https://emploi-guinee.gn/jobs/${job.id}`}
+        />
+      )}
+
       {job && (
         <>
           <QuickApplyModal

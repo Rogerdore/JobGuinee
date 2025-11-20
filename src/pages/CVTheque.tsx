@@ -8,6 +8,7 @@ import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateC
 import ProfileCart from '../components/cvtheque/ProfileCart';
 import CandidatePreviewModal from '../components/cvtheque/CandidatePreviewModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
+import DynamicHead from '../components/DynamicHead';
 
 interface CVThequeProps {
   onNavigate: (page: string) => void;
@@ -300,7 +301,15 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const stats = getStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+    <>
+      <DynamicHead
+        title="CVthèque - Base de Talents et Candidats Qualifiés en Guinée"
+        description="Accédez à notre CVthèque premium avec des milliers de profils qualifiés. Trouvez les meilleurs talents pour vos postes à pourvoir en Guinée."
+        keywords="cvthèque guinée, base cv, candidats qualifiés, recrutement talents, profils professionnels guinée"
+        ogTitle="CVthèque Guinée - Accédez aux Meilleurs Talents"
+        ogDescription="Base de données de candidats qualifiés pour faciliter votre recrutement."
+      />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
       <ProfileCart
         items={cartItems}
         onRemoveItem={handleRemoveFromCart}
@@ -561,5 +570,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }

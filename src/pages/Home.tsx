@@ -9,6 +9,7 @@ import { sampleJobs } from '../utils/sampleJobsData';
 import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
+import DynamicHead from '../components/DynamicHead';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -210,7 +211,15 @@ export default function Home({ onNavigate }: HomeProps) {
   ];
 
   return (
-    <div className="w-full">
+    <>
+      <DynamicHead
+        title="Emploi Guinée - La Plateforme #1 pour Trouver un Emploi en Guinée"
+        description="Trouvez votre emploi idéal en Guinée. Plateforme de recrutement avec des milliers d'offres d'emploi, formations professionnelles et services IA pour candidats et recruteurs."
+        keywords="emploi guinée, jobs guinée, recrutement guinée, offres emploi, plateforme emploi guinée, carrière guinée, formation professionnelle guinée, cv guinée"
+        ogTitle="Emploi Guinée - Votre Avenir Professionnel Commence Ici"
+        ogDescription="La plateforme de recrutement leader en Guinée. Connectez-vous avec les meilleures opportunités professionnelles."
+      />
+      <div className="w-full">
       <section
         className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden"
         style={{
@@ -874,5 +883,6 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       )}
     </div>
+    </>
   );
 }

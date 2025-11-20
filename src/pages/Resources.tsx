@@ -18,6 +18,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import DynamicHead from '../components/DynamicHead';
 import { sampleResources } from '../utils/sampleResources';
 import { sampleSuccessStories } from '../utils/sampleSuccessStories';
 import PaidResourceModal from '../components/resources/PaidResourceModal';
@@ -185,7 +186,15 @@ export default function Resources() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <DynamicHead
+        title="Ressources Carrière - Modèles CV, Guides et Outils Gratuits"
+        description="Téléchargez gratuitement des modèles de CV, lettres de motivation, guides d'entretien et outils pour réussir votre recherche d'emploi en Guinée."
+        keywords="modèles cv gratuit, lettre motivation, guide entretien, outils recherche emploi, ressources carrière guinée"
+        ogTitle="Ressources Carrière - Outils Gratuits pour Votre Emploi"
+        ogDescription="Accédez à des centaines de ressources gratuites pour booster votre carrière."
+      />
+      <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-br from-[#0E2F56] via-blue-800 to-[#0E2F56] text-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-8">
@@ -638,5 +647,6 @@ export default function Resources() {
         }}
       />
     </div>
+    </>
   );
 }

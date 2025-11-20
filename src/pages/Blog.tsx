@@ -30,6 +30,7 @@ import {
   Download
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import DynamicHead from '../components/DynamicHead';
 import { sampleBlogPosts, blogCategories } from '../utils/sampleBlogData';
 import { sampleResources } from '../utils/sampleResources';
 
@@ -326,7 +327,15 @@ export default function Blog() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <DynamicHead
+        title="Blog Emploi - Conseils Carrière et Recrutement en Guinée"
+        description="Découvrez nos articles sur la recherche d'emploi, conseils CV, entretiens d'embauche, tendances du marché du travail et stratégies de recrutement en Guinée."
+        keywords="blog emploi guinée, conseils carrière, rédaction cv, entretien embauche, recrutement guinée, marché travail guinée"
+        ogTitle="Blog Emploi Guinée - Votre Guide Carrière Professionnel"
+        ogDescription="Articles et conseils d'experts pour réussir votre carrière en Guinée."
+      />
+      <div className="min-h-screen bg-gray-50">
       <div
         className="relative bg-gradient-to-br from-[#0E2F56] via-blue-900 to-blue-800 text-white py-20"
         style={{
@@ -1156,5 +1165,6 @@ export default function Blog() {
         </div>
       )}
     </div>
+    </>
   );
 }

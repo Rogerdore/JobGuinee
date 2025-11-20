@@ -9,6 +9,7 @@ import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
 import { testimonials, recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
+import DynamicHead from '../components/DynamicHead';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -278,7 +279,15 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const recommendedJobs = sortedJobs.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <DynamicHead
+        title="Offres d'Emploi en Guinée - Trouvez Votre Prochain Poste"
+        description="Explorez des milliers d'offres d'emploi actualisées quotidiennement en Guinée. CDI, CDD, stage, freelance - Tous secteurs d'activité. Postulez facilement en ligne."
+        keywords="emploi guinée, offre emploi guinée, recrutement guinée, jobs guinée, travail guinée, carrière guinée, CDI guinée, CDD guinée, stage guinée"
+        ogTitle="Trouvez Votre Emploi de Rêve en Guinée"
+        ogDescription="La plus grande plateforme d'emploi en Guinée. Des milliers d'opportunités professionnelles vous attendent."
+      />
+      <div className="min-h-screen bg-gray-50">
       <div
         className="bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white py-16 relative overflow-hidden"
         style={{
@@ -1028,5 +1037,6 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
       <div className="py-8"></div>
     </div>
+    </>
   );
 }
