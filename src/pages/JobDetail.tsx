@@ -111,10 +111,20 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   };
 
   const incrementViews = async () => {
+    if (jobId.startsWith('sample-')) {
+      console.log('Skipping view increment for sample job:', jobId);
+      return;
+    }
+
     try {
-      await supabase.rpc('increment_job_views', { job_id: jobId });
+      const { data, error } = await supabase.rpc('increment_job_views', { job_id: jobId });
+      if (error) {
+        console.error('Error incrementing views:', error);
+      } else {
+        console.log('Views incremented successfully for job:', jobId);
+      }
     } catch (error) {
-      console.log('Could not increment views');
+      console.error('Exception incrementing views:', error);
     }
   };
 
