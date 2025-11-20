@@ -191,12 +191,27 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
   ];
 
   useEffect(() => {
-    loadServicesFromDB();
-    if (user) {
-      loadPremiumStatus();
-      loadAdminPhoneNumber();
-    }
+    const loadAll = async () => {
+      await loadServicesFromDB();
+      if (user) {
+        await loadPremiumStatus();
+        await loadAdminPhoneNumber();
+        await loadGrantedServices();
+      }
+    };
+    loadAll();
   }, [user]);
+
+  const loadGrantedServices = async () => {
+    if (!user) return;
+
+    try {
+      const accessMap = await getUserServiceAccessList(user.id);
+      setGrantedServices(accessMap);
+    } catch (error) {
+      console.error('Error loading granted services:', error);
+    }
+  };
 
   const loadServicesFromDB = async () => {
     try {
