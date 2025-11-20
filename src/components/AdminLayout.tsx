@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign, Sparkles, Wallet } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign, Sparkles, Wallet, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCMS } from '../contexts/CMSContext';
 
@@ -67,6 +67,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <Users className="w-4 h-4" />
                 <span>Utilisateurs</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('user-services')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Services</span>
               </button>
 
               <button
