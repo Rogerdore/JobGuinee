@@ -108,14 +108,16 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
           .eq('service_id', service.id)
           .maybeSingle();
 
+        const balance = credit?.credits_balance || 0;
         console.log('Profile Analysis Credits:', {
           service_id: service.id,
           user_id: user.id,
           credit_data: credit,
-          balance: credit?.credits_balance || 0
+          balance: balance,
+          balance_type: typeof balance
         });
 
-        setCreditBalance(credit?.credits_balance || 0);
+        setCreditBalance(Number(balance));
       } else {
         console.log('Profile Analysis Service not found');
         setCreditBalance(0);
@@ -128,7 +130,13 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
         .maybeSingle();
 
       if (cost) {
-        setServiceCost(cost.credits_cost);
+        const costValue = Number(cost.credits_cost);
+        console.log('Service Cost:', {
+          cost_data: cost,
+          cost_value: costValue,
+          cost_type: typeof costValue
+        });
+        setServiceCost(costValue);
       }
     } catch (error: any) {
       console.error('Erreur chargement crédits:', error);
@@ -486,6 +494,16 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
                     {loadingCredits ? '...' : creditBalance} ⚡
                   </span>
                 </div>
+                {(() => {
+                  console.log('Render check:', {
+                    creditBalance,
+                    serviceCost,
+                    loadingCredits,
+                    comparison: creditBalance < serviceCost,
+                    shouldShow: creditBalance < serviceCost && !loadingCredits
+                  });
+                  return null;
+                })()}
                 {creditBalance < serviceCost && !loadingCredits && (
                   <div className="mt-3 pt-3 border-t border-white border-opacity-20">
                     <p className="text-xs text-red-200 mb-2">Crédits insuffisants</p>
