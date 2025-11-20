@@ -1220,12 +1220,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('🔘 Vues button clicked!');
-                            console.log('   Job:', job);
-                            console.log('   Setting showViewsModal to true');
-                            setSelectedJobForViews(job);
-                            setShowViewsModal(true);
-                            console.log('   State should be updated');
+                            console.log('🔘 Vues button clicked - Opening job details');
+                            onNavigate('job-detail', job.id);
                           }}
                           className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
@@ -1242,26 +1238,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </button>
                         <button
                           type="button"
-                          data-job-id={job.id}
-                          data-job-title={job.title}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            const jobId = e.currentTarget.getAttribute('data-job-id');
-                            const jobTitle = e.currentTarget.getAttribute('data-job-title');
-                            console.log('🔘 GREEN Candidatures button clicked!');
-                            console.log('   Job ID from data-attr:', jobId);
-                            console.log('   Job ID from closure:', job.id);
-                            console.log('   Job Title:', jobTitle);
-                            console.log('   Current activeTab:', activeTab);
-                            console.log('   Current selectedJobFilter:', selectedJobFilter);
-                            console.log('   Total applications:', applications.length);
-                            console.log('   Applications for this job:', applications.filter(a => a.job_id === job.id).length);
-                            console.log('   All application job_ids:', applications.map(a => ({ id: a.id, job_id: a.job_id })));
-                            setActiveTab('applications');
-                            setSelectedJobFilter(job.id);
-                            console.log('   ✅ Set activeTab to: applications');
-                            console.log('   ✅ Set selectedJobFilter to:', job.id);
+                            console.log('🔘 Candidatures button clicked - Opening job details');
+                            onNavigate('job-detail', job.id);
                           }}
                           className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
@@ -1356,15 +1337,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       </div>
 
                       <button
-                        className="w-full px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400 cursor-pointer"
+                        className="w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400 cursor-pointer shadow-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNavigate('job-detail', job.id);
                         }}
                       >
-                        <span className="flex items-center justify-center">
-                          Voir les détails
-                          <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="flex items-center justify-center w-8 h-8 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform">
+                            <Eye className="w-4 h-4 text-gray-600" />
+                          </span>
+                          <span className="font-semibold">Désactiver</span>
                         </span>
                       </button>
                     </div>
