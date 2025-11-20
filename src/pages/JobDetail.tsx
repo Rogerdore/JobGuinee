@@ -11,6 +11,7 @@ import ApplicationModal from '../components/jobs/ApplicationModal';
 import QuickApplyModal from '../components/jobs/QuickApplyModal';
 import FormattedJobDescription from '../components/jobs/FormattedJobDescription';
 import DynamicHead from '../components/DynamicHead';
+import Breadcrumb from '../components/Breadcrumb';
 
 interface JobDetailProps {
   jobId: string;
@@ -256,6 +257,16 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
       )}
 
       <div className="max-w-6xl mx-auto px-4">
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Accueil', onClick: () => onNavigate('home') },
+              { label: 'Offres d\'emploi', onClick: () => onNavigate('jobs') },
+              { label: job?.title || 'Détail de l\'offre' }
+            ]}
+          />
+        </div>
+
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={handleGoBack}
