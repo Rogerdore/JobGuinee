@@ -60,10 +60,14 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
 
   useEffect(() => {
     if (user && profile?.user_type === 'admin') {
-      loadServices();
-      loadUsers();
+      loadServicesAndUsers();
     }
   }, [user, profile]);
+
+  const loadServicesAndUsers = async () => {
+    await loadServices();
+    await loadUsers();
+  };
 
   useEffect(() => {
     filterUsers();
@@ -87,8 +91,10 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
       }));
 
       setServices(servicesList);
+      return servicesList;
     } catch (error: any) {
       console.error('Erreur chargement services:', error);
+      return [];
     }
   };
 
@@ -106,7 +112,7 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
       if (data?.success) {
         setUsers(data.users || []);
         setFilteredUsers(data.users || []);
-        await loadServiceCredits(data.users || []);
+        await loadServiceCredits();
       }
     } catch (error: any) {
       console.error('Erreur chargement utilisateurs:', error);
@@ -116,8 +122,12 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
     }
   };
 
-  const loadServiceCredits = async (usersList: UserData[]) => {
+  const loadServiceCredits = async () => {
     try {
+      const { data: servicesData } = await supabase
+        .from('premium_services')
+        .select('id, code');
+
       const { data: creditsData } = await supabase
         .from('user_service_credits')
         .select('user_id, service_id, credits_balance');
@@ -128,7 +138,7 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
         if (!creditsMap[credit.user_id]) {
           creditsMap[credit.user_id] = {};
         }
-        const service = services.find(s => s.id === credit.service_id);
+        const service = (servicesData || []).find((s: any) => s.id === credit.service_id);
         if (service) {
           creditsMap[credit.user_id][service.code] = credit.credits_balance;
         }
