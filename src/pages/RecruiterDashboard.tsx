@@ -1131,14 +1131,23 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   {jobs.map((job, index) => (
                     <div
                       key={job.id}
-                      onClick={() => onNavigate('job-detail', job.id)}
+                      onClick={() => {
+                        console.log('🎯 Card clicked! Navigating to job detail:', job.id);
+                        onNavigate('job-detail', job.id);
+                      }}
                       className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover relative overflow-hidden group animate-slide-up cursor-pointer"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF8C00]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                       <div className="flex items-start justify-between mb-4 relative z-10">
-                        <div className="flex-1">
+                        <div
+                          className="flex-1 cursor-pointer"
+                          onClick={() => {
+                            console.log('📍 Title area clicked! Navigating to job detail:', job.id);
+                            onNavigate('job-detail', job.id);
+                          }}
+                        >
                           <h3 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-[#0E2F56] transition-colors">{job.title}</h3>
                           <p className="text-gray-600 flex items-center mb-1">
                             <FileText className="w-4 h-4 mr-1.5 text-[#FF8C00]" />
