@@ -27,6 +27,10 @@ import {
   ShieldCheck,
   CreditCard,
   Edit2,
+  Star,
+  Eye,
+  Trash2,
+  Copy,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -441,6 +445,23 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   console.log('RecruiterDashboard - isPremium:', isPremium);
   console.log('RecruiterDashboard - showMatchingModal:', showMatchingModal);
   console.log('RecruiterDashboard - selectedJobForMatching:', selectedJobForMatching);
+
+  const handleDeleteJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .delete()
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      setJobs(jobs.filter(j => j.id !== jobId));
+      console.log('✅ Job deleted successfully:', jobId);
+    } catch (error) {
+      console.error('❌ Error deleting job:', error);
+      alert('Erreur lors de la suppression de l\'offre');
+    }
+  };
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
@@ -1130,6 +1151,58 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </p>
                           )}
                         </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('👁️ View job details:', job.id);
+                              onNavigate('job-detail', job.id);
+                            }}
+                            className="p-2 text-gray-500 hover:text-[#0E2F56] hover:bg-gray-100 rounded-lg transition"
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('⭐ Toggle favorite:', job.id);
+                            }}
+                            className="p-2 text-gray-500 hover:text-yellow-500 hover:bg-yellow-50 rounded-lg transition"
+                            title="Marquer comme favori"
+                          >
+                            <Star className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('📋 Duplicate job:', job.id);
+                              if (confirm('Voulez-vous dupliquer cette offre ?')) {
+                                console.log('Duplicating job...');
+                              }
+                            }}
+                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Dupliquer l'offre"
+                          >
+                            <Copy className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('🗑️ Delete job:', job.id);
+                              if (confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) {
+                                handleDeleteJob(job.id);
+                              }
+                            }}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Supprimer l'offre"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-4 flex justify-between items-center">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
                           job.status === 'published'
                             ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200'
