@@ -108,8 +108,16 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
           .eq('service_id', service.id)
           .maybeSingle();
 
+        console.log('Profile Analysis Credits:', {
+          service_id: service.id,
+          user_id: user.id,
+          credit_data: credit,
+          balance: credit?.credits_balance || 0
+        });
+
         setCreditBalance(credit?.credits_balance || 0);
       } else {
+        console.log('Profile Analysis Service not found');
         setCreditBalance(0);
       }
 
