@@ -123,13 +123,23 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
 
   const loadServiceCredits = async () => {
     try {
-      const { data: servicesData } = await supabase
+      const { data: servicesData, error: servicesError } = await supabase
         .from('premium_services')
         .select('id, code');
 
-      const { data: creditsData } = await supabase
+      if (servicesError) {
+        console.error('Erreur chargement services:', servicesError);
+        return;
+      }
+
+      const { data: creditsData, error: creditsError } = await supabase
         .from('user_service_credits')
         .select('user_id, service_id, credits_balance');
+
+      if (creditsError) {
+        console.error('Erreur chargement crédits:', creditsError);
+        return;
+      }
 
       const creditsMap: Record<string, Record<string, number>> = {};
 
@@ -143,6 +153,7 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
         }
       });
 
+      console.log('Credits chargés:', Object.keys(creditsMap).length, 'utilisateurs');
       setUserServiceCredits(creditsMap);
     } catch (error: any) {
       console.error('Erreur chargement crédits:', error);
@@ -230,9 +241,9 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
       if (error) throw error;
 
       if (data?.success) {
-        alert(`✅ ${amount} crédits ajoutés avec succès. Nouveau solde: ${data.new_balance}`);
         setShowCreditsModal(false);
-        await loadUsers();
+        await loadServiceCredits();
+        alert(`✅ ${amount} crédits ajoutés avec succès pour ${selectedService.name}. Nouveau solde: ${data.new_balance}`);
       } else {
         alert('❌ Erreur lors de l\'ajout des crédits');
       }
@@ -319,7 +330,10 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
               </p>
             </div>
             <button
-              onClick={loadUsers}
+              onClick={async () => {
+                await loadUsers();
+                await loadServiceCredits();
+              }}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4575] transition-colors disabled:opacity-50"
             >
