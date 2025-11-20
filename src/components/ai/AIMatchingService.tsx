@@ -94,21 +94,30 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
 
     setLoadingCredits(true);
     try {
-      // Récupérer le solde
-      const { data: balance, error } = await supabase.rpc('get_user_credit_balance', {
-        p_user_id: user.id
-      });
+      const { data: service } = await supabase
+        .from('premium_services')
+        .select('id')
+        .eq('code', 'profile_analysis')
+        .maybeSingle();
 
-      if (error) throw error;
+      if (service) {
+        const { data: credit } = await supabase
+          .from('user_service_credits')
+          .select('credits_balance')
+          .eq('user_id', user.id)
+          .eq('service_id', service.id)
+          .maybeSingle();
 
-      setCreditBalance(balance || 0);
+        setCreditBalance(credit?.credits_balance || 0);
+      } else {
+        setCreditBalance(0);
+      }
 
-      // Récupérer le coût du service
       const { data: cost } = await supabase
         .from('service_credit_costs')
         .select('credits_cost')
         .eq('service_code', 'profile_analysis')
-        .single();
+        .maybeSingle();
 
       if (cost) {
         setServiceCost(cost.credits_cost);

@@ -280,31 +280,26 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
     try {
       console.log('Loading premium status for user:', user.id);
 
-      // Récupérer le solde de crédits global
-      const { data, error } = await supabase.rpc('get_user_credit_balance', {
-        p_user_id: user.id
-      });
+      const { data: userCredits } = await supabase
+        .from('user_service_credits')
+        .select('credits_balance')
+        .eq('user_id', user.id);
 
-      console.log('Balance response:', { data, error });
-
-      if (error) {
-        console.error('Error loading balance:', error);
-        throw error;
+      let totalBalance = 0;
+      if (userCredits && userCredits.length > 0) {
+        totalBalance = userCredits.reduce((sum, credit) => sum + credit.credits_balance, 0);
       }
 
-      const creditBalance = data || 0;
+      console.log('Total balance from user_service_credits:', totalBalance);
 
-      // Créer un status fictif pour compatibilité avec l'interface
       setPremiumStatus({
-        subscription_type: creditBalance > 0 ? 'premium' : 'free',
+        subscription_type: totalBalance > 0 ? 'premium' : 'free',
         status: 'active',
         credits: {
-          // Le nouveau système utilise un solde global
-          // On simule l'ancien format pour la compatibilité
           global_balance: {
-            available: creditBalance,
+            available: totalBalance,
             used: 0,
-            total: creditBalance
+            total: totalBalance
           }
         }
       });
@@ -312,7 +307,6 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
       console.log('Premium status set successfully');
     } catch (error: any) {
       console.error('Erreur chargement status:', error);
-      // Même en cas d'erreur, on affiche la page avec un solde de 0
       setPremiumStatus({
         subscription_type: 'free',
         status: 'active',

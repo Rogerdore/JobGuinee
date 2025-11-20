@@ -99,13 +99,27 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
 
     setLoadingCredits(true);
     try {
-      const { data: balance, error } = await supabase.rpc('get_user_credit_balance', {
-        p_user_id: user.id
-      });
+      const { data: services } = await supabase
+        .from('premium_services')
+        .select('id, code')
+        .in('code', ['cv_generation', 'cover_letter_generation']);
 
-      if (error) throw error;
+      const { data: userCredits } = await supabase
+        .from('user_service_credits')
+        .select('service_id, credits_balance')
+        .eq('user_id', user.id);
 
-      setCreditBalance(balance || 0);
+      let totalBalance = 0;
+      if (services && userCredits) {
+        services.forEach(service => {
+          const credit = userCredits.find(uc => uc.service_id === service.id);
+          if (credit) {
+            totalBalance += credit.credits_balance;
+          }
+        });
+      }
+
+      setCreditBalance(totalBalance);
 
       const { data: costs } = await supabase
         .from('service_credit_costs')
