@@ -30,11 +30,6 @@ interface ServiceDefinition {
   userTypes: string[];
 }
 
-const AVAILABLE_SERVICES: ServiceDefinition[] = [];
-
-const getServicesForUserType = (userType: string): ServiceDefinition[] => {
-  return AVAILABLE_SERVICES.filter(service => service.userTypes.includes(userType));
-};
 
 interface UserServicesManagementProps {
   onNavigate?: (page: string) => void;
@@ -57,6 +52,10 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
   const [selectedService, setSelectedService] = useState<ServiceDefinition | null>(null);
   const [creditsAmount, setCreditsAmount] = useState('');
   const [userServiceCredits, setUserServiceCredits] = useState<Record<string, Record<string, number>>>({});
+
+  const getServicesForUserType = (userType: string): ServiceDefinition[] => {
+    return services.filter(service => service.userTypes.includes(userType));
+  };
 
   useEffect(() => {
     if (user && profile?.user_type === 'admin') {
