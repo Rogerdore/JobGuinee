@@ -49,9 +49,12 @@ interface ProfileAnalysis {
 
 interface AIMatchingServiceProps {
   onBack?: () => void;
+  onNavigate?: (page: string) => void;
+  onNavigateToJobs?: () => void;
+  preSelectedJob?: Job | null;
 }
 
-export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
+export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs, preSelectedJob }: AIMatchingServiceProps) {
   const { user } = useAuth();
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ProfileAnalysis | null>(null);
@@ -78,6 +81,13 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
       loadCredits();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (preSelectedJob) {
+      setSelectedJob(preSelectedJob);
+      setShowJobSelection(false);
+    }
+  }, [preSelectedJob]);
 
   const loadCredits = async () => {
     if (!user) return;
@@ -470,14 +480,53 @@ export default function AIMatchingService({ onBack }: AIMatchingServiceProps) {
               </div>
 
               <div className="space-y-3">
-                <button
-                  onClick={() => setShowJobSelection(true)}
-                  disabled={analyzing || loadingCredits || creditBalance < serviceCost}
-                  className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg"
-                >
-                  <Briefcase className="w-5 h-5" />
-                  <span>Comparer avec une offre ({serviceCost} ⚡)</span>
-                </button>
+                {selectedJob && (
+                  <div className="bg-white bg-opacity-20 rounded-lg p-4 mb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <Briefcase className="w-4 h-4 text-white" />
+                          <h4 className="font-semibold text-white">{selectedJob.title}</h4>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-purple-100">
+                          <Building className="w-3 h-3" />
+                          <span>{selectedJob.company_name}</span>
+                        </div>
+                        {selectedJob.location && (
+                          <p className="text-xs text-purple-200 mt-1">{selectedJob.location}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setSelectedJob(null)}
+                        className="text-white hover:text-red-300 transition"
+                        title="Supprimer la sélection"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-green-300 font-medium mt-2">✓ Offre sélectionnée</p>
+                  </div>
+                )}
+
+                {onNavigateToJobs && !selectedJob ? (
+                  <button
+                    onClick={onNavigateToJobs}
+                    disabled={analyzing || loadingCredits || creditBalance < serviceCost}
+                    className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg"
+                  >
+                    <Briefcase className="w-5 h-5" />
+                    <span>Comparer avec une offre ({serviceCost} ⚡)</span>
+                  </button>
+                ) : !selectedJob ? (
+                  <button
+                    onClick={() => setShowJobSelection(true)}
+                    disabled={analyzing || loadingCredits || creditBalance < serviceCost}
+                    className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg"
+                  >
+                    <Briefcase className="w-5 h-5" />
+                    <span>Comparer avec une offre ({serviceCost} ⚡)</span>
+                  </button>
+                ) : null}
 
                 <button
                   onClick={() => analyzeProfile()}
