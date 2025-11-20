@@ -447,13 +447,6 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
 
       // Show success message
       setShowSuccessMessage(true);
-
-      // Redirect to candidate dashboard after 2 seconds
-      setTimeout(() => {
-        if (onNavigate) {
-          onNavigate('candidate-dashboard');
-        }
-      }, 2000);
     } catch (error: any) {
       console.error('Error saving profile:', error);
 
@@ -506,8 +499,19 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
     <div className="relative">
       {/* Success Message Overlay */}
       {showSuccessMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform animate-bounce">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm cursor-pointer"
+          onClick={() => {
+            setShowSuccessMessage(false);
+            if (onNavigate) {
+              onNavigate('candidate-dashboard');
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform animate-bounce"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="text-center">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -519,12 +523,20 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
                 Votre profil a été enregistré avec succès.
               </p>
               <p className="text-gray-500 text-sm">
-                Redirection vers votre espace candidat...
+                Cliquez n'importe où pour continuer...
               </p>
               <div className="mt-6">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
-                </div>
+                <button
+                  onClick={() => {
+                    setShowSuccessMessage(false);
+                    if (onNavigate) {
+                      onNavigate('candidate-dashboard');
+                    }
+                  }}
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Continuer
+                </button>
               </div>
             </div>
           </div>
