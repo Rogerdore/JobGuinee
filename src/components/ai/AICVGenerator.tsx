@@ -157,11 +157,11 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
       const { data: profile } = await supabase
         .from('candidate_profiles')
         .select('*')
-        .eq('id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       if (!profile) {
-        setError('Profil non trouvé. Veuillez compléter votre profil.');
+        setError('Profil non trouvé. Veuillez compléter votre profil candidat depuis votre tableau de bord.');
         return;
       }
 
@@ -169,25 +169,25 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         personalInfo: {
           fullName: profile.full_name || '',
           email: user.email || '',
-          phone: profile.phone || '',
+          phone: '',
           location: profile.location || '',
-          linkedIn: profile.linkedin_url || '',
-          portfolio: profile.portfolio_url || '',
+          linkedIn: '',
+          portfolio: '',
         },
-        summary: profile.bio || 'Professionnel motivé et passionné',
-        targetPosition: targetPosition || profile.desired_position || '',
+        summary: profile.bio || profile.professional_goal || 'Professionnel motivé et passionné',
+        targetPosition: targetPosition || profile.title || '',
         experience: {
           years: profile.experience_years || 0,
-          level: profile.experience_level || 'junior',
-          details: profile.work_history || [],
+          level: profile.professional_status || 'junior',
+          details: profile.work_experience || [],
         },
         education: {
-          level: profile.education_level || 'bachelors',
-          details: profile.education_history || [],
+          level: 'bachelors',
+          details: profile.education || [],
         },
         skills: profile.skills || [],
         languages: profile.languages || [],
-        certifications: profile.certifications || [],
+        certifications: [],
         style: style,
       };
 
@@ -244,11 +244,11 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
       const { data: profile } = await supabase
         .from('candidate_profiles')
         .select('*')
-        .eq('id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       if (!profile) {
-        setError('Profil non trouvé. Veuillez compléter votre profil.');
+        setError('Profil non trouvé. Veuillez compléter votre profil candidat depuis votre tableau de bord.');
         return;
       }
 
@@ -263,11 +263,11 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
 
 Je me permets de vous adresser ma candidature pour le poste de ${targetPosition} au sein de ${targetCompany}.
 
-Fort(e) de ${profile.experience_years} années d'expérience en tant que ${profile.experience_level}, j'ai développé une expertise solide dans les domaines suivants : ${(profile.skills || []).slice(0, 5).join(', ')}.
+Fort(e) de ${profile.experience_years || 0} années d'expérience en tant que ${profile.professional_status || 'professionnel(le)'}, j'ai développé une expertise solide dans les domaines suivants : ${(profile.skills || []).slice(0, 5).join(', ')}.
 
 Mon parcours professionnel m'a permis d'acquérir des compétences clés parfaitement alignées avec les exigences de ce poste. Ma capacité à ${(profile.skills || []).slice(0, 3).join(', ')} me permettra de contribuer efficacement aux objectifs de ${targetCompany}.
 
-${profile.bio || 'Je suis particulièrement motivé(e) par cette opportunité car elle correspond parfaitement à mon projet professionnel.'}
+${profile.bio || profile.professional_goal || 'Je suis particulièrement motivé(e) par cette opportunité car elle correspond parfaitement à mon projet professionnel.'}
 
 Convaincu(e) que mon profil saura répondre à vos attentes, je serais ravi(e) de vous rencontrer lors d'un entretien afin de vous présenter plus en détail mes motivations et mes compétences.
 
