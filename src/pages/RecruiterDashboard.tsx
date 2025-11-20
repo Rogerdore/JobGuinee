@@ -1162,6 +1162,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </div>
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => {
+                              console.log('👁️ Eye button clicked! Navigating to job detail:', job.id);
+                              onNavigate('job-detail', job.id);
+                            }}
                             className="p-2 text-gray-500 hover:text-[#0E2F56] hover:bg-gray-100 rounded-lg transition"
                             title="Voir les détails"
                           >
