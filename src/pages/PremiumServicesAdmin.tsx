@@ -175,9 +175,38 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Configuration Services Premium IA
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             Gérez les tarifs et coûts en crédits des services premium
           </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="neo-clay rounded-xl p-4 bg-gradient-to-br from-green-50 to-emerald-50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Crédits de Bienvenue</span>
+                <Crown className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">150,000 GNF</div>
+              <div className="text-xs text-gray-500 mt-1">= 150 crédits offerts</div>
+            </div>
+
+            <div className="neo-clay rounded-xl p-4 bg-gradient-to-br from-purple-50 to-violet-50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Taux de Conversion</span>
+                <Zap className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">1,000 GNF</div>
+              <div className="text-xs text-gray-500 mt-1">= 1 crédit</div>
+            </div>
+
+            <div className="neo-clay rounded-xl p-4 bg-gradient-to-br from-blue-50 to-cyan-50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Attribution</span>
+                <DollarSign className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="text-lg font-bold text-gray-900">Automatique</div>
+              <div className="text-xs text-gray-500 mt-1">À la création du compte</div>
+            </div>
+          </div>
         </div>
 
         <div className="neo-clay-card rounded-2xl overflow-hidden">
@@ -396,6 +425,10 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
                                   }
                                   className="w-full px-4 py-2 rounded-xl neo-clay-input focus:outline-none"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Équivalent: {new Intl.NumberFormat('fr-GN').format((editingCreditService.credits_cost || 0) * 1000)} GNF
+                                  <span className="ml-2 text-purple-600">(1 crédit = 1,000 GNF)</span>
+                                </p>
                               </div>
 
                               <div>
@@ -444,11 +477,19 @@ export default function PremiumServicesAdmin({ onNavigate }: PremiumServicesAdmi
                                   )}
                                 </div>
                                 <p className="text-gray-600 mb-3">{service.service_description}</p>
-                                <div className="flex items-center gap-2">
-                                  <Zap className="w-5 h-5 text-purple-600" />
-                                  <span className="text-2xl font-bold text-purple-600">
-                                    {service.credits_cost} crédits
-                                  </span>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Zap className="w-5 h-5 text-purple-600" />
+                                    <span className="text-2xl font-bold text-purple-600">
+                                      {service.credits_cost} crédits
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-7">
+                                    <DollarSign className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm text-gray-600">
+                                      ≈ {new Intl.NumberFormat('fr-GN').format(service.credits_cost * 1000)} GNF
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                               <button
