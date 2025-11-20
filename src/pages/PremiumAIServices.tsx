@@ -286,7 +286,10 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
 
       const { data: userCredits } = await supabase
         .from('user_service_credits')
-        .select('credits_balance, service_code')
+        .select(`
+          credits_balance,
+          premium_services!inner(code)
+        `)
         .eq('user_id', user.id);
 
       let totalBalance = 0;
@@ -296,7 +299,10 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
         totalBalance = userCredits.reduce((sum, credit) => sum + credit.credits_balance, 0);
 
         userCredits.forEach(credit => {
-          creditsByService[credit.service_code] = credit.credits_balance;
+          const serviceCode = (credit as any).premium_services?.code;
+          if (serviceCode) {
+            creditsByService[serviceCode] = credit.credits_balance;
+          }
         });
       }
 
