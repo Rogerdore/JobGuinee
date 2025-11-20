@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ToggleLeft, ToggleRight, Loader2, RefreshCw, Calendar, Save, CheckCircle, XCircle, CreditCard, User, Plus, Minus } from 'lucide-react';
+import { Search, ToggleLeft, ToggleRight, Loader2, RefreshCw, Calendar, Save, CheckCircle, XCircle, CreditCard, User, Plus, Minus, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
@@ -64,10 +64,15 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [creditAmount, setCreditAmount] = useState('');
   const [creditNotes, setCreditNotes] = useState('');
+  const [showServiceCostModal, setShowServiceCostModal] = useState(false);
+  const [selectedService, setSelectedService] = useState<ServiceDefinition | null>(null);
+  const [serviceCostAmount, setServiceCostAmount] = useState('');
+  const [serviceCosts, setServiceCosts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (user && profile?.user_type === 'admin') {
       loadUsers();
+      loadServiceCosts();
     }
   }, [user, profile]);
 
@@ -95,6 +100,24 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
       alert('Erreur lors du chargement des utilisateurs');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadServiceCosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('service_credit_costs')
+        .select('service_code, credits_cost');
+
+      if (error) throw error;
+
+      const costs: Record<string, number> = {};
+      data?.forEach(item => {
+        costs[item.service_code] = item.credits_cost;
+      });
+      setServiceCosts(costs);
+    } catch (error: any) {
+      console.error('Erreur chargement coûts:', error);
     }
   };
 
@@ -204,6 +227,67 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
       setCreditAmount('');
       setCreditNotes('');
       await loadUsers();
+    } catch (error: any) {
+      console.error('Erreur:', error);
+      alert('Erreur: ' + error.message);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const openServiceCostModal = (service: ServiceDefinition) => {
+    setSelectedService(service);
+    setServiceCostAmount(String(serviceCosts[service.code] || 0));
+    setShowServiceCostModal(true);
+  };
+
+  const saveServiceCost = async () => {
+    if (!user || !selectedService || !serviceCostAmount) return;
+
+    const cost = parseInt(serviceCostAmount);
+    if (isNaN(cost) || cost < 0) {
+      alert('Veuillez entrer un coût valide (≥ 0)');
+      return;
+    }
+
+    setProcessing('save-service-cost');
+    try {
+      const { data: existing, error: checkError } = await supabase
+        .from('service_credit_costs')
+        .select('id')
+        .eq('service_code', selectedService.code)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('service_credit_costs')
+          .update({
+            credits_cost: cost,
+            updated_at: new Date().toISOString()
+          })
+          .eq('service_code', selectedService.code);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('service_credit_costs')
+          .insert({
+            service_code: selectedService.code,
+            service_name: selectedService.name,
+            service_description: selectedService.description,
+            credits_cost: cost,
+            is_active: true,
+            category: 'Services Premium'
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      alert(`✅ Coût du service "${selectedService.name}" défini à ${cost} crédits`);
+      setShowServiceCostModal(false);
+      await loadServiceCosts();
     } catch (error: any) {
       console.error('Erreur:', error);
       alert('Erreur: ' + error.message);
@@ -356,13 +440,23 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                       title={`${service.description} - Pour: ${service.userTypes.map(t => getUserTypeLabel(t)).join(', ')}`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="whitespace-nowrap">{service.name.split(' ')[0]}</span>
-                        <span className="text-[10px] text-gray-400 normal-case">
-                          {service.name.split(' ').slice(1).join(' ')}
-                        </span>
-                        <span className="text-[9px] text-gray-400 italic mt-0.5">
-                          ({service.userTypes.map(t => t === 'candidate' ? 'C' : t === 'recruiter' ? 'R' : 'F').join(',')})
-                        </span>
+                        <button
+                          onClick={() => openServiceCostModal(service)}
+                          className="hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                        >
+                          <span className="whitespace-nowrap">{service.name.split(' ')[0]}</span>
+                          <span className="text-[10px] text-gray-400 normal-case block">
+                            {service.name.split(' ').slice(1).join(' ')}
+                          </span>
+                          <span className="text-[9px] text-gray-400 italic mt-0.5 block">
+                            ({service.userTypes.map(t => t === 'candidate' ? 'C' : t === 'recruiter' ? 'R' : 'F').join(',')})
+                          </span>
+                          {serviceCosts[service.code] !== undefined && (
+                            <span className="text-[10px] font-semibold text-yellow-600 block mt-1">
+                              {serviceCosts[service.code]} ⚡
+                            </span>
+                          )}
+                        </button>
                       </div>
                     </th>
                   ))}
@@ -521,6 +615,99 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                   </span>
                 ) : (
                   'Activer Tout'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showServiceCostModal && selectedService && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Settings className="w-6 h-6 text-[#0E2F56]" />
+              Configuration du coût
+            </h3>
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">
+                Service: <strong>{selectedService.name}</strong>
+              </p>
+              <p className="text-sm text-gray-500">
+                {selectedService.description}
+              </p>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                Coût actuel: <strong>{serviceCosts[selectedService.code] || 0}</strong> crédits ⚡
+              </p>
+            </div>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nouveau coût en crédits *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={serviceCostAmount}
+                  onChange={(e) => setServiceCostAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                  placeholder="Ex: 5000"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Nombre de crédits nécessaires pour utiliser ce service
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => setServiceCostAmount('1000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    1 000
+                  </button>
+                  <button
+                    onClick={() => setServiceCostAmount('5000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    5 000
+                  </button>
+                  <button
+                    onClick={() => setServiceCostAmount('10000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    10 000
+                  </button>
+                  <button
+                    onClick={() => setServiceCostAmount('20000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    20 000
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowServiceCostModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={saveServiceCost}
+                disabled={processing === 'save-service-cost' || !serviceCostAmount}
+                className="flex-1 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4575] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processing === 'save-service-cost' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Enregistrer
+                  </>
                 )}
               </button>
             </div>
