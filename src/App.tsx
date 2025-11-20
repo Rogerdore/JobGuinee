@@ -103,7 +103,7 @@ function AppContent() {
       {currentPage === 'system-settings' && <SystemSettings />}
       {currentPage === 'job-pricing' && <JobPricingAdmin onNavigate={handleNavigate} />}
       {currentPage === 'premium-services-admin' && <PremiumServicesAdmin onNavigate={handleNavigate} />}
-      {currentPage === 'payment-management' && <PaymentManagement />}
+      {currentPage === 'payment-management' && <PaymentManagement onNavigate={handleNavigate} />}
       </Layout>
     </>
   );

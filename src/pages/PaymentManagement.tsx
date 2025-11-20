@@ -48,7 +48,11 @@ interface PendingPayments {
   job_premium_purchases: JobPremiumPurchase[];
 }
 
-export default function PaymentManagement() {
+interface PaymentManagementProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function PaymentManagement({ onNavigate }: PaymentManagementProps = {}) {
   const { user, profile } = useAuth();
   const [payments, setPayments] = useState<PendingPayments>({
     credit_purchases: [],
@@ -209,7 +213,7 @@ export default function PaymentManagement() {
 
   if (profile?.user_type !== 'admin') {
     return (
-      <AdminLayout>
+      <AdminLayout onNavigate={onNavigate || (() => {})}>
         <div className="text-center py-12">
           <p className="text-red-600">Accès réservé aux administrateurs</p>
         </div>
@@ -223,7 +227,7 @@ export default function PaymentManagement() {
     payments.job_premium_purchases.length;
 
   return (
-    <AdminLayout>
+    <AdminLayout onNavigate={onNavigate || (() => {})}>
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
