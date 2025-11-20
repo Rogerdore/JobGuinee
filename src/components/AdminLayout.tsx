@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign, Sparkles } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign, Sparkles, Wallet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCMS } from '../contexts/CMSContext';
 
@@ -107,6 +107,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Services IA</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('payment-management')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Wallet className="w-4 h-4" />
+                <span>Paiements</span>
               </button>
 
               <button
