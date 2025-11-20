@@ -1153,11 +1153,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('👁️ View job details:', job.id);
-                              onNavigate('job-detail', job.id);
-                            }}
                             className="p-2 text-gray-500 hover:text-[#0E2F56] hover:bg-gray-100 rounded-lg transition"
                             title="Voir les détails"
                           >
@@ -1215,14 +1210,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔘 Vues button clicked - Opening job details');
-                            onNavigate('job-detail', job.id);
-                          }}
+                        <div
                           className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
                           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/30 rounded-full -mr-8 -mt-8"></div>
@@ -1235,15 +1223,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                               Vues
                             </div>
                           </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔘 Candidatures button clicked - Opening job details');
-                            onNavigate('job-detail', job.id);
-                          }}
+                        </div>
+                        <div
                           className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
                         >
                           <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8 pointer-events-none"></div>
@@ -1256,7 +1237,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                               Candidatures
                             </div>
                           </div>
-                        </button>
+                        </div>
                       </div>
 
                       <div className="space-y-3 mb-4 relative z-10">
@@ -1336,12 +1317,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         )}
                       </div>
 
-                      <button
+                      <div
                         className="w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400 cursor-pointer shadow-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNavigate('job-detail', job.id);
-                        }}
                       >
                         <span className="flex items-center justify-center gap-2">
                           <span className="flex items-center justify-center w-8 h-8 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform">
@@ -1349,7 +1326,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </span>
                           <span className="font-semibold">Désactiver</span>
                         </span>
-                      </button>
+                      </div>
                     </div>
                   ))}
                 </div>
