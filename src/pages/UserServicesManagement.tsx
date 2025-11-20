@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ToggleLeft, ToggleRight, Loader2, RefreshCw, Calendar, Save, CheckCircle, XCircle, CreditCard, User } from 'lucide-react';
+import { Search, ToggleLeft, ToggleRight, Loader2, RefreshCw, Calendar, Save, CheckCircle, XCircle, CreditCard, User, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
@@ -61,6 +61,9 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
   const [showModal, setShowModal] = useState(false);
   const [modalNotes, setModalNotes] = useState('');
   const [modalExpires, setModalExpires] = useState('');
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [creditAmount, setCreditAmount] = useState('');
+  const [creditNotes, setCreditNotes] = useState('');
 
   useEffect(() => {
     if (user && profile?.user_type === 'admin') {
@@ -146,6 +149,67 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
     setModalNotes('');
     setModalExpires('');
     setShowModal(true);
+  };
+
+  const openCreditsModal = (userData: UserData) => {
+    setSelectedUser(userData);
+    setCreditAmount('');
+    setCreditNotes('');
+    setShowCreditsModal(true);
+  };
+
+  const addCredits = async () => {
+    if (!user || !selectedUser || !creditAmount) return;
+
+    const amount = parseInt(creditAmount);
+    if (isNaN(amount) || amount === 0) {
+      alert('Veuillez entrer un montant valide');
+      return;
+    }
+
+    setProcessing('add-credits');
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('credit_balance')
+        .eq('id', selectedUser.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      const newBalance = (profileData.credit_balance || 0) + amount;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ credit_balance: newBalance })
+        .eq('id', selectedUser.id);
+
+      if (updateError) throw updateError;
+
+      const { error: transactionError } = await supabase
+        .from('credit_transactions')
+        .insert({
+          user_id: selectedUser.id,
+          amount: amount,
+          transaction_type: amount > 0 ? 'admin_grant' : 'admin_deduct',
+          description: creditNotes || (amount > 0 ? 'Crédits ajoutés par admin' : 'Crédits retirés par admin'),
+          balance_after: newBalance,
+          admin_id: user.id
+        });
+
+      if (transactionError) throw transactionError;
+
+      alert(`✅ ${Math.abs(amount)} crédits ${amount > 0 ? 'ajoutés' : 'retirés'} avec succès`);
+      setShowCreditsModal(false);
+      setCreditAmount('');
+      setCreditNotes('');
+      await loadUsers();
+    } catch (error: any) {
+      console.error('Erreur:', error);
+      alert('Erreur: ' + error.message);
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const grantAllServices = async () => {
@@ -327,10 +391,14 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="w-4 h-4 text-gray-400" />
+                      <button
+                        onClick={() => openCreditsModal(userData)}
+                        className="flex items-center gap-2 text-sm hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors"
+                      >
+                        <CreditCard className="w-4 h-4 text-[#0E2F56]" />
                         <span className="font-medium">{userData.credit_balance.toLocaleString()}</span>
-                      </div>
+                        <Plus className="w-3 h-3 text-gray-400" />
+                      </button>
                     </td>
                     {AVAILABLE_SERVICES.map((service) => {
                       const isApplicable = service.userTypes.includes(userData.user_type);
@@ -453,6 +521,123 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                   </span>
                 ) : (
                   'Activer Tout'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreditsModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <CreditCard className="w-6 h-6 text-[#0E2F56]" />
+              Gérer les crédits
+            </h3>
+            <p className="text-gray-600 mb-2">
+              Pour: <strong>{selectedUser.full_name || selectedUser.email}</strong>
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                Solde actuel: <strong>{selectedUser.credit_balance.toLocaleString()}</strong> crédits
+              </p>
+            </div>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Montant de crédits *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={creditAmount}
+                    onChange={(e) => setCreditAmount(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    placeholder="Ex: 10000 ou -5000"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Entrez un nombre positif pour ajouter, négatif pour retirer
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => setCreditAmount('10000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    +10 000
+                  </button>
+                  <button
+                    onClick={() => setCreditAmount('50000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    +50 000
+                  </button>
+                  <button
+                    onClick={() => setCreditAmount('100000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    +100 000
+                  </button>
+                  <button
+                    onClick={() => setCreditAmount('150000')}
+                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    +150 000
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (optionnel)
+                </label>
+                <textarea
+                  value={creditNotes}
+                  onChange={(e) => setCreditNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                  rows={3}
+                  placeholder="Raison de l'ajout/retrait, conditions, etc."
+                />
+              </div>
+              {creditAmount && !isNaN(parseInt(creditAmount)) && (
+                <div className={`border rounded-lg p-3 ${parseInt(creditAmount) > 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  <p className={`text-sm ${parseInt(creditAmount) > 0 ? 'text-green-800' : 'text-red-800'}`}>
+                    Nouveau solde: <strong>{(selectedUser.credit_balance + parseInt(creditAmount)).toLocaleString()}</strong> crédits
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreditsModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={addCredits}
+                disabled={processing === 'add-credits' || !creditAmount}
+                className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
+                  creditAmount && parseInt(creditAmount) < 0
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-[#0E2F56] hover:bg-[#1a4575]'
+                }`}
+              >
+                {processing === 'add-credits' ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Traitement...
+                  </span>
+                ) : creditAmount && parseInt(creditAmount) < 0 ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Minus className="w-4 h-4" />
+                    Retirer
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Ajouter
+                  </span>
                 )}
               </button>
             </div>
