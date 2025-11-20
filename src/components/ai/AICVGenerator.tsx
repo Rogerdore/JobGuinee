@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Coins,
   CheckCircle2,
+  Search,
+  X,
 } from 'lucide-react';
 
 interface CVContent {
@@ -64,12 +66,59 @@ export default function AICVGenerator({ onBack }: AICVGeneratorProps) {
   const [style, setStyle] = useState('modern');
   const [targetPosition, setTargetPosition] = useState('');
   const [targetCompany, setTargetCompany] = useState('');
+  const [showJobSearch, setShowJobSearch] = useState(false);
+  const [jobSearchQuery, setJobSearchQuery] = useState('');
+  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [loadingJobs, setLoadingJobs] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadCredits();
+      loadJobs();
     }
   }, [user]);
+
+  const loadJobs = async () => {
+    setLoadingJobs(true);
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('id, title, company_name, location, salary_range')
+        .in('status', ['published', 'active'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setAvailableJobs(data || []);
+    } catch (error) {
+      console.error('Erreur chargement offres:', error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  const selectJobAsTarget = (job: any) => {
+    setTargetPosition(job.title);
+    setTargetCompany(job.company_name);
+    setSelectedJob(job);
+    setShowJobSearch(false);
+  };
+
+  const clearJobSelection = () => {
+    setSelectedJob(null);
+    setTargetPosition('');
+    setTargetCompany('');
+  };
+
+  const filteredJobs = availableJobs.filter(job => {
+    const searchLower = jobSearchQuery.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(searchLower) ||
+      job.company_name.toLowerCase().includes(searchLower) ||
+      (job.location && job.location.toLowerCase().includes(searchLower))
+    );
+  });
 
   const loadCredits = async () => {
     if (!user) return;
@@ -364,13 +413,110 @@ ${profile.full_name}`,
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Poste visé
               </label>
-              <input
-                type="text"
-                value={targetPosition}
-                onChange={(e) => setTargetPosition(e.target.value)}
-                placeholder="Ex: Développeur Full Stack"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+
+              {selectedJob ? (
+                <div className="border-2 border-blue-500 rounded-lg p-3 bg-blue-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Briefcase className="w-4 h-4 text-blue-600" />
+                        <h4 className="font-semibold text-gray-900">{selectedJob.title}</h4>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Building className="w-3 h-3" />
+                        <span>{selectedJob.company_name}</span>
+                      </div>
+                      {selectedJob.location && (
+                        <p className="text-xs text-gray-500 mt-1">{selectedJob.location}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={clearJobSelection}
+                      className="text-gray-400 hover:text-red-600 transition"
+                      title="Supprimer la sélection"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-blue-700 font-medium">✓ Offre sélectionnée</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={targetPosition}
+                      onChange={(e) => setTargetPosition(e.target.value)}
+                      placeholder="Ex: Développeur Full Stack"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => setShowJobSearch(!showJobSearch)}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition flex items-center space-x-2"
+                      title="Choisir une offre du site"
+                    >
+                      <Search className="w-5 h-5" />
+                      <span className="hidden sm:inline">Offres</span>
+                    </button>
+                  </div>
+
+                  {showJobSearch && (
+                    <div className="mt-3 border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900">Sélectionner une offre</h4>
+                        <button
+                          onClick={() => setShowJobSearch(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={jobSearchQuery}
+                        onChange={(e) => setJobSearchQuery(e.target.value)}
+                        placeholder="Rechercher par poste, entreprise, localisation..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 text-sm focus:ring-2 focus:ring-blue-500"
+                      />
+
+                      {loadingJobs ? (
+                        <div className="text-center py-8">
+                          <Loader className="w-6 h-6 animate-spin mx-auto text-blue-600" />
+                          <p className="text-sm text-gray-500 mt-2">Chargement des offres...</p>
+                        </div>
+                      ) : filteredJobs.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Briefcase className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                          <p className="text-sm text-gray-500">Aucune offre trouvée</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {filteredJobs.map((job) => (
+                            <button
+                              key={job.id}
+                              onClick={() => selectJobAsTarget(job)}
+                              className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-white transition"
+                            >
+                              <div className="flex items-center space-x-2 mb-1">
+                                <Briefcase className="w-4 h-4 text-blue-600" />
+                                <h5 className="font-medium text-gray-900 text-sm">{job.title}</h5>
+                              </div>
+                              <div className="flex items-center space-x-2 text-xs text-gray-600">
+                                <Building className="w-3 h-3" />
+                                <span>{job.company_name}</span>
+                              </div>
+                              {job.location && (
+                                <p className="text-xs text-gray-500 mt-1">{job.location}</p>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div>
@@ -441,13 +587,110 @@ ${profile.full_name}`,
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Poste visé *
               </label>
-              <input
-                type="text"
-                value={targetPosition}
-                onChange={(e) => setTargetPosition(e.target.value)}
-                placeholder="Ex: Développeur Full Stack"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              />
+
+              {selectedJob ? (
+                <div className="border-2 border-purple-500 rounded-lg p-3 bg-purple-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Briefcase className="w-4 h-4 text-purple-600" />
+                        <h4 className="font-semibold text-gray-900">{selectedJob.title}</h4>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Building className="w-3 h-3" />
+                        <span>{selectedJob.company_name}</span>
+                      </div>
+                      {selectedJob.location && (
+                        <p className="text-xs text-gray-500 mt-1">{selectedJob.location}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={clearJobSelection}
+                      className="text-gray-400 hover:text-red-600 transition"
+                      title="Supprimer la sélection"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-purple-700 font-medium">✓ Offre sélectionnée</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={targetPosition}
+                      onChange={(e) => setTargetPosition(e.target.value)}
+                      placeholder="Ex: Développeur Full Stack"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      onClick={() => setShowJobSearch(!showJobSearch)}
+                      className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition flex items-center space-x-2"
+                      title="Choisir une offre du site"
+                    >
+                      <Search className="w-5 h-5" />
+                      <span className="hidden sm:inline">Offres</span>
+                    </button>
+                  </div>
+
+                  {showJobSearch && (
+                    <div className="mt-3 border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900">Sélectionner une offre</h4>
+                        <button
+                          onClick={() => setShowJobSearch(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={jobSearchQuery}
+                        onChange={(e) => setJobSearchQuery(e.target.value)}
+                        placeholder="Rechercher par poste, entreprise, localisation..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 text-sm focus:ring-2 focus:ring-purple-500"
+                      />
+
+                      {loadingJobs ? (
+                        <div className="text-center py-8">
+                          <Loader className="w-6 h-6 animate-spin mx-auto text-purple-600" />
+                          <p className="text-sm text-gray-500 mt-2">Chargement des offres...</p>
+                        </div>
+                      ) : filteredJobs.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Briefcase className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                          <p className="text-sm text-gray-500">Aucune offre trouvée</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {filteredJobs.map((job) => (
+                            <button
+                              key={job.id}
+                              onClick={() => selectJobAsTarget(job)}
+                              className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-white transition"
+                            >
+                              <div className="flex items-center space-x-2 mb-1">
+                                <Briefcase className="w-4 h-4 text-purple-600" />
+                                <h5 className="font-medium text-gray-900 text-sm">{job.title}</h5>
+                              </div>
+                              <div className="flex items-center space-x-2 text-xs text-gray-600">
+                                <Building className="w-3 h-3" />
+                                <span>{job.company_name}</span>
+                              </div>
+                              {job.location && (
+                                <p className="text-xs text-gray-500 mt-1">{job.location}</p>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div>
@@ -460,6 +703,7 @@ ${profile.full_name}`,
                 onChange={(e) => setTargetCompany(e.target.value)}
                 placeholder="Ex: SOTELGUI"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                readOnly={selectedJob !== null}
               />
             </div>
           </div>
