@@ -60,6 +60,8 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
 
   // Gestion des crédits
   const [creditBalance, setCreditBalance] = useState(0);
+  const [cvBalance, setCVBalance] = useState(0);
+  const [letterBalance, setLetterBalance] = useState(0);
   const [cvCost, setCVCost] = useState(50);
   const [letterCost, setLetterCost] = useState(30);
   const [loadingCredits, setLoadingCredits] = useState(true);
@@ -110,16 +112,26 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         .eq('user_id', user.id);
 
       let totalBalance = 0;
+      let cvBal = 0;
+      let letterBal = 0;
+
       if (services && userCredits) {
         services.forEach(service => {
           const credit = userCredits.find(uc => uc.service_id === service.id);
           if (credit) {
             totalBalance += credit.credits_balance;
+            if (service.code === 'cv_generation') {
+              cvBal = credit.credits_balance;
+            } else if (service.code === 'cover_letter_generation') {
+              letterBal = credit.credits_balance;
+            }
           }
         });
       }
 
       setCreditBalance(totalBalance);
+      setCVBalance(cvBal);
+      setLetterBalance(letterBal);
 
       const { data: costs } = await supabase
         .from('service_credit_costs')
@@ -143,8 +155,8 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
   const generateCV = async () => {
     if (!user) return;
 
-    if (creditBalance < cvCost) {
-      setError(`Crédits insuffisants. Requis: ${cvCost} crédits, Disponibles: ${creditBalance} crédits`);
+    if (cvBalance < cvCost) {
+      setError(`Crédits insuffisants pour le CV. Requis: ${cvCost} crédits, Disponibles: ${cvBalance} crédits`);
       return;
     }
 
@@ -166,7 +178,8 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         return;
       }
 
-      setCreditBalance(creditResult.new_balance);
+      setCVBalance(creditResult.new_balance);
+      setCreditBalance(creditResult.new_balance + letterBalance);
 
       const { data: profile } = await supabase
         .from('candidate_profiles')
@@ -225,8 +238,8 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
   const generateLetter = async () => {
     if (!user) return;
 
-    if (creditBalance < letterCost) {
-      setError(`Crédits insuffisants. Requis: ${letterCost} crédits, Disponibles: ${creditBalance} crédits`);
+    if (letterBalance < letterCost) {
+      setError(`Crédits insuffisants pour la lettre. Requis: ${letterCost} crédits, Disponibles: ${letterBalance} crédits`);
       return;
     }
 
@@ -253,7 +266,8 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         return;
       }
 
-      setCreditBalance(creditResult.new_balance);
+      setLetterBalance(creditResult.new_balance);
+      setCreditBalance(cvBalance + creditResult.new_balance);
 
       const { data: profile } = await supabase
         .from('candidate_profiles')
