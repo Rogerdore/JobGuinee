@@ -35,6 +35,9 @@ interface PremiumStatus {
       total: number;
     };
   };
+  creditsByService: {
+    [serviceCode: string]: number;
+  };
 }
 
 interface ServiceConfig {
@@ -211,7 +214,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
               used: 0,
               total: 0
             }
-          }
+          },
+          creditsByService: {}
         });
         setLoading(false);
       }
@@ -282,15 +286,21 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
 
       const { data: userCredits } = await supabase
         .from('user_service_credits')
-        .select('credits_balance')
+        .select('credits_balance, service_code')
         .eq('user_id', user.id);
 
       let totalBalance = 0;
+      const creditsByService: { [key: string]: number } = {};
+
       if (userCredits && userCredits.length > 0) {
         totalBalance = userCredits.reduce((sum, credit) => sum + credit.credits_balance, 0);
+
+        userCredits.forEach(credit => {
+          creditsByService[credit.service_code] = credit.credits_balance;
+        });
       }
 
-      console.log('Total balance from user_service_credits:', totalBalance);
+      console.log('Credits loaded:', { totalBalance, creditsByService });
 
       setPremiumStatus({
         subscription_type: totalBalance > 0 ? 'premium' : 'free',
@@ -301,7 +311,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
             used: 0,
             total: totalBalance
           }
-        }
+        },
+        creditsByService
       });
 
       console.log('Premium status set successfully');
@@ -316,7 +327,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
             used: 0,
             total: 0
           }
-        }
+        },
+        creditsByService: {}
       });
     } finally {
       setLoading(false);
@@ -509,8 +521,9 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
         {services.map((service) => {
           const Icon = service.icon;
           const globalBalance = premiumStatus?.credits?.global_balance?.available || 0;
+          const serviceBalance = premiumStatus?.creditsByService?.[service.serviceType] || 0;
           const serviceCost = service.credits || 0;
-          const hasEnoughCredits = globalBalance >= serviceCost;
+          const hasEnoughCredits = serviceBalance >= serviceCost;
 
           const grantedAccess = grantedServices[service.serviceType];
           const hasAdminAccess = grantedAccess?.hasAccess && !grantedAccess?.isExpired;
@@ -579,7 +592,7 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                             <span className="text-sm font-semibold text-blue-800">Crédits suffisants</span>
                           </div>
                           <span className="text-2xl font-bold text-blue-900">
-                            {globalBalance}
+                            {serviceBalance}
                           </span>
                         </div>
                         <p className="text-xs text-blue-700">
@@ -589,7 +602,7 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                           <div
                             className="h-2 rounded-full bg-blue-600 transition-all"
                             style={{
-                              width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
+                              width: `${Math.min((serviceBalance / serviceCost) * 100, 100)}%`,
                             }}
                           ></div>
                         </div>
@@ -602,12 +615,12 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                             <span className="text-sm font-semibold text-red-800">Crédits insuffisants</span>
                           </div>
                           <span className="text-2xl font-bold text-red-600">
-                            {globalBalance}
+                            {serviceBalance}
                           </span>
                         </div>
                         <p className="text-xs text-red-700">
                           Coût du service : <strong>{serviceCost}</strong> crédit(s)<br/>
-                          Il vous manque : <strong>{serviceCost - globalBalance}</strong> crédit(s)
+                          Il vous manque : <strong>{serviceCost - serviceBalance}</strong> crédit(s)
                         </p>
                       </div>
                     )}
