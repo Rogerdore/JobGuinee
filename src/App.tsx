@@ -42,8 +42,10 @@ function AppContent() {
   const { loading } = useAuth();
 
   const handleNavigate = (page: string, param?: string) => {
+    console.log('🧭 Navigation requested:', { page, param });
     setCurrentPage(page as Page);
     if (page === 'job-detail' && param) {
+      console.log('📌 Setting selectedJobId to:', param);
       setSelectedJobId(param);
     }
     if (page === 'jobs' && param) {

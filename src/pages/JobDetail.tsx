@@ -19,6 +19,8 @@ interface JobDetailProps {
 }
 
 export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
+  console.log('🎯 JobDetail component rendered with jobId:', jobId);
+
   const { user, profile } = useAuth();
   const [job, setJob] = useState<(Job & { companies: Company }) | null>(null);
   const [loading, setLoading] = useState(true);
