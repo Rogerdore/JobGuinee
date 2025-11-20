@@ -51,7 +51,7 @@ interface Company {
 }
 
 interface AdminJobsProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, param?: string) => void;
 }
 
 export default function AdminJobs({ onNavigate }: AdminJobsProps) {
@@ -658,7 +658,7 @@ export default function AdminJobs({ onNavigate }: AdminJobsProps) {
 
                             {/* Action Buttons */}
                             <button
-                              onClick={() => onNavigate(`job-detail/${job.id}`)}
+                              onClick={() => onNavigate('job-detail', job.id)}
                               className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                               title="Voir les détails"
                             >
