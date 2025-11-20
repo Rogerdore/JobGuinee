@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ToggleLeft, ToggleRight, Loader2, RefreshCw, Calendar, Save, CheckCircle, XCircle, CreditCard, User } from 'lucide-react';
+import { Search, ToggleLeft, ToggleRight, Loader2, RefreshCw, Calendar, Save, CheckCircle, XCircle, CreditCard, User, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
@@ -9,6 +9,7 @@ interface UserService {
   expires_at: string | null;
   notes: string | null;
   granted_at: string;
+  credits_balance?: number;
 }
 
 interface UserData {
@@ -22,24 +23,14 @@ interface UserData {
 }
 
 interface ServiceDefinition {
+  id: string;
   code: string;
   name: string;
   description: string;
   userTypes: string[];
 }
 
-const AVAILABLE_SERVICES: ServiceDefinition[] = [
-  { code: 'cv_generation', name: 'Génération CV IA', description: 'Génération automatique de CV', userTypes: ['candidate'] },
-  { code: 'cover_letter_generation', name: 'Lettre de Motivation IA', description: 'Génération de lettres personnalisées', userTypes: ['candidate'] },
-  { code: 'profile_analysis', name: 'Analyse de Profil IA', description: 'Analyse complète du profil candidat', userTypes: ['candidate'] },
-  { code: 'interview_coaching', name: 'Coaching Entretien IA', description: 'Préparation aux entretiens', userTypes: ['candidate'] },
-  { code: 'job_matching', name: 'Matching IA', description: 'Recommandations d\'emplois personnalisées', userTypes: ['candidate'] },
-  { code: 'profile_visibility_boost', name: 'Boost Visibilité', description: 'Profil Gold - Visibilité maximale', userTypes: ['candidate'] },
-  { code: 'unlimited_applications', name: 'Candidatures Illimitées', description: 'Postuler sans limite pendant 30 jours', userTypes: ['candidate'] },
-  { code: 'featured_application', name: 'Candidature Prioritaire', description: 'Candidature mise en avant', userTypes: ['candidate'] },
-  { code: 'direct_message_recruiter', name: 'Message Direct', description: 'Contacter directement les recruteurs', userTypes: ['candidate'] },
-  { code: 'access_contact_info', name: 'Accès Contacts', description: 'Voir les infos de contact des candidats', userTypes: ['recruiter'] }
-];
+const AVAILABLE_SERVICES: ServiceDefinition[] = [];
 
 const getServicesForUserType = (userType: string): ServiceDefinition[] => {
   return AVAILABLE_SERVICES.filter(service => service.userTypes.includes(userType));
@@ -61,9 +52,15 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
   const [showModal, setShowModal] = useState(false);
   const [modalNotes, setModalNotes] = useState('');
   const [modalExpires, setModalExpires] = useState('');
+  const [services, setServices] = useState<ServiceDefinition[]>([]);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [selectedService, setSelectedService] = useState<ServiceDefinition | null>(null);
+  const [creditsAmount, setCreditsAmount] = useState('');
+  const [userServiceCredits, setUserServiceCredits] = useState<Record<string, Record<string, number>>>({});
 
   useEffect(() => {
     if (user && profile?.user_type === 'admin') {
+      loadServices();
       loadUsers();
     }
   }, [user, profile]);
@@ -71,6 +68,29 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
   useEffect(() => {
     filterUsers();
   }, [searchTerm, filterType, users]);
+
+  const loadServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('premium_services')
+        .select('id, code, name, description, target_user_type')
+        .order('display_order');
+
+      if (error) throw error;
+
+      const servicesList: ServiceDefinition[] = (data || []).map((s: any) => ({
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        description: s.description,
+        userTypes: s.target_user_type === 'all' ? ['candidate', 'recruiter', 'trainer'] : [s.target_user_type]
+      }));
+
+      setServices(servicesList);
+    } catch (error: any) {
+      console.error('Erreur chargement services:', error);
+    }
+  };
 
   const loadUsers = async () => {
     if (!user) return;
@@ -86,12 +106,37 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
       if (data?.success) {
         setUsers(data.users || []);
         setFilteredUsers(data.users || []);
+        await loadServiceCredits(data.users || []);
       }
     } catch (error: any) {
       console.error('Erreur chargement utilisateurs:', error);
       alert('Erreur lors du chargement des utilisateurs');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadServiceCredits = async (usersList: UserData[]) => {
+    try {
+      const { data: creditsData } = await supabase
+        .from('user_service_credits')
+        .select('user_id, service_id, credits_balance');
+
+      const creditsMap: Record<string, Record<string, number>> = {};
+
+      (creditsData || []).forEach((credit: any) => {
+        if (!creditsMap[credit.user_id]) {
+          creditsMap[credit.user_id] = {};
+        }
+        const service = services.find(s => s.id === credit.service_id);
+        if (service) {
+          creditsMap[credit.user_id][service.code] = credit.credits_balance;
+        }
+      });
+
+      setUserServiceCredits(creditsMap);
+    } catch (error: any) {
+      console.error('Erreur chargement crédits:', error);
     }
   };
 
@@ -146,6 +191,48 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
     setModalNotes('');
     setModalExpires('');
     setShowModal(true);
+  };
+
+  const openCreditsModal = (userData: UserData, service: ServiceDefinition) => {
+    setSelectedUser(userData);
+    setSelectedService(service);
+    setCreditsAmount('');
+    setShowCreditsModal(true);
+  };
+
+  const handleAddCredits = async () => {
+    if (!user || !selectedUser || !selectedService || !creditsAmount) return;
+
+    const amount = parseInt(creditsAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Veuillez entrer un montant valide (positif)');
+      return;
+    }
+
+    setProcessing('add-credits');
+    try {
+      const { data, error } = await supabase.rpc('add_service_credits', {
+        p_user_id: selectedUser.id,
+        p_service_id: selectedService.id,
+        p_amount: amount,
+        p_note: `Ajout manuel par admin`
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        alert(`✅ ${amount} crédits ajoutés avec succès. Nouveau solde: ${data.new_balance}`);
+        setShowCreditsModal(false);
+        await loadUsers();
+      } else {
+        alert('❌ Erreur lors de l\'ajout des crédits');
+      }
+    } catch (error: any) {
+      console.error('Erreur:', error);
+      alert('Erreur: ' + error.message);
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const grantAllServices = async () => {
@@ -258,7 +345,7 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-800">
               <strong>Total:</strong> {filteredUsers.length} utilisateur(s) •
-              <strong className="ml-3">Services disponibles:</strong> {AVAILABLE_SERVICES.length}
+              <strong className="ml-3">Services disponibles:</strong> {services.length}
             </p>
           </div>
         </div>
@@ -285,7 +372,7 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Crédits
                   </th>
-                  {AVAILABLE_SERVICES.map((service) => (
+                  {services.map((service) => (
                     <th
                       key={service.code}
                       className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -332,7 +419,7 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                         <span className="font-medium">{userData.credit_balance.toLocaleString()}</span>
                       </div>
                     </td>
-                    {AVAILABLE_SERVICES.map((service) => {
+                    {services.map((service) => {
                       const isApplicable = service.userTypes.includes(userData.user_type);
 
                       if (!isApplicable) {
@@ -343,36 +430,27 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                         );
                       }
 
-                      const isActive = getServiceStatus(userData, service.code);
-                      const serviceData = userData.services[service.code];
-                      const key = `${userData.id}-${service.code}`;
-                      const isProcessing = processing === key;
+                      const creditsBalance = userServiceCredits[userData.id]?.[service.code] || 0;
 
                       return (
                         <td key={service.code} className="px-3 py-4 text-center">
-                          <button
-                            onClick={() => toggleService(userData.id, service.code, isActive)}
-                            disabled={isProcessing}
-                            className={`inline-flex items-center justify-center w-12 h-12 rounded-lg transition-all ${
-                              isActive
-                                ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                            } disabled:opacity-50`}
-                            title={serviceData?.notes || service.description}
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : isActive ? (
-                              <CheckCircle className="w-5 h-5" />
-                            ) : (
-                              <XCircle className="w-5 h-5" />
-                            )}
-                          </button>
-                          {serviceData?.expires_at && (
-                            <div className="text-[10px] text-gray-500 mt-1">
-                              {formatDate(serviceData.expires_at)}
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="w-4 h-4 text-gray-400" />
+                              <span className={`font-semibold text-sm ${
+                                creditsBalance > 0 ? 'text-green-600' : 'text-gray-400'
+                              }`}>
+                                {creditsBalance}
+                              </span>
                             </div>
-                          )}
+                            <button
+                              onClick={() => openCreditsModal(userData, service)}
+                              className="flex items-center gap-1 px-2 py-1 text-xs bg-[#0E2F56] text-white rounded hover:bg-[#1a4575] transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Ajouter
+                            </button>
+                          </div>
                         </td>
                       );
                     })}
@@ -453,6 +531,66 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                   </span>
                 ) : (
                   'Activer Tout'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreditsModal && selectedUser && selectedService && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">
+              Ajouter des crédits
+            </h3>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                <strong>Utilisateur:</strong> {selectedUser.full_name || selectedUser.email}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Service:</strong> {selectedService.name}
+              </p>
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Solde actuel:</strong> {userServiceCredits[selectedUser.id]?.[selectedService.code] || 0} crédits
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre de crédits à ajouter
+                </label>
+                <input
+                  type="number"
+                  value={creditsAmount}
+                  onChange={(e) => setCreditsAmount(e.target.value)}
+                  placeholder="Ex: 100"
+                  min="1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreditsModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleAddCredits}
+                disabled={processing === 'add-credits' || !creditsAmount}
+                className="flex-1 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4575] transition-colors disabled:opacity-50"
+              >
+                {processing === 'add-credits' ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Ajout...
+                  </span>
+                ) : (
+                  'Ajouter'
                 )}
               </button>
             </div>
