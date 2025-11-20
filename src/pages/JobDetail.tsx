@@ -68,9 +68,12 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   };
 
   useEffect(() => {
-    loadJob();
-    incrementViews();
-    if (user) checkIfApplied();
+    const init = async () => {
+      await incrementViews();
+      await loadJob();
+      if (user) checkIfApplied();
+    };
+    init();
   }, [jobId, user]);
 
   const loadJob = async () => {
