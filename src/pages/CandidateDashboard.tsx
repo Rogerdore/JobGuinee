@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
+import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 import { calculateCandidateCompletion } from '../utils/profileCompletion';
@@ -234,14 +234,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       price: 'Inclus',
       color: 'bg-purple-100 text-purple-700',
       details: {
-        fullDescription: 'Analyse automatique complète de votre profil avec intelligence artificielle pour maximiser vos chances de succès.',
+        fullDescription: 'Analyse complète du profil avec intelligence artificielle.',
         features: [
-          'Score de compatibilité (0-100) entre votre profil et les offres',
-          'Analyse détaillée des compétences requises vs vos compétences',
-          'Suggestions de formations pour combler les lacunes',
-          'Recommandations personnalisées d\'amélioration',
-          'Mise à jour en temps réel du matching',
-          'Top 10 des meilleures offres correspondantes'
+          'Analyse complète du profil',
+          'Score de compatibilité avec offres',
+          'Suggestions de formations personnalisées',
+          'Recommandations d\'amélioration',
         ],
         benefits: 'Gagnez du temps et ciblez les offres qui correspondent vraiment à votre profil.',
       }
@@ -255,13 +253,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Création automatique de CV et lettres de motivation professionnels optimisés pour les systèmes de recrutement.',
         features: [
-          'Génération de CV au format HTML téléchargeable',
-          'Design moderne et professionnel',
-          'Optimisé pour les systèmes ATS (Applicant Tracking System)',
-          'Lettres de motivation personnalisées par offre',
-          'Choix entre 3 tons : formel, créatif, simple',
-          'Import automatique depuis votre profil',
-          'Modifications et ajustements illimités'
+          'Génération CV professionnel',
+          'Création lettre de motivation',
+          'Design moderne et ATS-friendly',
+          'Export PDF haute qualité',
         ],
         benefits: 'Présentez-vous de manière professionnelle et augmentez vos chances de décrocher des entretiens.',
       }
@@ -275,12 +270,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Système intelligent de notification qui détecte automatiquement les offres correspondant à votre profil.',
         features: [
-          'Notifications instantanées par email et SMS',
-          'Analyse automatique de toutes les nouvelles offres',
-          'Filtrage intelligent basé sur vos critères',
-          'Alertes personnalisées par secteur et compétences',
-          'Résumé hebdomadaire des opportunités',
-          'Désactivation/réactivation flexible'
+          'Alertes intelligentes personnalisées',
+          'Matching avancé IA',
+          'Notifications multi-canal',
+          'Suggestions d\'offres similaires',
         ],
         benefits: 'Ne ratez plus jamais une opportunité qui vous correspond.',
       }
@@ -294,13 +287,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Assistant virtuel disponible 24/7 pour répondre à toutes vos questions sur l\'emploi et le Code du Travail guinéen.',
         features: [
-          'Réponses instantanées et personnalisées',
-          'Base de connaissances sur le Code du Travail guinéen',
-          'Conseils sur la préparation d\'entretiens',
-          'Stratégies de recherche d\'emploi',
-          'Aide à la négociation salariale',
-          'Conseils de développement de carrière',
-          'Historique des conversations sauvegardé'
+          'Conseils juridiques emploi',
+          'Code du Travail guinéen',
+          'Réponses instantanées 24/7',
+          'Historique des conversations',
         ],
         benefits: 'Obtenez des réponses immédiates à vos questions professionnelles, 24h/24.',
       }
@@ -314,13 +304,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Rapport détaillé mensuel avec analyses et statistiques de votre activité sur la plateforme.',
         features: [
-          'Statistiques de candidatures (envoyées, vues, réponses)',
-          'Évolution de votre score de matching',
-          'Analyse des formations suivies',
-          'Comparaison avec d\'autres candidats de votre secteur',
-          'Recommandations d\'amélioration personnalisées',
-          'Graphiques et visualisations claires',
-          'Export PDF pour vos archives'
+          'Rapport détaillé mensuel',
+          'Statistiques de candidatures',
+          'Analyse de performance',
+          'Recommandations stratégiques',
         ],
         benefits: 'Suivez votre progression et optimisez votre stratégie de recherche d\'emploi.',
       }
@@ -334,13 +321,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Programme de coaching complet avec simulations d\'entretiens et feedback détaillé pour réussir vos recrutements.',
         features: [
-          'Simulations d\'entretiens réalistes',
-          'Questions personnalisées selon le poste visé',
-          'Feedback détaillé sur vos réponses',
-          'Analyse de votre communication et présentation',
-          'Conseils d\'amélioration ciblés',
-          'Entraînement illimité',
-          'Suivi de progression'
+          'Simulations d\'entretien IA',
+          'Feedback personnalisé détaillé',
+          'Préparation questions techniques',
+          '3 sessions de coaching',
         ],
         benefits: 'Préparez-vous efficacement et arrivez confiant à vos entretiens.',
       }
@@ -363,26 +347,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           'Valable 1 an'
         ],
         benefits: 'Démarquez-vous avec un profil vérifié et gagnez la confiance des recruteurs.',
-      }
-    },
-    {
-      icon: Cloud,
-      title: 'Espace cloud personnel',
-      description: 'Sauvegarde sécurisée documents RH',
-      price: 'Inclus Premium',
-      color: 'bg-teal-100 text-teal-700',
-      details: {
-        fullDescription: 'Espace de stockage sécurisé pour tous vos documents professionnels et RH.',
-        features: [
-          '10 Go de stockage cloud',
-          'Sauvegarde automatique de vos documents',
-          'Accès depuis n\'importe quel appareil',
-          'Partage sécurisé avec les recruteurs',
-          'Organisation par dossiers',
-          'Historique des versions',
-          'Chiffrement de bout en bout'
-        ],
-        benefits: 'Gardez tous vos documents professionnels organisés et accessibles en tout temps.',
       }
     },
   ];
