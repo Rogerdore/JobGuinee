@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, HelpCircle, Save } from 'lucide-react';
+import { AlertCircle, CheckCircle2, HelpCircle, Save, Briefcase, MapPin, Building } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { calculateCandidateCompletion } from '../../utils/profileCompletion';
+import { useAutocomplete } from '../../hooks/useAutocomplete';
+import AutocompleteInput from './AutocompleteInput';
+import CVAutoFillButton from './CVAutoFillButton';
 import {
   Input,
   Select,
@@ -175,6 +178,35 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
     }
   };
 
+  const formatPhoneNumber = (value: string): string => {
+    const cleaned = value.replace(/\D/g, '');
+
+    if (cleaned.startsWith('224')) {
+      const withoutCountryCode = cleaned.substring(3);
+      if (withoutCountryCode.length <= 3) {
+        return `+224 ${withoutCountryCode}`;
+      } else if (withoutCountryCode.length <= 5) {
+        return `+224 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3)}`;
+      } else if (withoutCountryCode.length <= 7) {
+        return `+224 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3, 5)} ${withoutCountryCode.slice(5)}`;
+      } else {
+        return `+224 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3, 5)} ${withoutCountryCode.slice(5, 7)} ${withoutCountryCode.slice(7, 9)}`;
+      }
+    } else if (cleaned.length > 0) {
+      if (cleaned.length <= 3) {
+        return `+224 ${cleaned}`;
+      } else if (cleaned.length <= 5) {
+        return `+224 ${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
+      } else if (cleaned.length <= 7) {
+        return `+224 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5)}`;
+      } else {
+        return `+224 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5, 7)} ${cleaned.slice(7, 9)}`;
+      }
+    }
+
+    return value;
+  };
+
   const validateField = (fieldName: string, value: any): string => {
     switch (fieldName) {
       case 'email':
@@ -185,13 +217,20 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         return '';
       case 'phone':
         if (!value) return 'Le numéro de téléphone est obligatoire';
-        if (!/^\+?[0-9\s]{8,}$/.test(value)) {
-          return 'Veuillez saisir un numéro de téléphone valide';
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length < 9) {
+          return 'Le numéro doit contenir au moins 9 chiffres';
+        }
+        if (cleaned.startsWith('224') && cleaned.length !== 12) {
+          return 'Format attendu: +224 XXX XX XX XX';
         }
         return '';
       case 'fullName':
         if (!value || value.trim().length < 3) {
           return 'Le nom complet doit contenir au moins 3 caractères';
+        }
+        if (!/^[a-zA-ZàâäéèêëïîôùûüÿæœçÀÂÄÉÈÊËÏÎÔÙÛÜŸÆŒÇ\s-]+$/.test(value)) {
+          return 'Le nom ne doit contenir que des lettres';
         }
         return '';
       default:
@@ -200,8 +239,21 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   };
 
   const updateField = (fieldName: string, value: any) => {
-    setFormData({ ...formData, [fieldName]: value });
-    const error = validateField(fieldName, value);
+    let processedValue = value;
+
+    if (fieldName === 'phone') {
+      processedValue = formatPhoneNumber(value);
+    }
+
+    if (fieldName === 'fullName') {
+      processedValue = value
+        .split(' ')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+
+    setFormData({ ...formData, [fieldName]: processedValue });
+    const error = validateField(fieldName, processedValue);
     setErrors({ ...errors, [fieldName]: error });
   };
 
@@ -488,6 +540,22 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         </div>
 
       {/* Progress Bar */}
+      <CVAutoFillButton
+        onDataExtracted={(data) => {
+          setFormData((prev: any) => ({
+            ...prev,
+            fullName: data.fullName || prev.fullName,
+            email: data.email || prev.email,
+            phone: data.phone || prev.phone,
+            currentPosition: data.currentPosition || prev.currentPosition,
+            experiences: data.experiences.length > 0 ? data.experiences : prev.experiences,
+            formations: data.formations.length > 0 ? data.formations : prev.formations,
+            skills: data.skills.length > 0 ? data.skills : prev.skills,
+            languages: data.languages.length > 0 ? data.languages : prev.languages,
+          }));
+        }}
+      />
+
       <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">Profil complété</span>
@@ -564,11 +632,31 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           value={formData.gender}
           onChange={(value) => setFormData({ ...formData, gender: value })}
         />
-        <Input
+        <AutocompleteInput
           label="Adresse / Ville de résidence"
           placeholder="Ex : Ratoma, Conakry"
           value={formData.address}
           onChange={(value) => setFormData({ ...formData, address: value })}
+          suggestions={[
+            'Ratoma, Conakry',
+            'Matoto, Conakry',
+            'Kaloum, Conakry',
+            'Dixinn, Conakry',
+            'Matam, Conakry',
+            'Boké',
+            'Kamsar',
+            'Kindia',
+            'Labé',
+            'Nzérékoré',
+            'Kankan',
+            'Siguiri',
+            'Mamou',
+            'Faranah',
+            'Dabola',
+            'Kissidougou',
+          ]}
+          icon={MapPin}
+          allowCustom={true}
         />
         <Select
           label="Région / Préfecture"
@@ -589,17 +677,62 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           value={formData.professionalStatus}
           onChange={(value) => setFormData({ ...formData, professionalStatus: value })}
         />
-        <Input
+        <AutocompleteInput
           label="Intitulé actuel du poste"
           placeholder="Ex : Assistant RH"
           value={formData.currentPosition}
           onChange={(value) => setFormData({ ...formData, currentPosition: value })}
+          suggestions={[
+            'Assistant(e) RH',
+            'Chargé(e) de Recrutement',
+            'Responsable RH',
+            'Comptable',
+            'Assistant(e) Comptable',
+            'Contrôleur de Gestion',
+            'Ingénieur Logiciel',
+            'Développeur Web',
+            'Data Analyst',
+            'Chef de Projet',
+            'Responsable Logistique',
+            'Assistant(e) Achats',
+            'Commercial(e)',
+            'Chargé(e) de Communication',
+            'Juriste',
+            'Auditeur',
+            'Consultant',
+            'Formateur',
+            'Ingénieur Minier',
+            'Géologue',
+            'Superviseur HSE',
+          ]}
+          icon={Briefcase}
+          allowCustom={true}
         />
-        <Input
+        <AutocompleteInput
           label="Entreprise actuelle (si applicable)"
           placeholder="Ex : Winning Consortium"
           value={formData.currentCompany}
           onChange={(value) => setFormData({ ...formData, currentCompany: value })}
+          suggestions={[
+            'Winning Consortium',
+            'SMB-Winning',
+            'Compagnie des Bauxites de Guinée (CBG)',
+            'Alliance Mining Commodities (AMC)',
+            'Société Aurifère de Guinée (SAG)',
+            'Orange Guinée',
+            'MTN Guinée',
+            'Ecobank Guinée',
+            'Société Générale de Banques en Guinée',
+            'Total Guinée',
+            'Bolloré Africa Logistics',
+            'GETMA Guinée',
+            'ALCOA',
+            'Rio Tinto',
+            'Rusal',
+            'Compagnie Minière de Boffa (CMB)',
+          ]}
+          icon={Building}
+          allowCustom={true}
         />
         <Select
           label="Disponibilité"
