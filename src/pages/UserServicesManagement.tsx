@@ -25,20 +25,25 @@ interface ServiceDefinition {
   code: string;
   name: string;
   description: string;
+  userTypes: string[];
 }
 
 const AVAILABLE_SERVICES: ServiceDefinition[] = [
-  { code: 'cv_generation', name: 'Génération CV IA', description: 'Génération automatique de CV' },
-  { code: 'cover_letter_generation', name: 'Lettre de Motivation IA', description: 'Génération de lettres personnalisées' },
-  { code: 'profile_analysis', name: 'Analyse de Profil IA', description: 'Analyse complète du profil candidat' },
-  { code: 'interview_coaching', name: 'Coaching Entretien IA', description: 'Préparation aux entretiens' },
-  { code: 'job_matching', name: 'Matching IA', description: 'Recommandations d\'emplois personnalisées' },
-  { code: 'profile_visibility_boost', name: 'Boost Visibilité', description: 'Profil Gold - Visibilité maximale' },
-  { code: 'unlimited_applications', name: 'Candidatures Illimitées', description: 'Postuler sans limite pendant 30 jours' },
-  { code: 'featured_application', name: 'Candidature Prioritaire', description: 'Candidature mise en avant' },
-  { code: 'direct_message_recruiter', name: 'Message Direct', description: 'Contacter directement les recruteurs' },
-  { code: 'access_contact_info', name: 'Accès Contacts', description: 'Voir les infos de contact des recruteurs' }
+  { code: 'cv_generation', name: 'Génération CV IA', description: 'Génération automatique de CV', userTypes: ['candidate'] },
+  { code: 'cover_letter_generation', name: 'Lettre de Motivation IA', description: 'Génération de lettres personnalisées', userTypes: ['candidate'] },
+  { code: 'profile_analysis', name: 'Analyse de Profil IA', description: 'Analyse complète du profil candidat', userTypes: ['candidate'] },
+  { code: 'interview_coaching', name: 'Coaching Entretien IA', description: 'Préparation aux entretiens', userTypes: ['candidate'] },
+  { code: 'job_matching', name: 'Matching IA', description: 'Recommandations d\'emplois personnalisées', userTypes: ['candidate'] },
+  { code: 'profile_visibility_boost', name: 'Boost Visibilité', description: 'Profil Gold - Visibilité maximale', userTypes: ['candidate'] },
+  { code: 'unlimited_applications', name: 'Candidatures Illimitées', description: 'Postuler sans limite pendant 30 jours', userTypes: ['candidate'] },
+  { code: 'featured_application', name: 'Candidature Prioritaire', description: 'Candidature mise en avant', userTypes: ['candidate'] },
+  { code: 'direct_message_recruiter', name: 'Message Direct', description: 'Contacter directement les recruteurs', userTypes: ['candidate'] },
+  { code: 'access_contact_info', name: 'Accès Contacts', description: 'Voir les infos de contact des candidats', userTypes: ['recruiter'] }
 ];
+
+const getServicesForUserType = (userType: string): ServiceDefinition[] => {
+  return AVAILABLE_SERVICES.filter(service => service.userTypes.includes(userType));
+};
 
 interface UserServicesManagementProps {
   onNavigate?: (page: string) => void;
@@ -148,7 +153,8 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
 
     setProcessing('bulk-grant');
     try {
-      const serviceCodes = AVAILABLE_SERVICES.map(s => s.code);
+      const applicableServices = getServicesForUserType(selectedUser.user_type);
+      const serviceCodes = applicableServices.map(s => s.code);
       const expiresAt = modalExpires ? new Date(modalExpires).toISOString() : null;
 
       const { data, error } = await supabase.rpc('grant_services_to_user', {
@@ -283,12 +289,15 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                     <th
                       key={service.code}
                       className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      title={service.description}
+                      title={`${service.description} - Pour: ${service.userTypes.map(t => getUserTypeLabel(t)).join(', ')}`}
                     >
                       <div className="flex flex-col items-center gap-1">
                         <span className="whitespace-nowrap">{service.name.split(' ')[0]}</span>
                         <span className="text-[10px] text-gray-400 normal-case">
                           {service.name.split(' ').slice(1).join(' ')}
+                        </span>
+                        <span className="text-[9px] text-gray-400 italic mt-0.5">
+                          ({service.userTypes.map(t => t === 'candidate' ? 'C' : t === 'recruiter' ? 'R' : 'F').join(',')})
                         </span>
                       </div>
                     </th>
@@ -324,6 +333,16 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
                       </div>
                     </td>
                     {AVAILABLE_SERVICES.map((service) => {
+                      const isApplicable = service.userTypes.includes(userData.user_type);
+
+                      if (!isApplicable) {
+                        return (
+                          <td key={service.code} className="px-3 py-4 text-center bg-gray-50">
+                            <div className="text-gray-300">—</div>
+                          </td>
+                        );
+                      }
+
                       const isActive = getServiceStatus(userData, service.code);
                       const serviceData = userData.services[service.code];
                       const key = `${userData.id}-${service.code}`;
@@ -379,9 +398,14 @@ export default function UserServicesManagement({ onNavigate }: UserServicesManag
             <h3 className="text-xl font-bold mb-4">
               Activer tous les services
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-2">
               Pour: <strong>{selectedUser.full_name || selectedUser.email}</strong>
             </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>{getServicesForUserType(selectedUser.user_type).length}</strong> service(s) seront activés pour ce {getUserTypeLabel(selectedUser.user_type).toLowerCase()}
+              </p>
+            </div>
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
