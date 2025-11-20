@@ -308,17 +308,13 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
 
       if (formData.profilePhoto) {
         const photoPath = `${user.id}/photo_${Date.now()}.${formData.profilePhoto.name.split('.').pop()}`;
-        console.log('Uploading photo to:', photoPath);
         const { error: photoError } = await supabase.storage
           .from('candidate-profiles')
           .upload(photoPath, formData.profilePhoto, { upsert: true });
 
-        if (photoError) {
-          console.error('Error uploading photo:', photoError);
-        } else {
+        if (!photoError) {
           const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(photoPath);
           profilePhotoUrl = data.publicUrl;
-          console.log('Photo uploaded successfully. URL:', profilePhotoUrl);
         }
       }
 
@@ -398,9 +394,6 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           cv_url: cvUrl || existingProfile.cv_url,
           certificates_url: certificatesUrl || existingProfile.certificates_url,
         };
-
-        console.log('Updating profile with data:', updateData);
-        console.log('Final profile_photo_url:', updateData.profile_photo_url);
 
         // Update existing profile
         const { error } = await supabase

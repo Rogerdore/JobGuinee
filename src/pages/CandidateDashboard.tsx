@@ -113,8 +113,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
       if (appsData.data) setApplications(appsData.data as any);
       if (profileData.data) {
-        console.log('Candidate Profile Loaded:', profileData.data);
-        console.log('Profile Photo URL:', profileData.data.profile_photo_url);
         setCandidateProfile(profileData.data);
         setFormData({
           skills: profileData.data.skills || [],
@@ -427,13 +425,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   src={candidateProfile.profile_photo_url}
                   alt={profile?.full_name || 'Photo de profil'}
                   className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-                  onError={(e) => {
-                    console.error('Error loading profile photo:', candidateProfile.profile_photo_url);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log('Profile photo loaded successfully');
-                  }}
                 />
               ) : (
                 <div className="w-20 h-20 rounded-full bg-white/20 border-4 border-white shadow-lg flex items-center justify-center">
