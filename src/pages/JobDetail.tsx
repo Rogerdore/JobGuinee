@@ -438,14 +438,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                 </div>
               )}
 
-              {job.view_count !== undefined && (
+              {job.views_count !== undefined && (
                 <div className="flex items-center space-x-3 bg-yellow-50 p-4 rounded-xl border-2 border-yellow-100">
                   <div className="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center">
                     <FileText className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 font-medium">Vues</div>
-                    <div className="font-bold text-gray-900">{job.view_count || 0}</div>
+                    <div className="font-bold text-gray-900">{job.views_count || 0}</div>
                   </div>
                 </div>
               )}
