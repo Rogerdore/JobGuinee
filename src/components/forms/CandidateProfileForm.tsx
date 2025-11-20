@@ -479,7 +479,17 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   };
 
   const handleAIAnalysis = () => {
-    alert('Analyse IA du profil en cours... Cette fonctionnalité sera disponible prochainement.');
+    if (!onNavigate) {
+      alert('Navigation non disponible');
+      return;
+    }
+
+    if (!candidateProfile) {
+      alert('Veuillez d\'abord enregistrer votre profil avant de l\'analyser.');
+      return;
+    }
+
+    onNavigate('premium-ai-services');
   };
 
   const progress = calculateProgress();
@@ -865,12 +875,26 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
       </FormSection>
 
       <FormSection title="7️⃣ Assistance IA et analyse de profil">
-        <Button variant="secondary" onClick={handleAIAnalysis}>
-          🧠 Analyser mon profil avec IA
-        </Button>
-        <p className="text-sm text-gray-500">
-          L'IA analysera vos informations pour suggérer des offres adaptées et améliorer votre CV.
-        </p>
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-6 mb-4">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl">
+              🧠
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 mb-2">Analyse IA de votre profil</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Notre intelligence artificielle analysera votre profil pour vous donner un score de compatibilité avec les offres d'emploi et vous suggérer des formations adaptées.
+              </p>
+              <Button
+                variant="secondary"
+                onClick={handleAIAnalysis}
+                className="w-full sm:w-auto"
+              >
+                🧠 Analyser mon profil avec IA
+              </Button>
+            </div>
+          </div>
+        </div>
         <Textarea
           label="Commentaire ou objectif professionnel"
           placeholder="Décrivez le type d'emploi ou secteur que vous recherchez..."
