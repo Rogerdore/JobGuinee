@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getUserServiceAccessList, ServiceAccessInfo } from '../utils/serviceAccess';
 import {
   Crown,
   Brain,
@@ -501,6 +502,10 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
           const serviceCost = service.credits || 0;
           const hasEnoughCredits = globalBalance >= serviceCost;
 
+          const grantedAccess = grantedServices[service.serviceType];
+          const hasAdminAccess = grantedAccess?.hasAccess && !grantedAccess?.isExpired;
+          const canUseService = service.isIncluded || hasAdminAccess || hasEnoughCredits;
+
           return (
             <div
               key={service.id}
@@ -512,7 +517,12 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                   <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
                     <Icon className="w-8 h-8" />
                   </div>
-                  {service.isIncluded ? (
+                  {hasAdminAccess ? (
+                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold flex items-center space-x-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Accordé</span>
+                    </span>
+                  ) : service.isIncluded ? (
                     <span className="px-3 py-1 bg-white text-gray-900 rounded-full text-xs font-bold">
                       Inclus
                     </span>
@@ -533,6 +543,21 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
 
               {/* Contenu */}
               <div className="p-5 bg-white">
+                {/* Badge d'accès accordé */}
+                {hasAdminAccess && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-700 mb-1">
+                      <Shield className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Accès gratuit accordé</span>
+                    </div>
+                    <p className="text-xs text-green-600">
+                      {grantedAccess?.expiresAt
+                        ? `Expire le ${new Date(grantedAccess.expiresAt).toLocaleDateString('fr-FR')}`
+                        : 'Accès illimité'}
+                    </p>
+                  </div>
+                )}
+
                 {/* Crédits disponibles */}
                 {!service.isIncluded && !hasAdminAccess && (
                   <div className="mb-5">
@@ -590,15 +615,13 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                 </ul>
 
                 {/* Boutons d'action */}
-                {hasAdminAccess || service.isIncluded || hasEnoughCredits ? (
+                {canUseService ? (
                   <button
                     onClick={() => handleUseService(service)}
                     className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
                   >
                     <Zap className="w-4 h-4" />
-                    <span className="text-sm">
-                      {hasAdminAccess ? 'Utiliser (Accès Admin)' : 'Utiliser le service'}
-                    </span>
+                    <span className="text-sm">Utiliser le service</span>
                   </button>
                 ) : (
                   <button
