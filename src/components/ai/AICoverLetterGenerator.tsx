@@ -355,6 +355,245 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
           <span>Générer 2 versions ({creditCost} ⚡)</span>
         </button>
       </div>
+
+      <div className="mt-8 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-lg p-8 border-2 border-purple-200">
+        <div className="flex items-start space-x-4 mb-6">
+          <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Comment fonctionne notre Générateur de Lettre IA ?
+            </h2>
+            <p className="text-gray-700 leading-relaxed">
+              Notre intelligence artificielle analyse votre profil complet et l'offre d'emploi sélectionnée pour créer
+              des lettres de motivation 100% personnalisées et optimisées ATS.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg p-6 mb-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Target className="w-6 h-6" />
+            <h3 className="text-xl font-bold">Notre Mission : Votre Succès</h3>
+          </div>
+          <p className="leading-relaxed mb-4">
+            Nous savons qu'écrire une lettre de motivation peut être chronophage et stressant. Notre générateur IA est conçu pour
+            <strong> vous assister dans la création de lettres percutantes</strong> qui mettent en valeur votre profil unique
+            tout en correspondant parfaitement aux attentes de chaque offre d'emploi.
+          </p>
+          <p className="leading-relaxed">
+            L'objectif ? <strong>Maximiser vos chances d'être remarqué</strong> en produisant des lettres professionnelles,
+            personnalisées et optimisées pour passer les filtres ATS tout en captivant les recruteurs humains.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-lg p-6 mb-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Info className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-lg font-bold text-gray-900">Le Processus de Génération Intelligente</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-indigo-600">
+                1
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">Analyse de votre profil complet</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  L'IA étudie vos expériences professionnelles, formations, compétences, langues, certifications et objectifs de carrière
+                  pour comprendre votre parcours unique et identifier vos points forts.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-indigo-600">
+                2
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">Analyse approfondie de l'offre d'emploi</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  L'IA décortique l'intitulé du poste, les responsabilités, les exigences, les compétences recherchées et la culture de l'entreprise
+                  pour comprendre exactement ce que le recruteur attend du candidat idéal.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-indigo-600">
+                3
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">Mise en correspondance intelligente (Matching)</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  L'IA identifie les <strong>correspondances parfaites</strong> entre votre profil et l'offre : quelles expériences mettre en avant,
+                  quelles compétences souligner, quels résultats chiffrés mentionner pour démontrer que vous êtes LE candidat idéal.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-indigo-600">
+                4
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">Génération de 2 versions personnalisées</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  L'IA crée deux lettres complètes et distinctes adaptées à votre style :
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-gray-700 ml-4">
+                  <li className="flex items-start space-x-2">
+                    <span className="text-indigo-600">•</span>
+                    <span><strong>Version Professionnelle :</strong> Ton formel, structure classique, vocabulaire soutenu</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="text-indigo-600">•</span>
+                    <span><strong>Version Orientée Résultats :</strong> Ton dynamique, focus sur vos réalisations et chiffres clés</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-indigo-600">
+                5
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">Optimisation automatique ATS</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Chaque lettre générée respecte automatiquement les <strong>critères ATS</strong> : format simple, mots-clés pertinents,
+                  structure claire, sans éléments graphiques complexes. Votre lettre passera les filtres automatiques !
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-purple-600">
+                6
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">Personnalisation finale par vous</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Vous gardez le contrôle total ! Choisissez la version qui vous plaît, <strong>éditez et personnalisez</strong> le contenu
+                  selon vos préférences, puis exportez en Word ou PDF. Votre lettre, votre style !
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-6 mb-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Lightbulb className="w-5 h-5 text-amber-600" />
+            <h3 className="text-lg font-bold text-gray-900">Pourquoi adapter chaque lettre à chaque offre ?</h3>
+          </div>
+          <div className="space-y-3 text-gray-700">
+            <p className="leading-relaxed">
+              <strong>Statistiques clés :</strong>
+            </p>
+            <ul className="space-y-2 ml-4">
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 font-bold">✗</span>
+                <span><strong>Lettres génériques :</strong> Taux de réponse de seulement 5-10%</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>Lettres personnalisées :</strong> Taux de réponse de 40-60% (jusqu'à 6x plus efficace !)</span>
+              </li>
+            </ul>
+            <p className="leading-relaxed mt-4">
+              Les recruteurs reçoivent des centaines de candidatures. Ils repèrent <strong>immédiatement</strong> les lettres génériques
+              ("Madame, Monsieur, Je me permets de vous adresser ma candidature..."). Une lettre personnalisée montre votre réelle motivation,
+              votre connaissance de l'entreprise et démontre que vous avez pris le temps de comprendre le poste.
+            </p>
+            <p className="leading-relaxed bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+              <strong>Notre générateur fait ce travail pour vous en quelques secondes</strong>, en créant des lettres uniques qui parlent
+              directement à chaque recruteur et mettent en avant précisément ce qu'ils recherchent.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <h3 className="text-lg font-bold text-green-800">BONNES PRATIQUES</h3>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Format texte pur :</strong> Utilisez un format Word (.docx) ou texte brut, évitez les PDF complexes</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Structure classique :</strong> En-tête, formule d'appel, 3-4 paragraphes, formule de politesse</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Mots-clés de l'offre :</strong> Reprenez les compétences et qualifications mentionnées dans l'annonce</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Nom de l'entreprise :</strong> Mentionnez explicitement le nom de l'entreprise et le poste visé</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Personnalisation :</strong> Adaptez chaque lettre à l'offre spécifique, évitez les lettres génériques</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Langage professionnel :</strong> Ton formel et respectueux, vocabulaire du secteur d'activité</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-white rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <XCircle className="w-5 h-5 text-red-600" />
+              <h3 className="text-lg font-bold text-red-800">À ÉVITER</h3>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Formatage complexe :</strong> Colonnes, zones de texte, WordArt ou effets spéciaux</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Images et logos :</strong> Aucune image, photo ou graphique dans la lettre</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Lettre générique :</strong> "À qui de droit" ou lettres non personnalisées</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Trop long :</strong> Plus d'une page (800 mots maximum)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Langage familier :</strong> Argot, abréviations SMS, émojis ou expressions trop décontractées</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Redondance avec le CV :</strong> Ne répétez pas tout votre CV, apportez une valeur ajoutée</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="bg-purple-100 border-2 border-purple-300 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-purple-700 flex-shrink-0 mt-0.5" />
+            <p className="text-purple-900 text-sm leading-relaxed">
+              <strong>Astuce d'expert :</strong> Même avec une lettre optimisée ATS, relisez-la attentivement pour vous assurer qu'elle reflète
+              votre personnalité et votre réelle motivation. Les recruteurs humains apprécient l'authenticité et la sincérité.
+              Pensez à mentionner des éléments spécifiques sur l'entreprise qui montrent que vous avez fait vos recherches.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
