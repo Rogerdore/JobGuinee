@@ -44,13 +44,17 @@ Deno.serve(async (req: Request) => {
       throw new Error("service_type and prompt are required");
     }
 
-    const { data: configResult } = await supabase.rpc('get_ai_config');
+    const { data: configData, error: configError } = await supabase
+      .from('chatbot_config')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
 
-    if (!configResult || !configResult.success) {
+    if (configError || !configData) {
       throw new Error("AI configuration not found");
     }
 
-    const config = configResult.config;
+    const config = configData;
 
     if (!config.enabled) {
       throw new Error("AI service is currently disabled");
