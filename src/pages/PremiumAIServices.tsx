@@ -533,9 +533,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
         {services.map((service) => {
           const Icon = service.icon;
           const globalBalance = premiumStatus?.credits?.global_balance?.available || 0;
-          const serviceBalance = premiumStatus?.creditsByService?.[service.serviceType] || 0;
           const serviceCost = service.credits || 0;
-          const hasEnoughCredits = serviceBalance >= serviceCost;
+          const hasEnoughCredits = globalBalance >= serviceCost;
 
           const grantedAccess = grantedServices[service.serviceType];
           const hasAdminAccess = grantedAccess?.hasAccess && !grantedAccess?.isExpired;
@@ -582,24 +581,24 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                 {!service.isIncluded && (
                   <div className="mb-5">
                     {hasEnoughCredits ? (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                            <span className="text-sm font-semibold text-blue-800">Crédits suffisants</span>
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <span className="text-sm font-semibold text-green-800">Crédits suffisants</span>
                           </div>
-                          <span className="text-2xl font-bold text-blue-900">
-                            {serviceBalance}
+                          <span className="text-xs font-medium text-green-700">
+                            Solde: {globalBalance} ⚡
                           </span>
                         </div>
-                        <p className="text-xs text-blue-700">
-                          Coût du service : <strong>{serviceCost}</strong> crédit(s)
+                        <p className="text-xs text-green-700">
+                          Coût du service : <strong>{serviceCost} crédits</strong>
                         </p>
-                        <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                        <div className="w-full bg-green-200 rounded-full h-2 mt-2">
                           <div
-                            className="h-2 rounded-full bg-blue-600 transition-all"
+                            className="h-2 rounded-full bg-green-600 transition-all"
                             style={{
-                              width: `${Math.min((serviceBalance / serviceCost) * 100, 100)}%`,
+                              width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
                             }}
                           ></div>
                         </div>
@@ -611,13 +610,13 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                             <AlertCircle className="w-5 h-5 text-red-600" />
                             <span className="text-sm font-semibold text-red-800">Crédits insuffisants</span>
                           </div>
-                          <span className="text-2xl font-bold text-red-600">
-                            {serviceBalance}
+                          <span className="text-xs font-medium text-red-700">
+                            Solde: {globalBalance} ⚡
                           </span>
                         </div>
                         <p className="text-xs text-red-700">
-                          Coût du service : <strong>{serviceCost}</strong> crédit(s)<br/>
-                          Il vous manque : <strong>{serviceCost - serviceBalance}</strong> crédit(s)
+                          Coût du service : <strong>{serviceCost} crédits</strong><br/>
+                          Il vous manque : <strong>{serviceCost - globalBalance} crédits</strong>
                         </p>
                       </div>
                     )}
