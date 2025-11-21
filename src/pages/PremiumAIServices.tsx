@@ -91,19 +91,36 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
     },
     {
       id: 'cv_generation',
-      name: 'Création CV / Lettre IA',
-      description: 'Génération automatique design professionnel',
+      name: 'Génération CV IA',
+      description: 'Génération automatique CV professionnel',
       icon: FileText,
       color: 'from-blue-500 to-blue-600',
-      price: 100000,
+      price: 50000,
       isIncluded: false,
       credits: 1,
       serviceType: 'cv_generation',
       features: [
-        'Génération CV professionnel',
-        'Création lettre de motivation',
+        'Génération CV professionnel avec IA',
+        '4 styles de templates',
         'Design moderne et ATS-friendly',
         'Export PDF haute qualité',
+      ],
+    },
+    {
+      id: 'cover_letter_generation',
+      name: 'Lettre de Motivation IA',
+      description: 'Génération automatique de 2 versions',
+      icon: FileText,
+      color: 'from-indigo-500 to-indigo-600',
+      price: 20000,
+      isIncluded: false,
+      credits: 1,
+      serviceType: 'cover_letter_generation',
+      features: [
+        '2 versions générées (Pro & Résultats)',
+        'Analyse complète du profil',
+        'Adaptation à l\'offre d\'emploi',
+        'Éditeur de texte intégré',
       ],
     },
     {
@@ -389,6 +406,9 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
         break;
       case 'cv_generation':
         onNavigate?.('ai-cv-generator');
+        break;
+      case 'cover_letter_generation':
+        onNavigate?.('ai-cover-letter');
         break;
       case 'career_coaching':
         onNavigate?.('ai-coach');

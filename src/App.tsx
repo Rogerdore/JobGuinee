@@ -21,6 +21,7 @@ import CandidateProfileForm from './components/forms/CandidateProfileForm';
 import PremiumAIServices from './pages/PremiumAIServices';
 import AIMatchingService from './components/ai/AIMatchingService';
 import AICVGenerator from './components/ai/AICVGenerator';
+import AICoverLetterGenerator from './components/ai/AICoverLetterGenerator';
 import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
 import ChatBotAdmin from './pages/ChatBotAdmin';
@@ -35,7 +36,7 @@ import PremiumServicesAdmin from './pages/PremiumServicesAdmin';
 import PaymentManagement from './pages/PaymentManagement';
 import UserServicesManagement from './pages/UserServicesManagement';
 
-type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin' | 'payment-management' | 'user-services';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin' | 'payment-management' | 'user-services';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -147,6 +148,11 @@ function AppContent() {
             setReturnToCV(false);
             handleNavigate('premium-ai');
           }}
+        />
+      )}
+      {currentPage === 'ai-cover-letter' && (
+        <AICoverLetterGenerator
+          onBack={() => handleNavigate('premium-ai')}
         />
       )}
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
