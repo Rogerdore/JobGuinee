@@ -24,6 +24,8 @@ import {
   Shield,
   ArrowLeft,
   Plus,
+  Package,
+  TrendingUp,
 } from 'lucide-react';
 
 interface PremiumStatus {
@@ -71,6 +73,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
   const [adminPhoneNumber, setAdminPhoneNumber] = useState<string>('');
   const [showDirectPayment, setShowDirectPayment] = useState(false);
   const [grantedServices, setGrantedServices] = useState<Record<string, ServiceAccessInfo>>({});
+  const [showCreditPacksModal, setShowCreditPacksModal] = useState(false);
+  const [creditPacks, setCreditPacks] = useState<any[]>([]);
 
   const defaultServices: ServiceConfig[] = [
     {
@@ -220,6 +224,7 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
   useEffect(() => {
     const loadAll = async () => {
       await loadServicesFromDB();
+      await loadCreditPacks();
       if (user) {
         await loadPremiumStatus();
         await loadAdminPhoneNumber();
@@ -280,6 +285,22 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
     } catch (error) {
       console.error('Error loading services from DB:', error);
       setServices(defaultServices);
+    }
+  };
+
+  const loadCreditPacks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('credit_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (!error && data) {
+        setCreditPacks(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement packs crédits:', error);
     }
   };
 
@@ -524,7 +545,7 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
 
                   return canUseAnyService ? (
                     <button
-                      onClick={() => setShowDirectPayment(true)}
+                      onClick={() => setShowCreditPacksModal(true)}
                       className="bg-white text-green-700 hover:bg-green-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-md"
                     >
                       <Plus className="w-4 h-4" />
@@ -532,7 +553,7 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                     </button>
                   ) : (
                     <button
-                      onClick={() => setShowDirectPayment(true)}
+                      onClick={() => setShowCreditPacksModal(true)}
                       className="bg-white text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-md animate-pulse"
                     >
                       <AlertCircle className="w-4 h-4" />
@@ -947,6 +968,135 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
               >
                 Annuler
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Packs de Crédits */}
+      {showCreditPacksModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-2xl font-bold text-gray-900">Acheter des Crédits</h3>
+              <button
+                onClick={() => setShowCreditPacksModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-semibold mb-1">Conversion : 1000 GNF = 10 crédits</p>
+                    <p>Les crédits bonus sont ajoutés automatiquement à votre achat</p>
+                  </div>
+                </div>
+              </div>
+
+              {creditPacks.length === 0 ? (
+                <div className="text-center py-12">
+                  <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Chargement des packs...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {creditPacks.map((pack) => (
+                    <div
+                      key={pack.id}
+                      className={`relative bg-white rounded-xl border-2 shadow-lg overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 ${
+                        pack.is_popular ? 'border-blue-500' : 'border-gray-200'
+                      }`}
+                    >
+                      {pack.is_popular && (
+                        <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg flex items-center space-x-1">
+                          <TrendingUp className="w-3 h-3" />
+                          <span>POPULAIRE</span>
+                        </div>
+                      )}
+
+                      <div className={`p-6 ${pack.is_popular ? 'bg-gradient-to-br from-blue-50 to-blue-100' : 'bg-gray-50'}`}>
+                        <h4 className="text-xl font-bold text-gray-900 mb-2">{pack.name}</h4>
+                        <p className="text-sm text-gray-600 mb-4">{pack.description}</p>
+
+                        <div className="text-center mb-4">
+                          <div className="text-3xl font-bold text-gray-900">
+                            {new Intl.NumberFormat('fr-GN').format(pack.price_amount)} GNF
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Crédits de base</span>
+                            <span className="font-semibold text-gray-900">{pack.credits_amount}</span>
+                          </div>
+                          {pack.bonus_credits > 0 && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600">Crédits bonus</span>
+                              <span className="font-semibold text-green-600">+{pack.bonus_credits}</span>
+                            </div>
+                          )}
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-gray-900">Total</span>
+                              <span className="text-lg font-bold text-blue-600 flex items-center space-x-1">
+                                <TrendingUp className="w-5 h-5" />
+                                <span>{pack.credits_amount + pack.bonus_credits}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-6">
+                        <button
+                          onClick={() => {
+                            setSelectedService({
+                              id: pack.id,
+                              name: `Pack ${pack.name}`,
+                              description: pack.description,
+                              icon: Package,
+                              color: 'from-blue-500 to-blue-600',
+                              price: pack.price_amount,
+                              isIncluded: false,
+                              credits: pack.credits_amount + pack.bonus_credits,
+                              serviceType: 'credit_pack',
+                              features: [
+                                `${pack.credits_amount} crédits`,
+                                `+${pack.bonus_credits} crédits bonus`,
+                                `Total: ${pack.credits_amount + pack.bonus_credits} crédits`,
+                                'Valable indéfiniment',
+                              ],
+                            });
+                            setShowCreditPacksModal(false);
+                            setShowPaymentModal(true);
+                          }}
+                          className={`w-full py-3 rounded-lg font-semibold transition ${
+                            pack.is_popular
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-gray-900 text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          Acheter
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowCreditPacksModal(false)}
+                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+                >
+                  Fermer
+                </button>
+              </div>
             </div>
           </div>
         </div>
