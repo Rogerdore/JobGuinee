@@ -6,7 +6,6 @@ import { callAIService } from '../../utils/aiService';
 import { getCVTemplatePrompt, CV_TEMPLATES } from '../../utils/cvTemplates';
 import {
   FileText,
-  Mail,
   Sparkles,
   Download,
   Eye,
@@ -56,19 +55,13 @@ interface AICVGeneratorProps {
 export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob }: AICVGeneratorProps) {
   const { user } = useAuth();
   const cvEligibility = usePremiumEligibility('cv_generation');
-  const letterEligibility = usePremiumEligibility('cover_letter_generation');
   const [generatingCV, setGeneratingCV] = useState(false);
-  const [generatingLetter, setGeneratingLetter] = useState(false);
-  const [activeTab, setActiveTab] = useState<'cv' | 'letter'>('cv');
   const [cvContent, setCVContent] = useState<CVContent | null>(null);
-  const [letterContent, setLetterContent] = useState<any>(null);
 
   // Gestion des crédits
   const [creditBalance, setCreditBalance] = useState(0);
   const [cvBalance, setCVBalance] = useState(0);
-  const [letterBalance, setLetterBalance] = useState(0);
   const [cvCost, setCVCost] = useState(50);
-  const [letterCost, setLetterCost] = useState(30);
   const [loadingCredits, setLoadingCredits] = useState(true);
   const [error, setError] = useState('');
 
@@ -113,7 +106,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
       const { data: services, error: servicesError } = await supabase
         .from('premium_services')
         .select('id, code')
-        .in('code', ['cv_generation', 'cover_letter_generation']);
+        .eq('code', 'cv_generation');
 
       if (servicesError) {
         console.error('Error loading services:', servicesError);
@@ -130,49 +123,33 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
       }
       console.log('User credits loaded:', userCredits);
 
-      let totalBalance = 0;
       let cvBal = 0;
-      let letterBal = 0;
 
       if (services && userCredits) {
         services.forEach(service => {
           const credit = userCredits.find(uc => uc.service_id === service.id);
-          if (credit) {
-            totalBalance += credit.credits_balance;
-            if (service.code === 'cv_generation') {
-              cvBal = credit.credits_balance;
-            } else if (service.code === 'cover_letter_generation') {
-              letterBal = credit.credits_balance;
-            }
+          if (credit && service.code === 'cv_generation') {
+            cvBal = credit.credits_balance;
           }
         });
       }
 
-      setCreditBalance(totalBalance);
+      setCreditBalance(cvBal);
       setCVBalance(cvBal);
-      setLetterBalance(letterBal);
 
       console.log('Credits loaded:', {
-        totalBalance,
-        cvBalance: cvBal,
-        letterBalance: letterBal
+        cvBalance: cvBal
       });
 
       const { data: costs } = await supabase
         .from('service_credit_costs')
         .select('service_code, credits_cost')
-        .in('service_code', ['cv_generation', 'cover_letter_generation']);
+        .eq('service_code', 'cv_generation');
 
-      if (costs) {
-        const cvService = costs.find(c => c.service_code === 'cv_generation');
-        const letterService = costs.find(c => c.service_code === 'cover_letter_generation');
-
-        if (cvService) setCVCost(cvService.credits_cost);
-        if (letterService) setLetterCost(letterService.credits_cost);
-
+      if (costs && costs.length > 0) {
+        setCVCost(costs[0].credits_cost);
         console.log('Costs loaded:', {
-          cvCost: cvService?.credits_cost,
-          letterCost: letterService?.credits_cost
+          cvCost: costs[0].credits_cost
         });
       }
     } catch (error: any) {
@@ -208,7 +185,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
       }
 
       setCVBalance(creditResult.new_balance);
-      setCreditBalance(creditResult.new_balance + letterBalance);
+      setCreditBalance(creditResult.new_balance);
 
       const { data: profile } = await supabase
         .from('candidate_profiles')
@@ -315,7 +292,6 @@ Utilise des verbes d'action et mets en avant les résultats concrets.`;
       };
 
       setCVContent(cvData);
-      setActiveTab('cv');
 
       await supabase.from('notifications').insert({
         user_id: user.id,
@@ -331,121 +307,12 @@ Utilise des verbes d'action et mets en avant les résultats concrets.`;
     }
   };
 
-  const generateLetter = async () => {
-    if (!user) return;
-
-    if (letterBalance < letterCost) {
-      setError(`Crédits insuffisants pour la lettre. Requis: ${letterCost} crédits, Disponibles: ${letterBalance} crédits`);
-      return;
-    }
-
-    if (!targetPosition || !targetCompany) {
-      setError('Veuillez renseigner le poste et l\'entreprise cibles');
-      return;
-    }
-
-    setGeneratingLetter(true);
-    setError('');
-
-    try {
-      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
-        p_service_code: 'cover_letter_generation',
-        p_metadata: {
-          target_position: targetPosition,
-          target_company: targetCompany
-        }
-      });
-
-      if (!creditResult.success) {
-        setError(creditResult.message || 'Crédits insuffisants');
-        return;
-      }
-
-      setLetterBalance(creditResult.new_balance);
-      setCreditBalance(cvBalance + creditResult.new_balance);
-
-      const { data: profile } = await supabase
-        .from('candidate_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!profile) {
-        setError('Profil non trouvé. Veuillez compléter votre profil candidat depuis votre tableau de bord.');
-        return;
-      }
-
-      const prompt = `Génère une lettre de motivation professionnelle et personnalisée pour:
-
-Candidat: ${profile.full_name}
-Poste visé: ${targetPosition}
-Entreprise cible: ${targetCompany}
-Expérience: ${profile.experience_years || 0} ans en tant que ${profile.professional_status || 'professionnel(le)'}
-Compétences clés: ${(profile.skills || []).join(', ')}
-Formation: ${JSON.stringify(profile.education || [])}
-Biographie/Objectif: ${profile.bio || profile.professional_goal || 'Non spécifié'}
-
-Génère une lettre de motivation convaincante, personnalisée et professionnelle qui:
-1. S'adresse formellement à l'entreprise
-2. Présente le candidat et son expérience
-3. Met en avant les compétences pertinentes pour le poste
-4. Explique la motivation pour ce poste spécifique
-5. Conclut avec une formule de politesse appropriée
-
-La lettre doit être en français, naturelle et engageante.`;
-
-      const aiResult = await callAIService({
-        service_type: 'cover_letter',
-        prompt: prompt,
-        context: {
-          profile,
-          targetPosition,
-          targetCompany
-        },
-        max_tokens: 1000
-      });
-
-      if (!aiResult.success || !aiResult.data) {
-        setError(aiResult.error || 'Erreur lors de la génération IA');
-        return;
-      }
-
-      const letter = {
-        candidateName: profile.full_name,
-        candidateEmail: user.email,
-        targetPosition,
-        targetCompany,
-        experience: profile.experience_years,
-        skills: profile.skills,
-        content: aiResult.data.content,
-      };
-
-      setLetterContent(letter);
-      setActiveTab('letter');
-
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Lettre générée avec succès',
-        message: `Votre lettre de motivation est prête! (${letterCost} crédits utilisés)`,
-        type: 'success',
-      });
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      setError('Erreur: ' + error.message);
-    } finally {
-      setGeneratingLetter(false);
-    }
-  };
 
   const downloadCV = () => {
     if (!cvContent) return;
     alert('Téléchargement PDF à venir');
   };
 
-  const downloadLetter = () => {
-    if (!letterContent) return;
-    alert('Téléchargement PDF à venir');
-  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -461,15 +328,15 @@ La lettre doit être en français, naturelle et engageante.`;
         )}
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Génération Documents IA
+          Génération de CV IA
         </h1>
         <p className="text-gray-600">
-          Créez votre CV et lettre de motivation professionnels en quelques clics
+          Créez votre CV professionnel en quelques clics
         </p>
       </div>
 
       <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl shadow-2xl p-6 mb-8 text-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="flex items-center space-x-2 mb-2">
               <Coins className="w-5 h-5" />
@@ -485,19 +352,11 @@ La lettre doit être en français, naturelle et engageante.`;
             </div>
             <p className="text-2xl font-bold">{cvCost} ⚡</p>
           </div>
-
-          <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <Mail className="w-5 h-5" />
-              <span className="text-sm text-blue-100">Lettre IA</span>
-            </div>
-            <p className="text-2xl font-bold">{letterCost} ⚡</p>
-          </div>
         </div>
 
-        {(creditBalance < cvCost || creditBalance < letterCost) && !loadingCredits && (
+        {creditBalance < cvCost && !loadingCredits && (
           <div className="mt-4 pt-4 border-t border-white border-opacity-20">
-            <p className="text-sm text-yellow-200 mb-2">⚠️ Solde insuffisant pour certains services</p>
+            <p className="text-sm text-yellow-200 mb-2">⚠️ Solde insuffisant</p>
             <button className="bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition text-sm">
               Acheter des crédits
             </button>
@@ -514,7 +373,7 @@ La lettre doit être en français, naturelle et engageante.`;
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center space-x-3 mb-6">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -642,190 +501,39 @@ La lettre doit être en français, naturelle et engageante.`;
             </div>
           )}
         </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Mail className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Lettre de Motivation IA</h2>
-              <p className="text-sm text-gray-600">Coût: {letterCost} crédits</p>
-            </div>
-          </div>
-
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Poste visé *
-              </label>
-
-              {selectedJob ? (
-                <div className="border-2 border-purple-500 rounded-lg p-3 bg-purple-50">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Briefcase className="w-4 h-4 text-purple-600" />
-                        <h4 className="font-semibold text-gray-900">{selectedJob.title}</h4>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Building className="w-3 h-3" />
-                        <span>{selectedJob.company_name}</span>
-                      </div>
-                      {selectedJob.location && (
-                        <p className="text-xs text-gray-500 mt-1">{selectedJob.location}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={clearJobSelection}
-                      className="text-gray-400 hover:text-red-600 transition"
-                      title="Supprimer la sélection"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-purple-700 font-medium">✓ Offre sélectionnée</p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={targetPosition}
-                      onChange={(e) => setTargetPosition(e.target.value)}
-                      placeholder="Ex: Développeur Full Stack"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                    />
-                    {onNavigateToJobs && (
-                      <button
-                        onClick={onNavigateToJobs}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center space-x-2"
-                        title="Parcourir les offres du site"
-                      >
-                        <Search className="w-5 h-5" />
-                        <span>Offres</span>
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    💡 Cliquez sur "Offres" pour sélectionner une offre spécifique du site
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Entreprise cible *
-              </label>
-              <input
-                type="text"
-                value={targetCompany}
-                onChange={(e) => setTargetCompany(e.target.value)}
-                placeholder="Ex: SOTELGUI"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                readOnly={selectedJob !== null}
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={generateLetter}
-            disabled={generatingLetter || loadingCredits || !letterEligibility.isEligible}
-            className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {generatingLetter ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                <span>Génération en cours...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                <span>Générer ma lettre ({letterCost} ⚡)</span>
-              </>
-            )}
-          </button>
-
-          {letterContent && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center space-x-2 mb-2">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <p className="font-semibold text-green-900">Lettre générée avec succès!</p>
-              </div>
-              <button
-                onClick={downloadLetter}
-                className="w-full mt-2 bg-white border-2 border-green-600 text-green-700 px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition flex items-center justify-center space-x-2"
-              >
-                <Download className="w-5 h-5" />
-                <span>Télécharger PDF</span>
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
-      {(cvContent || letterContent) && (
+      {cvContent && (
         <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-          <div className="flex space-x-4 border-b-2 border-gray-200 mb-6">
-            {cvContent && (
-              <button
-                onClick={() => setActiveTab('cv')}
-                className={`px-6 py-3 font-medium border-b-2 -mb-0.5 ${
-                  activeTab === 'cv'
-                    ? 'text-blue-900 border-blue-900'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-              >
-                <FileText className="w-5 h-5 inline mr-2" />
-                Aperçu CV
-              </button>
-            )}
-            {letterContent && (
-              <button
-                onClick={() => setActiveTab('letter')}
-                className={`px-6 py-3 font-medium border-b-2 -mb-0.5 ${
-                  activeTab === 'letter'
-                    ? 'text-purple-900 border-purple-900'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-              >
-                <Mail className="w-5 h-5 inline mr-2" />
-                Aperçu Lettre
-              </button>
-            )}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-blue-900 flex items-center space-x-2">
+              <FileText className="w-6 h-6" />
+              <span>Aperçu du CV</span>
+            </h2>
           </div>
 
-          {activeTab === 'cv' && cvContent && (
-            <div className="prose max-w-none">
-              <h2 className="text-2xl font-bold mb-4">{cvContent.personalInfo.fullName}</h2>
-              <div className="mb-6 text-gray-600 space-y-1">
-                <p>{cvContent.personalInfo.email}</p>
-                {cvContent.personalInfo.phone && <p>{cvContent.personalInfo.phone}</p>}
-                {cvContent.personalInfo.location && <p>{cvContent.personalInfo.location}</p>}
-              </div>
-              <div className="mb-6">
-                <h3 className="text-xl font-bold mb-2">Résumé</h3>
-                <p>{cvContent.summary}</p>
-              </div>
-              <div className="mb-6">
-                <h3 className="text-xl font-bold mb-2">Compétences</h3>
-                <div className="flex flex-wrap gap-2">
-                  {cvContent.skills.map((skill, idx) => (
-                    <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+          <div className="prose max-w-none">
+            <h2 className="text-2xl font-bold mb-4">{cvContent.personalInfo.fullName}</h2>
+            <div className="mb-6 text-gray-600 space-y-1">
+              <p>{cvContent.personalInfo.email}</p>
+              {cvContent.personalInfo.phone && <p>{cvContent.personalInfo.phone}</p>}
+              {cvContent.personalInfo.location && <p>{cvContent.personalInfo.location}</p>}
+            </div>
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-2">Résumé</h3>
+              <p>{cvContent.summary}</p>
+            </div>
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-2">Compétences</h3>
+              <div className="flex flex-wrap gap-2">
+                {cvContent.skills.map((skill, idx) => (
+                  <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))}
               </div>
             </div>
-          )}
-
-          {activeTab === 'letter' && letterContent && (
-            <div className="prose max-w-none whitespace-pre-line">
-              <p>{letterContent.content}</p>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>
