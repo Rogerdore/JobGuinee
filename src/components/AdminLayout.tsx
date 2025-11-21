@@ -5,7 +5,7 @@ import { useCMS } from '../contexts/CMSContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
-  onNavigate: (page: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
 export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) {
@@ -15,9 +15,19 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
   const handleSignOut = async () => {
     try {
       await signOut();
-      onNavigate('home');
+      if (onNavigate) {
+        onNavigate('home');
+      } else {
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const handleNavigation = (page: string) => {
+    if (onNavigate) {
+      onNavigate(page);
     }
   };
 
@@ -45,8 +55,10 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
             </div>
 
             <div className="flex items-center space-x-4">
+              {onNavigate && (
+                <>
               <button
-                onClick={() => onNavigate('admin-profiles')}
+                onClick={() => handleNavigation('admin-profiles')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
               >
                 <UserPlus className="w-4 h-4" />
@@ -166,6 +178,8 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
                 <LogOut className="w-4 h-4" />
                 <span>Déconnexion</span>
               </button>
+                </>
+              )}
             </div>
           </div>
         </div>

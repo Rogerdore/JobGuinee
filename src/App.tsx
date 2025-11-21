@@ -36,8 +36,12 @@ import PremiumServicesAdmin from './pages/PremiumServicesAdmin';
 import PaymentManagement from './pages/PaymentManagement';
 import UserServicesManagement from './pages/UserServicesManagement';
 import GlobalCreditsManagement from './pages/GlobalCreditsManagement';
+import AIPricingAdmin from './pages/AIPricingAdmin';
+import CreditPacksAdmin from './pages/CreditPacksAdmin';
+import UserCreditsAdmin from './pages/UserCreditsAdmin';
+import AIUsageHistoryAdmin from './pages/AIUsageHistoryAdmin';
 
-type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin' | 'payment-management' | 'user-services' | 'global-credits';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin' | 'payment-management' | 'user-services' | 'global-credits' | 'ai-pricing-admin' | 'credit-packs-admin' | 'user-credits-admin' | 'ai-usage-history';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -186,6 +190,10 @@ function AppContent() {
       {currentPage === 'system-settings' && <SystemSettings />}
       {currentPage === 'job-pricing' && <JobPricingAdmin onNavigate={handleNavigate} />}
       {currentPage === 'premium-services-admin' && <PremiumServicesAdmin onNavigate={handleNavigate} />}
+      {currentPage === 'ai-pricing-admin' && <AIPricingAdmin />}
+      {currentPage === 'credit-packs-admin' && <CreditPacksAdmin />}
+      {currentPage === 'user-credits-admin' && <UserCreditsAdmin />}
+      {currentPage === 'ai-usage-history' && <AIUsageHistoryAdmin />}
       {currentPage === 'payment-management' && <PaymentManagement onNavigate={handleNavigate} />}
       {currentPage === 'user-services' && <UserServicesManagement onNavigate={handleNavigate} />}
       {currentPage === 'global-credits' && <GlobalCreditsManagement />}
