@@ -262,13 +262,99 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
     if (!analysis) return;
 
     try {
-      await supabase.rpc('increment_analysis_download', {
-        p_analysis_id: analysis.id,
-      });
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Rapport d'Analyse de Profil - JobGuinée</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+    .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #3b82f6; padding-bottom: 20px; }
+    .score { font-size: 48px; font-weight: bold; color: #3b82f6; margin: 20px 0; }
+    .section { margin: 30px 0; }
+    .section-title { font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 15px; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 10px; margin: 8px 0; background: #f3f4f6; border-radius: 8px; }
+    .formation { background: #eff6ff; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #3b82f6; }
+    .footer { text-align: center; margin-top: 50px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Rapport d'Analyse de Profil</h1>
+    <p>JobGuinée - Analyse IA</p>
+    ${analysis.offer_title ? `<p><strong>${analysis.offer_title}</strong> ${analysis.offer_company ? `chez ${analysis.offer_company}` : ''}</p>` : '<p><strong>Analyse Générale</strong></p>'}
+    <p>Date: ${new Date(analysis.date_analyse).toLocaleDateString('fr-FR')}</p>
+  </div>
 
-      alert('Téléchargement du rapport PDF (fonctionnalité à venir)');
+  <div class="section">
+    <h2>Score Global</h2>
+    <div class="score">${analysis.score}%</div>
+  </div>
+
+  ${analysis.skills_match !== undefined ? `
+  <div class="section">
+    <h3>Détails des Scores</h3>
+    <ul>
+      <li>🎯 Compétences: ${analysis.skills_match}%</li>
+      <li>💼 Expérience: ${analysis.experience_match}%</li>
+      <li>🎓 Formation: ${analysis.education_match}%</li>
+    </ul>
+  </div>
+  ` : ''}
+
+  <div class="section">
+    <div class="section-title">✅ Points Forts</div>
+    <ul>
+      ${analysis.points_forts.map((p: string) => `<li>${p}</li>`).join('')}
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📈 Axes d'Amélioration</div>
+    <ul>
+      ${analysis.ameliorations.map((a: string) => `<li>${a}</li>`).join('')}
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎓 Formations Suggérées</div>
+    ${analysis.formations_suggerees.map((f: any) => `
+      <div class="formation">
+        <h4>${f.titre}</h4>
+        <p><strong>Domaine:</strong> ${f.domaine} | <strong>Durée:</strong> ${f.duree} | <strong>Niveau:</strong> ${f.niveau}</p>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="section">
+    <div class="section-title">💡 Recommandations</div>
+    <ul>
+      ${analysis.recommandations.map((r: string) => `<li>${r}</li>`).join('')}
+    </ul>
+  </div>
+
+  <div class="footer">
+    <p>Ce rapport a été généré automatiquement par JobGuinée</p>
+    <p>© ${new Date().getFullYear()} JobGuinée - Tous droits réservés</p>
+  </div>
+</body>
+</html>`;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analyse-profil-${new Date().getTime()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
     } catch (error: any) {
       console.error('Erreur:', error);
+      setError('Erreur lors du téléchargement du rapport');
     }
   };
 
