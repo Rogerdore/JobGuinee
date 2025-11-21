@@ -88,12 +88,17 @@ function AppContent() {
           initialSearch={jobSearchParams}
           selectMode={returnToCV || returnToMatching}
           onSelectJob={(job) => {
+            const jobWithCompanyName = {
+              ...job,
+              company_name: job.companies?.name || job.company_name || 'Entreprise non spécifiée'
+            };
+
             if (returnToCV) {
-              setSelectedJobForCV(job);
+              setSelectedJobForCV(jobWithCompanyName);
               setReturnToCV(false);
               handleNavigate('ai-cv-generator');
             } else if (returnToMatching) {
-              setSelectedJobForMatching(job);
+              setSelectedJobForMatching(jobWithCompanyName);
               setReturnToMatching(false);
               handleNavigate('ai-matching');
             }
