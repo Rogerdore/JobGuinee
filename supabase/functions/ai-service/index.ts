@@ -7,12 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface AIRequest {
-  service_type: 'cv_generation' | 'cover_letter' | 'profile_analysis' | 'job_generation' | 'matching';
-  prompt: string;
-  context?: any;
-  temperature?: number;
-  max_tokens?: number;
+interface CentralizedAIRequest {
+  user_id: string;
+  service_key: string;
+  payload: Record<string, any>;
 }
 
 Deno.serve(async (req: Request) => {
@@ -37,136 +35,78 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const requestBody: AIRequest = await req.json();
-    const { service_type, prompt, context, temperature, max_tokens } = requestBody;
+    const requestBody: CentralizedAIRequest = await req.json();
+    const { user_id, service_key, payload } = requestBody;
 
-    if (!service_type || !prompt) {
-      throw new Error("service_type and prompt are required");
+    if (!user_id || !service_key || !payload) {
+      throw new Error("user_id, service_key, and payload are required");
     }
 
-    const { data: configData, error: configError } = await supabase
+    if (user_id !== user.id) {
+      throw new Error("User ID mismatch");
+    }
+
+    const { data: serviceConfig, error: serviceError } = await supabase
+      .from('service_credit_costs')
+      .select('*')
+      .eq('service_key', service_key)
+      .eq('is_active', true)
+      .eq('status', true)
+      .maybeSingle();
+
+    if (serviceError || !serviceConfig) {
+      throw new Error(`Service "${service_key}" not found or inactive`);
+    }
+
+    const { data: aiConfig, error: configError } = await supabase
       .from('chatbot_config')
       .select('*')
       .limit(1)
       .maybeSingle();
 
-    if (configError || !configData) {
+    if (configError || !aiConfig) {
       throw new Error("AI configuration not found");
     }
 
-    const config = configData;
-
-    if (!config.enabled) {
+    if (!aiConfig.enabled) {
       throw new Error("AI service is currently disabled");
     }
 
-    if (!config.api_key) {
+    if (!aiConfig.api_key) {
       throw new Error("AI API key not configured");
     }
 
-    const apiProvider = config.api_provider || 'openai';
-    const apiModel = config.ai_model || 'gpt-3.5-turbo';
-    const apiTemperature = temperature !== undefined ? temperature : (config.temperature || 0.7);
-    const apiMaxTokens = max_tokens !== undefined ? max_tokens : (config.max_tokens || 500);
+    const model = serviceConfig.model || aiConfig.ai_model || 'gemini-pro';
+    const temperature = serviceConfig.temperature !== null ? serviceConfig.temperature : (aiConfig.temperature || 0.7);
+    const maxTokens = serviceConfig.max_tokens || aiConfig.max_tokens || 2000;
+    const apiProvider = aiConfig.api_provider || 'gemini';
+
+    let prompt = serviceConfig.prompt_template || '';
+    for (const [key, value] of Object.entries(payload)) {
+      const placeholder = `{{${key}}}`;
+      prompt = prompt.replace(new RegExp(placeholder, 'g'), String(value));
+    }
+
+    const systemInstructions = serviceConfig.system_instructions || aiConfig.system_prompt || '';
 
     let aiResponse;
+    let fullResponse;
 
-    if (apiProvider === 'openai') {
-      const openaiEndpoint = config.api_endpoint || 'https://api.openai.com/v1/chat/completions';
-      
-      const messages = [
-        {
-          role: 'system',
-          content: config.system_prompt || 'You are a helpful AI assistant.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ];
+    if (apiProvider === 'gemini') {
+      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-      if (context) {
-        messages.splice(1, 0, {
-          role: 'system',
-          content: `Context: ${JSON.stringify(context)}`
-        });
+      let fullPrompt = '';
+      if (systemInstructions) {
+        fullPrompt = `${systemInstructions}\n\n${prompt}`;
+      } else {
+        fullPrompt = prompt;
       }
 
-      const openaiResponse = await fetch(openaiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.api_key}`
-        },
-        body: JSON.stringify({
-          model: apiModel,
-          messages: messages,
-          temperature: apiTemperature,
-          max_tokens: apiMaxTokens
-        })
-      });
-
-      if (!openaiResponse.ok) {
-        const errorData = await openaiResponse.json();
-        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      if (serviceConfig.knowledge_base) {
+        fullPrompt = `${serviceConfig.knowledge_base}\n\n${fullPrompt}`;
       }
 
-      const openaiData = await openaiResponse.json();
-      aiResponse = {
-        content: openaiData.choices[0].message.content,
-        model: apiModel,
-        provider: 'openai',
-        usage: openaiData.usage
-      };
-
-    } else if (apiProvider === 'anthropic') {
-      const anthropicEndpoint = config.api_endpoint || 'https://api.anthropic.com/v1/messages';
-      
-      let fullPrompt = prompt;
-      if (context) {
-        fullPrompt = `Context: ${JSON.stringify(context)}\n\n${prompt}`;
-      }
-
-      const anthropicResponse = await fetch(anthropicEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': config.api_key,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: apiModel,
-          messages: [{ role: 'user', content: fullPrompt }],
-          max_tokens: apiMaxTokens,
-          temperature: apiTemperature
-        })
-      });
-
-      if (!anthropicResponse.ok) {
-        const errorData = await anthropicResponse.json();
-        throw new Error(`Anthropic API error: ${errorData.error?.message || 'Unknown error'}`);
-      }
-
-      const anthropicData = await anthropicResponse.json();
-      aiResponse = {
-        content: anthropicData.content[0].text,
-        model: apiModel,
-        provider: 'anthropic',
-        usage: anthropicData.usage
-      };
-
-    } else if (apiProvider === 'gemini') {
-      const geminiEndpoint = config.api_endpoint || `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent`;
-      
-      let fullPrompt = prompt;
-      if (config.system_prompt) {
-        fullPrompt = `${config.system_prompt}\n\n${prompt}`;
-      }
-      if (context) {
-        fullPrompt = `Context: ${JSON.stringify(context)}\n\n${fullPrompt}`;
-      }
-
-      const geminiResponse = await fetch(`${geminiEndpoint}?key=${config.api_key}`, {
+      const geminiResponse = await fetch(`${geminiEndpoint}?key=${aiConfig.api_key}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,8 +118,8 @@ Deno.serve(async (req: Request) => {
             }]
           }],
           generationConfig: {
-            temperature: apiTemperature,
-            maxOutputTokens: apiMaxTokens,
+            temperature: temperature,
+            maxOutputTokens: maxTokens,
           }
         })
       });
@@ -191,27 +131,154 @@ Deno.serve(async (req: Request) => {
       }
 
       const geminiData = await geminiResponse.json();
-      
+
       if (!geminiData.candidates || geminiData.candidates.length === 0) {
         throw new Error('Gemini API returned no candidates');
       }
 
+      fullResponse = geminiData;
       aiResponse = {
         content: geminiData.candidates[0].content.parts[0].text,
-        model: apiModel,
+        model: model,
         provider: 'gemini',
         usage: geminiData.usageMetadata
+      };
+
+    } else if (apiProvider === 'openai') {
+      const openaiEndpoint = aiConfig.api_endpoint || 'https://api.openai.com/v1/chat/completions';
+
+      const messages: any[] = [];
+
+      if (systemInstructions) {
+        messages.push({
+          role: 'system',
+          content: systemInstructions
+        });
+      }
+
+      if (serviceConfig.knowledge_base) {
+        messages.push({
+          role: 'system',
+          content: `Knowledge Base:\n${serviceConfig.knowledge_base}`
+        });
+      }
+
+      messages.push({
+        role: 'user',
+        content: prompt
+      });
+
+      const openaiResponse = await fetch(openaiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiConfig.api_key}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          temperature: temperature,
+          max_tokens: maxTokens
+        })
+      });
+
+      if (!openaiResponse.ok) {
+        const errorData = await openaiResponse.json();
+        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const openaiData = await openaiResponse.json();
+      fullResponse = openaiData;
+      aiResponse = {
+        content: openaiData.choices[0].message.content,
+        model: model,
+        provider: 'openai',
+        usage: openaiData.usage
+      };
+
+    } else if (apiProvider === 'anthropic') {
+      const anthropicEndpoint = aiConfig.api_endpoint || 'https://api.anthropic.com/v1/messages';
+
+      let fullPrompt = prompt;
+
+      if (serviceConfig.knowledge_base) {
+        fullPrompt = `${serviceConfig.knowledge_base}\n\n${fullPrompt}`;
+      }
+
+      const anthropicResponse = await fetch(anthropicEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': aiConfig.api_key,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: model,
+          system: systemInstructions || undefined,
+          messages: [{ role: 'user', content: fullPrompt }],
+          max_tokens: maxTokens,
+          temperature: temperature
+        })
+      });
+
+      if (!anthropicResponse.ok) {
+        const errorData = await anthropicResponse.json();
+        throw new Error(`Anthropic API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const anthropicData = await anthropicResponse.json();
+      fullResponse = anthropicData;
+      aiResponse = {
+        content: anthropicData.content[0].text,
+        model: model,
+        provider: 'anthropic',
+        usage: anthropicData.usage
       };
 
     } else {
       throw new Error(`Unsupported API provider: ${apiProvider}`);
     }
 
+    const { data: creditsResult, error: creditsError } = await supabase.rpc('use_ai_credits', {
+      p_user_id: user_id,
+      p_service_key: service_key,
+      p_input_payload: payload,
+      p_output_response: {
+        ai_response: aiResponse,
+        full_response: fullResponse
+      }
+    });
+
+    if (creditsError) {
+      throw new Error(`Credits error: ${creditsError.message}`);
+    }
+
+    const creditsData = creditsResult as any;
+
+    if (!creditsData.success) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: creditsData.error,
+          message: creditsData.message,
+          required_credits: creditsData.required_credits,
+          available_credits: creditsData.available_credits
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        data: aiResponse,
-        service_type
+        response: aiResponse,
+        credits_remaining: creditsData.credits_remaining,
+        credits_consumed: creditsData.credits_consumed,
+        service_name: creditsData.service_name,
+        usage_id: creditsData.usage_id
       }),
       {
         status: 200,
