@@ -16,6 +16,11 @@ import {
   Download,
   Save,
   Edit3,
+  Target,
+  Info,
+  Lightbulb,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
 interface CoverLetterGeneratorProps {
