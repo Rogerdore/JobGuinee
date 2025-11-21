@@ -133,6 +133,12 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
       setCVBalance(cvBal);
       setLetterBalance(letterBal);
 
+      console.log('Credits loaded:', {
+        totalBalance,
+        cvBalance: cvBal,
+        letterBalance: letterBal
+      });
+
       const { data: costs } = await supabase
         .from('service_credit_costs')
         .select('service_code, credits_cost')
@@ -144,6 +150,11 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
 
         if (cvService) setCVCost(cvService.credits_cost);
         if (letterService) setLetterCost(letterService.credits_cost);
+
+        console.log('Costs loaded:', {
+          cvCost: cvService?.credits_cost,
+          letterCost: letterService?.credits_cost
+        });
       }
     } catch (error: any) {
       console.error('Erreur:', error);
