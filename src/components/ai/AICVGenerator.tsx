@@ -107,54 +107,34 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
     console.log('AICVGenerator: Starting loadCredits for user:', user.id);
     setLoadingCredits(true);
     try {
-      const { data: services, error: servicesError } = await supabase
-        .from('premium_services')
-        .select('id, code')
-        .eq('code', 'cv_generation');
+      // Charger le solde global depuis profiles
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('credits_balance')
+        .eq('id', user.id)
+        .single();
 
-      if (servicesError) {
-        console.error('Error loading services:', servicesError);
-      }
-      console.log('Services loaded:', services);
-
-      const { data: userCredits, error: creditsError } = await supabase
-        .from('user_service_credits')
-        .select('service_id, credits_balance')
-        .eq('user_id', user.id);
-
-      if (creditsError) {
-        console.error('Error loading user credits:', creditsError);
-      }
-      console.log('User credits loaded:', userCredits);
-
-      let cvBal = 0;
-
-      if (services && userCredits) {
-        services.forEach(service => {
-          const credit = userCredits.find(uc => uc.service_id === service.id);
-          if (credit && service.code === 'cv_generation') {
-            cvBal = credit.credits_balance;
-          }
-        });
+      if (profileError) {
+        console.error('Error loading profile credits:', profileError);
       }
 
-      setCreditBalance(cvBal);
-      setCVBalance(cvBal);
+      const globalBalance = profile?.credits_balance || 0;
+      console.log('Global balance loaded:', globalBalance);
 
-      console.log('Credits loaded:', {
-        cvBalance: cvBal
-      });
+      setCreditBalance(globalBalance);
+      setCVBalance(globalBalance);
 
+      // Charger le coût du service
       const { data: costs } = await supabase
         .from('service_credit_costs')
         .select('service_code, credits_cost')
-        .eq('service_code', 'cv_generation');
+        .eq('service_code', 'cv_generation')
+        .eq('is_active', true)
+        .single();
 
-      if (costs && costs.length > 0) {
-        setCVCost(costs[0].credits_cost);
-        console.log('Costs loaded:', {
-          cvCost: costs[0].credits_cost
-        });
+      if (costs) {
+        setCVCost(costs.credits_cost);
+        console.log('CV cost loaded:', costs.credits_cost);
       }
     } catch (error: any) {
       console.error('Erreur:', error);

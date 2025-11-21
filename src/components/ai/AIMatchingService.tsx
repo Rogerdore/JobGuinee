@@ -99,39 +99,24 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
 
     setLoadingCredits(true);
     try {
-      const { data: service } = await supabase
-        .from('premium_services')
-        .select('id')
-        .eq('code', 'profile_analysis')
-        .maybeSingle();
+      // Charger le solde global depuis profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('credits_balance')
+        .eq('id', user.id)
+        .single();
 
-      if (service) {
-        const { data: credit } = await supabase
-          .from('user_service_credits')
-          .select('credits_balance')
-          .eq('user_id', user.id)
-          .eq('service_id', service.id)
-          .maybeSingle();
+      const globalBalance = profile?.credits_balance || 0;
+      console.log('Global balance loaded for matching:', globalBalance);
 
-        const balance = credit?.credits_balance || 0;
-        console.log('Profile Analysis Credits:', {
-          service_id: service.id,
-          user_id: user.id,
-          credit_data: credit,
-          balance: balance,
-          balance_type: typeof balance
-        });
+      setCreditBalance(Number(globalBalance));
 
-        setCreditBalance(Number(balance));
-      } else {
-        console.log('Profile Analysis Service not found');
-        setCreditBalance(0);
-      }
-
+      // Charger le coût du service
       const { data: cost } = await supabase
         .from('service_credit_costs')
         .select('credits_cost')
         .eq('service_code', 'profile_analysis')
+        .eq('is_active', true)
         .maybeSingle();
 
       if (cost) {
