@@ -18,6 +18,10 @@ import {
   CheckCircle2,
   Search,
   X,
+  Lightbulb,
+  CheckCircle,
+  XCircle,
+  Info,
 } from 'lucide-react';
 
 interface CVContent {
@@ -500,6 +504,139 @@ Utilise des verbes d'action et mets en avant les résultats concrets.`;
               </button>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="mt-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-lg p-8 border-2 border-amber-200">
+        <div className="flex items-start space-x-4 mb-6">
+          <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <Lightbulb className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Conseils pour un CV ATS-Friendly
+            </h2>
+            <p className="text-gray-700 leading-relaxed">
+              Les systèmes ATS (Applicant Tracking System) sont utilisés par 75% des recruteurs pour filtrer les candidatures.
+              Un CV optimisé ATS augmente vos chances de 60% d'être remarqué par les recruteurs.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-6 mb-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Info className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-bold text-gray-900">Qu'est-ce qu'un CV ATS-Friendly ?</h3>
+          </div>
+          <p className="text-gray-700 leading-relaxed mb-4">
+            Un CV ATS-friendly est un CV optimisé pour être correctement lu et analysé par les logiciels de recrutement automatisés (ATS).
+            Ces systèmes scannent votre CV à la recherche de mots-clés, compétences et expériences pertinentes avant même qu'un recruteur humain ne le voie.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <h3 className="text-lg font-bold text-green-800">À FAIRE</h3>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Format simple :</strong> Utilisez un format Word (.docx) ou PDF standard sans éléments graphiques complexes</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Police standard :</strong> Arial, Calibri, Times New Roman (taille 10-12pt)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Sections claires :</strong> Titres standards (Expérience, Formation, Compétences)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Mots-clés :</strong> Intégrez les compétences et termes de l'offre d'emploi</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Texte sélectionnable :</strong> Tout le contenu doit être en texte (pas en image)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">✓</span>
+                <span className="text-gray-700"><strong>Ordre chronologique :</strong> Listez vos expériences de la plus récente à la plus ancienne</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-white rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <XCircle className="w-5 h-5 text-red-600" />
+              <h3 className="text-lg font-bold text-red-800">À ÉVITER</h3>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Tableaux complexes :</strong> Les ATS ont du mal à lire les tableaux et colonnes multiples</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Images et graphiques :</strong> Photos, logos, icônes et graphiques ne sont pas lus par les ATS</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>En-têtes/pieds de page :</strong> Informations importantes dans ces zones peuvent être ignorées</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Polices fantaisistes :</strong> Évitez les polices décoratives ou scripts</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Abréviations :</strong> Écrivez "Master" au lieu de "M." ou "Directeur" au lieu de "Dir."</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-red-600 mt-1">✗</span>
+                <span className="text-gray-700"><strong>Titres créatifs :</strong> Utilisez "Expérience professionnelle" plutôt que "Mon parcours"</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+          <div className="flex items-start space-x-3">
+            <Sparkles className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="text-lg font-bold text-blue-900 mb-3">Pourquoi choisir notre générateur IA ?</h3>
+              <div className="space-y-2 text-gray-700">
+                <p className="flex items-start space-x-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span><strong>100% ATS-Compatible :</strong> Nos CV sont conçus pour être parfaitement lisibles par tous les systèmes ATS du marché</span>
+                </p>
+                <p className="flex items-start space-x-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span><strong>Format optimisé :</strong> Structure claire, polices standards et mise en page simple mais professionnelle</span>
+                </p>
+                <p className="flex items-start space-x-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span><strong>Mots-clés intelligents :</strong> L'IA intègre automatiquement les termes pertinents selon votre secteur</span>
+                </p>
+                <p className="flex items-start space-x-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span><strong>Personnalisation rapide :</strong> Adaptez facilement votre CV pour chaque offre d'emploi</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 bg-amber-100 border-2 border-amber-300 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+            <p className="text-amber-900 text-sm leading-relaxed">
+              <strong>Conseil professionnel :</strong> Même avec un CV optimisé ATS, n'oubliez pas que votre CV sera lu par un humain après avoir passé le filtre automatique.
+              Assurez-vous qu'il reste agréable à lire et mette en valeur vos réalisations concrètes avec des chiffres et résultats mesurables.
+            </p>
+          </div>
         </div>
       </div>
 
