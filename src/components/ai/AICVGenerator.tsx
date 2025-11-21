@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
 import {
   FileText,
   Mail,
@@ -52,6 +53,8 @@ interface AICVGeneratorProps {
 
 export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob }: AICVGeneratorProps) {
   const { user } = useAuth();
+  const cvEligibility = usePremiumEligibility('cv_generation');
+  const letterEligibility = usePremiumEligibility('cover_letter_generation');
   const [generatingCV, setGeneratingCV] = useState(false);
   const [generatingLetter, setGeneratingLetter] = useState(false);
   const [activeTab, setActiveTab] = useState<'cv' | 'letter'>('cv');
@@ -512,7 +515,7 @@ ${profile.full_name}`,
 
           <button
             onClick={generateCV}
-            disabled={generatingCV || loadingCredits || creditBalance < cvCost}
+            disabled={generatingCV || loadingCredits || !cvEligibility.isEligible}
             className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {generatingCV ? (
@@ -633,7 +636,7 @@ ${profile.full_name}`,
 
           <button
             onClick={generateLetter}
-            disabled={generatingLetter || loadingCredits || creditBalance < letterCost}
+            disabled={generatingLetter || loadingCredits || !letterEligibility.isEligible}
             className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {generatingLetter ? (

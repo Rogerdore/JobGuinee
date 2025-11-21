@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
 import {
   Brain,
   Sparkles,
@@ -56,6 +57,7 @@ interface AIMatchingServiceProps {
 
 export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs, preSelectedJob }: AIMatchingServiceProps) {
   const { user } = useAuth();
+  const eligibility = usePremiumEligibility('profile_analysis');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ProfileAnalysis | null>(null);
   const [analyses, setAnalyses] = useState<any[]>([]);
@@ -193,11 +195,14 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
   };
 
   const analyzeProfile = async (jobId?: string, manual?: string) => {
-    if (!user) return;
+    if (!user) {
+      setError('Vous devez être connecté pour utiliser ce service');
+      return;
+    }
 
-    // Vérifier les crédits avant de lancer l'analyse
-    if (creditBalance < serviceCost) {
-      setError(`Crédits insuffisants. Requis: ${serviceCost} crédits, Disponibles: ${creditBalance} crédits`);
+    // Vérifier l'éligibilité (profil 80% + crédits suffisants)
+    if (!eligibility.isEligible) {
+      setError(eligibility.reason || 'Vous n\'êtes pas éligible à ce service');
       return;
     }
 
@@ -206,34 +211,6 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
     setShowJobSelection(false);
 
     try {
-      // S'assurer qu'un profil candidat existe
-      const { data: existingProfile } = await supabase
-        .from('candidate_profiles')
-        .select('id')
-        .or(`user_id.eq.${user.id},profile_id.eq.${user.id}`)
-        .maybeSingle();
-
-      if (!existingProfile) {
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        await supabase
-          .from('candidate_profiles')
-          .insert({
-            user_id: user.id,
-            profile_id: user.id,
-            full_name: userProfile?.full_name || 'Utilisateur',
-            experience_years: 0,
-            skills: [],
-            education: [],
-            work_experience: [],
-            visibility: 'private'
-          });
-      }
-
       // Utiliser les crédits
       const { data: creditResult } = await supabase.rpc('consume_service_credits', {
         p_service_code: 'profile_analysis',
@@ -354,12 +331,95 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center space-x-2"
+            disabled={!eligibility.isEligible}
           >
             <BarChart3 className="w-5 h-5" />
             <span>{showHistory ? 'Nouvelle analyse' : 'Historique'}</span>
           </button>
         </div>
       </div>
+
+      {/* Message de blocage si non éligible */}
+      {!eligibility.isLoading && !eligibility.isEligible && (
+        <div className="mb-8 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-8">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-red-900 mb-2">
+                Service Premium Non Accessible
+              </h3>
+              <p className="text-red-800 mb-4">{eligibility.reason}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-white rounded-lg p-4 border border-red-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Connexion</span>
+                    {eligibility.isAuthenticated ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {eligibility.isAuthenticated ? 'Connecté' : 'Non connecté'}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-red-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Profil</span>
+                    {eligibility.profileCompletion >= 80 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {eligibility.profileCompletion}% / 80% requis
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-red-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Crédits</span>
+                    {eligibility.hasCredits ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {eligibility.hasCredits ? 'Suffisants' : 'Insuffisants'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                {eligibility.profileCompletion < 80 && onNavigate && (
+                  <button
+                    onClick={() => onNavigate('profile')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Compléter mon profil
+                  </button>
+                )}
+                {!eligibility.hasCredits && onNavigate && (
+                  <button
+                    onClick={() => onNavigate('credits')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                  >
+                    Recharger mes crédits
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showJobSelection && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -595,7 +655,7 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
 
                 <button
                   onClick={() => analyzeProfile()}
-                  disabled={analyzing || loadingCredits || creditBalance < serviceCost}
+                  disabled={analyzing || loadingCredits || !eligibility.isEligible}
                   className="w-full bg-purple-500 text-white px-6 py-4 rounded-lg font-bold hover:bg-purple-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {analyzing ? (
