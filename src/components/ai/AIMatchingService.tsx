@@ -207,8 +207,7 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
 
     try {
       // Utiliser les crédits
-      const { data: creditResult } = await supabase.rpc('use_credits_for_service', {
-        p_user_id: user.id,
+      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
         p_service_code: 'profile_analysis',
         p_metadata: {
           offer_id: jobId,
@@ -216,8 +215,8 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
         }
       });
 
-      if (!creditResult.success) {
-        setError(creditResult.message || 'Crédits insuffisants');
+      if (!creditResult || !creditResult.success) {
+        setError(creditResult?.message || 'Crédits insuffisants');
         return;
       }
 

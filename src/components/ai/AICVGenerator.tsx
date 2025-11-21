@@ -189,8 +189,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
     setError('');
 
     try {
-      const { data: creditResult } = await supabase.rpc('use_credits_for_service', {
-        p_user_id: user.id,
+      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
         p_service_code: 'cv_generation',
         p_metadata: {
           style,
@@ -277,8 +276,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
     setError('');
 
     try {
-      const { data: creditResult } = await supabase.rpc('use_credits_for_service', {
-        p_user_id: user.id,
+      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
         p_service_code: 'cover_letter_generation',
         p_metadata: {
           target_position: targetPosition,
