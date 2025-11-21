@@ -90,7 +90,10 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
   }, [preSelectedJob]);
 
   const loadCredits = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoadingCredits(false);
+      return;
+    }
 
     setLoadingCredits(true);
     try {
