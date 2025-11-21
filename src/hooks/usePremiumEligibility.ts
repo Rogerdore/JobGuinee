@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { calculateCandidateCompletion, calculateRecruiterCompletion } from '../utils/profileCompletion';
 
 interface PremiumEligibility {
   isEligible: boolean;
@@ -63,35 +62,7 @@ export function usePremiumEligibility(serviceCode: string): PremiumEligibility {
         return;
       }
 
-      let profileCompletion = 0;
-
-      if (profile.user_type === 'candidate') {
-        const { data: candidateProfile } = await supabase
-          .from('candidate_profiles')
-          .select('*')
-          .or(`user_id.eq.${user.id},profile_id.eq.${user.id}`)
-          .maybeSingle();
-
-        if (candidateProfile) {
-          profileCompletion = calculateCandidateCompletion(candidateProfile);
-        }
-      } else if (profile.user_type === 'recruiter') {
-        const { data: recruiterProfile } = await supabase
-          .from('recruiter_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        const { data: company } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('profile_id', user.id)
-          .maybeSingle();
-
-        if (recruiterProfile) {
-          profileCompletion = calculateRecruiterCompletion(recruiterProfile, company);
-        }
-      }
+      const profileCompletion = profile.profile_completion_percentage || 0;
 
       const { data: service } = await supabase
         .from('premium_services')
