@@ -97,19 +97,33 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
   };
 
   const loadCredits = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('AICVGenerator: No user, skipping loadCredits');
+      return;
+    }
 
+    console.log('AICVGenerator: Starting loadCredits for user:', user.id);
     setLoadingCredits(true);
     try {
-      const { data: services } = await supabase
+      const { data: services, error: servicesError } = await supabase
         .from('premium_services')
         .select('id, code')
         .in('code', ['cv_generation', 'cover_letter_generation']);
 
-      const { data: userCredits } = await supabase
+      if (servicesError) {
+        console.error('Error loading services:', servicesError);
+      }
+      console.log('Services loaded:', services);
+
+      const { data: userCredits, error: creditsError } = await supabase
         .from('user_service_credits')
         .select('service_id, credits_balance')
         .eq('user_id', user.id);
+
+      if (creditsError) {
+        console.error('Error loading user credits:', creditsError);
+      }
+      console.log('User credits loaded:', userCredits);
 
       let totalBalance = 0;
       let cvBal = 0;
