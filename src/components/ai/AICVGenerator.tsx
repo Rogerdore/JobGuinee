@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
 import { callAIService } from '../../utils/aiService';
+import { getCVTemplatePrompt, CV_TEMPLATES } from '../../utils/cvTemplates';
 import {
   FileText,
   Mail,
@@ -220,18 +221,56 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         return;
       }
 
-      const prompt = `Génère un CV professionnel optimisé avec IA pour le profil suivant:
+      const templatePrompt = getCVTemplatePrompt(style);
 
-Nom: ${profile.full_name}
-Poste visé: ${targetPosition || profile.title || 'Non spécifié'}
-Expérience: ${profile.experience_years || 0} ans
-Compétences: ${(profile.skills || []).join(', ') || 'Non spécifié'}
-Formation: ${JSON.stringify(profile.education || [])}
-Expérience professionnelle: ${JSON.stringify(profile.work_experience || [])}
-Biographie: ${profile.bio || profile.professional_goal || 'Non spécifié'}
-Style demandé: ${style}
+      const experienceDetails = (profile.work_experience || []).map((exp: any, idx: number) =>
+        `Expérience ${idx + 1}:
+- Poste: ${exp.position || exp.title || 'Non spécifié'}
+- Entreprise: ${exp.company || 'Non spécifié'}
+- Période: ${exp.start_date || ''} - ${exp.end_date || 'Présent'}
+- Missions: ${exp.description || exp.responsibilities || 'Non spécifié'}`
+      ).join('\n\n');
 
-Génère un résumé professionnel impactant (3-4 phrases) qui met en valeur les points forts du candidat pour le poste visé.`;
+      const educationDetails = (profile.education || []).map((edu: any, idx: number) =>
+        `Formation ${idx + 1}:
+- Diplôme: ${edu.degree || edu.diploma || 'Non spécifié'}
+- Établissement: ${edu.institution || edu.school || 'Non spécifié'}
+- Année: ${edu.year || edu.graduation_year || 'Non spécifié'}`
+      ).join('\n\n');
+
+      const prompt = `${templatePrompt}
+
+=== INFORMATIONS DU CANDIDAT ===
+
+Nom complet: ${profile.full_name}
+Email: ${user.email}
+Localisation: ${profile.location || 'Guinée'}
+Téléphone: ${profile.phone || 'À compléter'}
+
+Poste visé: ${targetPosition || profile.title || 'Professionnel qualifié'}
+Niveau d'expérience: ${profile.professional_status || 'Intermédiaire'}
+Années d'expérience: ${profile.experience_years || 0} ans
+
+COMPÉTENCES:
+${(profile.skills || []).join(', ') || 'Polyvalent, Adaptable, Travail d\'équipe'}
+
+EXPÉRIENCES PROFESSIONNELLES:
+${experienceDetails || 'Expérience à détailler selon le profil'}
+
+FORMATION:
+${educationDetails || 'Formation académique'}
+
+LANGUES:
+${(profile.languages || []).map((lang: any) => `${lang.language || lang}: ${lang.level || 'Courant'}`).join(', ') || 'Français: Courant'}
+
+BIOGRAPHIE/OBJECTIF:
+${profile.bio || profile.professional_goal || 'Professionnel motivé et engagé dans son domaine'}
+
+=== INSTRUCTIONS ===
+Génère un CV COMPLET et PROFESSIONNEL en utilisant TOUTES les informations ci-dessus.
+Remplis TOUTES les sections du template.
+Sois créatif et impactant dans la présentation.
+Utilise des verbes d'action et mets en avant les résultats concrets.`;
 
       const aiResult = await callAIService({
         service_type: 'cv_generation',
@@ -241,7 +280,7 @@ Génère un résumé professionnel impactant (3-4 phrases) qui met en valeur les
           targetPosition,
           style
         },
-        max_tokens: 800
+        max_tokens: 2000
       });
 
       if (!aiResult.success || !aiResult.data) {
@@ -556,11 +595,16 @@ La lettre doit être en français, naturelle et engageante.`;
                 onChange={(e) => setStyle(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="modern">Moderne</option>
-                <option value="classic">Classique</option>
-                <option value="creative">Créatif</option>
-                <option value="professional">Professionnel</option>
+                <option value="modern">🟦 Moderne - Épuré, minimaliste</option>
+                <option value="classic">🟩 Classique - Structuré, sobre</option>
+                <option value="professional">🟧 Professionnel - Axé résultats</option>
+                <option value="creative">🟪 Créatif - Visuel, dynamique</option>
               </select>
+              {style && (
+                <p className="text-xs text-gray-500 mt-2">
+                  {CV_TEMPLATES[style as keyof typeof CV_TEMPLATES]?.description}
+                </p>
+              )}
             </div>
           </div>
 
