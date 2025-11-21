@@ -155,6 +155,54 @@ Deno.serve(async (req: Request) => {
         usage: anthropicData.usage
       };
 
+    } else if (apiProvider === 'gemini') {
+      const geminiEndpoint = config.api_endpoint || `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent`;
+      
+      let fullPrompt = prompt;
+      if (config.system_prompt) {
+        fullPrompt = `${config.system_prompt}\n\n${prompt}`;
+      }
+      if (context) {
+        fullPrompt = `Context: ${JSON.stringify(context)}\n\n${fullPrompt}`;
+      }
+
+      const geminiResponse = await fetch(`${geminiEndpoint}?key=${config.api_key}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: fullPrompt
+            }]
+          }],
+          generationConfig: {
+            temperature: apiTemperature,
+            maxOutputTokens: apiMaxTokens,
+          }
+        })
+      });
+
+      if (!geminiResponse.ok) {
+        const errorText = await geminiResponse.text();
+        console.error('Gemini error:', errorText);
+        throw new Error(`Gemini API error: ${errorText}`);
+      }
+
+      const geminiData = await geminiResponse.json();
+      
+      if (!geminiData.candidates || geminiData.candidates.length === 0) {
+        throw new Error('Gemini API returned no candidates');
+      }
+
+      aiResponse = {
+        content: geminiData.candidates[0].content.parts[0].text,
+        model: apiModel,
+        provider: 'gemini',
+        usage: geminiData.usageMetadata
+      };
+
     } else {
       throw new Error(`Unsupported API provider: ${apiProvider}`);
     }
