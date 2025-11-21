@@ -2,10 +2,26 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { callAIService } from '../../utils/aiService';
-import { FileText, Briefcase, Building, Search, Loader, AlertCircle, CheckCircle2, X, ChevronRight, Sparkles, Download, Save, CreditCard as Edit3 } from 'lucide-react';
+import {
+  FileText,
+  Briefcase,
+  Building,
+  Search,
+  Loader,
+  AlertCircle,
+  CheckCircle2,
+  X,
+  ChevronRight,
+  Sparkles,
+  Download,
+  Save,
+  Edit3,
+} from 'lucide-react';
 
 interface CoverLetterGeneratorProps {
   onBack?: () => void;
+  onNavigate?: (page: string) => void;
+  preSelectedJob?: any;
 }
 
 interface CoverLetterVersion {
@@ -17,15 +33,13 @@ interface CoverLetterVersion {
 
 type WorkflowStep = 'job-selection' | 'generating' | 'version-selection' | 'editing' | 'completed';
 
-export default function AICoverLetterGenerator({ onBack }: CoverLetterGeneratorProps) {
+export default function AICoverLetterGenerator({ onBack, onNavigate, preSelectedJob }: CoverLetterGeneratorProps) {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('job-selection');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [selectedJob, setSelectedJob] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedJob, setSelectedJob] = useState<any>(preSelectedJob || null);
 
   const [letterVersions, setLetterVersions] = useState<CoverLetterVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<CoverLetterVersion | null>(null);
@@ -36,23 +50,15 @@ export default function AICoverLetterGenerator({ onBack }: CoverLetterGeneratorP
 
   useEffect(() => {
     if (user) {
-      loadJobs();
       loadCandidateProfile();
     }
   }, [user]);
 
-  const loadJobs = async () => {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*, companies(*)')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (data) {
-      setJobs(data);
+  useEffect(() => {
+    if (preSelectedJob) {
+      setSelectedJob(preSelectedJob);
     }
-  };
+  }, [preSelectedJob]);
 
   const loadCandidateProfile = async () => {
     if (!user) return;
@@ -65,11 +71,6 @@ export default function AICoverLetterGenerator({ onBack }: CoverLetterGeneratorP
 
     setCandidateProfile(profile);
   };
-
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.companies?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const generateLetters = async () => {
     if (!selectedJob || !candidateProfile) return;
@@ -84,7 +85,7 @@ export default function AICoverLetterGenerator({ onBack }: CoverLetterGeneratorP
         p_metadata: {
           job_id: selectedJob.id,
           job_title: selectedJob.title,
-          company_name: selectedJob.companies?.name
+          company_name: selectedJob.companies?.name || selectedJob.company_name
         }
       });
 
@@ -111,7 +112,7 @@ export default function AICoverLetterGenerator({ onBack }: CoverLetterGeneratorP
 
       const jobContent = {
         title: selectedJob.title,
-        company_name: selectedJob.companies?.name,
+        company_name: selectedJob.companies?.name || selectedJob.company_name,
         company_description: selectedJob.companies?.description,
         description: selectedJob.description,
         requirements: selectedJob.requirements,
@@ -250,7 +251,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
           metadata: {
             job_id: selectedJob.id,
             job_title: selectedJob.title,
-            company_name: selectedJob.companies?.name,
+            company_name: selectedJob.companies?.name || selectedJob.company_name,
             version_style: selectedVersion.style,
           },
         });
@@ -290,56 +291,50 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
       </div>
 
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Sélectionner une offre</h2>
-          <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-semibold">
+          <div className="bg-indigo-100 text-indigo-800 px-4 py-2 rounded-lg font-semibold">
             {creditCost} ⚡ crédits
           </div>
         </div>
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher un poste ou une entreprise..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {filteredJobs.map((job) => (
-            <div
-              key={job.id}
-              onClick={() => setSelectedJob(job)}
-              className={`p-4 border-2 rounded-lg cursor-pointer transition ${
-                selectedJob?.id === job.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-blue-300'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <Briefcase className="w-4 h-4 text-blue-600" />
-                    <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Building className="w-3 h-3" />
-                    <span>{job.companies?.name || 'Entreprise'}</span>
-                  </div>
-                  {job.location && (
-                    <p className="text-xs text-gray-500 mt-1">{job.location}</p>
-                  )}
+        {selectedJob ? (
+          <div className="border-2 border-indigo-500 rounded-lg p-4 bg-indigo-50 mb-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Briefcase className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-bold text-gray-900 text-lg">{selectedJob.title}</h3>
                 </div>
-                {selectedJob?.id === job.id && (
-                  <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                <div className="flex items-center space-x-2 text-gray-700 mb-1">
+                  <Building className="w-4 h-4" />
+                  <span className="font-medium">{selectedJob.companies?.name || selectedJob.company_name || 'Entreprise'}</span>
+                </div>
+                {selectedJob.location && (
+                  <p className="text-sm text-gray-600 mt-1">{selectedJob.location}</p>
                 )}
               </div>
+              <button
+                onClick={() => setSelectedJob(null)}
+                className="text-indigo-600 hover:text-indigo-700 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 mb-6">Aucune offre sélectionnée</p>
+            <button
+              onClick={() => onNavigate?.('jobs')}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition inline-flex items-center space-x-2"
+            >
+              <Search className="w-5 h-5" />
+              <span>Parcourir les offres d'emploi</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-4">
@@ -354,7 +349,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
         <button
           onClick={generateLetters}
           disabled={!selectedJob || loading}
-          className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-bold hover:from-blue-700 hover:to-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-lg font-bold hover:from-indigo-700 hover:to-indigo-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
           <Sparkles className="w-5 h-5" />
           <span>Générer 2 versions ({creditCost} ⚡)</span>
@@ -365,14 +360,14 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
 
   const renderGenerating = () => (
     <div className="max-w-2xl mx-auto text-center py-12">
-      <Loader className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
+      <Loader className="w-16 h-16 text-indigo-600 animate-spin mx-auto mb-6" />
       <h2 className="text-2xl font-bold text-gray-900 mb-3">
         Génération en cours...
       </h2>
       <p className="text-gray-600 mb-4">
         Notre IA analyse votre profil et l'offre d'emploi pour créer 2 versions de lettre personnalisées
       </p>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-left">
         <ul className="space-y-2 text-sm text-gray-700">
           <li className="flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -383,7 +378,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
             <span>Analyse de l'offre d'emploi</span>
           </li>
           <li className="flex items-center space-x-2">
-            <Loader className="w-4 h-4 text-blue-600 animate-spin" />
+            <Loader className="w-4 h-4 text-indigo-600 animate-spin" />
             <span>Génération des 2 versions...</span>
           </li>
         </ul>
@@ -408,9 +403,9 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
             key={index}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition"
           >
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-6 text-white">
               <h3 className="text-xl font-bold mb-2">{version.title}</h3>
-              <p className="text-blue-100 text-sm">{version.description}</p>
+              <p className="text-indigo-100 text-sm">{version.description}</p>
             </div>
 
             <div className="p-6">
@@ -422,7 +417,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
 
               <button
                 onClick={() => selectVersion(version)}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition flex items-center justify-center space-x-2"
+                className="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center space-x-2"
               >
                 <Edit3 className="w-5 h-5" />
                 <span>Choisir cette version</span>
@@ -435,7 +430,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
       <div className="mt-6 text-center">
         <button
           onClick={() => setCurrentStep('job-selection')}
-          className="text-blue-600 hover:text-blue-700 font-medium"
+          className="text-indigo-600 hover:text-indigo-700 font-medium"
         >
           ← Retour à la sélection
         </button>
@@ -456,8 +451,8 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="mb-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-900">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+            <p className="text-sm text-indigo-900">
               <strong>{selectedVersion?.title}</strong> - {selectedVersion?.description}
             </p>
           </div>
@@ -467,7 +462,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
           <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full h-96 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+            className="w-full h-96 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
             placeholder="Contenu de la lettre..."
           />
           <p className="text-xs text-gray-500 mt-2">
@@ -504,7 +499,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
         <div className="mt-4 text-center">
           <button
             onClick={() => setCurrentStep('version-selection')}
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-indigo-600 hover:text-indigo-700 font-medium"
           >
             ← Choisir une autre version
           </button>
@@ -533,7 +528,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
             setSelectedVersion(null);
             setEditedContent('');
           }}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+          className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
         >
           Créer une nouvelle lettre
         </button>
@@ -555,7 +550,7 @@ Réponds UNIQUEMENT avec le JSON, sans texte additionnel.`;
         <div className="max-w-4xl mx-auto mb-4">
           <button
             onClick={onBack}
-            className="text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-2"
+            className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center space-x-2"
           >
             <ChevronRight className="w-5 h-5 rotate-180" />
             <span>Retour</span>
