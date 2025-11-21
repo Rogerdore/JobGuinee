@@ -23,6 +23,7 @@ import {
   Copy,
   Shield,
   ArrowLeft,
+  Plus,
 } from 'lucide-react';
 
 interface PremiumStatus {
