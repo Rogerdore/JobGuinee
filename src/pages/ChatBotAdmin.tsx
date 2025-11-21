@@ -15,7 +15,7 @@ interface ChatBotConfig {
   system_prompt: string;
   max_messages_per_session: number;
   api_key: string | null;
-  api_provider: 'openai' | 'anthropic' | 'custom';
+  api_provider: 'openai' | 'anthropic' | 'gemini' | 'custom';
   api_endpoint: string | null;
   temperature: number;
   max_tokens: number;
@@ -362,11 +362,12 @@ export default function ChatBotAdmin({ onNavigate }: ChatBotAdminProps = {}) {
                 </label>
                 <select
                   value={config.api_provider}
-                  onChange={(e) => setConfig({ ...config, api_provider: e.target.value as 'openai' | 'anthropic' | 'custom' })}
+                  onChange={(e) => setConfig({ ...config, api_provider: e.target.value as 'openai' | 'anthropic' | 'gemini' | 'custom' })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
                 >
                   <option value="openai">OpenAI (GPT-3.5, GPT-4)</option>
                   <option value="anthropic">Anthropic (Claude)</option>
+                  <option value="gemini">Google Gemini</option>
                   <option value="custom">API Personnalisée</option>
                 </select>
               </div>
@@ -435,6 +436,13 @@ export default function ChatBotAdmin({ onNavigate }: ChatBotAdminProps = {}) {
                       <option value="claude-3-haiku">Claude 3 Haiku (Rapide)</option>
                       <option value="claude-3-sonnet">Claude 3 Sonnet (Équilibré)</option>
                       <option value="claude-3-opus">Claude 3 Opus (Plus puissant)</option>
+                    </>
+                  )}
+                  {config.api_provider === 'gemini' && (
+                    <>
+                      <option value="gemini-pro">Gemini Pro (Équilibré)</option>
+                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Plus puissant)</option>
+                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Rapide)</option>
                     </>
                   )}
                   {config.api_provider === 'custom' && (
