@@ -212,7 +212,7 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
 
     try {
       // Utiliser les crédits
-      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
+      const { data: creditResult } = await supabase.rpc('consume_global_credits', {
         p_service_code: 'profile_analysis',
         p_metadata: {
           offer_id: jobId,

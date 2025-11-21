@@ -175,7 +175,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
     setError('');
 
     try {
-      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
+      const { data: creditResult } = await supabase.rpc('consume_global_credits', {
         p_service_code: 'cv_generation',
         p_metadata: {
           style,

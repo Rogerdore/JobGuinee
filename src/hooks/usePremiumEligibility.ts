@@ -64,36 +64,19 @@ export function usePremiumEligibility(serviceCode: string): PremiumEligibility {
 
       const profileCompletion = profile.profile_completion_percentage || 0;
 
-      const { data: service } = await supabase
-        .from('premium_services')
-        .select('id')
-        .eq('code', serviceCode)
-        .maybeSingle();
-
       let hasCredits = false;
-      let creditBalance = 0;
+      let creditBalance = profile.credits_balance || 0;
       let serviceCost = 0;
 
-      if (service) {
-        const { data: credit } = await supabase
-          .from('user_service_credits')
-          .select('credits_balance')
-          .eq('user_id', user.id)
-          .eq('service_id', service.id)
-          .maybeSingle();
+      const { data: cost } = await supabase
+        .from('service_credit_costs')
+        .select('credits_cost')
+        .eq('service_code', serviceCode)
+        .eq('is_active', true)
+        .maybeSingle();
 
-        creditBalance = credit?.credits_balance || 0;
-
-        const { data: cost } = await supabase
-          .from('service_credit_costs')
-          .select('credits_cost')
-          .eq('service_code', serviceCode)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        serviceCost = cost?.credits_cost || 0;
-        hasCredits = creditBalance >= serviceCost;
-      }
+      serviceCost = cost?.credits_cost || 0;
+      hasCredits = creditBalance >= serviceCost;
 
       let reason = null;
       let isEligible = true;

@@ -35,8 +35,9 @@ import JobPricingAdmin from './pages/JobPricingAdmin';
 import PremiumServicesAdmin from './pages/PremiumServicesAdmin';
 import PaymentManagement from './pages/PaymentManagement';
 import UserServicesManagement from './pages/UserServicesManagement';
+import GlobalCreditsManagement from './pages/GlobalCreditsManagement';
 
-type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin' | 'payment-management' | 'user-services';
+type Page = 'home' | 'login' | 'signup' | 'signup-candidate' | 'signup-recruiter' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-coach' | 'gold-profile' | 'chatbot-admin' | 'social-config' | 'admin-profiles' | 'admin-jobs' | 'job-formatting' | 'job-form-config' | 'system-settings' | 'job-pricing' | 'premium-services-admin' | 'payment-management' | 'user-services' | 'global-credits';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -187,6 +188,7 @@ function AppContent() {
       {currentPage === 'premium-services-admin' && <PremiumServicesAdmin onNavigate={handleNavigate} />}
       {currentPage === 'payment-management' && <PaymentManagement onNavigate={handleNavigate} />}
       {currentPage === 'user-services' && <UserServicesManagement onNavigate={handleNavigate} />}
+      {currentPage === 'global-credits' && <GlobalCreditsManagement />}
       </Layout>
     </>
   );

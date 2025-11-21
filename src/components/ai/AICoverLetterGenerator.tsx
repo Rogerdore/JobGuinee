@@ -80,7 +80,7 @@ export default function AICoverLetterGenerator({ onBack, onNavigate, preSelected
     setError('');
 
     try {
-      const { data: creditResult } = await supabase.rpc('consume_service_credits', {
+      const { data: creditResult } = await supabase.rpc('consume_global_credits', {
         p_service_code: 'cover_letter_generation',
         p_metadata: {
           job_id: selectedJob.id,

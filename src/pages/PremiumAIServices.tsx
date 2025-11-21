@@ -301,41 +301,27 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
     try {
       console.log('Loading premium status for user:', user.id);
 
-      const { data: userCredits } = await supabase
-        .from('user_service_credits')
-        .select(`
-          credits_balance,
-          premium_services!inner(code)
-        `)
-        .eq('user_id', user.id);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('credits_balance')
+        .eq('id', user.id)
+        .single();
 
-      let totalBalance = 0;
-      const creditsByService: { [key: string]: number } = {};
+      const globalBalance = profile?.credits_balance || 0;
 
-      if (userCredits && userCredits.length > 0) {
-        totalBalance = userCredits.reduce((sum, credit) => sum + credit.credits_balance, 0);
-
-        userCredits.forEach(credit => {
-          const serviceCode = (credit as any).premium_services?.code;
-          if (serviceCode) {
-            creditsByService[serviceCode] = credit.credits_balance;
-          }
-        });
-      }
-
-      console.log('Credits loaded:', { totalBalance, creditsByService });
+      console.log('Global credits loaded:', globalBalance);
 
       setPremiumStatus({
-        subscription_type: totalBalance > 0 ? 'premium' : 'free',
+        subscription_type: globalBalance > 0 ? 'premium' : 'free',
         status: 'active',
         credits: {
           global_balance: {
-            available: totalBalance,
+            available: globalBalance,
             used: 0,
-            total: totalBalance
+            total: globalBalance
           }
         },
-        creditsByService
+        creditsByService: {}
       });
 
       console.log('Premium status set successfully');
