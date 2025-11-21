@@ -206,6 +206,34 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
     setShowJobSelection(false);
 
     try {
+      // S'assurer qu'un profil candidat existe
+      const { data: existingProfile } = await supabase
+        .from('candidate_profiles')
+        .select('id')
+        .or(`user_id.eq.${user.id},profile_id.eq.${user.id}`)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        await supabase
+          .from('candidate_profiles')
+          .insert({
+            user_id: user.id,
+            profile_id: user.id,
+            full_name: userProfile?.full_name || 'Utilisateur',
+            experience_years: 0,
+            skills: [],
+            education: [],
+            work_experience: [],
+            visibility: 'private'
+          });
+      }
+
       // Utiliser les crédits
       const { data: creditResult } = await supabase.rpc('consume_service_credits', {
         p_service_code: 'profile_analysis',
