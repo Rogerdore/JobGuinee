@@ -44,8 +44,10 @@ function AppContent() {
   const [jobSearchParams, setJobSearchParams] = useState<string>('');
   const [selectedJobForCV, setSelectedJobForCV] = useState<any>(null);
   const [selectedJobForMatching, setSelectedJobForMatching] = useState<any>(null);
+  const [selectedJobForCoverLetter, setSelectedJobForCoverLetter] = useState<any>(null);
   const [returnToCV, setReturnToCV] = useState(false);
   const [returnToMatching, setReturnToMatching] = useState(false);
+  const [returnToCoverLetter, setReturnToCoverLetter] = useState(false);
   const { loading } = useAuth();
 
   const handleNavigate = (page: string, param?: string) => {
@@ -87,7 +89,7 @@ function AppContent() {
         <Jobs
           onNavigate={handleNavigate}
           initialSearch={jobSearchParams}
-          selectMode={returnToCV || returnToMatching}
+          selectMode={returnToCV || returnToMatching || returnToCoverLetter}
           onSelectJob={(job) => {
             const jobWithCompanyName = {
               ...job,
@@ -102,6 +104,10 @@ function AppContent() {
               setSelectedJobForMatching(jobWithCompanyName);
               setReturnToMatching(false);
               handleNavigate('ai-matching');
+            } else if (returnToCoverLetter) {
+              setSelectedJobForCoverLetter(jobWithCompanyName);
+              setReturnToCoverLetter(false);
+              handleNavigate('ai-cover-letter');
             }
           }}
         />
@@ -152,7 +158,20 @@ function AppContent() {
       )}
       {currentPage === 'ai-cover-letter' && (
         <AICoverLetterGenerator
-          onBack={() => handleNavigate('premium-ai')}
+          preSelectedJob={selectedJobForCoverLetter}
+          onNavigate={(page) => {
+            if (page === 'jobs') {
+              setReturnToCoverLetter(true);
+              handleNavigate('jobs');
+            } else {
+              handleNavigate(page);
+            }
+          }}
+          onBack={() => {
+            setSelectedJobForCoverLetter(null);
+            setReturnToCoverLetter(false);
+            handleNavigate('premium-ai');
+          }}
         />
       )}
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
