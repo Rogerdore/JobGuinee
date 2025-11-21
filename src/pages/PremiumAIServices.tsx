@@ -546,10 +546,10 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                   <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
                     <Icon className="w-8 h-8" />
                   </div>
-                  {hasAdminAccess ? (
+                  {hasAdminAccess && hasEnoughCredits ? (
                     <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold flex items-center space-x-1">
                       <CheckCircle2 className="w-3 h-3" />
-                      <span>Accordé</span>
+                      <span>Actif</span>
                     </span>
                   ) : service.isIncluded ? (
                     <span className="px-3 py-1 bg-white text-gray-900 rounded-full text-xs font-bold">
@@ -572,23 +572,8 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
 
               {/* Contenu */}
               <div className="p-5 bg-white">
-                {/* Badge d'accès accordé */}
-                {hasAdminAccess && (
-                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-green-700 mb-1">
-                      <Shield className="w-4 h-4" />
-                      <span className="text-sm font-semibold">Accès gratuit accordé</span>
-                    </div>
-                    <p className="text-xs text-green-600">
-                      {grantedAccess?.expiresAt
-                        ? `Expire le ${new Date(grantedAccess.expiresAt).toLocaleDateString('fr-FR')}`
-                        : 'Accès illimité'}
-                    </p>
-                  </div>
-                )}
-
                 {/* Crédits disponibles */}
-                {!service.isIncluded && !hasAdminAccess && (
+                {!service.isIncluded && (
                   <div className="mb-5">
                     {hasEnoughCredits ? (
                       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
