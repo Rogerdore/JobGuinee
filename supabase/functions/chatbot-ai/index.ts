@@ -138,6 +138,76 @@ Deno.serve(async (req: Request) => {
 
       const data = await anthropicResponse.json();
       aiResponse = data.content[0].text;
+    } else if (config.api_provider === 'gemini') {
+      const model = config.ai_model || 'gemini-1.5-flash';
+      const apiVersion = model.includes('1.5') || model.includes('2.0') ? 'v1' : 'v1beta';
+      const geminiEndpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent`;
+
+      const conversationText = messages
+        .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+        .join('\n');
+
+      const fullPrompt = `${systemMessage.content}\n\n${conversationText}\n\nAssistant:`;
+
+      const geminiResponse = await fetch(`${geminiEndpoint}?key=${config.api_key}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: fullPrompt }]
+          }],
+          generationConfig: {
+            temperature: config.temperature || 0.7,
+            maxOutputTokens: config.max_tokens || 500,
+          }
+        })
+      });
+
+      if (!geminiResponse.ok) {
+        const error = await geminiResponse.text();
+        console.error('Gemini API error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to get AI response' }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const data = await geminiResponse.json();
+      aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Désolé, je ne peux pas répondre pour le moment.';
+    } else if (config.api_provider === 'deepseek') {
+      const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.api_key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: config.ai_model || 'deepseek-chat',
+          messages: fullMessages,
+          temperature: config.temperature || 0.7,
+          max_tokens: config.max_tokens || 500,
+        }),
+      });
+
+      if (!deepseekResponse.ok) {
+        const error = await deepseekResponse.text();
+        console.error('DeepSeek API error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to get AI response' }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const data = await deepseekResponse.json();
+      aiResponse = data.choices[0].message.content;
     } else if (config.api_provider === 'custom' && config.api_endpoint) {
       const customResponse = await fetch(config.api_endpoint, {
         method: 'POST',
