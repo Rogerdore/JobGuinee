@@ -2,21 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { callAIService } from '../../utils/aiService';
-import {
-  FileText,
-  Briefcase,
-  Building,
-  Search,
-  Loader,
-  AlertCircle,
-  CheckCircle2,
-  X,
-  ChevronRight,
-  Sparkles,
-  Download,
-  Save,
-  Edit3,
-} from 'lucide-react';
+import { FileText, Briefcase, Building, Search, Loader, AlertCircle, CheckCircle2, X, ChevronRight, Sparkles, Download, Save, CreditCard as Edit3 } from 'lucide-react';
 
 interface CoverLetterGeneratorProps {
   onBack?: () => void;
