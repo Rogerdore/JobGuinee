@@ -300,15 +300,25 @@ export default function AIServicesConfigAdmin() {
                           onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
                           className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommandé - Rapide)</option>
-                          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Plus puissant)</option>
-                          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Expérimental)</option>
-                          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                          <option value="gpt-4">GPT-4</option>
-                          <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                          <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                          <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                          <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                          <optgroup label="Google Gemini">
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommandé - Rapide)</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Plus puissant)</option>
+                            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Expérimental)</option>
+                          </optgroup>
+                          <optgroup label="OpenAI">
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                          </optgroup>
+                          <optgroup label="Anthropic Claude">
+                            <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                          </optgroup>
+                          <optgroup label="DeepSeek">
+                            <option value="deepseek-chat">DeepSeek Chat (Général)</option>
+                            <option value="deepseek-reasoner">DeepSeek Reasoner (R1 - Raisonnement)</option>
+                          </optgroup>
                         </select>
                       </div>
 

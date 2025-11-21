@@ -244,6 +244,58 @@ Deno.serve(async (req: Request) => {
         usage: anthropicData.usage
       };
 
+    } else if (apiProvider === 'deepseek') {
+      const deepseekEndpoint = aiConfig.api_endpoint || 'https://api.deepseek.com/v1/chat/completions';
+
+      const messages: any[] = [];
+
+      if (systemInstructions) {
+        messages.push({
+          role: 'system',
+          content: systemInstructions
+        });
+      }
+
+      if (serviceConfig.knowledge_base) {
+        messages.push({
+          role: 'system',
+          content: `Knowledge Base:\n${serviceConfig.knowledge_base}`
+        });
+      }
+
+      messages.push({
+        role: 'user',
+        content: prompt
+      });
+
+      const deepseekResponse = await fetch(deepseekEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiConfig.api_key}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          temperature: temperature,
+          max_tokens: maxTokens
+        })
+      });
+
+      if (!deepseekResponse.ok) {
+        const errorData = await deepseekResponse.json();
+        throw new Error(`DeepSeek API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const deepseekData = await deepseekResponse.json();
+      fullResponse = deepseekData;
+      aiResponse = {
+        content: deepseekData.choices[0].message.content,
+        model: model,
+        provider: 'deepseek',
+        usage: deepseekData.usage
+      };
+
     } else {
       throw new Error(`Unsupported API provider: ${apiProvider}`);
     }

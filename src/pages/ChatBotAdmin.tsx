@@ -15,7 +15,7 @@ interface ChatBotConfig {
   system_prompt: string;
   max_messages_per_session: number;
   api_key: string | null;
-  api_provider: 'openai' | 'anthropic' | 'gemini' | 'custom';
+  api_provider: 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'custom';
   api_endpoint: string | null;
   temperature: number;
   max_tokens: number;
@@ -362,12 +362,13 @@ export default function ChatBotAdmin({ onNavigate }: ChatBotAdminProps = {}) {
                 </label>
                 <select
                   value={config.api_provider}
-                  onChange={(e) => setConfig({ ...config, api_provider: e.target.value as 'openai' | 'anthropic' | 'gemini' | 'custom' })}
+                  onChange={(e) => setConfig({ ...config, api_provider: e.target.value as 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'custom' })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
                 >
                   <option value="openai">OpenAI (GPT-3.5, GPT-4)</option>
                   <option value="anthropic">Anthropic (Claude)</option>
                   <option value="gemini">Google Gemini</option>
+                  <option value="deepseek">DeepSeek (R1, Chat)</option>
                   <option value="custom">API Personnalisée</option>
                 </select>
               </div>
@@ -396,6 +397,8 @@ export default function ChatBotAdmin({ onNavigate }: ChatBotAdminProps = {}) {
                 <p className="text-xs text-gray-500 mt-2">
                   {config.api_provider === 'openai' && 'Obtenez votre clé sur: https://platform.openai.com/api-keys'}
                   {config.api_provider === 'anthropic' && 'Obtenez votre clé sur: https://console.anthropic.com/'}
+                  {config.api_provider === 'gemini' && 'Obtenez votre clé sur: https://aistudio.google.com/app/apikey'}
+                  {config.api_provider === 'deepseek' && 'Obtenez votre clé sur: https://platform.deepseek.com/api_keys'}
                   {config.api_provider === 'custom' && 'Entrez la clé API fournie par votre service'}
                 </p>
               </div>
@@ -443,6 +446,12 @@ export default function ChatBotAdmin({ onNavigate }: ChatBotAdminProps = {}) {
                       <option value="gemini-pro">Gemini Pro (Équilibré)</option>
                       <option value="gemini-1.5-pro">Gemini 1.5 Pro (Plus puissant)</option>
                       <option value="gemini-1.5-flash">Gemini 1.5 Flash (Rapide)</option>
+                    </>
+                  )}
+                  {config.api_provider === 'deepseek' && (
+                    <>
+                      <option value="deepseek-chat">DeepSeek Chat (Général)</option>
+                      <option value="deepseek-reasoner">DeepSeek Reasoner (R1)</option>
                     </>
                   )}
                   {config.api_provider === 'custom' && (
