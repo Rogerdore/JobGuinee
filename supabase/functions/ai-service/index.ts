@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("AI API key not configured");
     }
 
-    const model = serviceConfig.model || aiConfig.ai_model || 'gemini-pro';
+    const model = serviceConfig.model || aiConfig.ai_model || 'gemini-1.5-flash';
     const temperature = serviceConfig.temperature !== null ? serviceConfig.temperature : (aiConfig.temperature || 0.7);
     const maxTokens = serviceConfig.max_tokens || aiConfig.max_tokens || 2000;
     const apiProvider = aiConfig.api_provider || 'gemini';
@@ -101,7 +101,8 @@ Deno.serve(async (req: Request) => {
     let fullResponse;
 
     if (apiProvider === 'gemini') {
-      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const apiVersion = model.includes('1.5') || model.includes('2.0') ? 'v1' : 'v1beta';
+      const geminiEndpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent`;
 
       let fullPrompt = '';
       if (systemInstructions) {

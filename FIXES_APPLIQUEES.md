@@ -45,6 +45,29 @@
 
 ---
 
+### ❌ **Problème 3 : Erreur "models/gemini-1.5-flash is not found for API version v1beta"**
+
+**Cause** : Les modèles Gemini 1.5+ et 2.0+ nécessitent l'endpoint API **v1** et NON **v1beta**.
+
+**Solution** :
+1. ✅ Détection automatique de la version d'API basée sur le modèle :
+   ```typescript
+   const apiVersion = model.includes('1.5') || model.includes('2.0') ? 'v1' : 'v1beta';
+   const geminiEndpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent`;
+   ```
+2. ✅ Redéploiement de l'Edge Function avec la correction
+3. ✅ Changement du fallback par défaut : `gemini-pro` → `gemini-1.5-flash`
+
+**Mapping Version API** :
+| Modèle | Version API | Status |
+|--------|-------------|--------|
+| `gemini-pro` | v1beta | ❌ Déprécié |
+| `gemini-1.5-flash` | **v1** | ✅ Recommandé |
+| `gemini-1.5-pro` | **v1** | ✅ Actif |
+| `gemini-2.0-flash-exp` | **v1** | ✅ Expérimental |
+
+---
+
 ## 🎯 Résumé des Modifications
 
 ### Fichiers Modifiés
@@ -57,6 +80,8 @@
 #### 2. **`supabase/functions/ai-service/index.ts`**
 - Support dual-mode (ancien + nouveau format)
 - Détection automatique : `prompt_content` VS template + variables
+- **Détection automatique version API Gemini** (v1 vs v1beta)
+- Fallback vers `gemini-1.5-flash` au lieu de `gemini-pro`
 - Gestion robuste des erreurs
 
 #### 3. **`src/pages/AIServicesConfigAdmin.tsx`**
