@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
+import { callAIService } from '../../utils/aiService';
 import {
   FileText,
   Mail,
@@ -219,6 +220,35 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         return;
       }
 
+      const prompt = `Génère un CV professionnel optimisé avec IA pour le profil suivant:
+
+Nom: ${profile.full_name}
+Poste visé: ${targetPosition || profile.title || 'Non spécifié'}
+Expérience: ${profile.experience_years || 0} ans
+Compétences: ${(profile.skills || []).join(', ') || 'Non spécifié'}
+Formation: ${JSON.stringify(profile.education || [])}
+Expérience professionnelle: ${JSON.stringify(profile.work_experience || [])}
+Biographie: ${profile.bio || profile.professional_goal || 'Non spécifié'}
+Style demandé: ${style}
+
+Génère un résumé professionnel impactant (3-4 phrases) qui met en valeur les points forts du candidat pour le poste visé.`;
+
+      const aiResult = await callAIService({
+        service_type: 'cv_generation',
+        prompt: prompt,
+        context: {
+          profile,
+          targetPosition,
+          style
+        },
+        max_tokens: 800
+      });
+
+      if (!aiResult.success || !aiResult.data) {
+        setError(aiResult.error || 'Erreur lors de la génération IA');
+        return;
+      }
+
       const cvData: CVContent = {
         personalInfo: {
           fullName: profile.full_name || '',
@@ -228,7 +258,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
           linkedIn: '',
           portfolio: '',
         },
-        summary: profile.bio || profile.professional_goal || 'Professionnel motivé et passionné',
+        summary: aiResult.data.content,
         targetPosition: targetPosition || profile.title || '',
         experience: {
           years: profile.experience_years || 0,
@@ -306,6 +336,41 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         return;
       }
 
+      const prompt = `Génère une lettre de motivation professionnelle et personnalisée pour:
+
+Candidat: ${profile.full_name}
+Poste visé: ${targetPosition}
+Entreprise cible: ${targetCompany}
+Expérience: ${profile.experience_years || 0} ans en tant que ${profile.professional_status || 'professionnel(le)'}
+Compétences clés: ${(profile.skills || []).join(', ')}
+Formation: ${JSON.stringify(profile.education || [])}
+Biographie/Objectif: ${profile.bio || profile.professional_goal || 'Non spécifié'}
+
+Génère une lettre de motivation convaincante, personnalisée et professionnelle qui:
+1. S'adresse formellement à l'entreprise
+2. Présente le candidat et son expérience
+3. Met en avant les compétences pertinentes pour le poste
+4. Explique la motivation pour ce poste spécifique
+5. Conclut avec une formule de politesse appropriée
+
+La lettre doit être en français, naturelle et engageante.`;
+
+      const aiResult = await callAIService({
+        service_type: 'cover_letter',
+        prompt: prompt,
+        context: {
+          profile,
+          targetPosition,
+          targetCompany
+        },
+        max_tokens: 1000
+      });
+
+      if (!aiResult.success || !aiResult.data) {
+        setError(aiResult.error || 'Erreur lors de la génération IA');
+        return;
+      }
+
       const letter = {
         candidateName: profile.full_name,
         candidateEmail: user.email,
@@ -313,21 +378,7 @@ export default function AICVGenerator({ onBack, onNavigateToJobs, preSelectedJob
         targetCompany,
         experience: profile.experience_years,
         skills: profile.skills,
-        content: `Madame, Monsieur,
-
-Je me permets de vous adresser ma candidature pour le poste de ${targetPosition} au sein de ${targetCompany}.
-
-Fort(e) de ${profile.experience_years || 0} années d'expérience en tant que ${profile.professional_status || 'professionnel(le)'}, j'ai développé une expertise solide dans les domaines suivants : ${(profile.skills || []).slice(0, 5).join(', ')}.
-
-Mon parcours professionnel m'a permis d'acquérir des compétences clés parfaitement alignées avec les exigences de ce poste. Ma capacité à ${(profile.skills || []).slice(0, 3).join(', ')} me permettra de contribuer efficacement aux objectifs de ${targetCompany}.
-
-${profile.bio || profile.professional_goal || 'Je suis particulièrement motivé(e) par cette opportunité car elle correspond parfaitement à mon projet professionnel.'}
-
-Convaincu(e) que mon profil saura répondre à vos attentes, je serais ravi(e) de vous rencontrer lors d'un entretien afin de vous présenter plus en détail mes motivations et mes compétences.
-
-Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.
-
-${profile.full_name}`,
+        content: aiResult.data.content,
       };
 
       setLetterContent(letter);
