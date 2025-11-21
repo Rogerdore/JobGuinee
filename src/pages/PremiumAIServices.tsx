@@ -495,9 +495,13 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
           </div>
 
           {/* Bannière Solde de Crédits */}
-          <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6 text-white">
+          <div className={`bg-gradient-to-r ${
+            premiumStatus.credits.global_balance.available >= Math.min(...services.filter(s => !s.isIncluded && s.credits).map(s => s.credits || 0))
+              ? 'from-green-600 to-emerald-600'
+              : 'from-red-600 to-red-700'
+          } rounded-2xl p-6 text-white`}>
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                   <Zap className="w-5 h-5" />
                   Solde de Crédits
@@ -505,21 +509,45 @@ export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServi
                 <p className="text-3xl font-bold mb-1">
                   {premiumStatus.credits.global_balance.available.toLocaleString()}
                 </p>
-                <p className="text-green-100 text-sm">
+                <p className="text-white text-opacity-90 text-sm mb-3">
                   crédits disponibles pour tous les services IA
                 </p>
+
+                {(() => {
+                  const globalBalance = premiumStatus.credits.global_balance.available;
+                  const minCost = Math.min(...services.filter(s => !s.isIncluded && s.credits).map(s => s.credits || 0));
+                  const canUseAnyService = globalBalance >= minCost;
+
+                  return canUseAnyService ? (
+                    <button
+                      onClick={() => setShowDirectPayment(true)}
+                      className="bg-white text-green-700 hover:bg-green-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-md"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Recharger des crédits</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowDirectPayment(true)}
+                      className="bg-white text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-md animate-pulse"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Acheter des crédits maintenant</span>
+                    </button>
+                  );
+                })()}
               </div>
-              <div className="text-right">
+              <div className="text-right ml-4">
                 <CreditCard className="w-12 h-12 text-white opacity-80 mb-2" />
-                {premiumStatus.credits.global_balance.available > 0 ? (
+                {premiumStatus.credits.global_balance.available >= Math.min(...services.filter(s => !s.isIncluded && s.credits).map(s => s.credits || 0)) ? (
                   <span className="inline-flex items-center gap-1 text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">
                     <CheckCircle2 className="w-3 h-3" />
                     Actif
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-xs bg-red-500 bg-opacity-80 px-3 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs bg-white bg-opacity-30 px-3 py-1 rounded-full">
                     <AlertCircle className="w-3 h-3" />
-                    Épuisé
+                    Insuffisant
                   </span>
                 )}
               </div>
