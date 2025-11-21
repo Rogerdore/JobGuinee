@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
+import { callAIService } from '../../utils/aiService';
 import {
   Brain,
   Sparkles,
@@ -213,32 +214,167 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
       // Mettre à jour le solde
       setCreditBalance(creditResult.new_balance);
 
-      // Lancer l'analyse
-      const { data, error } = await supabase.rpc('analyze_profile_with_ai', {
-        p_user_id: user.id,
-        p_offer_id: jobId || null,
-        p_manual_position: manual || null,
+      // Récupérer le profil candidat
+      const { data: profileData, error: profileError } = await supabase.rpc('get_candidate_profile', {
+        p_user_id: user.id
       });
 
-      if (error) throw error;
-
-      if (!data.success) {
-        setError(data.message || 'Erreur lors de l\'analyse');
+      if (profileError) throw profileError;
+      if (profileData?.error) {
+        setError(profileData.message || 'Profil candidat introuvable');
         return;
       }
 
+      // Récupérer l'offre si nécessaire
+      let jobData = null;
+      if (jobId) {
+        const { data: job, error: jobError } = await supabase
+          .from('jobs')
+          .select(`
+            *,
+            companies!inner(name)
+          `)
+          .eq('id', jobId)
+          .single();
+
+        if (!jobError && job) {
+          jobData = {
+            id: job.id,
+            title: job.title,
+            company_name: job.companies?.name,
+            description: job.description,
+            requirements: job.requirements,
+            skills_required: job.skills_required,
+            experience_required: job.experience_required,
+            education_required: job.education_required,
+          };
+        }
+      }
+
+      // Construire le prompt pour l'IA
+      const analysisType = jobData ? 'comparaison avec offre' : 'analyse générale';
+      const prompt = `Tu es un expert en recrutement et analyse de profils professionnels.
+
+${jobData ? `CONTEXTE : Analyser la compatibilité entre le profil candidat et l'offre d'emploi suivante :
+- Poste : ${jobData.title}
+- Entreprise : ${jobData.company_name}
+- Description : ${jobData.description || 'Non spécifiée'}
+- Compétences requises : ${JSON.stringify(jobData.skills_required || [])}
+- Expérience requise : ${jobData.experience_required || 'Non spécifiée'}
+- Formation requise : ${jobData.education_required || 'Non spécifiée'}
+` : 'CONTEXTE : Effectuer une analyse générale du profil candidat.'}
+
+PROFIL CANDIDAT :
+- Nom : ${profileData.full_name}
+- Poste actuel : ${profileData.title || 'Non spécifié'}
+- Expérience : ${profileData.experience_years || 0} ans
+- Niveau d'études : ${profileData.education_level || 'Non spécifié'}
+- Compétences : ${JSON.stringify(profileData.skills || [])}
+- Langues : ${JSON.stringify(profileData.languages || [])}
+- Bio : ${profileData.bio || 'Non renseignée'}
+- Statut professionnel : ${profileData.professional_status || 'Non spécifié'}
+
+MISSION :
+Fournis une analyse complète au format JSON STRICTEMENT comme suit :
+{
+  "score": <nombre entre 0 et 100>,
+  ${jobData ? `"skills_match": <nombre entre 0 et 100>,
+  "experience_match": <nombre entre 0 et 100>,
+  "education_match": <nombre entre 0 et 100>,` : ''}
+  "points_forts": [
+    "Point fort 1 spécifique et détaillé",
+    "Point fort 2 spécifique et détaillé",
+    "Point fort 3 spécifique et détaillé"
+  ],
+  "ameliorations": [
+    "Amélioration 1 concrète et actionnable",
+    "Amélioration 2 concrète et actionnable",
+    "Amélioration 3 concrète et actionnable"
+  ],
+  "formations_suggerees": [
+    {
+      "titre": "Nom de la formation",
+      "domaine": "Domaine",
+      "duree": "Durée estimée",
+      "niveau": "Niveau requis"
+    }
+  ],
+  "recommandations": [
+    "Recommandation 1 personnalisée",
+    "Recommandation 2 personnalisée",
+    "Recommandation 3 personnalisée"
+  ]
+}
+
+IMPORTANT : Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
+
+      // Appeler l'API IA centralisée
+      const aiResponse = await callAIService({
+        service_type: 'profile_analysis',
+        prompt: prompt,
+        context: {
+          profile: profileData,
+          job: jobData,
+          analysis_type: analysisType
+        },
+        temperature: 0.7,
+        max_tokens: 2000
+      });
+
+      if (!aiResponse.success || !aiResponse.data) {
+        throw new Error(aiResponse.error || 'Erreur lors de l\'appel à l\'API IA');
+      }
+
+      // Parser la réponse IA
+      let analysisResult;
+      try {
+        const content = aiResponse.data.content;
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('Format de réponse invalide');
+        }
+        analysisResult = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error('Erreur parsing:', parseError);
+        throw new Error('Impossible de parser la réponse IA');
+      }
+
+      // Sauvegarder l'analyse dans la base de données
+      const { data: savedAnalysis, error: saveError } = await supabase
+        .from('ai_profile_analysis')
+        .insert({
+          user_id: user.id,
+          offer_id: jobId || null,
+          score: analysisResult.score,
+          skills_match: analysisResult.skills_match || null,
+          experience_match: analysisResult.experience_match || null,
+          education_match: analysisResult.education_match || null,
+          points_forts: analysisResult.points_forts,
+          ameliorations: analysisResult.ameliorations,
+          formations_suggerees: analysisResult.formations_suggerees,
+          recommandations: analysisResult.recommandations,
+          rapport_json: analysisResult,
+          offer_title: jobData?.title || manual || 'Analyse générale',
+          offer_company: jobData?.company_name || null,
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (saveError) throw saveError;
+
       setAnalysis({
-        id: data.analysis_id,
-        score: data.score,
-        skills_match: data.skills_match,
-        experience_match: data.experience_match,
-        education_match: data.education_match,
-        points_forts: data.points_forts || [],
-        ameliorations: data.ameliorations || [],
-        formations_suggerees: data.formations_suggerees || [],
-        recommandations: data.recommandations || [],
-        offer_title: data.offer_title,
-        offer_company: data.offer_company,
+        id: savedAnalysis.id,
+        score: analysisResult.score,
+        skills_match: analysisResult.skills_match,
+        experience_match: analysisResult.experience_match,
+        education_match: analysisResult.education_match,
+        points_forts: analysisResult.points_forts || [],
+        ameliorations: analysisResult.ameliorations || [],
+        formations_suggerees: analysisResult.formations_suggerees || [],
+        recommandations: analysisResult.recommandations || [],
+        offer_title: jobData?.title || manual || 'Analyse générale',
+        offer_company: jobData?.company_name || null,
         date_analyse: new Date().toISOString(),
       });
 
@@ -247,7 +383,7 @@ export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs
       await supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Analyse de profil terminée',
-        message: `Votre score de compatibilité est de ${data.score}%`,
+        message: `Votre score de compatibilité est de ${analysisResult.score}%`,
         type: 'success',
       });
     } catch (error: any) {
