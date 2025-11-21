@@ -81,10 +81,18 @@ Deno.serve(async (req: Request) => {
     const maxTokens = serviceConfig.max_tokens || aiConfig.max_tokens || 2000;
     const apiProvider = aiConfig.api_provider || 'gemini';
 
-    let prompt = serviceConfig.prompt_template || '';
-    for (const [key, value] of Object.entries(payload)) {
-      const placeholder = `{{${key}}}`;
-      prompt = prompt.replace(new RegExp(placeholder, 'g'), String(value));
+    let prompt = '';
+
+    if (payload.prompt_content) {
+      prompt = payload.prompt_content;
+    } else if (serviceConfig.prompt_template) {
+      prompt = serviceConfig.prompt_template;
+      for (const [key, value] of Object.entries(payload)) {
+        const placeholder = `{{${key}}}`;
+        prompt = prompt.replace(new RegExp(placeholder, 'g'), String(value));
+      }
+    } else {
+      throw new Error('No prompt template configured for this service');
     }
 
     const systemInstructions = serviceConfig.system_instructions || aiConfig.system_prompt || '';
