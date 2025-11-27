@@ -48,20 +48,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
       if (settingsData) {
         const settingsMap: Record<string, any> = {};
         settingsData.forEach((setting: SiteSetting) => {
-          let value = setting.setting_value.value || setting.setting_value;
-
-          // Add cache-busting parameter for images
-          if ((setting.setting_key === 'site_logo' || setting.setting_key === 'site_favicon') && value && typeof value === 'string' && value.startsWith('http')) {
-            try {
-              const url = new URL(value);
-              url.searchParams.set('t', Date.now().toString());
-              value = url.toString();
-            } catch (e) {
-              // If URL parsing fails, use original value
-            }
-          }
-
-          settingsMap[setting.setting_key] = value;
+          settingsMap[setting.setting_key] = setting.setting_value.value || setting.setting_value;
         });
         setSettings(settingsMap);
       }

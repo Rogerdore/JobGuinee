@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { callAIService } from '../../utils/aiService';
 import { MessageCircle, Send, Loader, Bot, User, ArrowLeft } from 'lucide-react';
 
 interface Message {
@@ -47,59 +46,107 @@ export default function AICoachChat({ onNavigate }: AICoachChatProps = {}) {
   };
 
   const generateAIResponse = async (userMessage: string): Promise<string> => {
-    try {
-      // Récupérer l'historique de la conversation pour le contexte
-      const conversationHistory = messages
-        .slice(-5) // Derniers 5 messages pour le contexte
-        .map(m => `${m.type === 'user' ? 'Utilisateur' : 'Assistant'}: ${m.content}`)
-        .join('\n\n');
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-      const prompt = `Tu es JobCoach IA, un expert en développement de carrière et coach professionnel spécialisé dans le marché de l'emploi guinéen.
+    const responses: Record<string, string> = {
+      'entretien': `Pour préparer un entretien d'embauche efficace :
 
-Ton rôle : Aider les candidats dans leur recherche d'emploi, développement de carrière, et orientation professionnelle.
+1. **Recherche sur l'entreprise** : Étudiez son histoire, ses valeurs, ses produits/services
+2. **Préparez vos réponses** aux questions classiques (points forts/faibles, motivations, parcours)
+3. **Préparez vos questions** : Montrez votre intérêt pour le poste et l'entreprise
+4. **Soignez votre présentation** : Tenue professionnelle, ponctualité
+5. **Pratiquez** : Simulez l'entretien avec un ami ou devant un miroir
+6. **Préparez des exemples concrets** de vos réalisations (méthode STAR)
 
-Tes domaines d'expertise :
-- Préparation aux entretiens d'embauche
-- Rédaction de CV et lettres de motivation
-- Développement des compétences professionnelles
-- Négociation salariale
-- Reconversion professionnelle
-- Orientation de carrière
-- Stratégies de recherche d'emploi
+Voulez-vous que je vous aide à préparer des réponses spécifiques ?`,
 
-Ton style :
-- Bienveillant et encourageant
-- Concret et actionnable
-- Structuré et organisé
-- Adapté au contexte guinéen
+      'compétences': `Le développement des compétences est essentiel. Voici mes recommandations :
 
-Historique de la conversation :
-${conversationHistory}
+**Compétences techniques** :
+- Identifiez les compétences clés de votre secteur
+- Suivez des formations en ligne (Coursera, Udemy, LinkedIn Learning)
+- Obtenez des certifications reconnues
 
-Question de l'utilisateur : ${userMessage}
+**Compétences transversales** :
+- Communication et travail d'équipe
+- Résolution de problèmes
+- Gestion du temps
+- Leadership et management
 
-Réponds de manière détaillée, structurée (utilise des listes, des sections, des exemples concrets) et personnalisée. Garde un ton professionnel mais chaleureux.`;
+**Conseil** : Concentrez-vous sur 2-3 compétences à la fois et pratiquez-les régulièrement.
 
-      const aiResponse = await callAIService({
-        service_type: 'matching',
-        prompt: prompt,
-        context: {
-          user_message: userMessage,
-          conversation_history: conversationHistory,
-          session_id: sessionId
-        },
-        temperature: 0.8,
-        max_tokens: 1000
-      });
+Dans quel domaine souhaitez-vous vous perfectionner ?`,
 
-      if (!aiResponse.success || !aiResponse.data) {
-        throw new Error(aiResponse.error || 'Erreur lors de l\'appel à l\'API IA');
+      'lettre': `Pour une lettre de motivation percutante :
+
+**Structure** :
+1. **En-tête** : Vos coordonnées + celles de l'entreprise
+2. **Objet** : Poste visé + référence de l'annonce
+3. **Introduction** : Captez l'attention (votre intérêt pour le poste)
+4. **Corps** :
+   - Pourquoi vous ? (vos compétences/expériences)
+   - Pourquoi cette entreprise ? (votre motivation)
+5. **Conclusion** : Demande d'entretien + formule de politesse
+
+**Conseils clés** :
+- Personnalisez pour chaque offre
+- Soyez concis (1 page max)
+- Utilisez des exemples concrets
+- Montrez votre valeur ajoutée
+
+Je peux vous aider à rédiger votre lettre si vous le souhaitez !`,
+
+      'salaire': `La négociation salariale est cruciale. Voici mes conseils :
+
+**Avant l'entretien** :
+- Renseignez-vous sur les salaires du marché pour votre poste
+- Déterminez votre fourchette (minimum acceptable - objectif - idéal)
+- Listez vos atouts et réalisations
+
+**Pendant la négociation** :
+- Laissez l'employeur proposer en premier si possible
+- Justifiez votre demande avec des faits concrets
+- Soyez confiant mais flexible
+- Négociez aussi les avantages (télétravail, formation, primes)
+
+**Phrases clés** :
+- "D'après mes recherches et mon expérience, je viserais une rémunération entre X et Y"
+- "Au-delà du salaire, quels autres avantages proposez-vous ?"
+
+Quel est votre secteur d'activité pour des conseils plus précis ?`,
+
+      'reconversion': `La reconversion professionnelle nécessite une préparation solide :
+
+**Étape 1 : Bilan personnel**
+- Identifiez vos motivations réelles
+- Évaluez vos compétences transférables
+- Définissez vos objectifs de carrière
+
+**Étape 2 : Exploration**
+- Recherchez les métiers qui vous intéressent
+- Rencontrez des professionnels du secteur
+- Testez via des stages ou missions courtes
+
+**Étape 3 : Formation**
+- Identifiez les compétences manquantes
+- Suivez les formations nécessaires
+- Obtenez des certifications si besoin
+
+**Étape 4 : Transition**
+- Adaptez votre CV et profil LinkedIn
+- Réseautez dans votre nouveau secteur
+- Soyez patient et persévérant
+
+Vers quel domaine souhaitez-vous vous reconvertir ?`,
+    };
+
+    for (const [keyword, response] of Object.entries(responses)) {
+      if (userMessage.toLowerCase().includes(keyword)) {
+        return response;
       }
+    }
 
-      return aiResponse.data.content;
-    } catch (error) {
-      console.error('Erreur génération réponse IA:', error);
-      return `Je suis désolé, je rencontre une difficulté technique. Voici quelques conseils généraux :
+    return `Merci pour votre question ! Voici quelques conseils généraux :
 
 - **Soyez proactif** dans votre recherche d'emploi
 - **Mettez à jour régulièrement** votre profil et CV
@@ -107,8 +154,12 @@ Réponds de manière détaillée, structurée (utilise des listes, des sections,
 - **Continuez à apprendre** de nouvelles compétences
 - **Restez positif** et persévérant
 
-N'hésitez pas à reformuler votre question ou à poser une question différente.`;
-    }
+N'hésitez pas à me poser des questions plus spécifiques sur :
+- La préparation d'entretiens
+- Le développement de compétences
+- La rédaction de CV/lettre de motivation
+- La négociation salariale
+- La reconversion professionnelle`;
   };
 
   const handleSend = async (messageText?: string) => {

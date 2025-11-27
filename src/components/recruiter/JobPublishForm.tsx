@@ -1,31 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
-  GraduationCap, FileText, Users, Mail, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon, Download, Wand2, Image as ImageIcon,
-  Star, Pin, Sparkles
+  GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
+  CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
-import RichTextEditor from './RichTextEditor';
-import AutocompleteInput from '../forms/AutocompleteInput';
-import AutocompleteTagsInput from '../forms/AutocompleteTagsInput';
-import { useAutocomplete, useJobTemplates } from '../../hooks/useAutocomplete';
-import { useFormConfiguration } from '../../hooks/useFormConfiguration';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
   onClose: () => void;
-  companyData?: {
-    name: string;
-    description?: string;
-    location?: string;
-    website?: string;
-    industry?: string;
-    email?: string;
-    benefits?: string[];
-  };
-  editJobId?: string | null;
 }
 
 export interface JobFormData {
@@ -36,6 +19,8 @@ export interface JobFormData {
   position_level: string;
   deadline: string;
   description: string;
+  responsibilities: string;
+  profile: string;
   skills: string[];
   education_level: string;
   experience_required: string;
@@ -62,31 +47,7 @@ export interface JobFormData {
   legal_compliance: boolean;
 }
 
-const FormSection = ({
-  title,
-  icon: Icon,
-  children,
-  titleClass
-}: {
-  title: string;
-  icon: any;
-  children: React.ReactNode;
-  titleClass?: string;
-}) => (
-  <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-    <h3 className={`${titleClass || 'text-xl font-bold uppercase text-gray-800'} mb-4 flex items-center gap-2`}>
-      <Icon className="w-6 h-6 text-[#FF8C00]" />
-      {title}
-    </h3>
-    <div className="space-y-4">
-      {children}
-    </div>
-  </div>
-);
-
-export default function JobPublishForm({ onPublish, onClose, companyData, editJobId }: JobPublishFormProps) {
-  console.log('🎯 JobPublishForm rendered with props:', { editJobId, hasCompanyData: !!companyData });
-
+export default function JobPublishForm({ onPublish, onClose }: JobPublishFormProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -94,35 +55,8 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   const [benefitInput, setBenefitInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [importingFile, setImportingFile] = useState(false);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [previousDescription, setPreviousDescription] = useState<string>('');
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [basePricing, setBasePricing] = useState<any>(null);
-  const [pricingOptions, setPricingOptions] = useState<any[]>([]);
-  const [selectedPremium, setSelectedPremium] = useState<string | null>(null);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
-
-  const { suggestions: jobTitleSuggestions, incrementFrequency: incrementJobTitle } = useAutocomplete('job_title');
-  const { suggestions: skillSuggestions, incrementFrequency: incrementSkill } = useAutocomplete('skill');
-  const { suggestions: locationSuggestions, incrementFrequency: incrementLocation } = useAutocomplete('location');
-  const { suggestions: benefitSuggestions, incrementFrequency: incrementBenefit } = useAutocomplete('benefit');
-  const { suggestions: languageSuggestions } = useAutocomplete('language');
-  const { templates, saveTemplate, incrementTemplateUsage } = useJobTemplates();
-  const { getSectionConfig, getTitleClasses } = useFormConfiguration();
-
-  useEffect(() => {
-    const loadPricing = async () => {
-      const [base, premium] = await Promise.all([
-        supabase.from('job_publication_base_pricing').select('*').eq('is_active', true).maybeSingle(),
-        supabase.from('job_premium_pricing').select('*').eq('is_active', true).order('display_order')
-      ]);
-      setBasePricing(base.data);
-      setPricingOptions(premium.data || []);
-    };
-    loadPricing();
-  }, []);
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
@@ -132,19 +66,21 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
     position_level: 'Intermédiaire',
     deadline: '',
     description: '',
+    responsibilities: '',
+    profile: '',
     skills: [],
     education_level: 'Licence',
     experience_required: '3–5 ans',
     languages: [],
-    company_name: companyData?.name || '',
-    sector: companyData?.industry || 'Mines',
-    location: companyData?.location || '',
-    company_description: companyData?.description || '',
-    website: companyData?.website || '',
+    company_name: '',
+    sector: 'Mines',
+    location: '',
+    company_description: '',
+    website: '',
     salary_range: '',
     salary_type: 'Négociable',
-    benefits: companyData?.benefits || [],
-    application_email: companyData?.email || '',
+    benefits: [],
+    application_email: '',
     receive_in_platform: true,
     required_documents: ['CV', 'Lettre de motivation'],
     application_instructions: '',
@@ -156,85 +92,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
     auto_renewal: false,
     legal_compliance: false,
   });
-
-  // Load job data if editing
-  useEffect(() => {
-    console.log('📝 JobPublishForm useEffect - editJobId:', editJobId);
-    if (editJobId) {
-      console.log('📥 Loading job data for editing:', editJobId);
-      loadJobData(editJobId);
-    }
-  }, [editJobId]);
-
-  const loadJobData = async (jobId: string) => {
-    try {
-      console.log('🔄 loadJobData called with jobId:', jobId);
-      setLoading(true);
-      const { data: job, error } = await supabase
-        .from('jobs')
-        .select('*, companies(*)')
-        .eq('id', jobId)
-        .maybeSingle();
-
-      console.log('📊 Job data loaded:', { job, error });
-
-      if (error) throw error;
-
-      if (job) {
-        console.log('✅ Setting edit mode and form data');
-        setIsEditMode(true);
-
-        // Parse salary range
-        let salaryRange = '';
-        let salaryType = 'Fixe';
-        if (job.salary_min && job.salary_max) {
-          salaryRange = `${job.salary_min}-${job.salary_max}`;
-          salaryType = 'Fourchette';
-        } else if (job.salary_min) {
-          salaryRange = job.salary_min.toString();
-          salaryType = 'Minimum';
-        }
-
-        setFormData({
-          title: job.title || '',
-          category: job.category || 'Ressources Humaines',
-          contract_type: job.contract_type || 'CDI',
-          position_count: job.positions_available || 1,
-          position_level: job.experience_level || 'Intermédiaire',
-          deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
-          description: job.description || '',
-          skills: job.required_skills || [],
-          education_level: job.education_level || 'Licence',
-          experience_required: job.experience_required || '3–5 ans',
-          languages: job.languages || [],
-          company_name: job.companies?.name || '',
-          sector: job.sector || 'Mines',
-          location: job.location || '',
-          company_description: job.companies?.description || '',
-          website: job.companies?.website || '',
-          salary_range: salaryRange,
-          salary_type: salaryType,
-          benefits: job.benefits || [],
-          application_email: job.application_email || '',
-          receive_in_platform: job.receive_applications_in_platform || true,
-          required_documents: job.required_documents || [],
-          application_instructions: job.application_instructions || '',
-          visibility: job.visibility || 'public',
-          is_premium: job.is_premium || false,
-          announcement_language: job.language || 'Français',
-          auto_share: job.auto_share_social || false,
-          publication_duration: job.publication_duration || '30 jours',
-          auto_renewal: job.auto_renewal || false,
-          legal_compliance: false,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading job data:', error);
-      alert('Erreur lors du chargement des données de l\'offre');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
@@ -258,31 +115,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
     setFormData({ ...formData, benefits: formData.benefits.filter(b => b !== benefit) });
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Le logo ne doit pas dépasser 2 MB');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        alert('Veuillez sélectionner un fichier image');
-        return;
-      }
-      setFormData({ ...formData, company_logo: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemoveLogo = () => {
-    setFormData({ ...formData, company_logo: undefined });
-    setLogoPreview(null);
-  };
-
   const toggleLanguage = (lang: string) => {
     if (formData.languages.includes(lang)) {
       setFormData({ ...formData, languages: formData.languages.filter(l => l !== lang) });
@@ -304,204 +136,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
       e.preventDefault();
       action();
     }
-  };
-
-  const applyTemplate = (template: string) => {
-    // Sauvegarder l'état actuel avant d'appliquer le modèle
-    setPreviousDescription(formData.description);
-    setFormData({ ...formData, description: template });
-    setShowTemplateModal(false);
-  };
-
-  const undoTemplate = () => {
-    if (previousDescription !== undefined) {
-      setFormData({ ...formData, description: previousDescription });
-      setPreviousDescription('');
-    }
-  };
-
-  const getBeginnerTemplate = () => {
-    return `<h1 style="color: #0E2F56; font-size: 28px; margin-bottom: 20px;">${formData.title || 'TITRE DU POSTE'}</h1>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📋 INFORMATIONS GÉNÉRALES</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Contrat :</strong> ${formData.contract_type || 'CDI'}</li>
-  <li><strong>Localisation :</strong> ${formData.location || 'Conakry'}</li>
-  <li><strong>Catégorie :</strong> ${formData.category || 'À définir'}</li>
-  <li><strong>Nombre de postes :</strong> ${formData.position_count || '1'}</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
-<p style="line-height: 1.8;">Bref résumé du rôle, du service, et de l'objectif principal du poste. Expliquez en quelques phrases ce que le candidat fera au quotidien.</p>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES REQUISES</h2>
-<p style="margin-bottom: 8px;"><strong>Compétences techniques :</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li>Compétence 1 (niveau débutant)</li>
-  <li>Compétence 2 (notions de base suffisantes)</li>
-</ul>
-<p style="margin-bottom: 8px;"><strong>Compétences comportementales :</strong></p>
-<ul style="line-height: 1.8;">
-  <li>Ponctualité</li>
-  <li>Travail en équipe</li>
-  <li>Rigueur</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎓 QUALIFICATIONS</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Niveau d'études :</strong> Bac / BTS / Licence débutant</li>
-  <li><strong>Expérience :</strong> Pas d'expérience requise ou 0–1 an</li>
-  <li><strong>Langues :</strong> Français (courant)</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📩 MODALITÉS DE CANDIDATURE</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Email :</strong> ${formData.application_email || 'recrutement@entreprise.com'}</li>
-  <li><strong>Date limite :</strong> ${formData.deadline || 'À définir'}</li>
-  <li><strong>Documents requis :</strong> CV + Lettre de motivation</li>
-</ul>`;
-  };
-
-  const getIntermediateTemplate = () => {
-    return `<h1 style="color: #0E2F56; font-size: 28px; margin-bottom: 20px;">${formData.title || 'TITRE DU POSTE'}</h1>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📋 INFORMATIONS GÉNÉRALES</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Département :</strong> ${formData.category || 'À définir'}</li>
-  <li><strong>Type de contrat :</strong> ${formData.contract_type || 'CDI'}</li>
-  <li><strong>Localisation :</strong> ${formData.location || 'Conakry'}</li>
-  <li><strong>Nombre de postes :</strong> ${formData.position_count || '1'}</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
-<p style="line-height: 1.8;">Description du contexte, de la finalité du poste et des enjeux. Précisez comment ce poste s'inscrit dans la stratégie de l'entreprise et quel sera son impact.</p>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES CLÉS</h2>
-<p style="margin-bottom: 8px;"><strong>Hard skills :</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li>Compétence technique 1 (niveau intermédiaire)</li>
-  <li>Compétence technique 2 (maîtrise confirmée)</li>
-  <li>Maîtrise des outils bureautiques (Excel intermédiaire/avancé)</li>
-</ul>
-<p style="margin-bottom: 8px;"><strong>Soft skills :</strong></p>
-<ul style="line-height: 1.8;">
-  <li>Organisation et gestion du temps</li>
-  <li>Communication efficace</li>
-  <li>Capacité à résoudre des problèmes</li>
-  <li>Adaptabilité</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎓 QUALIFICATIONS</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Niveau d'études :</strong> Licence / Master</li>
-  <li><strong>Expérience :</strong> 2–5 ans dans un poste similaire</li>
-  <li><strong>Langues :</strong> Français (courant), Anglais (atout)</li>
-  <li><strong>Outils :</strong> Logiciels métier / Excel avancé</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🏢 CONDITIONS DE TRAVAIL</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Environnement :</strong> Bureau moderne avec équipements adaptés</li>
-  <li><strong>Horaires :</strong> Du lundi au vendredi, 8h-17h</li>
-  <li><strong>Avantages :</strong> Assurance santé, primes de performance, formation continue</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📩 MODALITÉS DE CANDIDATURE</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Email :</strong> ${formData.application_email || 'recrutement@entreprise.com'}</li>
-  <li><strong>Date limite :</strong> ${formData.deadline || 'À définir'}</li>
-  <li><strong>Pièces à fournir :</strong> CV détaillé, Lettre de motivation, Diplômes</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🔄 PROCESSUS DE RECRUTEMENT</h2>
-<p style="line-height: 1.8;">Analyse des dossiers → Test technique → Entretien RH → Entretien avec le manager → Décision finale</p>`;
-  };
-
-  const getSeniorTemplate = () => {
-    return `<h1 style="color: #0E2F56; font-size: 32px; margin-bottom: 20px;">${formData.title || 'TITRE DU POSTE'}</h1>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎯 INFORMATIONS CLÉS</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Direction / Département :</strong> ${formData.category || 'Direction Générale'}</li>
-  <li><strong>Référence de l'offre :</strong> ${formData.title?.toUpperCase().replace(/\s+/g, '-') || 'REF-001'}-2024</li>
-  <li><strong>Type de contrat :</strong> ${formData.contract_type || 'CDI'}</li>
-  <li><strong>Localisation stratégique :</strong> ${formData.location || 'Conakry'}</li>
-  <li><strong>Nombre de postes :</strong> ${formData.position_count || '1'}</li>
-  <li><strong>Prise de fonction :</strong> Dès que possible</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🏢 PRÉSENTATION DE L'ENTREPRISE</h2>
-<p style="line-height: 1.8;">${formData.company_description || 'Leader dans son secteur d\'activité, notre entreprise se distingue par son excellence opérationnelle, son innovation constante et son engagement envers le développement économique. Nous recherchons des talents d\'exception pour accompagner notre croissance stratégique.'}</p>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📝 PRÉSENTATION DU POSTE</h2>
-<p style="line-height: 1.8;"><strong>Contexte :</strong> Dans le cadre de notre expansion et de la structuration de nos opérations, nous recrutons un profil senior pour piloter des initiatives stratégiques majeures.</p>
-<p style="line-height: 1.8; margin-top: 12px;"><strong>Objectifs stratégiques :</strong></p>
-<ul style="line-height: 1.8;">
-  <li>Définir et mettre en œuvre la stratégie du département</li>
-  <li>Optimiser la performance opérationnelle et financière</li>
-  <li>Assurer la conformité et l'excellence des processus</li>
-</ul>
-<p style="line-height: 1.8; margin-top: 12px;"><strong>Impact sur l'organisation :</strong> Ce poste stratégique a un impact direct sur la performance globale de l'entreprise et contribue activement aux décisions de la Direction Générale.</p>
-<p style="line-height: 1.8; margin-top: 12px;"><strong>Interactions hiérarchiques :</strong> Rattachement direct à la Direction Générale. Coordination étroite avec les Directeurs de département.</p>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💼 COMPÉTENCES REQUISES</h2>
-
-<p style="margin-bottom: 8px;"><strong>Hard skills :</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li>Expertise technique avancée dans le domaine ${formData.category || '[secteur]'}</li>
-  <li>Maîtrise des méthodologies professionnelles (Lean, Six Sigma, Agile, etc.)</li>
-  <li>Connaissance approfondie des normes et réglementations applicables</li>
-</ul>
-
-<p style="margin-bottom: 8px;"><strong>Soft skills :</strong></p>
-<ul style="line-height: 1.8; margin-bottom: 16px;">
-  <li>Leadership et influence</li>
-  <li>Gestion de conflit et négociation</li>
-  <li>Prise de décision sous pression</li>
-  <li>Pensée analytique et stratégique</li>
-</ul>
-
-<p style="margin-bottom: 8px;"><strong>Outils & technologies :</strong></p>
-<ul style="line-height: 1.8;">
-  <li>ERP / Systèmes de gestion métier (SAP, Oracle, etc.)</li>
-  <li>Tableaux de bord avancés (Power BI, Tableau)</li>
-  <li>Excel expert (VBA, modélisation financière)</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🎓 QUALIFICATIONS</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Niveau d'études :</strong> Master / MBA / équivalent (Grande École ou Université reconnue)</li>
-  <li><strong>Expérience :</strong> 5–10+ ans d'expérience sur des postes similaires avec responsabilités managériales</li>
-  <li><strong>Langues :</strong> Français obligatoire (courant), Anglais professionnel exigé</li>
-  <li><strong>Certifications / spécialités :</strong> PMP, Six Sigma Black Belt, ou équivalent (atout majeur)</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">💰 CONDITIONS & AVANTAGES</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Rémunération :</strong> Package compétitif aligné sur le marché international</li>
-  <li><strong>Primes / avantages sociaux :</strong> Primes de performance, bonus annuel, assurance santé premium</li>
-  <li><strong>Autres avantages :</strong> Véhicule de fonction, logement (si applicable), voyages professionnels</li>
-  <li><strong>Environnement :</strong> Poste stratégique avec forte visibilité et impact</li>
-</ul>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">🔄 PROCESSUS DE RECRUTEMENT</h2>
-<ol style="line-height: 1.8;">
-  <li><strong>Présélection :</strong> Analyse approfondie des dossiers</li>
-  <li><strong>Entretien Direction / RH :</strong> Évaluation du fit culturel et des motivations</li>
-  <li><strong>Évaluation technique :</strong> Étude de cas / Assessment center</li>
-  <li><strong>Validation Direction Générale :</strong> Entretien final avec le DG</li>
-  <li><strong>Offre :</strong> Proposition et négociation du package</li>
-</ol>
-
-<h2 style="color: #FF8C00; font-size: 20px; margin-top: 24px; margin-bottom: 12px;">📩 MODALITÉS DE CANDIDATURE</h2>
-<ul style="line-height: 1.8;">
-  <li><strong>Email :</strong> ${formData.application_email || 'recrutement.senior@entreprise.com'}</li>
-  <li><strong>Objet :</strong> Candidature ${formData.title || '[Poste]'} - [NOM Prénom]</li>
-  <li><strong>Deadline :</strong> ${formData.deadline || 'À définir'}</li>
-  <li><strong>Dossier complet :</strong> CV détaillé, Lettre de motivation, Copies des diplômes, Attestations de travail, Références professionnelles</li>
-</ul>
-
-<p style="margin-top: 24px; padding: 16px; background-color: #f3f4f6; border-left: 4px solid #FF8C00; line-height: 1.8;"><strong>Note :</strong> Seuls les candidats présélectionnés seront contactés. Toute candidature incomplète sera automatiquement rejetée. La confidentialité des dossiers est garantie.</p>`;
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -561,6 +195,16 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
     const aiGeneratedData = {
       description: `Nous recherchons un(e) ${formData.title} talentueux(se) pour rejoindre notre équipe dynamique basée à ${formData.location}. Ce poste stratégique offre l'opportunité de contribuer activement au développement de nos activités dans un environnement professionnel stimulant.`,
 
+      responsibilities: `• Assurer la gestion quotidienne des activités du département ${formData.category}
+• Piloter et coordonner les projets stratégiques en lien avec le poste
+• Développer et mettre en œuvre des processus d'amélioration continue
+• Collaborer étroitement avec les équipes transverses
+• Garantir le respect des standards de qualité et des procédures internes
+• Participer activement aux réunions de coordination et de reporting
+• Contribuer à l'innovation et à l'optimisation des pratiques`,
+
+      profile: `Nous recherchons un profil dynamique et rigoureux, doté d'excellentes compétences en ${formData.category.toLowerCase()}. Le candidat idéal possède une forte capacité d'adaptation, un excellent sens de l'organisation et une aptitude avérée à travailler en équipe. Autonome et proactif, vous faites preuve d'un engagement sans faille dans l'atteinte des objectifs fixés.`,
+
       skills: [
         'Leadership',
         'Gestion de projet',
@@ -588,6 +232,8 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
     setFormData({
       ...formData,
       description: aiGeneratedData.description,
+      responsibilities: aiGeneratedData.responsibilities,
+      profile: aiGeneratedData.profile,
       skills: [...new Set([...formData.skills, ...aiGeneratedData.skills])],
       benefits: [...new Set([...formData.benefits, ...aiGeneratedData.benefits])],
       company_description: aiGeneratedData.company_description || formData.company_description,
@@ -599,173 +245,39 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
   };
 
   const handlePublish = async () => {
-    console.log('🔄 handlePublish called');
-    console.log('Form data:', formData);
-
-    const missingFields = [];
-    if (!formData.title) missingFields.push('Titre du poste');
-    if (!formData.location) missingFields.push('Localisation');
-    if (!formData.description) missingFields.push('Présentation du poste');
-    if (!formData.company_name) missingFields.push('Nom de l\'entreprise');
-    if (!formData.application_email) missingFields.push('Email de candidature');
-    if (!formData.deadline) missingFields.push('Date limite');
-    if (!formData.legal_compliance) missingFields.push('Conformité légale (case à cocher)');
-
-    if (missingFields.length > 0) {
-      alert(`Veuillez remplir les champs obligatoires manquants:\n\n• ${missingFields.join('\n• ')}`);
+    if (!formData.title || !formData.location || !formData.description || !formData.legal_compliance) {
+      alert('Veuillez remplir tous les champs obligatoires et accepter la conformité légale.');
       return;
     }
 
-    try {
-      setLoading(true);
-      console.log('📤 Calling onPublish...');
-      await onPublish(formData);
-
-      const baseAmount = basePricing?.price || 500000;
-      const premiumOption = selectedPremium ? pricingOptions.find(o => o.id === selectedPremium) : null;
-      const premiumAmount = premiumOption?.price || 0;
-      const totalAmount = baseAmount + premiumAmount;
-
-      let message = `Publication créée avec succès!\n\n`;
-      message += `Coût de publication: ${baseAmount.toLocaleString()} GNF\n`;
-      if (premiumOption) {
-        message += `Option premium (${premiumOption.name}): ${premiumAmount.toLocaleString()} GNF\n`;
-      }
-      message += `\nMontant total à payer: ${totalAmount.toLocaleString()} GNF`;
-      alert(message);
-
-      console.log('✅ onPublish completed');
-    } catch (error) {
-      console.error('❌ Error in handlePublish:', error);
-      alert('Une erreur est survenue lors de la publication');
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    await onPublish(formData);
+    setLoading(false);
   };
 
+  const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+    <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <Icon className="w-6 h-6 text-[#FF8C00]" />
+        {title}
+      </h3>
+      <div className="space-y-4">
+        {children}
+      </div>
+    </div>
+  );
+
   return (
-    <>
-      {/* Template Selection Modal */}
-      {showTemplateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
-              <div>
-                <h3 className="text-2xl font-bold">Choisissez votre modèle</h3>
-                <p className="text-sm text-purple-100">Sélectionnez le modèle adapté au niveau du poste</p>
-              </div>
-              <button
-                onClick={() => setShowTemplateModal(false)}
-                className="p-2 hover:bg-white/20 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {/* Version 1 - Débutant */}
-              <div
-                onClick={() => applyTemplate(getBeginnerTemplate())}
-                className="border-2 border-green-200 rounded-xl p-6 hover:border-green-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-green-50 to-green-100"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-xl font-bold text-green-900 mb-2">VERSION DÉBUTANT</h4>
-                    <p className="text-sm text-green-800 mb-3">Simple, claire et guidée - Idéale pour les profils junior ou sans expérience</p>
-                    <ul className="text-sm text-green-700 space-y-1">
-                      <li>✅ Structure simplifiée</li>
-                      <li>✅ Missions de base</li>
-                      <li>✅ Compétences comportementales</li>
-                      <li>✅ Expérience : 0-1 an</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Version 2 - Intermédiaire */}
-              <div
-                onClick={() => applyTemplate(getIntermediateTemplate())}
-                className="border-2 border-blue-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-blue-50 to-blue-100"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-xl font-bold text-blue-900 mb-2">VERSION INTERMÉDIAIRE</h4>
-                    <p className="text-sm text-blue-800 mb-3">Plus détaillée, orientée responsabilités - Pour profils confirmés</p>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li>✅ Missions & responsabilités détaillées</li>
-                      <li>✅ Hard skills et Soft skills</li>
-                      <li>✅ Conditions de travail</li>
-                      <li>✅ Processus de recrutement</li>
-                      <li>✅ Expérience : 2-5 ans</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Version 3 - Senior */}
-              <div
-                onClick={() => applyTemplate(getSeniorTemplate())}
-                className="border-2 border-orange-200 rounded-xl p-6 hover:border-orange-500 hover:shadow-lg transition cursor-pointer bg-gradient-to-r from-orange-50 to-orange-100"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-xl font-bold text-orange-900 mb-2">VERSION SENIOR</h4>
-                    <p className="text-sm text-orange-800 mb-3">Avancée, stratégique et complète - Pour postes de direction</p>
-                    <ul className="text-sm text-orange-700 space-y-1">
-                      <li>✅ Présentation de l'entreprise</li>
-                      <li>✅ Missions stratégiques (3 niveaux)</li>
-                      <li>✅ Leadership & management</li>
-                      <li>✅ Conditions & avantages détaillés</li>
-                      <li>✅ Processus de recrutement complet</li>
-                      <li>✅ Expérience : 5-10+ ans</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200">
-              <p className="text-sm text-gray-600 text-center mb-3">
-                💡 <strong>Astuce :</strong> Choisissez le modèle qui correspond au niveau d'expérience recherché. Vous pourrez ensuite modifier le contenu dans l'éditeur.
-              </p>
-              {formData.description && (
-                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-3 text-center">
-                  <p className="text-sm text-yellow-800 font-medium">
-                    ⚠️ <strong>Attention :</strong> Vous avez déjà du contenu dans l'éditeur.
-                    Appliquer un modèle remplacera votre texte actuel.
-                    Vous pourrez ensuite cliquer sur "Annuler" pour le récupérer.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Form */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
         <div className="sticky top-0 bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
               <Briefcase className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">
-                {isEditMode ? 'Modifier l\'offre d\'emploi' : 'Publier une offre d\'emploi'}
-              </h2>
-              <p className="text-sm text-blue-100">
-                {isEditMode ? 'Modifiez les informations de votre annonce' : 'Créez votre annonce professionnelle complète'}
-              </p>
+              <h2 className="text-2xl font-bold">Publier une offre d'emploi</h2>
+              <p className="text-sm text-blue-100">Créez votre annonce professionnelle complète</p>
             </div>
           </div>
           <button
@@ -783,25 +295,60 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </p>
           </div>
 
-          <FormSection
-            title={getSectionConfig('general_info')?.section_title || '1. INFORMATIONS GÉNÉRALES'}
-            icon={FileText}
-            titleClass={getTitleClasses('general_info')}
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
+            <div>
+              <label htmlFor="file-import" className="cursor-pointer">
+                <div className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition shadow-md">
+                  <UploadIcon className="w-5 h-5" />
+                  <span>{importingFile ? 'Import en cours...' : 'Importer depuis PDF/DOCX'}</span>
+                </div>
+              </label>
+              <input
+                id="file-import"
+                type="file"
+                accept=".pdf,.docx,.doc"
+                onChange={handleImportFile}
+                className="hidden"
+                disabled={importingFile}
+              />
+              <p className="text-xs text-gray-600 mt-2 text-center">Remplir automatiquement depuis un fichier</p>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={handleGenerateWithAI}
+                disabled={isGeneratingAI || !isPremium}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold rounded-xl transition shadow-md ${
+                  isPremium
+                    ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{isGeneratingAI ? 'Génération IA...' : 'Générer avec IA'}</span>
+                {!isPremium && <span className="text-xs">(Premium)</span>}
+              </button>
+              <p className="text-xs text-gray-600 mt-2 text-center">
+                {isPremium ? 'Remplir automatiquement avec l\'IA' : 'Abonnement Premium requis'}
+              </p>
+            </div>
+          </div>
+
+          <FormSection title="1. Informations générales" icon={FileText}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <AutocompleteInput
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Titre du poste *
+                </label>
+                <input
+                  type="text"
                   value={formData.title}
-                  onChange={(value) => {
-                    setFormData({ ...formData, title: value });
-                    if (value) incrementJobTitle(value);
-                  }}
-                  suggestions={jobTitleSuggestions}
-                  label="Titre du poste"
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="Ex : Superviseur Ressources Humaines"
                   required
-                  icon={Briefcase}
-                  allowCustom={true}
                 />
               </div>
 
@@ -814,48 +361,14 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
-                  <option value="Administration">Administration</option>
-                  <option value="Agriculture">Agriculture / Agroalimentaire</option>
-                  <option value="Architecture">Architecture / Urbanisme</option>
-                  <option value="Assurance">Assurance</option>
-                  <option value="Audit">Audit / Conseil</option>
-                  <option value="Automobile">Automobile</option>
-                  <option value="Banque">Banque</option>
-                  <option value="BTP">BTP / Construction</option>
-                  <option value="Commerce">Commerce / Distribution</option>
-                  <option value="Communication">Communication / Marketing</option>
-                  <option value="Comptabilité">Comptabilité / Gestion</option>
-                  <option value="Culture">Culture / Arts</option>
-                  <option value="Défense">Défense / Sécurité</option>
-                  <option value="Design">Design / Création</option>
-                  <option value="Droit">Droit / Juridique</option>
-                  <option value="Éducation">Éducation / Formation</option>
-                  <option value="Énergie">Énergie / Utilities</option>
-                  <option value="Environnement">Environnement / Développement Durable</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Hôtellerie">Hôtellerie / Restauration</option>
-                  <option value="Immobilier">Immobilier</option>
-                  <option value="Industrie">Industrie / Manufacturing</option>
-                  <option value="Ingénierie">Ingénierie</option>
-                  <option value="IT">IT / Informatique</option>
-                  <option value="Logistique">Logistique / Supply Chain</option>
-                  <option value="Médias">Médias / Presse</option>
-                  <option value="Mines">Mines / Métallurgie</option>
-                  <option value="ONG">ONG / Humanitaire</option>
-                  <option value="Pétrole">Pétrole / Gaz</option>
-                  <option value="Pharmacie">Pharmacie</option>
-                  <option value="Production">Production / Manufacturing</option>
-                  <option value="Qualité">Qualité / HSE</option>
-                  <option value="Recherche">Recherche & Développement</option>
                   <option value="Ressources Humaines">Ressources Humaines</option>
-                  <option value="Santé">Santé / Médical</option>
-                  <option value="Services">Services aux Entreprises</option>
-                  <option value="Sport">Sport / Loisirs</option>
-                  <option value="Télécommunications">Télécommunications</option>
-                  <option value="Tourisme">Tourisme</option>
-                  <option value="Transport">Transport / Logistique</option>
-                  <option value="Vente">Vente / Commercial</option>
-                  <option value="Autre">Autre</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Mines">Mines</option>
+                  <option value="Sécurité">Sécurité</option>
+                  <option value="Transport">Transport</option>
+                  <option value="IT">IT / Informatique</option>
+                  <option value="BTP">BTP</option>
+                  <option value="Santé">Santé</option>
                 </select>
               </div>
 
@@ -921,71 +434,86 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection
-            title={getSectionConfig('job_details')?.section_title || '2. DÉTAILS DU POSTE'}
-            icon={FileText}
-            titleClass={getTitleClasses('job_details')}
-          >
+          <FormSection title="2. Description du poste" icon={FileText}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Description complète de l'offre *
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Présentation du poste *
                 </label>
-                <p className="text-xs text-gray-600 mb-3">
-                  Utilisez l'éditeur ci-dessous pour rédiger, formater, coller du texte, et importer des PDF, images ou scans.
-                </p>
-                <RichTextEditor
+                <textarea
                   value={formData.description}
-                  onChange={(value) => setFormData({ ...formData, description: value })}
-                  placeholder="Commencez à rédiger la description de l'offre... Vous pouvez également coller du texte ou importer des fichiers PDF/Images."
-                  onGenerateWithAI={handleGenerateWithAI}
-                  isGeneratingAI={isGeneratingAI}
-                  isPremium={isPremium}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
+                  placeholder="Décrivez brièvement le poste..."
+                  required
                 />
-              </div>
-
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowTemplateModal(true)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition shadow-md"
-                  >
-                    <Wand2 className="w-5 h-5" />
-                    Utiliser un modèle professionnel
-                  </button>
-
-                  {previousDescription && (
-                    <button
-                      type="button"
-                      onClick={undoTemplate}
-                      className="flex items-center gap-2 px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition shadow-md"
-                      title="Annuler le modèle et revenir à la version précédente"
-                    >
-                      <X className="w-5 h-5" />
-                      Annuler
-                    </button>
-                  )}
-                </div>
-                {previousDescription && (
-                  <p className="text-xs text-orange-600 mt-2 text-center font-medium">
-                    💡 Un modèle a été appliqué. Cliquez sur "Annuler" pour revenir à la version précédente.
-                  </p>
-                )}
               </div>
 
               <div>
-                <AutocompleteTagsInput
-                  values={formData.skills}
-                  onChange={(skills) => {
-                    setFormData({ ...formData, skills });
-                    skills.forEach(skill => incrementSkill(skill));
-                  }}
-                  suggestions={skillSuggestions}
-                  label="Compétences clés"
-                  placeholder="Ex: Excel, Leadership, Gestion de projet..."
-                  maxTags={15}
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Missions principales
+                </label>
+                <textarea
+                  value={formData.responsibilities}
+                  onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
+                  placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Profil recherché
+                </label>
+                <textarea
+                  value={formData.profile}
+                  onChange={(e) => setFormData({ ...formData, profile: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
+                  placeholder="Indiquez le type de profil souhaité..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Compétences clés
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, handleAddSkill)}
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                    placeholder="Ex: Excel, Leadership, Gestion de projet..."
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddSkill}
+                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2"
+                    >
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:text-blue-900 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1046,11 +574,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection
-            title={getSectionConfig('company_info')?.section_title || '3. INFORMATIONS ENTREPRISE'}
-            icon={Building2}
-            titleClass={getTitleClasses('company_info')}
-          >
+          <FormSection title="3. Informations sur l'entreprise" icon={Building2}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1066,52 +590,6 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-[#FF8C00]" />
-                  Logo de l'entreprise
-                </label>
-                <div className="flex items-start gap-4">
-                  {logoPreview ? (
-                    <div className="relative">
-                      <img
-                        src={logoPreview}
-                        alt="Logo preview"
-                        className="w-24 h-24 object-contain border-2 border-gray-300 rounded-lg bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleRemoveLogo}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                      <ImageIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
-                      <div className="px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-semibold rounded-xl transition shadow-md text-center">
-                        <UploadIcon className="w-4 h-4 inline-block mr-2" />
-                        {logoPreview ? 'Changer le logo' : 'Uploader le logo'}
-                      </div>
-                    </label>
-                    <p className="text-xs text-gray-600 mt-2">
-                      Format : JPG, PNG, SVG • Taille max : 2 MB • Recommandé : 200x200px
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Secteur d'activité *
@@ -1121,64 +599,28 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                   onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
-                  <option value="Administration">Administration</option>
-                  <option value="Agriculture">Agriculture / Agroalimentaire</option>
-                  <option value="Architecture">Architecture / Urbanisme</option>
-                  <option value="Assurance">Assurance</option>
-                  <option value="Audit">Audit / Conseil</option>
-                  <option value="Automobile">Automobile</option>
-                  <option value="Banque">Banque</option>
-                  <option value="BTP">BTP / Construction</option>
-                  <option value="Commerce">Commerce / Distribution</option>
-                  <option value="Communication">Communication / Marketing</option>
-                  <option value="Comptabilité">Comptabilité / Gestion</option>
-                  <option value="Culture">Culture / Arts</option>
-                  <option value="Défense">Défense / Sécurité</option>
-                  <option value="Design">Design / Création</option>
-                  <option value="Droit">Droit / Juridique</option>
-                  <option value="Éducation">Éducation / Formation</option>
-                  <option value="Énergie">Énergie / Utilities</option>
-                  <option value="Environnement">Environnement / Développement Durable</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Hôtellerie">Hôtellerie / Restauration</option>
-                  <option value="Immobilier">Immobilier</option>
-                  <option value="Industrie">Industrie / Manufacturing</option>
-                  <option value="Ingénierie">Ingénierie</option>
-                  <option value="IT">IT / Informatique</option>
-                  <option value="Logistique">Logistique / Supply Chain</option>
-                  <option value="Médias">Médias / Presse</option>
-                  <option value="Mines">Mines / Métallurgie</option>
-                  <option value="ONG">ONG / Humanitaire</option>
-                  <option value="Pétrole">Pétrole / Gaz</option>
-                  <option value="Pharmacie">Pharmacie</option>
-                  <option value="Production">Production / Manufacturing</option>
-                  <option value="Qualité">Qualité / HSE</option>
-                  <option value="Recherche">Recherche & Développement</option>
+                  <option value="Mines">Mines</option>
+                  <option value="BTP">BTP</option>
                   <option value="RH">Ressources Humaines</option>
-                  <option value="Santé">Santé / Médical</option>
-                  <option value="Services">Services aux Entreprises</option>
-                  <option value="Sport">Sport / Loisirs</option>
-                  <option value="Télécommunications">Télécommunications</option>
-                  <option value="Tourisme">Tourisme</option>
-                  <option value="Transport">Transport / Logistique</option>
-                  <option value="Vente">Vente / Commercial</option>
-                  <option value="Autre">Autre</option>
+                  <option value="Comptabilité">Comptabilité</option>
+                  <option value="Sécurité">Sécurité</option>
+                  <option value="Transport">Transport</option>
+                  <option value="IT">IT / Informatique</option>
                 </select>
               </div>
 
               <div>
-                <AutocompleteInput
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <MapPin className="w-4 h-4 mr-2 text-[#FF8C00]" />
+                  Localisation du poste *
+                </label>
+                <input
+                  type="text"
                   value={formData.location}
-                  onChange={(value) => {
-                    setFormData({ ...formData, location: value });
-                    if (value) incrementLocation(value);
-                  }}
-                  suggestions={locationSuggestions}
-                  label="Localisation du poste"
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="Ex : Boké, Kamsar"
                   required
-                  icon={MapPin}
-                  allowCustom={true}
                 />
               </div>
 
@@ -1210,11 +652,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection
-            title={getSectionConfig('salary_benefits')?.section_title || '4. RÉMUNÉRATION ET AVANTAGES'}
-            icon={DollarSign}
-            titleClass={getTitleClasses('salary_benefits')}
-          >
+          <FormSection title="4. Rémunération et avantages" icon={DollarSign}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1245,26 +683,48 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
               </div>
 
               <div>
-                <AutocompleteTagsInput
-                  values={formData.benefits}
-                  onChange={(benefits) => {
-                    setFormData({ ...formData, benefits });
-                    benefits.forEach(benefit => incrementBenefit(benefit));
-                  }}
-                  suggestions={benefitSuggestions}
-                  label="Avantages"
-                  placeholder="Ex: logement, repas, transport, couverture santé..."
-                  maxTags={10}
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Avantages
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={benefitInput}
+                    onChange={(e) => setBenefitInput(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, handleAddBenefit)}
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                    placeholder="Ex: logement, repas, transport, couverture santé..."
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddBenefit}
+                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.benefits.map((benefit, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2"
+                    >
+                      {benefit}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBenefit(benefit)}
+                        className="hover:text-green-900 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </FormSection>
 
-          <FormSection
-            title={getSectionConfig('application_details')?.section_title || '5. MODALITÉS DE CANDIDATURE'}
-            icon={Mail}
-            titleClass={getTitleClasses('application_details')}
-          >
+          <FormSection title="5. Modalités de candidature" icon={Mail}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1326,11 +786,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection
-            title={getSectionConfig('publication_settings')?.section_title || '6. PARAMÈTRES DE PUBLICATION'}
-            icon={Eye}
-            titleClass={getTitleClasses('publication_settings')}
-          >
+          <FormSection title="6. Options de visibilité" icon={Eye}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1353,47 +809,16 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border-2 border-orange-300">
-                <h4 className="font-bold text-lg mb-3 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-orange-600" />
-                  Coût de Publication
-                </h4>
-                {basePricing && (
-                  <div className="bg-white rounded-lg p-4 mb-4">
-                    <div className="font-bold text-2xl text-orange-600">{basePricing.price.toLocaleString()} GNF</div>
-                    <div className="text-sm text-gray-600 mt-1">{basePricing.description}</div>
-                    <div className="text-xs text-gray-500 mt-1">Durée: {basePricing.duration_days} jours</div>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
-                <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
-                  Options Premium (Optionnel)
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pricingOptions.map(opt => (
-                    <label key={opt.id} className={`cursor-pointer p-4 rounded-lg border-2 transition ${selectedPremium === opt.id ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white hover:border-blue-400'}`}>
-                      <input type="radio" name="premium" checked={selectedPremium === opt.id} onChange={() => setSelectedPremium(opt.id)} className="hidden" />
-                      <div className="flex items-start gap-3">
-                        {opt.feature_type === 'pinned' && <Pin className="w-5 h-5 text-purple-600 mt-1" />}
-                        {opt.feature_type === 'featured' && <Star className="w-5 h-5 text-amber-600 mt-1" />}
-                        {opt.feature_type === 'both' && <Sparkles className="w-5 h-5 text-blue-600 mt-1" />}
-                        <div className="flex-1">
-                          <div className="font-bold text-gray-900">{opt.name}</div>
-                          <div className="text-sm text-gray-600 mt-1">{opt.description}</div>
-                          <div className="font-bold text-blue-600 mt-2">+{opt.price.toLocaleString()} GNF</div>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                  <label className="cursor-pointer p-4 rounded-lg border-2 border-gray-300 bg-white hover:border-blue-400 transition">
-                    <input type="radio" name="premium" checked={!selectedPremium} onChange={() => setSelectedPremium(null)} className="hidden" />
-                    <div className="font-bold text-gray-900">Sans option</div>
-                    <div className="text-sm text-gray-600 mt-1">Publication standard uniquement</div>
-                  </label>
-                </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_premium}
+                    onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
+                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Mettre l'annonce en avant (Premium)</span>
+                </label>
               </div>
 
               <div>
@@ -1425,11 +850,7 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
             </div>
           </FormSection>
 
-          <FormSection
-            title={getSectionConfig('legal_compliance')?.section_title || '7. CONFORMITÉ ET VALIDATION'}
-            icon={CheckCircle2}
-            titleClass={getTitleClasses('legal_compliance')}
-          >
+          <FormSection title="7. Publication et validation" icon={CheckCircle2}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1477,34 +898,31 @@ export default function JobPublishForm({ onPublish, onClose, companyData, editJo
 
           <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
             <button
-              type="button"
               onClick={onClose}
               className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
             >
               Annuler
             </button>
             <button
-              type="button"
               onClick={handlePublish}
-              disabled={!formData.title || !formData.location || !formData.description || !formData.company_name || !formData.application_email || !formData.deadline || !formData.legal_compliance || loading}
+              disabled={!formData.title || !formData.location || !formData.description || !formData.legal_compliance || loading}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
-                  {isEditMode ? 'Enregistrement...' : 'Publication en cours...'}
+                  Publication en cours...
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-5 h-5" />
-                  {isEditMode ? 'Enregistrer les modifications' : 'Publier mon offre'}
+                  Publier mon offre
                 </>
               )}
             </button>
           </div>
         </div>
       </div>
-      </div>
-    </>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   MessageSquare,
   BarChart3,
   Wand2,
+  Download,
   Sparkles,
   Plus,
   Filter,
@@ -15,22 +16,6 @@ import {
   TrendingUp,
   Settings,
   Target,
-  Database,
-  X,
-  AlertCircle,
-  Download,
-  MessageCircle,
-  Calendar,
-  Mail,
-  CheckCircle,
-  Bell,
-  ShieldCheck,
-  CreditCard,
-  Edit2,
-  Star,
-  Eye,
-  Trash2,
-  Copy,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -42,9 +27,7 @@ import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
-import ExportApplicationsButton from '../components/recruiter/ExportApplicationsButton';
-import MessagingSystem from '../components/messaging/MessagingSystem';
-import SkeletonLoader from '../components/recruiter/SkeletonLoader';
+import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -104,33 +87,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [selectedJobAnalytics, setSelectedJobAnalytics] = useState<string>('all');
   const [showMatchingModal, setShowMatchingModal] = useState(false);
   const [selectedJobForMatching, setSelectedJobForMatching] = useState<Job | null>(null);
-  const [showMessageModal, setShowMessageModal] = useState(false);
-  const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [selectedApplicationForProfile, setSelectedApplicationForProfile] = useState<any>(null);
-  const [showPaymentContactModal, setShowPaymentContactModal] = useState(false);
-  const [selectedJobForPayment, setSelectedJobForPayment] = useState<Job | null>(null);
-  const [showPublicationSuccessModal, setShowPublicationSuccessModal] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [editingJobId, setEditingJobId] = useState<string | null>(null);
-  const [showViewsModal, setShowViewsModal] = useState(false);
-  const [selectedJobForViews, setSelectedJobForViews] = useState<Job | null>(null);
 
   useEffect(() => {
     loadData();
-
-    // Also check for edit job request each time we load data
-    console.log('🔍 Checking localStorage for editJobId after data load');
-    const editJobId = localStorage.getItem('editJobId');
-    console.log('   Found editJobId in localStorage:', editJobId);
-    if (editJobId) {
-      console.log('   ✅ Opening edit form for job:', editJobId);
-      setEditingJobId(editJobId);
-      setShowJobForm(true);
-      setActiveTab('projects');
-      localStorage.removeItem('editJobId');
-      console.log('   ✅ State updated and localStorage cleared');
-    }
   }, [profile?.id]);
 
   useEffect(() => {
@@ -141,253 +100,163 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   }, [profile, loading]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
-
   const loadData = async () => {
     if (!profile?.id) return;
     setLoading(true);
-    const startTime = performance.now();
 
-    try {
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('id, name, logo_url, subscription_tier, profile_id')
-        .eq('profile_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const { data: companyData } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('profile_id', profile.id)
+      .maybeSingle();
 
-      if (!companiesData) {
+    if (companyData) {
+      console.log('Company loaded:', companyData);
+      console.log('Subscription tier:', companyData.subscription_tier);
+      setCompany(companyData);
+
+      const { data: stagesData } = await supabase
+        .from('workflow_stages')
+        .select('*')
+        .eq('company_id', companyData.id)
+        .order('stage_order');
+
+      if (stagesData && stagesData.length > 0) {
+        setWorkflowStages(stagesData);
+      } else {
         setWorkflowStages(sampleWorkflowStages);
+      }
+
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('company_id', companyData.id)
+        .order('created_at', { ascending: false });
+
+      if (jobsData && jobsData.length > 0) {
+        setJobs(jobsData);
+
+        const jobIds = jobsData.map(j => j.id);
+        const { data: appsData } = await supabase
+          .from('applications')
+          .select(`
+            *,
+            candidate:candidate_profiles!applications_candidate_id_fkey(
+              id,
+              title,
+              experience_years,
+              education_level,
+              skills,
+              profile:profiles!candidate_profiles_profile_id_fkey(
+                full_name,
+                email,
+                phone,
+                avatar_url
+              )
+            )
+          `)
+          .in('job_id', jobIds)
+          .order('applied_at', { ascending: false });
+
+        if (appsData && appsData.length > 0) {
+          console.log('✅ Loaded applications from DB:', appsData.length);
+          setApplications(appsData);
+        } else {
+          console.log('⚠️ No applications in DB, using sample data');
+          setApplications(sampleApplications);
+        }
+      } else {
         setJobs(sampleJobs);
         setApplications(sampleApplications);
-        setLoading(false);
-        return;
       }
-
-      setCompany(companiesData);
-      console.log('⚡ Company loaded in', Math.round(performance.now() - startTime), 'ms');
-
-      const loadStart = performance.now();
-      const [stagesResult, jobsResult] = await Promise.all([
-        supabase
-          .from('workflow_stages')
-          .select('id, stage_name, stage_color, stage_order, company_id')
-          .eq('company_id', companiesData.id)
-          .order('stage_order'),
-        supabase
-          .from('jobs')
-          .select('id, title, location, department, status, views_count, applications_count, created_at, company_id')
-          .eq('company_id', companiesData.id)
-          .order('created_at', { ascending: false })
-      ]);
-
-      console.log('⚡ Parallel data loaded in', Math.round(performance.now() - loadStart), 'ms');
-
-      const stagesData = stagesResult.data;
-      const jobsData = jobsResult.data;
-
-      setWorkflowStages(stagesData && stagesData.length > 0 ? stagesData : sampleWorkflowStages);
-
-      if (!jobsData || jobsData.length === 0) {
-        setJobs([]);
-        setApplications([]);
-        setLoading(false);
-        return;
-      }
-
-      setJobs(jobsData);
-      const jobIds = jobsData.map(j => j.id);
-
-      const appsStart = performance.now();
-      console.log('🔍 Fetching applications for job IDs:', jobIds);
-      const { data: appsData, error: appsError } = await supabase
-        .from('applications')
-        .select('id, job_id, candidate_id, first_name, last_name, email, phone, cv_url, cover_letter_url, message, ai_score, ai_category, workflow_stage, status, applied_at')
-        .in('job_id', jobIds)
-        .order('applied_at', { ascending: false });
-
-      console.log('📊 Applications query result:', {
-        count: appsData?.length || 0,
-        error: appsError,
-        data: appsData
-      });
-
-      if (!appsData || appsData.length === 0) {
-        console.log('⚠️ No applications found for these jobs');
-        setApplications([]);
-        setLoading(false);
-        console.log('⚡ Total load time:', Math.round(performance.now() - startTime), 'ms');
-        return;
-      }
-
-      console.log('⚡ Applications loaded in', Math.round(performance.now() - appsStart), 'ms');
-
-      const candidateIds = [...new Set(appsData.map(app => app.candidate_id))];
-
-      const profilesStart = performance.now();
-      const [candidateProfilesResult, userProfilesResult] = await Promise.all([
-        supabase
-          .from('candidate_profiles')
-          .select('user_id, id, title, experience_years, education, skills')
-          .in('user_id', candidateIds),
-        supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', candidateIds)
-      ]);
-
-      console.log('⚡ Profiles loaded in', Math.round(performance.now() - profilesStart), 'ms');
-
-      const candidateProfilesMap = new Map(candidateProfilesResult.data?.map(p => [p.user_id, p]) || []);
-      const userProfilesMap = new Map(userProfilesResult.data?.map(p => [p.id, p]) || []);
-
-      const enrichedApps = appsData.map(app => {
-        const userProfile = userProfilesMap.get(app.candidate_id);
-        const names = userProfile?.full_name?.split(' ') || [];
-
-        return {
-          ...app,
-          first_name: app.first_name || names[0] || '',
-          last_name: app.last_name || names.slice(1).join(' ') || '',
-          email: app.email || userProfile?.email || '',
-          candidate_profile: candidateProfilesMap.get(app.candidate_id)
-        };
-      });
-
-      console.log('✅ Enriched applications:', enrichedApps);
-      setApplications(enrichedApps as any);
-      console.log('✅ Total load time:', Math.round(performance.now() - startTime), 'ms');
-      console.log('📊 Loaded:', jobsData.length, 'jobs,', enrichedApps.length, 'applications');
-
-    } catch (error) {
-      console.error('❌ Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOpenJobForm = () => {
-    console.log('🔍 Opening job form...');
-    console.log('Company:', company);
-    console.log('Profile:', profile);
-    console.log('Profile completed:', profile?.profile_completed);
-
-    if (!company?.id) {
-      console.log('❌ No company found - redirecting to profile');
-      alert("⚠️ Profil entreprise requis\n\nVeuillez d'abord compléter votre profil entreprise dans l'onglet 'Profil' avant de publier une offre d'emploi.");
-      setActiveTab('profile');
-      return;
+    } else {
+      setWorkflowStages(sampleWorkflowStages);
+      setJobs(sampleJobs);
+      setApplications(sampleApplications);
     }
 
-    console.log('✅ Opening job form');
-    setShowJobForm(true);
+    setLoading(false);
   };
 
   const handlePublishJob = async (data: JobFormData) => {
-    console.log(editingJobId ? '📝 Updating job...' : '📤 Publishing job...', { company, data });
-
     if (!company?.id) {
-      alert("Veuillez d'abord créer votre profil entreprise dans l'onglet 'Profil'");
-      setShowJobForm(false);
-      setActiveTab('profile');
+      alert("Veuillez d'abord créer votre profil entreprise");
       return;
     }
 
-    // Prepare description (use the description directly from the form if it's already formatted)
-    const description = data.description;
+    let fullDescription = `# ${data.title}\n\n`;
+    fullDescription += `**Catégorie:** ${data.category} | **Contrat:** ${data.contract_type} | **Postes:** ${data.position_count}\n\n`;
 
-    // Prepare job data
-    const jobPayload = {
-      user_id: profile?.id,
+    fullDescription += `## Présentation du poste\n${data.description}\n\n`;
+
+    if (data.responsibilities) {
+      fullDescription += `## Missions principales\n${data.responsibilities}\n\n`;
+    }
+
+    if (data.profile) {
+      fullDescription += `## Profil recherché\n${data.profile}\n\n`;
+    }
+
+    if (data.skills.length > 0) {
+      fullDescription += `## Compétences clés\n${data.skills.join(' • ')}\n\n`;
+    }
+
+    fullDescription += `## Qualifications\n`;
+    fullDescription += `- **Niveau d'études:** ${data.education_level}\n`;
+    fullDescription += `- **Expérience:** ${data.experience_required}\n`;
+    if (data.languages.length > 0) {
+      fullDescription += `- **Langues:** ${data.languages.join(', ')}\n`;
+    }
+    fullDescription += `\n`;
+
+    if (data.salary_range) {
+      fullDescription += `## Rémunération\n`;
+      fullDescription += `- **Salaire:** ${data.salary_range}\n`;
+      fullDescription += `- **Type:** ${data.salary_type}\n`;
+      if (data.benefits.length > 0) {
+        fullDescription += `- **Avantages:** ${data.benefits.join(', ')}\n`;
+      }
+      fullDescription += `\n`;
+    }
+
+    if (data.company_description) {
+      fullDescription += `## À propos de l'entreprise\n${data.company_description}\n\n`;
+    }
+
+    fullDescription += `## Modalités de candidature\n`;
+    fullDescription += `- **Email:** ${data.application_email}\n`;
+    fullDescription += `- **Date limite:** ${data.deadline}\n`;
+    if (data.required_documents.length > 0) {
+      fullDescription += `- **Documents requis:** ${data.required_documents.join(', ')}\n`;
+    }
+    if (data.application_instructions) {
+      fullDescription += `\n${data.application_instructions}\n`;
+    }
+    fullDescription += `\n`;
+
+    fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
+
+    const { error } = await supabase.from('jobs').insert({
       company_id: company.id,
-      recruiter_id: profile?.id,
       title: data.title,
-      description: description,
+      description: fullDescription,
       location: data.location,
       contract_type: data.contract_type,
-      sector: data.sector,
       department: data.company_name,
       experience_level: data.experience_required,
       education_level: data.education_level,
-      deadline: data.deadline,
-      languages: data.languages,
+      application_deadline: data.deadline,
       required_skills: data.skills,
-      benefits: data.benefits,
-      application_email: data.application_email,
-      receive_applications_in_platform: data.receive_in_platform,
-      required_documents: data.required_documents,
-      application_instructions: data.application_instructions,
-      visibility: data.visibility,
-      is_premium: data.is_premium,
-      language: data.announcement_language,
-      auto_share_social: data.auto_share,
-      publication_duration: data.publication_duration,
-      auto_renewal: data.auto_renewal,
-      is_featured: data.is_premium,
-      ai_generated: false,
-    };
+      status: 'published',
+    });
 
-    // Parse salary
-    if (data.salary_range) {
-      const salaryParts = data.salary_range.split('-');
-      if (salaryParts.length === 2) {
-        jobPayload.salary_min = parseInt(salaryParts[0]);
-        jobPayload.salary_max = parseInt(salaryParts[1]);
-      } else {
-        jobPayload.salary_min = parseInt(data.salary_range);
-      }
-    }
-
-    let jobData, error;
-
-    if (editingJobId) {
-      // Update existing job
-      const result = await supabase
-        .from('jobs')
-        .update(jobPayload)
-        .eq('id', editingJobId)
-        .select()
-        .single();
-
-      jobData = result.data;
-      error = result.error;
-    } else {
-      // Create new job
-      jobPayload.status = 'draft';
-      const result = await supabase
-        .from('jobs')
-        .insert(jobPayload)
-        .select()
-        .single();
-
-      jobData = result.data;
-      error = result.error;
-    }
-
-    if (!error && jobData) {
-      if (!editingJobId) {
-        // Only handle publication for new jobs
-        const { data: publicationResult } = await supabase.rpc('handle_job_publication', {
-          p_job_id: jobData.id,
-          p_company_id: company.id
-        });
-
-        setIsSubscribed(publicationResult?.auto_approved || false);
-        setShowPublicationSuccessModal(true);
-      } else {
-        alert('✅ Offre modifiée avec succès!');
-      }
-
+    if (!error) {
       setShowJobForm(false);
-      setEditingJobId(null);
       await loadData();
       setActiveTab('projects');
+      alert('✅ Offre publiée avec succès !');
     } else {
-      console.error('Error publishing/updating job:', error);
-      alert(`❌ Erreur: ${error?.message || 'Erreur inconnue'}`);
+      alert('❌ Erreur lors de la publication de l\'offre');
     }
   };
 
@@ -400,27 +269,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     if (!error) {
       await loadData();
     }
-  };
-
-  const handleViewProfile = (applicationId: string) => {
-    const app = applications.find(a => a.id === applicationId);
-    if (app) {
-      setSelectedApplicationForProfile(app);
-      setShowProfileModal(true);
-    }
-  };
-
-  const handleSendMessage = (applicationId: string) => {
-    setSelectedApplicationForMessage(applicationId);
-    setShowMessageModal(true);
-  };
-
-  const handleDownloadCV = async (cvUrl: string) => {
-    if (!cvUrl) {
-      alert('CV non disponible');
-      return;
-    }
-    window.open(cvUrl, '_blank');
   };
 
   const handleStartMatching = (job: Job) => {
@@ -446,23 +294,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   console.log('RecruiterDashboard - showMatchingModal:', showMatchingModal);
   console.log('RecruiterDashboard - selectedJobForMatching:', selectedJobForMatching);
 
-  const handleDeleteJob = async (jobId: string) => {
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .delete()
-        .eq('id', jobId);
-
-      if (error) throw error;
-
-      setJobs(jobs.filter(j => j.id !== jobId));
-      console.log('✅ Job deleted successfully:', jobId);
-    } catch (error) {
-      console.error('❌ Error deleting job:', error);
-      alert('Erreur lors de la suppression de l\'offre');
-    }
-  };
-
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
       await supabase
@@ -487,39 +318,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const filteredApplications = applications.filter(app => {
     const categoryMatch = filterCategory === 'all' || app.ai_category === filterCategory;
     const jobMatch = selectedJobFilter === 'all' || app.job_id === selectedJobFilter;
-
-    if (selectedJobFilter !== 'all') {
-      console.log('🔍 Filtering app:', {
-        appId: app.id,
-        appJobId: app.job_id,
-        selectedFilter: selectedJobFilter,
-        matches: jobMatch,
-        fullApp: app
-      });
-    }
-
     return categoryMatch && jobMatch;
-  });
-
-  console.log('📊 RecruiterDashboard State:', {
-    activeTab,
-    totalApplications: applications.length,
-    filteredApplications: filteredApplications.length,
-    selectedJobFilter,
-    filterCategory,
-    applications: applications.map(a => ({ id: a.id, job_id: a.job_id, name: `${a.first_name} ${a.last_name}` }))
-  });
-
-  console.log('📋 All applications:', applications.length);
-  console.log('📋 Filtered applications:', filteredApplications.length);
-  console.log('📋 Filter settings:', { filterCategory, selectedJobFilter });
-
-  console.log('📊 Filter Results:', {
-    activeTab,
-    selectedJobFilter,
-    totalApplications: applications.length,
-    filteredApplications: filteredApplications.length,
-    filterCategory
   });
 
   const selectedJob = jobs.find(j => j.id === selectedJobAnalytics);
@@ -540,16 +339,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       : 0,
   };
 
-
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-    { id: 'profile', label: 'Mon Profil', icon: Settings },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
     { id: 'applications', label: 'Candidatures', icon: Users, count: applications.length },
     { id: 'ai-generator', label: 'Publier une offre', icon: Plus },
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
     { id: 'premium', label: 'Premium', icon: Sparkles },
+    { id: 'profile', label: 'Mon Profil', icon: Settings },
   ];
 
   if (loading) {
@@ -571,242 +369,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     );
   }
 
-  console.log('🎨 Rendering RecruiterDashboard', {
-    showViewsModal,
-    selectedJobForViews: selectedJobForViews?.id,
-    activeTab
-  });
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {showPaymentContactModal && selectedJobForPayment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-[#FF8C00] to-orange-600 rounded-xl">
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Contacter l'administration</h2>
-                  <p className="text-sm text-gray-600">Pour finaliser la publication de votre offre</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPaymentContactModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-6 mb-6">
-              <h3 className="font-bold text-lg text-gray-900 mb-3">📋 Offre en attente</h3>
-              <div className="space-y-2 text-gray-700">
-                <p><span className="font-semibold">Titre:</span> {selectedJobForPayment.title}</p>
-                <p><span className="font-semibold">Localisation:</span> {selectedJobForPayment.location}</p>
-                <p className="text-sm text-orange-700 font-medium mt-3">
-                  💰 Frais de publication: 50 000 GNF
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-blue-600" />
-                  Options de contact
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <MessageCircle className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">WhatsApp</p>
-                      <a href="https://wa.me/224620000000" target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline text-sm">
-                        +224 620 00 00 00
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Mail className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Email</p>
-                      <a href="mailto:admin@emploi-guinee.gn" className="text-blue-600 hover:underline text-sm">
-                        admin@emploi-guinee.gn
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-5">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-green-600" />
-                  Abonnement Premium
-                </h3>
-                <p className="text-sm text-gray-700 mb-3">
-                  Publiez des offres illimitées sans frais supplémentaires !
-                </p>
-                <button
-                  onClick={() => {
-                    setShowPaymentContactModal(false);
-                    setActiveTab('premium');
-                  }}
-                  className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-all duration-200"
-                >
-                  Voir les offres Premium
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowPaymentContactModal(false)}
-                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
-              >
-                Fermer
-              </button>
-              <a
-                href="https://wa.me/224620000000?text=Bonjour, je souhaite publier mon offre d'emploi"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-[#FF8C00]/90 hover:to-orange-600/90 text-white font-semibold rounded-xl transition text-center"
-              >
-                Contacter maintenant
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showViewsModal && selectedJobForViews && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Statistiques des vues</h2>
-                  <p className="text-sm text-gray-600">{selectedJobForViews.title}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowViewsModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-6">
-                <div className="text-center">
-                  <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                    {selectedJobForViews.views_count || 0}
-                  </div>
-                  <p className="text-gray-700 font-medium">Vues totales</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-5">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-gray-600" />
-                  Informations sur l'offre
-                </h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Localisation:</span>
-                    <span>{selectedJobForViews.location}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Type de contrat:</span>
-                    <span>{selectedJobForViews.contract_type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Candidatures:</span>
-                    <span className="font-semibold text-green-600">{selectedJobForViews.applications_count || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Publiée le:</span>
-                    <span>{new Date(selectedJobForViews.created_at).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                  {selectedJobForViews.deadline && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Date limite:</span>
-                      <span className="text-red-600 font-medium">
-                        {new Date(selectedJobForViews.deadline).toLocaleDateString('fr-FR')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-blue-600" />
-                  Taux de conversion
-                </h3>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">
-                    {selectedJobForViews.views_count > 0
-                      ? ((selectedJobForViews.applications_count / selectedJobForViews.views_count) * 100).toFixed(1)
-                      : 0}%
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    {selectedJobForViews.applications_count || 0} candidatures sur {selectedJobForViews.views_count || 0} vues
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowViewsModal(false)}
-                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
-              >
-                Fermer
-              </button>
-              <button
-                onClick={() => {
-                  setShowViewsModal(false);
-                  onNavigate('job-detail', selectedJobForViews.id);
-                }}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition"
-              >
-                Voir l'offre
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showJobForm && (
-        <>
-          {console.log('🎨 Rendering JobPublishForm', { showJobForm, editingJobId, hasCompany: !!company })}
-          <JobPublishForm
-            onPublish={handlePublishJob}
-            onClose={() => {
-              setShowJobForm(false);
-              setEditingJobId(null);
-            }}
-            companyData={company ? {
-              name: company.name,
-              description: company.description,
-              location: company.location,
-              website: company.website,
-              industry: company.industry,
-              email: company.email,
-              benefits: company.benefits
-            } : undefined}
-            editJobId={editingJobId}
-          />
-        </>
+        <JobPublishForm
+          onPublish={handlePublishJob}
+          onClose={() => setShowJobForm(false)}
+        />
       )}
 
       {showMatchingModal && selectedJobForMatching ? (
@@ -827,17 +396,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               id: app.id,
               ai_score: app.ai_score || 0,
               ai_category: app.ai_category || 'medium',
-              applied_at: app.applied_at,
               candidate: {
-                full_name: `${app.first_name || ''} ${app.last_name || ''}`.trim() || 'Candidat',
-                email: app.email || '',
-                avatar_url: undefined,
+                full_name: app.candidate?.profile?.full_name || 'Candidat',
+                email: app.candidate?.profile?.email || '',
+                avatar_url: app.candidate?.profile?.avatar_url,
               },
               candidate_profile: {
-                title: app.candidate_profile?.title,
-                experience_years: app.candidate_profile?.experience_years,
-                education_level: app.candidate_profile?.education,
-                skills: app.candidate_profile?.skills,
+                title: app.candidate?.title,
+                experience_years: app.candidate?.experience_years,
+                education_level: app.candidate?.education_level,
+                skills: app.candidate?.skills,
               },
             }))}
           onClose={() => setShowMatchingModal(false)}
@@ -858,39 +426,28 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         </div>
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="flex items-center justify-between mb-6">
-            <div className="animate-fade-in flex items-start gap-4">
-              {company?.logo_url && (
-                <div className="flex-shrink-0">
-                  <img
-                    src={company.logo_url}
-                    alt={company.name}
-                    className="w-24 h-24 rounded-xl bg-white object-cover border-4 border-white/30 shadow-lg"
-                  />
+            <div className="animate-fade-in">
+              <h1 className="text-5xl font-bold mb-3 flex items-center">
+                <Sparkles className="w-12 h-12 mr-3 text-[#FF8C00] animate-pulse" />
+                Espace Recruteur ATS
+              </h1>
+              <p className="text-blue-100 text-lg">
+                Gestion intelligente du processus de recrutement avec IA
+              </p>
+              {company ? (
+                <div className="mt-2 flex items-center text-sm text-blue-200">
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  {company.name}
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center text-sm text-[#FF8C00] font-semibold">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Mode Démonstration
                 </div>
               )}
-              <div>
-                <h1 className="text-5xl font-bold mb-3 flex items-center">
-                  <Sparkles className="w-12 h-12 mr-3 text-[#FF8C00] animate-pulse" />
-                  Espace Recruteur ATS
-                </h1>
-                <p className="text-blue-100 text-lg">
-                  Gestion intelligente du processus de recrutement avec IA
-                </p>
-                {company ? (
-                  <div className="mt-2 flex items-center text-sm text-blue-200">
-                    <Briefcase className="w-4 h-4 mr-2" />
-                    {company.name}
-                  </div>
-                ) : (
-                  <div className="mt-2 flex items-center text-sm text-[#FF8C00] font-semibold">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Mode Démonstration
-                  </div>
-                )}
-              </div>
             </div>
             <button
-              onClick={handleOpenJobForm}
+              onClick={() => setShowJobForm(true)}
               className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
             >
               <Plus className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
@@ -948,8 +505,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               );
             })}
           </div>
+        </div>
 
-          <div className="p-6">
+        <div className="pb-12">
           {activeTab === 'dashboard' && (
             <div>
               <DashboardStats stats={stats} />
@@ -965,7 +523,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                       <p className="text-gray-500">Aucun projet de recrutement</p>
                       <button
-                        onClick={handleOpenJobForm}
+                        onClick={() => setShowJobForm(true)}
                         className="mt-4 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition"
                       >
                         Créer une offre
@@ -973,13 +531,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {jobs.slice(0, 3).map((job, index) => {
-                        const publishedDate = job.created_at ? new Date(job.created_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        }) : '';
-                        return (
+                      {jobs.slice(0, 3).map((job, index) => (
                         <div
                           key={job.id}
                           className="p-4 border-2 border-gray-200 rounded-xl card-hover cursor-pointer bg-white animate-slide-up"
@@ -996,16 +548,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                               {job.status}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2 flex items-center">
+                          <p className="text-sm text-gray-600 mb-3 flex items-center">
                             <FileText className="w-3.5 h-3.5 mr-1.5" />
                             {job.location}
                           </p>
-                          {publishedDate && (
-                            <p className="text-xs text-gray-500 mb-3 flex items-center">
-                              <Calendar className="w-3.5 h-3.5 mr-1.5" />
-                              Publié le {publishedDate}
-                            </p>
-                          )}
                           <div className="flex items-center gap-4 text-sm">
                             <span className="flex items-center text-blue-600 font-medium">
                               <TrendingUp className="w-4 h-4 mr-1" />
@@ -1017,8 +563,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </span>
                           </div>
                         </div>
-                        );
-                      })}
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1035,16 +580,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {applications.slice(0, 3).map((app, index) => {
-                        const fullName = `${app.first_name || ''} ${app.last_name || ''}`.trim() || 'Candidat';
-                        const appliedDate = app.applied_at ? new Date(app.applied_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) : '';
-                        return (
+                      {applications.slice(0, 3).map((app, index) => (
                         <div
                           key={app.id}
                           className="p-4 border-2 border-gray-200 rounded-xl card-hover bg-white animate-slide-up overflow-hidden relative"
@@ -1054,16 +590,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           <div className="flex items-center justify-between relative z-10">
                             <div className="flex-1">
                               <h4 className="font-semibold text-gray-900 hover:text-[#0E2F56] transition-colors">
-                                {fullName}
+                                {app.candidate?.profile?.full_name || 'Candidat'}
                               </h4>
                               <p className="text-sm text-gray-600">
-                                {app.candidate_profile?.title || 'Profil'}
+                                {app.candidate?.title || 'Profil'}
                               </p>
-                              {appliedDate && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Postulé le {appliedDate}
-                                </p>
-                              )}
                               <div className="mt-2">
                                 <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${
                                   app.ai_category === 'strong'
@@ -1086,8 +617,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </div>
                           </div>
                         </div>
-                        );
-                      })}
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1102,7 +632,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   Mes projets de recrutement ({jobs.length})
                 </h2>
                 <button
-                  onClick={handleOpenJobForm}
+                  onClick={() => setShowJobForm(true)}
                   className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
@@ -1120,7 +650,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     Commencez par créer votre première offre d'emploi
                   </p>
                   <button
-                    onClick={handleOpenJobForm}
+                    onClick={() => setShowJobForm(true)}
                     className="px-8 py-4 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-bold rounded-xl transition shadow-lg"
                   >
                     Créer une offre
@@ -1131,23 +661,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   {jobs.map((job, index) => (
                     <div
                       key={job.id}
-                      onClick={() => {
-                        console.log('🎯 Card clicked! Navigating to job detail:', job.id);
-                        onNavigate('job-detail', job.id);
-                      }}
-                      className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover relative overflow-hidden group animate-slide-up cursor-pointer"
+                      className="bg-white rounded-2xl border-2 border-gray-200 p-6 card-hover cursor-pointer relative overflow-hidden group animate-slide-up"
                       style={{ animationDelay: `${index * 0.1}s` }}
+                      onClick={() => onNavigate('job-detail', job.id)}
                     >
                       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF8C00]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                       <div className="flex items-start justify-between mb-4 relative z-10">
-                        <div
-                          className="flex-1 cursor-pointer"
-                          onClick={() => {
-                            console.log('📍 Title area clicked! Navigating to job detail:', job.id);
-                            onNavigate('job-detail', job.id);
-                          }}
-                        >
+                        <div className="flex-1">
                           <h3 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-[#0E2F56] transition-colors">{job.title}</h3>
                           <p className="text-gray-600 flex items-center mb-1">
                             <FileText className="w-4 h-4 mr-1.5 text-[#FF8C00]" />
@@ -1160,57 +681,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              console.log('👁️ Eye button clicked! Navigating to job detail:', job.id);
-                              onNavigate('job-detail', job.id);
-                            }}
-                            className="p-2 text-gray-500 hover:text-[#0E2F56] hover:bg-gray-100 rounded-lg transition"
-                            title="Voir les détails"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('⭐ Toggle favorite:', job.id);
-                            }}
-                            className="p-2 text-gray-500 hover:text-yellow-500 hover:bg-yellow-50 rounded-lg transition"
-                            title="Marquer comme favori"
-                          >
-                            <Star className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('📋 Duplicate job:', job.id);
-                              if (confirm('Voulez-vous dupliquer cette offre ?')) {
-                                console.log('Duplicating job...');
-                              }
-                            }}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                            title="Dupliquer l'offre"
-                          >
-                            <Copy className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('🗑️ Delete job:', job.id);
-                              if (confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) {
-                                handleDeleteJob(job.id);
-                              }
-                            }}
-                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Supprimer l'offre"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mb-4 flex justify-between items-center">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
                           job.status === 'published'
                             ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200'
@@ -1223,9 +693,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
-                        <div
-                          className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
-                        >
+                        <div className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/30 rounded-full -mr-8 -mt-8"></div>
                           <div className="relative">
                             <div className="text-3xl font-bold bg-gradient-to-r from-[#0E2F56] to-blue-600 bg-clip-text text-transparent">
@@ -1237,11 +705,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                             </div>
                           </div>
                         </div>
-                        <div
-                          className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
-                        >
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8 pointer-events-none"></div>
-                          <div className="relative pointer-events-none">
+                        <div className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8"></div>
+                          <div className="relative">
                             <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
                               {job.applications_count || 0}
                             </div>
@@ -1256,28 +722,20 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       <div className="space-y-3 mb-4 relative z-10">
                         <div className="grid grid-cols-2 gap-3">
                           <button
-                            type="button"
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 cursor-pointer"
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300"
                             onClick={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
-                              console.log('🔘 GRAY Candidatures button clicked!');
-                              console.log('   Job ID:', job.id);
-                              console.log('   Job Title:', job.title);
-                              console.log('   Applications for this job:', applications.filter(a => a.job_id === job.id).length);
                               setActiveTab('applications');
                               setSelectedJobFilter(job.id);
-                              console.log('   ✅ Changed to applications tab with filter:', job.id);
                             }}
                           >
                             <Users className="w-4 h-4" />
                             <span>Candidatures</span>
                           </button>
                           <button
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300 cursor-pointer"
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-300"
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log('🔘 Analyses button clicked!');
                               setActiveTab('analytics');
                               setSelectedJobAnalytics(job.id);
                             }}
@@ -1287,27 +745,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           </button>
                         </div>
                         <button
-                          className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                          className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56]"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            console.log('🔘 Modifier button clicked!');
-                            console.log('   Job ID:', job.id);
-                            console.log('   Current showJobForm:', showJobForm);
-                            console.log('   Current editingJobId:', editingJobId);
-                            setEditingJobId(job.id);
-                            setShowJobForm(true);
-                            console.log('   ✅ Set editingJobId to:', job.id);
-                            console.log('   ✅ Set showJobForm to: true');
-                          }}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          <span>Modifier l'offre</span>
-                        </button>
-                        <button
-                          className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56] cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
                             console.log('🔘 Matching IA button clicked!');
+                            e.stopPropagation();
                             handleStartMatching(job);
                           }}
                         >
@@ -1315,31 +756,20 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           <Sparkles className="w-4 h-4" />
                           <span>Matching IA</span>
                         </button>
-                        {job.status === 'draft' && (
-                          <button
-                            className="w-full px-4 py-3 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-[#FF8C00]/90 hover:to-orange-600/90 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-orange-500 cursor-pointer shadow-lg"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedJobForPayment(job);
-                              setShowPaymentContactModal(true);
-                            }}
-                          >
-                            <MessageCircle className="w-5 h-5" />
-                            <span>Contacter l'admin pour paiement</span>
-                          </button>
-                        )}
                       </div>
 
-                      <div
-                        className="w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400 cursor-pointer shadow-sm"
+                      <button
+                        className="w-full px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all duration-200 relative z-10 group border-2 border-gray-300 hover:border-gray-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNavigate('job-detail', job.id);
+                        }}
                       >
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="flex items-center justify-center w-8 h-8 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform">
-                            <Eye className="w-4 h-4 text-gray-600" />
-                          </span>
-                          <span className="font-semibold">Désactiver</span>
+                        <span className="flex items-center justify-center">
+                          Voir les détails
+                          <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                         </span>
-                      </div>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -1349,62 +779,19 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
           {activeTab === 'applications' && (
             <div>
-              {selectedJobFilter !== 'all' && (
-                <div className="mb-6 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-xl p-4 shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="w-6 h-6" />
-                      <div>
-                        <p className="font-bold text-lg">
-                          Filtre actif: {jobs.find(j => j.id === selectedJobFilter)?.title || 'Offre'}
-                        </p>
-                        <p className="text-sm text-white/90">
-                          Affichage de {filteredApplications.length} candidature(s) pour cette offre uniquement
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedJobFilter('all');
-                        setFilterCategory('all');
-                      }}
-                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition flex items-center gap-2 border border-white/30"
-                    >
-                      <X className="w-4 h-4" />
-                      Afficher toutes les candidatures
-                    </button>
-                  </div>
-                </div>
-              )}
               <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-900">
-                    Candidatures reçues ({filteredApplications.length})
-                  </h2>
-                  {(selectedJobFilter !== 'all' || filterCategory !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setSelectedJobFilter('all');
-                        setFilterCategory('all');
-                      }}
-                      className="mt-2 text-sm text-[#FF8C00] hover:text-[#0E2F56] font-medium flex items-center gap-1 transition"
-                    >
-                      <X className="w-4 h-4" />
-                      Réinitialiser les filtres
-                    </button>
-                  )}
-                </div>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Candidatures reçues ({filteredApplications.length})
+                </h2>
                 <div className="flex items-center gap-4">
-                  <div className={`flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 shadow-sm transition ${
-                    selectedJobFilter !== 'all' ? 'border-[#FF8C00] bg-orange-50' : 'border-gray-200'
-                  }`}>
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
                     <Briefcase className="w-5 h-5 text-gray-500" />
                     <select
                       value={selectedJobFilter}
                       onChange={(e) => setSelectedJobFilter(e.target.value)}
-                      className="border-none focus:ring-0 text-sm font-medium bg-transparent"
+                      className="border-none focus:ring-0 text-sm font-medium"
                     >
-                      <option value="all">Tous les projets ({applications.length})</option>
+                      <option value="all">Tous les projets</option>
                       {jobs.map(job => (
                         <option key={job.id} value={job.id}>
                           {job.title} ({applications.filter(app => app.job_id === job.id).length})
@@ -1412,19 +799,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       ))}
                     </select>
                   </div>
-                  <div className={`flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 shadow-sm transition ${
-                    filterCategory !== 'all' ? 'border-[#FF8C00] bg-orange-50' : 'border-gray-200'
-                  }`}>
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm">
                     <Filter className="w-5 h-5 text-gray-500" />
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="border-none focus:ring-0 text-sm font-medium bg-transparent"
+                      className="border-none focus:ring-0 text-sm font-medium"
                     >
                       <option value="all">Tous les profils</option>
-                      <option value="strong">Profils forts</option>
-                      <option value="medium">Profils moyens</option>
-                      <option value="weak">Profils faibles</option>
+                      <option value="strong">🟢 Profils forts</option>
+                      <option value="medium">🟡 Profils moyens</option>
+                      <option value="weak">🔴 Profils faibles</option>
                     </select>
                   </div>
 
@@ -1453,50 +838,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     </button>
                   </div>
 
-                  <ExportApplicationsButton
-                    applications={filteredApplications}
-                    isPremium={isPremium}
-                    jobTitle={selectedJobFilter !== 'all' ? jobs.find(j => j.id === selectedJobFilter)?.title : undefined}
-                  />
+                  <button
+                    onClick={() => alert('Fonctionnalité d\'export disponible prochainement')}
+                    className="px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-700 font-medium rounded-xl transition flex items-center gap-2 shadow-sm"
+                  >
+                    <Download className="w-5 h-5" />
+                    Exporter
+                  </button>
                 </div>
               </div>
-
-              {selectedJobFilter === 'all' && applications.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <Briefcase className="w-8 h-8 text-blue-700" />
-                      <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-bold">
-                        Total
-                      </span>
-                    </div>
-                    <div className="text-4xl font-bold text-blue-900 mb-1">{applications.length}</div>
-                    <div className="text-sm text-blue-700 font-medium">Candidatures totales</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-2 border-green-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <Users className="w-8 h-8 text-green-700" />
-                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-bold">
-                        Profils forts
-                      </span>
-                    </div>
-                    <div className="text-4xl font-bold text-green-900 mb-1">
-                      {applications.filter(a => a.ai_category === 'strong').length}
-                    </div>
-                    <div className="text-sm text-green-700 font-medium">Candidats qualifiés</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border-2 border-orange-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <Target className="w-8 h-8 text-orange-700" />
-                      <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-bold">
-                        Projets
-                      </span>
-                    </div>
-                    <div className="text-4xl font-bold text-orange-900 mb-1">{jobs.length}</div>
-                    <div className="text-sm text-orange-700 font-medium">Offres actives</div>
-                  </div>
-                </div>
-              )}
 
               {filteredApplications.length === 0 ? (
                 <div className="bg-white rounded-2xl p-16 text-center">
@@ -1505,10 +855,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     Aucune candidature
                   </h3>
                   <p className="text-gray-600">
-                    {selectedJobFilter !== 'all'
-                      ? `Aucune candidature trouvée pour cette offre (ID: ${selectedJobFilter})`
-                      : 'Les candidatures apparaîtront ici une fois que les candidats postuleront'
-                    }
+                    Les candidatures apparaîtront ici une fois que les candidats postuleront
                   </p>
                 </div>
               ) : viewMode === 'kanban' ? (
@@ -1520,16 +867,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     workflow_stage: app.workflow_stage || 'received',
                     applied_at: app.applied_at,
                     candidate: {
-                      full_name: `${app.first_name || ''} ${app.last_name || ''}`.trim() || 'Candidat',
-                      email: app.email || '',
-                      phone: app.phone,
-                      avatar_url: undefined,
+                      full_name: app.candidate?.profile?.full_name || 'Candidat',
+                      email: app.candidate?.profile?.email || '',
+                      phone: app.candidate?.profile?.phone,
+                      avatar_url: app.candidate?.profile?.avatar_url,
                     },
                     candidate_profile: {
-                      title: app.candidate_profile?.title,
-                      experience_years: app.candidate_profile?.experience_years,
-                      education_level: app.candidate_profile?.education,
-                      skills: app.candidate_profile?.skills,
+                      title: app.candidate?.title,
+                      experience_years: app.candidate?.experience_years,
+                      education_level: app.candidate?.education_level,
+                      skills: app.candidate?.skills,
                     },
                   }))}
                   stages={workflowStages.map(stage => ({
@@ -1538,44 +885,39 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     color: stage.stage_color,
                   }))}
                   onMoveApplication={handleMoveApplication}
-                  onViewProfile={handleViewProfile}
-                  onMessage={handleSendMessage}
+                  onViewProfile={(id) => console.log('View profile', id)}
+                  onMessage={(id) => console.log('Message', id)}
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-6">
-                  {filteredApplications.map((app) => {
-                    const job = jobs.find(j => j.id === app.job_id);
-                    return (
-                      <ApplicationCard
-                        key={app.id}
-                        application={{
-                          id: app.id,
-                          first_name: app.first_name || '',
-                          last_name: app.last_name || '',
-                          email: app.email || '',
-                          phone: app.phone || '',
-                          cv_url: app.cv_url || '',
-                          cover_letter_url: app.cover_letter_url,
-                          message: app.message,
-                          ai_score: app.ai_score || 0,
-                          ai_category: app.ai_category || 'medium',
-                          workflow_stage: app.workflow_stage || 'received',
-                          applied_at: app.applied_at,
-                          created_at: app.applied_at,
-                          candidate_profile: app.candidate_profile ? {
-                            id: app.candidate_profile.id,
-                            title: app.candidate_profile.title,
-                            experience_years: app.candidate_profile.experience_years,
-                            education_level: app.candidate_profile.education,
-                            skills: app.candidate_profile.skills,
-                          } : undefined,
-                        }}
-                        jobTitle={job?.title}
-                        onMessage={handleSendMessage}
-                        onViewProfile={handleViewProfile}
-                      />
-                    );
-                  })}
+                  {filteredApplications.map((app) => (
+                    <ApplicationCard
+                      key={app.id}
+                      application={{
+                        id: app.id,
+                        ai_score: app.ai_score || 0,
+                        ai_category: app.ai_category || 'medium',
+                        workflow_stage: app.workflow_stage || 'received',
+                        applied_at: app.applied_at,
+                        cover_letter: app.cover_letter,
+                        cv_url: app.cv_url,
+                        candidate: {
+                          full_name: app.candidate?.profile?.full_name || 'Candidat',
+                          email: app.candidate?.profile?.email || '',
+                          phone: app.candidate?.profile?.phone,
+                          avatar_url: app.candidate?.profile?.avatar_url,
+                        },
+                        candidate_profile: {
+                          title: app.candidate?.title,
+                          experience_years: app.candidate?.experience_years,
+                          education_level: app.candidate?.education_level,
+                          skills: app.candidate?.skills,
+                        },
+                      }}
+                      onMessage={(appId) => console.log('Message', appId)}
+                      onViewProfile={(appId) => console.log('View profile', appId)}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -1627,7 +969,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 </div>
 
                 <button
-                  onClick={handleOpenJobForm}
+                  onClick={() => setShowJobForm(true)}
                   className="w-full py-5 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] hover:from-[#1a4275] hover:to-[#0E2F56] text-white font-bold text-lg rounded-2xl transition shadow-2xl flex items-center justify-center gap-3"
                 >
                   <Plus className="w-7 h-7" />
@@ -1638,7 +980,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           )}
 
           {activeTab === 'messages' && (
-            <MessagingSystem userType="recruiter" onNavigate={onNavigate} />
+            <div className="bg-white rounded-2xl border-2 border-gray-200 p-16 text-center">
+              <MessageSquare className="w-20 h-20 text-gray-300 mx-auto mb-6" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Messagerie RH</h3>
+              <p className="text-gray-600 text-lg mb-2">
+                Communiquez directement avec les candidats
+              </p>
+              <p className="text-sm text-gray-500 mt-4 px-4 py-2 bg-gray-50 rounded-lg inline-block">
+                Fonctionnalité disponible prochainement
+              </p>
+            </div>
           )}
 
           {activeTab === 'analytics' && (
@@ -1693,322 +1044,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
           {activeTab === 'profile' && <RecruiterProfileForm />}
-          </div>
         </div>
-
-        {/* Profile Modal */}
-        {showProfileModal && selectedApplicationForProfile && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-gradient-to-r from-[#0E2F56] to-blue-700 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Profil du candidat</h2>
-                  <button
-                    onClick={() => setShowProfileModal(false)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900 mb-2">
-                      {selectedApplicationForProfile.first_name} {selectedApplicationForProfile.last_name}
-                    </h3>
-                    {selectedApplicationForProfile.candidate_profile?.title && (
-                      <p className="text-[#0E2F56] font-medium">{selectedApplicationForProfile.candidate_profile.title}</p>
-                    )}
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">Coordonnées</h4>
-                    <p className="text-sm text-gray-600">Email: {selectedApplicationForProfile.email}</p>
-                    {selectedApplicationForProfile.phone && (
-                      <p className="text-sm text-gray-600">Téléphone: {selectedApplicationForProfile.phone}</p>
-                    )}
-                  </div>
-
-                  {selectedApplicationForProfile.candidate_profile && (
-                    <>
-                      {selectedApplicationForProfile.candidate_profile.experience_years && (
-                        <div className="border-t pt-4">
-                          <h4 className="font-semibold text-gray-700 mb-2">Expérience</h4>
-                          <p className="text-sm text-gray-600">{selectedApplicationForProfile.candidate_profile.experience_years} années</p>
-                        </div>
-                      )}
-
-                      {selectedApplicationForProfile.candidate_profile.education && (
-                        <div className="border-t pt-4">
-                          <h4 className="font-semibold text-gray-700 mb-2">Formation</h4>
-                          <p className="text-sm text-gray-600">{selectedApplicationForProfile.candidate_profile.education}</p>
-                        </div>
-                      )}
-
-                      {selectedApplicationForProfile.candidate_profile.skills && selectedApplicationForProfile.candidate_profile.skills.length > 0 && (
-                        <div className="border-t pt-4">
-                          <h4 className="font-semibold text-gray-700 mb-2">Compétences</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedApplicationForProfile.candidate_profile.skills.map((skill: string, idx: number) => (
-                              <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {selectedApplicationForProfile.message && (
-                    <div className="border-t pt-4">
-                      <h4 className="font-semibold text-gray-700 mb-2">Message de motivation</h4>
-                      <p className="text-sm text-gray-600">{selectedApplicationForProfile.message}</p>
-                    </div>
-                  )}
-
-                  <div className="border-t pt-4 flex gap-3">
-                    {selectedApplicationForProfile.cv_url && (
-                      <button
-                        onClick={() => handleDownloadCV(selectedApplicationForProfile.cv_url)}
-                        className="flex-1 px-4 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium flex items-center justify-center gap-2"
-                      >
-                        <Download className="w-5 h-5" />
-                        Télécharger le CV
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setShowProfileModal(false);
-                        handleSendMessage(selectedApplicationForProfile.id);
-                      }}
-                      className="flex-1 px-4 py-3 bg-[#FF8C00] text-white rounded-lg hover:bg-orange-600 transition font-medium flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      Envoyer un message
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Message Modal */}
-        {showMessageModal && selectedApplicationForMessage && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full">
-              <div className="bg-gradient-to-r from-[#0E2F56] to-blue-700 p-6 text-white rounded-t-2xl">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Envoyer un message</h2>
-                  <button
-                    onClick={() => setShowMessageModal(false)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-600 mb-4">
-                  La messagerie intégrée sera bientôt disponible. Pour l'instant, vous pouvez contacter le candidat par email.
-                </p>
-                <button
-                  onClick={() => {
-                    const app = applications.find(a => a.id === selectedApplicationForMessage);
-                    if (app?.email) {
-                      window.location.href = `mailto:${app.email}`;
-                    }
-                    setShowMessageModal(false);
-                  }}
-                  className="w-full px-4 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-medium"
-                >
-                  Ouvrir l'email
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showPublicationSuccessModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-green-100 p-3 rounded-full">
-                      <CheckCircle className="w-8 h-8 text-green-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        {isSubscribed ? 'Offre publiée avec succès !' : 'Offre soumise avec succès !'}
-                      </h2>
-                      <p className="text-gray-600 mt-1">
-                        {isSubscribed ? 'Votre annonce est maintenant en ligne' : 'Votre annonce est en cours de validation'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowPublicationSuccessModal(false)}
-                    className="text-gray-400 hover:text-gray-600 transition"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {isSubscribed ? (
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-green-100 p-2 rounded-lg">
-                          <Sparkles className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-green-900 text-lg mb-2">
-                            Abonnement Premium Actif
-                          </h3>
-                          <p className="text-green-800">
-                            Votre entreprise dispose d'un abonnement premium actif. Votre offre a été automatiquement publiée et est maintenant visible par tous les candidats.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                      <div className="flex items-start gap-3">
-                        <Target className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-blue-900 mb-1">Offre en ligne immédiatement</h4>
-                          <p className="text-blue-800 text-sm">
-                            Vous pouvez commencer à recevoir des candidatures dès maintenant. Les candidats peuvent voir et postuler à votre offre.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
-                      <div className="flex items-start gap-3">
-                        <Bell className="w-5 h-5 text-purple-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-purple-900 mb-1">Notifications actives</h4>
-                          <p className="text-purple-800 text-sm">
-                            Vous recevrez une notification pour chaque nouvelle candidature reçue.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-blue-100 p-2 rounded-lg">
-                          <FileText className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-blue-900 text-lg mb-2">
-                            Offre enregistrée
-                          </h3>
-                          <p className="text-blue-800">
-                            Votre offre a été enregistrée et sera examinée par notre équipe d'administration avant sa publication.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-amber-100 p-2 rounded-lg">
-                          <CreditCard className="w-6 h-6 text-amber-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-amber-900 text-lg mb-2">
-                            Options de publication
-                          </h3>
-                          <div className="space-y-3">
-                            <div className="flex items-start gap-2">
-                              <div className="bg-amber-200 rounded-full w-2 h-2 mt-2"></div>
-                              <p className="text-amber-900">
-                                <span className="font-semibold">Publication unique :</span> 50 000 GNF par offre
-                              </p>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <div className="bg-amber-200 rounded-full w-2 h-2 mt-2"></div>
-                              <p className="text-amber-900">
-                                <span className="font-semibold">Abonnement Premium :</span> Publications illimitées + validation automatique
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                      <div className="flex items-start gap-3">
-                        <ShieldCheck className="w-5 h-5 text-gray-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-1">Validation administrative</h4>
-                          <p className="text-gray-700 text-sm">
-                            Un administrateur va vérifier et valider votre offre avant sa mise en ligne. Ce processus garantit la qualité des offres sur notre plateforme.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-                      <div className="flex items-start gap-3">
-                        <Bell className="w-5 h-5 text-green-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-green-900 mb-1">Notification de publication</h4>
-                          <p className="text-green-800 text-sm">
-                            Vous recevrez une notification dès que votre offre sera publiée et visible par les candidats.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Sparkles className="w-6 h-6" />
-                        <h4 className="font-bold text-lg">Passez au Premium dès maintenant !</h4>
-                      </div>
-                      <p className="text-blue-100 mb-4">
-                        Bénéficiez de publications illimitées, de validations automatiques et d'outils de recrutement avancés.
-                      </p>
-                      <button
-                        onClick={() => {
-                          setShowPublicationSuccessModal(false);
-                          setActiveTab('subscription');
-                        }}
-                        className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
-                      >
-                        Découvrir les offres Premium
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <div className="bg-gray-50 rounded-lg p-4 text-center">
-                    <p className="text-gray-600 font-medium">
-                      Merci pour votre patience et votre confiance ! 🙏
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={() => setShowPublicationSuccessModal(false)}
-                    className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition font-semibold"
-                  >
-                    Fermer
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User, Languages, Clock } from 'lucide-react';
+import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User, Languages } from 'lucide-react';
 import { useState } from 'react';
 
 interface Candidate {
@@ -10,7 +10,6 @@ interface Candidate {
   experience_years?: number;
   education_level?: string;
   location?: string;
-  availability?: string;
   languages?: string[];
   is_verified?: boolean;
   profile_price: number;
@@ -82,24 +81,6 @@ export default function AnonymizedCandidateCard({
     return parts[0];
   };
 
-  const getAvailabilityLabel = (availability?: string) => {
-    const labels: { [key: string]: string } = {
-      immediate: 'Immédiate',
-      '1_month': '1 mois',
-      '2_months': '2 mois',
-      '3_months': '3 mois',
-      negotiable: 'Négociable'
-    };
-    return availability ? labels[availability] || availability : 'Non spécifiée';
-  };
-
-  const getAvailabilityColor = (availability?: string) => {
-    if (availability === 'immediate') return 'bg-green-100 text-green-700';
-    if (availability === '1_month') return 'bg-blue-100 text-blue-700';
-    if (availability === '2_months' || availability === '3_months') return 'bg-yellow-100 text-yellow-700';
-    return 'bg-gray-100 text-gray-700';
-  };
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       {/* Photo en haut */}
@@ -149,15 +130,6 @@ export default function AnonymizedCandidateCard({
             </div>
           )}
         </div>
-
-        {candidate.availability && (
-          <div className="flex justify-center mb-3">
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getAvailabilityColor(candidate.availability)}`}>
-              <Clock className="w-3 h-3" />
-              {getAvailabilityLabel(candidate.availability)}
-            </span>
-          </div>
-        )}
 
         {candidate.bio && (
           <p className="text-xs text-gray-600 text-center line-clamp-2 mb-3">

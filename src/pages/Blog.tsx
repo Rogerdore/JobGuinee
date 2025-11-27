@@ -30,7 +30,6 @@ import {
   Download
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import DynamicHead from '../components/DynamicHead';
 import { sampleBlogPosts, blogCategories } from '../utils/sampleBlogData';
 import { sampleResources } from '../utils/sampleResources';
 
@@ -70,22 +69,6 @@ export default function Blog() {
   const [resources, setResources] = useState<any[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [resourceCategory, setResourceCategory] = useState('all');
-  const [showArticleSubmitModal, setShowArticleSubmitModal] = useState(false);
-  const [articleSubmitForm, setArticleSubmitForm] = useState({
-    title: '',
-    excerpt: '',
-    content: '',
-    category: '',
-    author: '',
-    email: '',
-    phone: '',
-  });
-  const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
-  const [galleryImages, setGalleryImages] = useState<File[]>([]);
-  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
-  const [documents, setDocuments] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadPosts();
@@ -148,37 +131,10 @@ export default function Blog() {
     return resourceCategory === 'all' || resource.category === resourceCategory;
   });
 
-  const handleSubscribe = async (e: React.FormEvent) => {
+  const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!email) {
-      alert('Veuillez entrer votre adresse email');
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .insert([{
-          email: email,
-          domain: 'all',
-          is_active: true,
-        }]);
-
-      if (error) {
-        if (error.code === '23505') {
-          alert('Cet email est déjà abonné à notre newsletter !');
-        } else {
-          throw error;
-        }
-      } else {
-        alert(`Merci ${email}! Vous recevrez bientôt nos meilleurs articles RH directement dans votre boîte mail.`);
-        setEmail('');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'inscription:', error);
-      alert('Une erreur est survenue. Veuillez réessayer.');
-    }
+    alert(`Merci ${email}! Vous recevrez bientôt nos meilleurs articles RH.`);
+    setEmail('');
   };
 
   const handleShare = (platform: string, post: BlogPost) => {
@@ -194,148 +150,8 @@ export default function Blog() {
     }
   };
 
-  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleGalleryImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setGalleryImages(prev => [...prev, ...files]);
-
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setGalleryPreviews(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeGalleryImage = (index: number) => {
-    setGalleryImages(prev => prev.filter((_, i) => i !== index));
-    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDocumentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setDocuments(prev => [...prev, ...files]);
-  };
-
-  const removeDocument = (index: number) => {
-    setDocuments(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadFile = async (file: File, bucket: string, folder: string = '') => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(fileName);
-
-    return publicUrl;
-  };
-
-  const handleArticleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setUploading(true);
-
-    try {
-      let thumbnailUrl = '';
-      let mediaUrls: string[] = [];
-      let documentUrls: string[] = [];
-
-      // Upload cover image
-      if (coverImage) {
-        thumbnailUrl = await uploadFile(coverImage, 'blog-images', 'covers/');
-      }
-
-      // Upload gallery images
-      if (galleryImages.length > 0) {
-        const uploadPromises = galleryImages.map(img =>
-          uploadFile(img, 'blog-images', 'gallery/')
-        );
-        mediaUrls = await Promise.all(uploadPromises);
-      }
-
-      // Upload documents
-      if (documents.length > 0) {
-        const uploadPromises = documents.map(doc =>
-          uploadFile(doc, 'blog-documents', '')
-        );
-        documentUrls = await Promise.all(uploadPromises);
-      }
-
-      // Insert blog post
-      const { error } = await supabase
-        .from('blog_posts')
-        .insert([{
-          title: articleSubmitForm.title,
-          slug: articleSubmitForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          excerpt: articleSubmitForm.excerpt,
-          content: articleSubmitForm.content,
-          category: articleSubmitForm.category,
-          author: articleSubmitForm.author,
-          author_email: articleSubmitForm.email,
-          author_phone: articleSubmitForm.phone,
-          thumbnail_url: thumbnailUrl || null,
-          media_urls: mediaUrls,
-          document_urls: documentUrls,
-          published: false,
-        }]);
-
-      if (error) throw error;
-
-      alert('Merci pour votre soumission ! Votre article sera examiné par notre équipe et publié prochainement.');
-      setShowArticleSubmitModal(false);
-
-      // Reset form
-      setArticleSubmitForm({
-        title: '',
-        excerpt: '',
-        content: '',
-        category: '',
-        author: '',
-        email: '',
-        phone: '',
-      });
-      setCoverImage(null);
-      setCoverImagePreview('');
-      setGalleryImages([]);
-      setGalleryPreviews([]);
-      setDocuments([]);
-    } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
-      alert('Une erreur est survenue. Veuillez réessayer.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   return (
-    <>
-      <DynamicHead
-        title="Blog Emploi - Conseils Carrière et Recrutement en Guinée"
-        description="Découvrez nos articles sur la recherche d'emploi, conseils CV, entretiens d'embauche, tendances du marché du travail et stratégies de recrutement en Guinée."
-        keywords="blog emploi guinée, conseils carrière, rédaction cv, entretien embauche, recrutement guinée, marché travail guinée"
-        ogTitle="Blog Emploi Guinée - Votre Guide Carrière Professionnel"
-        ogDescription="Articles et conseils d'experts pour réussir votre carrière en Guinée."
-      />
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div
         className="relative bg-gradient-to-br from-[#0E2F56] via-blue-900 to-blue-800 text-white py-20"
         style={{
@@ -837,7 +653,7 @@ export default function Blog() {
 
           <div className="text-center">
             <button
-              onClick={() => setShowArticleSubmitModal(true)}
+              onClick={() => alert('Formulaire de soumission d\'article disponible prochainement')}
               className="px-8 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-semibold rounded-lg transition inline-flex items-center gap-2"
             >
               <FileText className="w-5 h-5" />
@@ -917,254 +733,6 @@ export default function Blog() {
           </div>
         </div>
       )}
-
-      {showArticleSubmitModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Proposer un article</h2>
-              <button
-                onClick={() => setShowArticleSubmitModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleArticleSubmit} className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Titre de l'article *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={articleSubmitForm.title}
-                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, title: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                  placeholder="Ex: Les tendances RH en Guinée en 2025"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Catégorie *
-                </label>
-                <select
-                  required
-                  value={articleSubmitForm.category}
-                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, category: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                >
-                  <option value="">Sélectionnez une catégorie</option>
-                  <option value="Recrutement">Recrutement</option>
-                  <option value="RH">RH</option>
-                  <option value="Carrière">Carrière</option>
-                  <option value="Formation">Formation</option>
-                  <option value="HSE">HSE</option>
-                  <option value="Juridique">Juridique</option>
-                  <option value="Innovation RH">Innovation RH</option>
-                  <option value="Tendances">Tendances</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Résumé (excerpt) *
-                </label>
-                <textarea
-                  required
-                  value={articleSubmitForm.excerpt}
-                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, excerpt: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                  placeholder="Résumé court de votre article (150-200 caractères)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contenu de l'article *
-                </label>
-                <textarea
-                  required
-                  value={articleSubmitForm.content}
-                  onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, content: e.target.value })}
-                  rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                  placeholder="Rédigez votre article ici..."
-                />
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Votre nom *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={articleSubmitForm.author}
-                    onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, author: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                    placeholder="Ex: Dr. Mamadou Sow"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={articleSubmitForm.email}
-                    onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                    placeholder="votre.email@exemple.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={articleSubmitForm.phone}
-                    onChange={(e) => setArticleSubmitForm({ ...articleSubmitForm, phone: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                    placeholder="+224 XXX XX XX XX"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image de couverture
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverImageChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                />
-                {coverImagePreview && (
-                  <div className="mt-3">
-                    <img
-                      src={coverImagePreview}
-                      alt="Aperçu"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Images supplémentaires (galerie)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleGalleryImagesChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                />
-                {galleryPreviews.length > 0 && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {galleryPreviews.map((preview, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={preview}
-                          alt={`Galerie ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeGalleryImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Documents joints (PDF, DOCX, etc.)
-                </label>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xlsx,.xls,.ppt,.pptx"
-                  multiple
-                  onChange={handleDocumentsChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                />
-                {documents.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {documents.map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-gray-500" />
-                          <span className="text-sm text-gray-700">{doc.name}</span>
-                          <span className="text-xs text-gray-500">
-                            ({(doc.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeDocument(index)}
-                          className="text-red-500 hover:text-red-600"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Votre article sera examiné par notre équipe avant publication.
-                  Nous vous contacterons par email pour valider la publication.
-                </p>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowArticleSubmitModal(false)}
-                  disabled={uploading}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="flex-1 px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Envoi en cours...</span>
-                    </>
-                  ) : (
-                    'Soumettre l\'article'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
-    </>
   );
 }

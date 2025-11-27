@@ -180,53 +180,18 @@ interface DatePickerProps {
   label: string;
   value?: string;
   onChange?: (value: string) => void;
-  error?: string;
-  required?: boolean;
-  helpText?: string;
 }
 
-export function DatePicker({ label, value, onChange, error, required, helpText }: DatePickerProps) {
-  const [showHelp, setShowHelp] = useState(false);
-
+export function DatePicker({ label, value, onChange }: DatePickerProps) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-700">
-          {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        {helpText && (
-          <button
-            type="button"
-            onMouseEnter={() => setShowHelp(true)}
-            onMouseLeave={() => setShowHelp(false)}
-            className="text-gray-400 hover:text-gray-600 transition relative"
-          >
-            <HelpCircle className="w-4 h-4" />
-            {showHelp && (
-              <div className="absolute right-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-10">
-                {helpText}
-              </div>
-            )}
-          </button>
-        )}
-      </div>
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
       <input
         type="date"
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition ${
-          error ? 'border-red-500 bg-red-50' : 'border-gray-300'
-        }`}
-        style={{
-          colorScheme: 'light',
-        }}
+        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition"
       />
-      {error && (
-        <div className="flex items-center gap-1 text-red-600 text-sm">
-          <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -490,23 +455,17 @@ interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   type?: 'button' | 'submit';
-  disabled?: boolean;
 }
 
-export function Button({ variant = 'primary', children, onClick, type = 'button', disabled = false }: ButtonProps) {
+export function Button({ variant = 'primary', children, onClick, type = 'button' }: ButtonProps) {
   const baseClasses = 'w-full px-6 py-3 rounded-lg font-medium transition';
   const variantClasses =
     variant === 'primary'
-      ? 'bg-[#0E2F56] hover:bg-[#1a4275] text-white shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed'
-      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-2 border-gray-300 disabled:bg-gray-200 disabled:cursor-not-allowed';
+      ? 'bg-[#0E2F56] hover:bg-[#1a4275] text-white shadow-md'
+      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-2 border-gray-300';
 
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClasses} ${variantClasses}`}
-    >
+    <button type={type} onClick={onClick} className={`${baseClasses} ${variantClasses}`}>
       {children}
     </button>
   );

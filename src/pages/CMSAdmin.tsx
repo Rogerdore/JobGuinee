@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File, Key, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +12,7 @@ interface CMSAdminProps {
 export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const { settings, sections, refreshSettings } = useCMS();
   const { isAdmin, profile, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation' | 'blog' | 'resources' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation' | 'blog' | 'resources'>('general');
   const [editingSettings, setEditingSettings] = useState<Record<string, any>>({});
   const [allSettings, setAllSettings] = useState<any[]>([]);
   const [allSections, setAllSections] = useState<any[]>([]);
@@ -41,11 +41,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     description: '',
     category: 'ebook',
     author: '',
-    author_email: '',
-    author_phone: '',
     tags: [] as string[],
-    is_paid: false,
-    price: '',
     published: false
   });
   const [resourceFile, setResourceFile] = useState<File | null>(null);
@@ -53,28 +49,11 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const [resourceThumbnailPreview, setResourceThumbnailPreview] = useState<string>('');
   const [uploadingResource, setUploadingResource] = useState(false);
 
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [editingApiKey, setEditingApiKey] = useState<any>(null);
-  const [showApiKeyForm, setShowApiKeyForm] = useState(false);
-  const [apiKeyFormData, setApiKeyFormData] = useState({
-    service_name: '',
-    api_key: '',
-    description: '',
-    is_active: true
-  });
-  const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string>('');
-  const [faviconFile, setFaviconFile] = useState<File | null>(null);
-  const [faviconPreview, setFaviconPreview] = useState<string>('');
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-
   useEffect(() => {
     loadAllSettings();
     loadAllSections();
     loadBlogPosts();
     loadResources();
-    loadApiKeys();
   }, []);
 
   const loadAllSettings = async () => {
@@ -244,15 +223,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     }
   };
 
-  const loadApiKeys = async () => {
-    const { data } = await supabase
-      .from('api_keys')
-      .select('*')
-      .order('service_name');
-
-    if (data) setApiKeys(data);
-  };
-
   const loadResources = async () => {
     const { data } = await supabase
       .from('resources')
@@ -351,8 +321,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
         file_type: fileType,
         file_size: fileSize,
         thumbnail_url: thumbnailUrl,
-        price: resourceFormData.is_paid && resourceFormData.price ? parseFloat(resourceFormData.price) : null,
-        author_user_id: user?.id || null,
         published_at: resourceFormData.published ? new Date().toISOString() : null
       };
 
@@ -422,11 +390,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       description: '',
       category: 'ebook',
       author: '',
-      author_email: '',
-      author_phone: '',
       tags: [],
-      is_paid: false,
-      price: '',
       published: false
     });
     setResourceFile(null);
@@ -455,123 +419,29 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     }
   };
 
-  const uploadLogo = async (): Promise<string | null> => {
-    if (!logoFile || !user) return null;
-    setUploadingLogo(true);
-
-    try {
-      const fileExt = logoFile.name.split('.').pop();
-      const timestamp = Date.now();
-      const fileName = `logo-${timestamp}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('site-assets')
-        .upload(fileName, logoFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('site-assets')
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading logo:', error);
-      return null;
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
-
-  const uploadFavicon = async (): Promise<string | null> => {
-    if (!faviconFile || !user) return null;
-    setUploadingLogo(true);
-
-    try {
-      const fileExt = faviconFile.name.split('.').pop();
-      const timestamp = Date.now();
-      const fileName = `favicon-${timestamp}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('site-assets')
-        .upload(fileName, faviconFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('site-assets')
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading favicon:', error);
-      return null;
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
-
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      console.log('Starting save settings...');
-
-      if (logoFile) {
-        console.log('Uploading logo...');
-        const logoUrl = await uploadLogo();
-        if (logoUrl) {
-          console.log('Logo uploaded:', logoUrl);
-          editingSettings['site_logo'] = logoUrl;
-        }
-      }
-
-      if (faviconFile) {
-        console.log('Uploading favicon...');
-        const faviconUrl = await uploadFavicon();
-        if (faviconUrl) {
-          console.log('Favicon uploaded:', faviconUrl);
-          editingSettings['site_favicon'] = faviconUrl;
-        }
-      }
-
-      console.log('Editing settings to save:', editingSettings);
-
       const updates = Object.entries(editingSettings).map(([key, value]) => ({
         setting_key: key,
         setting_value: { value },
         updated_at: new Date().toISOString(),
       }));
 
-      console.log('Updates to apply:', updates);
-
       for (const update of updates) {
-        console.log('Updating setting:', update.setting_key);
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('site_settings')
-          .update({
-            setting_value: update.setting_value,
-            updated_at: update.updated_at
-          })
-          .eq('setting_key', update.setting_key)
-          .select();
+          .update({ setting_value: update.setting_value })
+          .eq('setting_key', update.setting_key);
 
-        if (error) {
-          console.error('Error updating setting:', update.setting_key, error);
-          throw error;
-        }
-        console.log('Successfully updated:', update.setting_key, data);
+        if (error) throw error;
       }
 
       await refreshSettings();
-      await loadAllSettings();
-      setLogoFile(null);
-      setFaviconFile(null);
-      setLogoPreview('');
-      setFaviconPreview('');
       alert('Paramètres enregistrés avec succès');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving settings:', error);
-      alert(`Erreur lors de l'enregistrement: ${error.message || 'Erreur inconnue'}`);
+      alert('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
@@ -594,91 +464,10 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     { id: 'navigation', name: 'Navigation', icon: Menu },
     { id: 'blog', name: 'Blog & Actualités', icon: FileText },
     { id: 'resources', name: 'Ressources', icon: BookOpen },
-    { id: 'api', name: 'Clés API & Services IA', icon: Key },
   ];
 
   const handleNavigateToUserManagement = () => {
     onNavigate('user-management');
-  };
-
-  const handleEditApiKey = (apiKey: any) => {
-    setEditingApiKey(apiKey);
-    setApiKeyFormData({
-      service_name: apiKey.service_name,
-      api_key: apiKey.api_key,
-      description: apiKey.description || '',
-      is_active: apiKey.is_active
-    });
-    setShowApiKeyForm(true);
-  };
-
-  const handleSaveApiKey = async () => {
-    try {
-      if (editingApiKey) {
-        const { error } = await supabase
-          .from('api_keys')
-          .update({
-            api_key: apiKeyFormData.api_key,
-            description: apiKeyFormData.description,
-            is_active: apiKeyFormData.is_active,
-          })
-          .eq('id', editingApiKey.id);
-
-        if (error) throw error;
-        alert('Clé API mise à jour avec succès');
-      } else {
-        const { error } = await supabase
-          .from('api_keys')
-          .insert([{
-            service_name: apiKeyFormData.service_name,
-            api_key: apiKeyFormData.api_key,
-            description: apiKeyFormData.description,
-            is_active: apiKeyFormData.is_active,
-            created_by: user?.id
-          }]);
-
-        if (error) throw error;
-        alert('Clé API ajoutée avec succès');
-      }
-
-      await loadApiKeys();
-      setShowApiKeyForm(false);
-      setEditingApiKey(null);
-      setApiKeyFormData({
-        service_name: '',
-        api_key: '',
-        description: '',
-        is_active: true
-      });
-    } catch (error: any) {
-      console.error('Error saving API key:', error);
-      alert(error.message || 'Erreur lors de l\'enregistrement');
-    }
-  };
-
-  const handleDeleteApiKey = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette clé API ?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('api_keys')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      alert('Clé API supprimée avec succès');
-      await loadApiKeys();
-    } catch (error) {
-      console.error('Error deleting API key:', error);
-      alert('Erreur lors de la suppression');
-    }
-  };
-
-  const toggleApiKeyVisibility = (keyId: string) => {
-    setShowApiKey(prev => ({
-      ...prev,
-      [keyId]: !prev[keyId]
-    }));
   };
 
   if (!isAdmin) {
@@ -758,105 +547,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             {setting.description || setting.setting_key}
                           </label>
-                          {setting.setting_key === 'site_logo' ? (
-                            <div className="space-y-4">
-                              {(logoPreview || editingSettings[setting.setting_key]) && (
-                                <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-white flex items-center justify-center">
-                                  <img
-                                    src={logoPreview || editingSettings[setting.setting_key]}
-                                    alt="Logo"
-                                    className="max-h-full max-w-full object-contain p-2"
-                                  />
-                                  {logoPreview && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setLogoFile(null);
-                                        setLogoPreview('');
-                                      }}
-                                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                                <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                                  <Image className="w-8 h-8 text-gray-400 mb-1" />
-                                  <p className="text-xs text-gray-600">
-                                    <span className="font-semibold">Cliquer pour uploader</span>
-                                  </p>
-                                  <p className="text-xs text-gray-500">PNG, JPG ou SVG</p>
-                                </div>
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file && file.type.startsWith('image/')) {
-                                      setLogoFile(file);
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        setLogoPreview(reader.result as string);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          ) : setting.setting_key === 'site_favicon' ? (
-                            <div className="space-y-4">
-                              {(faviconPreview || editingSettings[setting.setting_key]) && (
-                                <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-200 bg-white flex items-center justify-center">
-                                  <img
-                                    src={faviconPreview || editingSettings[setting.setting_key]}
-                                    alt="Favicon"
-                                    className="max-h-full max-w-full object-contain p-2"
-                                  />
-                                  {faviconPreview && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setFaviconFile(null);
-                                        setFaviconPreview('');
-                                      }}
-                                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                                <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                                  <Image className="w-8 h-8 text-gray-400 mb-1" />
-                                  <p className="text-xs text-gray-600">
-                                    <span className="font-semibold">Cliquer pour uploader</span>
-                                  </p>
-                                  <p className="text-xs text-gray-500">ICO, PNG (32x32)</p>
-                                </div>
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*,.ico"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      setFaviconFile(file);
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        setFaviconPreview(reader.result as string);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          ) : typeof editingSettings[setting.setting_key] === 'boolean' ? (
+                          {typeof editingSettings[setting.setting_key] === 'boolean' ? (
                             <label className="flex items-center space-x-2 cursor-pointer">
                               <input
                                 type="checkbox"
@@ -883,11 +574,11 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 <div className="flex justify-end pt-6 border-t border-gray-200">
                   <button
                     onClick={handleSaveSettings}
-                    disabled={saving || uploadingLogo}
+                    disabled={saving}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 text-white font-semibold rounded-xl transition shadow-lg disabled:opacity-50"
                   >
                     <Save className="w-5 h-5" />
-                    {uploadingLogo ? 'Upload en cours...' : saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                    {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
                   </button>
                 </div>
               </div>
@@ -1037,115 +728,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                     <div className="text-center py-12 bg-gray-50 rounded-xl">
                       <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500">Aucun article pour le moment</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'api' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">Clés API & Services IA</h2>
-                    <p className="text-sm text-gray-600 mt-1">Gérez les clés API pour les services d'intelligence artificielle</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setEditingApiKey(null);
-                      setApiKeyFormData({
-                        service_name: '',
-                        api_key: '',
-                        description: '',
-                        is_active: true
-                      });
-                      setShowApiKeyForm(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Ajouter un service
-                  </button>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <div className="flex gap-3">
-                    <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold text-blue-900 mb-1">Sécurité des clés API</h3>
-                      <p className="text-sm text-blue-800">
-                        Les clés API sont sensibles et donnent accès aux services IA. Gardez-les confidentielles et ne les partagez jamais publiquement.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                  {apiKeys.map((apiKey) => (
-                    <div key={apiKey.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Key className="w-5 h-5 text-gray-600" />
-                            <h3 className="font-bold text-gray-900 text-lg">{apiKey.service_name}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${apiKey.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                              {apiKey.is_active ? (
-                                <>
-                                  <CheckCircle className="w-3 h-3" />
-                                  Actif
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-3 h-3" />
-                                  Inactif
-                                </>
-                              )}
-                            </span>
-                          </div>
-                          {apiKey.description && (
-                            <p className="text-sm text-gray-600 mb-3">{apiKey.description}</p>
-                          )}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs text-gray-500 font-medium">Clé API:</span>
-                            <div className="flex items-center gap-2">
-                              <code className="text-xs font-mono bg-gray-100 px-3 py-1 rounded">
-                                {showApiKey[apiKey.id] ? apiKey.api_key : '••••••••••••••••'}
-                              </code>
-                              <button
-                                onClick={() => toggleApiKeyVisibility(apiKey.id)}
-                                className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                              >
-                                {showApiKey[apiKey.id] ? 'Masquer' : 'Afficher'}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Dernière mise à jour: {new Date(apiKey.updated_at).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditApiKey(apiKey)}
-                            className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-medium"
-                          >
-                            <Edit2 className="w-4 h-4 inline mr-1" />
-                            Modifier
-                          </button>
-                          <button
-                            onClick={() => handleDeleteApiKey(apiKey.id)}
-                            className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm font-medium"
-                          >
-                            <Trash2 className="w-4 h-4 inline mr-1" />
-                            Supprimer
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {apiKeys.length === 0 && (
-                    <div className="text-center py-12 bg-gray-50 rounded-xl">
-                      <Key className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">Aucune clé API configurée</p>
                     </div>
                   )}
                 </div>
@@ -1394,108 +976,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
         </div>
       )}
 
-      {showApiKeyForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full">
-            <div className="bg-white border-b px-6 py-4 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {editingApiKey ? 'Modifier la clé API' : 'Ajouter une clé API'}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowApiKeyForm(false);
-                  setEditingApiKey(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom du service *
-                </label>
-                <input
-                  type="text"
-                  value={apiKeyFormData.service_name}
-                  onChange={(e) => setApiKeyFormData({ ...apiKeyFormData, service_name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: OpenAI, Anthropic Claude, Gemini"
-                  disabled={!!editingApiKey}
-                  required
-                />
-                {editingApiKey && (
-                  <p className="text-xs text-gray-500 mt-1">Le nom du service ne peut pas être modifié</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Clé API *
-                </label>
-                <input
-                  type="password"
-                  value={apiKeyFormData.api_key}
-                  onChange={(e) => setApiKeyFormData({ ...apiKeyFormData, api_key: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  placeholder="sk-..."
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Cette clé sera stockée de manière sécurisée</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={apiKeyFormData.description}
-                  onChange={(e) => setApiKeyFormData({ ...apiKeyFormData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Description du service et son utilisation sur le site..."
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={apiKeyFormData.is_active}
-                  onChange={(e) => setApiKeyFormData({ ...apiKeyFormData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                  Service actif
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleSaveApiKey}
-                  className="flex-1 px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition font-semibold"
-                >
-                  {editingApiKey ? 'Mettre à jour' : 'Ajouter'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowApiKeyForm(false);
-                    setEditingApiKey(null);
-                  }}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
-                >
-                  Annuler
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showResourceForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -1657,31 +1137,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email de contact</label>
-                  <input
-                    type="email"
-                    value={resourceFormData.author_email}
-                    onChange={(e) => setResourceFormData({ ...resourceFormData, author_email: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="email@exemple.com"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Affiché pour les ressources payantes</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone de contact</label>
-                  <input
-                    type="tel"
-                    value={resourceFormData.author_phone}
-                    onChange={(e) => setResourceFormData({ ...resourceFormData, author_phone: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="+224 XXX XXX XXX"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Affiché pour les ressources payantes</p>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par des virgules)</label>
                 <input
@@ -1694,44 +1149,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Exemple: RH, Formation, Juridique"
                 />
-              </div>
-
-              <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50">
-                <div className="flex items-center gap-3 mb-4">
-                  <input
-                    type="checkbox"
-                    id="isPaidResource"
-                    checked={resourceFormData.is_paid}
-                    onChange={(e) => setResourceFormData({
-                      ...resourceFormData,
-                      is_paid: e.target.checked,
-                      price: e.target.checked ? resourceFormData.price : ''
-                    })}
-                    className="w-5 h-5 text-[#FF8C00] focus:ring-[#FF8C00]"
-                  />
-                  <label htmlFor="isPaidResource" className="text-sm font-bold text-gray-900">
-                    Cette ressource est payante
-                  </label>
-                </div>
-
-                {resourceFormData.is_paid && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Prix (GNF) *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={resourceFormData.price}
-                      onChange={(e) => setResourceFormData({ ...resourceFormData, price: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00]"
-                      placeholder="Exemple: 50000"
-                      required={resourceFormData.is_paid}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Les utilisateurs devront vous contacter pour effectuer le paiement
-                    </p>
-                  </div>
-                )}
               </div>
 
               <div className="flex items-center gap-2">

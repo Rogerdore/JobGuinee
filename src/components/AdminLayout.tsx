@@ -1,33 +1,21 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, MessageCircle, CreditCard, Share2, UserPlus, FileText, FileEdit, Sliders, DollarSign, Sparkles, Wallet, ShieldCheck, Coins } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useCMS } from '../contexts/CMSContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
-  onNavigate?: (page: string) => void;
+  onNavigate: (page: string) => void;
 }
 
 export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) {
   const { profile, signOut } = useAuth();
-  const { settings } = useCMS();
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      if (onNavigate) {
-        onNavigate('home');
-      } else {
-        window.location.href = '/';
-      }
+      onNavigate('home');
     } catch (error) {
       console.error('Error signing out:', error);
-    }
-  };
-
-  const handleNavigation = (page: string) => {
-    if (onNavigate) {
-      onNavigate(page);
     }
   };
 
@@ -41,132 +29,18 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
                 onClick={() => onNavigate('cms-admin')}
                 className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
               >
-                {settings.site_logo ? (
-                  <img
-                    src={settings.site_logo}
-                    alt={settings.site_name || 'Logo'}
-                    className="h-10 w-auto object-contain"
-                  />
-                ) : (
-                  <Settings className="w-8 h-8" />
-                )}
+                <Settings className="w-8 h-8" />
                 <span>Administration</span>
               </button>
             </div>
 
             <div className="flex items-center space-x-4">
-              {onNavigate && (
-                <>
-              <button
-                onClick={() => handleNavigation('admin-profiles')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>Profils</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('admin-jobs')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Offres</span>
-              </button>
-
               <button
                 onClick={() => onNavigate('user-management')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
               >
                 <Users className="w-4 h-4" />
                 <span>Utilisateurs</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('user-services')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Services</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('social-config')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>Réseaux Sociaux</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('chatbot-admin')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Chatbot IA</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('job-form-config')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <FileEdit className="w-4 h-4" />
-                <span>Formulaire</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('job-pricing')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <DollarSign className="w-4 h-4" />
-                <span>Tarifs</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('premium-services-admin')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Services IA</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('payment-management')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Wallet className="w-4 h-4" />
-                <span>Paiements</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('global-credits')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Coins className="w-4 h-4" />
-                <span>Crédits Globaux</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('profile-analysis-admin')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Analyses IA</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('ai-services-config')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Settings className="w-4 h-4" />
-                <span>Config IA</span>
-              </button>
-
-              <button
-                onClick={() => onNavigate('system-settings')}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 neo-clay-button rounded-xl transition hover:shadow-md"
-              >
-                <Sliders className="w-4 h-4" />
-                <span>Paramètres</span>
               </button>
 
               <button
@@ -194,8 +68,6 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
                 <LogOut className="w-4 h-4" />
                 <span>Déconnexion</span>
               </button>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -209,16 +81,8 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              {settings.site_logo ? (
-                <img
-                  src={settings.site_logo}
-                  alt={settings.site_name || 'Logo'}
-                  className="h-8 w-auto object-contain"
-                />
-              ) : (
-                <Briefcase className="w-6 h-6" />
-              )}
-              <span className="font-bold">{settings.site_name || 'JobGuinée'} - Administration</span>
+              <Briefcase className="w-6 h-6" />
+              <span className="font-bold">JobGuinée - Administration</span>
             </div>
             <p className="text-gray-400 text-sm">&copy; 2025 Tous droits réservés</p>
           </div>

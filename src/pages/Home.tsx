@@ -8,8 +8,6 @@ import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
 import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
-import { useAuth } from '../contexts/AuthContext';
-import DynamicHead from '../components/DynamicHead';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -17,7 +15,6 @@ interface HomeProps {
 
 export default function Home({ onNavigate }: HomeProps) {
   const { getSetting, getSection } = useCMS();
-  const { user, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [contractType, setContractType] = useState('');
@@ -25,8 +22,6 @@ export default function Home({ onNavigate }: HomeProps) {
   const [featuredFormations, setFeaturedFormations] = useState<Formation[]>([]);
   const [stats, setStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmModalType, setConfirmModalType] = useState<'candidate' | 'recruiter'>('candidate');
 
   useEffect(() => {
     loadData();
@@ -107,41 +102,6 @@ export default function Home({ onNavigate }: HomeProps) {
     onNavigate('jobs', params.toString());
   };
 
-  const handleCandidateClick = () => {
-    if (user && profile && profile.user_type === 'candidate') {
-      // Utilisateur connecté ET c'est un candidat → Dashboard candidat
-      onNavigate('candidate-dashboard');
-    } else {
-      // Non connecté OU pas un candidat → Afficher modal de confirmation
-      setConfirmModalType('candidate');
-      setShowConfirmModal(true);
-    }
-  };
-
-  const handleRecruiterClick = () => {
-    if (user && profile && profile.user_type === 'recruiter') {
-      // Utilisateur connecté ET c'est un recruteur → Dashboard recruteur
-      onNavigate('recruiter-dashboard');
-    } else {
-      // Non connecté OU pas un recruteur → Afficher modal de confirmation
-      setConfirmModalType('recruiter');
-      setShowConfirmModal(true);
-    }
-  };
-
-  const handleConfirmSignup = () => {
-    setShowConfirmModal(false);
-    if (confirmModalType === 'candidate') {
-      onNavigate('signup-candidate');
-    } else {
-      onNavigate('signup-recruiter');
-    }
-  };
-
-  const handleCancelSignup = () => {
-    setShowConfirmModal(false);
-  };
-
   const categories = [
     { name: 'Mines & Extraction', icon: Shield, color: 'from-orange-500 to-orange-600', count: 45 },
     { name: 'Finance & Comptabilité', icon: DollarSign, color: 'from-green-500 to-green-600', count: 32 },
@@ -211,27 +171,11 @@ export default function Home({ onNavigate }: HomeProps) {
   ];
 
   return (
-    <>
-      <DynamicHead
-        title="Emploi Guinée - La Plateforme #1 pour Trouver un Emploi en Guinée"
-        description="Trouvez votre emploi idéal en Guinée. Plateforme de recrutement avec des milliers d'offres d'emploi, formations professionnelles et services IA pour candidats et recruteurs."
-        keywords="emploi guinée, jobs guinée, recrutement guinée, offres emploi, plateforme emploi guinée, carrière guinée, formation professionnelle guinée, cv guinée"
-        ogTitle="Emploi Guinée - Votre Avenir Professionnel Commence Ici"
-        ogDescription="La plateforme de recrutement leader en Guinée. Connectez-vous avec les meilleures opportunités professionnelles."
-      />
-      <div className="w-full">
-      <section
-        className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden"
-        style={{
-          backgroundImage: 'url("https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundBlendMode: 'multiply',
-        }}
-      >
-        <div className="absolute inset-0 bg-[#0E2F56] opacity-85"></div>
+    <div className="w-full">
+      <section className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-32">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
@@ -357,7 +301,7 @@ export default function Home({ onNavigate }: HomeProps) {
             <p className="text-lg text-gray-600">Trouvez les opportunités dans votre domaine</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((category) => {
               const Icon = category.icon;
               return (
@@ -368,12 +312,12 @@ export default function Home({ onNavigate }: HomeProps) {
                     params.set('sector', category.name);
                     onNavigate('jobs', params.toString());
                   }}
-                  className="group p-3 neo-clay-card rounded-xl transition cursor-pointer hover:shadow-lg"
+                  className="group p-6 neo-clay-card rounded-2xl transition cursor-pointer"
                 >
-                  <div className={`w-10 h-10 mx-auto mb-2 rounded-lg bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>
-                    <Icon className="w-5 h-5 text-white" />
+                  <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>
+                    <Icon className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 text-xs mb-1 text-center leading-tight">{category.name}</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm mb-2 text-center">{category.name}</h3>
                   <div className="text-xs text-gray-500 text-center">{category.count} offres</div>
                 </button>
               );
@@ -420,7 +364,7 @@ export default function Home({ onNavigate }: HomeProps) {
                       </h3>
                       <div className="flex items-center space-x-2 text-gray-700 mb-1">
                         <Building className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-sm font-medium line-clamp-1">{job.companies?.name}</span>
+                        <span className="text-sm font-medium line-clamp-1">{job.companies?.company_name}</span>
                       </div>
                       {job.location && (
                         <div className="flex items-center space-x-2 text-gray-500">
@@ -529,12 +473,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={handleCandidateClick}
+                onClick={() => onNavigate('signup')}
                 className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
               >
-                {(user && profile && profile.user_type === 'candidate')
-                  ? 'Accéder à mon espace'
-                  : 'Créer mon profil gratuitement'}
+                Créer mon profil gratuitement
               </button>
             </div>
 
@@ -565,12 +507,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={handleRecruiterClick}
+                onClick={() => onNavigate('recruiter-dashboard')}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
-                {(user && profile && profile.user_type === 'recruiter')
-                  ? 'Accéder à mon espace'
-                  : 'Publier une annonce maintenant'}
+                Publier une annonce maintenant
               </button>
             </div>
           </div>
@@ -813,76 +753,6 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
-
-      {/* Modal de confirmation pour inscription */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl animate-fade-in">
-            <div className="text-center mb-6">
-              <div className={`w-16 h-16 ${confirmModalType === 'candidate' ? 'bg-[#FF8C00]' : 'bg-[#0E2F56]'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                {confirmModalType === 'candidate' ? (
-                  <Users className="w-8 h-8 text-white" />
-                ) : (
-                  <Building className="w-8 h-8 text-white" />
-                )}
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {confirmModalType === 'candidate'
-                  ? 'Rejoindre en tant que Candidat'
-                  : 'Rejoindre en tant que Recruteur'}
-              </h3>
-              <p className="text-gray-600">
-                {confirmModalType === 'candidate'
-                  ? 'Vous allez être redirigé vers la page d\'inscription candidat. Vous pourrez créer votre profil, postuler aux offres et accéder à des services IA personnalisés.'
-                  : 'Vous allez être redirigé vers la page d\'inscription recruteur. Vous pourrez publier des offres, accéder à la CVthèque et gérer vos candidatures.'}
-              </p>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="flex items-start space-x-3 text-sm text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <span>
-                  {confirmModalType === 'candidate'
-                    ? 'Accès gratuit à toutes les offres d\'emploi'
-                    : 'Publication d\'offres illimitée'}
-                </span>
-              </div>
-              <div className="flex items-start space-x-3 text-sm text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <span>
-                  {confirmModalType === 'candidate'
-                    ? '150 000 crédits IA gratuits à l\'inscription'
-                    : 'Accès à la CVthèque complète'}
-                </span>
-              </div>
-              <div className="flex items-start space-x-3 text-sm text-gray-700">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <span>
-                  {confirmModalType === 'candidate'
-                    ? 'Matching IA avec les meilleures offres'
-                    : 'Outils IA pour trouver les meilleurs candidats'}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleCancelSignup}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmSignup}
-                className={`flex-1 px-6 py-3 ${confirmModalType === 'candidate' ? 'bg-[#FF8C00] hover:bg-[#e67e00]' : 'bg-[#0E2F56] hover:bg-[#1a4275]'} text-white font-semibold rounded-xl transition shadow-lg`}
-              >
-                Continuer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-    </>
   );
 }

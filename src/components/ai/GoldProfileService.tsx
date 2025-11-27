@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
 import {
   Crown,
   Star,
@@ -55,7 +54,6 @@ interface GoldProfileServiceProps {
 
 export default function GoldProfileService({ onNavigate }: GoldProfileServiceProps = {}) {
   const { user } = useAuth();
-  const eligibility = usePremiumEligibility('gold_profile');
   const [loading, setLoading] = useState(true);
   const [isGoldMember, setIsGoldMember] = useState(false);
   const [goldExpiresAt, setGoldExpiresAt] = useState<string | null>(null);

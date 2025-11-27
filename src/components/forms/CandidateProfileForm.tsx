@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, HelpCircle, Save, Briefcase, MapPin, Building } from 'lucide-react';
+import { AlertCircle, CheckCircle2, HelpCircle, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { calculateCandidateCompletion } from '../../utils/profileCompletion';
-import { useAutocomplete } from '../../hooks/useAutocomplete';
-import AutocompleteInput from './AutocompleteInput';
-import CVAutoFillButton from './CVAutoFillButton';
 import {
   Input,
   Select,
@@ -20,13 +16,8 @@ import {
   Button,
 } from './FormComponents';
 
-interface CandidateProfileFormProps {
-  onNavigate?: (page: string) => void;
-}
-
-export default function CandidateProfileForm({ onNavigate }: CandidateProfileFormProps) {
-  const { user, profile, refreshProfile } = useAuth();
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+export default function CandidateProfileForm() {
+  const { user, profile } = useAuth();
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('candidateProfileDraft');
     if (saved) {
@@ -42,9 +33,6 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [candidateProfile, setCandidateProfile] = useState<any>(null);
 
   function getInitialFormData() {
     return {
@@ -77,135 +65,37 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   }
 
   const calculateProgress = () => {
-    // Calculate from current form data using the same logic as save
-    // Use number of experiences as approximation of years
-    const totalExperienceYears = formData.experiences?.length || 0;
-
-    const educationLevel = formData.formations && formData.formations.length > 0
-      ? (formData.formations[0]?.['Diplôme obtenu'] || formData.formations[0]?.degree || '')
-      : '';
-
-    const profileData = {
-      full_name: formData.fullName || '',
-      desired_position: formData.currentPosition || formData.professionalStatus || '',
-      bio: formData.professionalSummary || '',
-      phone: formData.phone || '',
-      location: formData.address || '',
-      experience_years: totalExperienceYears,
-      education_level: educationLevel,
-      skills: formData.skills || [],
-      languages: formData.languages || [],
-      cv_url: formData.cv ? 'has_cv' : (candidateProfile?.cv_url ? 'has_cv' : ''),
-      linkedin_url: '',
-      portfolio_url: '',
-      desired_salary_min: '',
-      desired_salary_max: '',
-    };
-    return calculateCandidateCompletion(profileData);
+    const fields = [
+      formData.fullName,
+      formData.email,
+      formData.phone,
+      formData.birthDate,
+      formData.gender,
+      formData.address,
+      formData.region,
+      formData.professionalStatus,
+      formData.availability,
+      formData.professionalSummary,
+      formData.skills.length > 0,
+      formData.languages.length > 0,
+      formData.englishLevel,
+      formData.experiences.length > 0,
+      formData.formations.length > 0,
+    ];
+    const completed = fields.filter(Boolean).length;
+    return Math.round((completed / fields.length) * 100);
   };
 
   useEffect(() => {
-    loadExistingProfile();
-  }, [profile?.id]);
+    const timer = setTimeout(() => {
+      setAutoSaving(true);
+      localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
+      setLastSaved(new Date());
+      setTimeout(() => setAutoSaving(false), 1000);
+    }, 2000);
 
-  useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
-        setAutoSaving(true);
-        localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
-        setLastSaved(new Date());
-        setTimeout(() => setAutoSaving(false), 1000);
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [formData, loading]);
-
-  const loadExistingProfile = async () => {
-    if (!profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data: candidateData } = await supabase
-        .from('candidate_profiles')
-        .select('*')
-        .eq('profile_id', profile.id)
-        .maybeSingle();
-
-      if (candidateData) {
-        setCandidateProfile(candidateData);
-        setFormData({
-          fullName: candidateData.full_name || profile.full_name || '',
-          email: user?.email || '',
-          phone: profile.phone || '',
-          birthDate: candidateData.birth_date || '',
-          gender: candidateData.gender || '',
-          address: candidateData.location || '',
-          region: candidateData.nationality || '',
-          profilePhoto: null,
-          professionalStatus: candidateData.professional_status || '',
-          currentPosition: candidateData.title || '',
-          currentCompany: candidateData.current_company || '',
-          availability: candidateData.availability || '',
-          professionalSummary: candidateData.bio || '',
-          experiences: candidateData.work_experience || [],
-          formations: candidateData.education || [],
-          skills: candidateData.skills || [],
-          languages: candidateData.languages || [],
-          englishLevel: candidateData.english_level || '',
-          cv: null,
-          certificates: null,
-          visibleInCVTheque: candidateData.visibility === 'public',
-          receiveAlerts: candidateData.receive_alerts || false,
-          professionalGoal: candidateData.professional_goal || '',
-          acceptTerms: false,
-          certifyAccuracy: false,
-        });
-      } else {
-        setFormData({
-          ...getInitialFormData(),
-          fullName: profile.full_name || '',
-          email: user?.email || '',
-          phone: profile.phone || '',
-        });
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatPhoneNumber = (value: string): string => {
-    const cleaned = value.replace(/\D/g, '');
-
-    if (cleaned.startsWith('224')) {
-      const withoutCountryCode = cleaned.substring(3);
-      if (withoutCountryCode.length <= 3) {
-        return `+224 ${withoutCountryCode}`;
-      } else if (withoutCountryCode.length <= 5) {
-        return `+224 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3)}`;
-      } else if (withoutCountryCode.length <= 7) {
-        return `+224 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3, 5)} ${withoutCountryCode.slice(5)}`;
-      } else {
-        return `+224 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3, 5)} ${withoutCountryCode.slice(5, 7)} ${withoutCountryCode.slice(7, 9)}`;
-      }
-    } else if (cleaned.length > 0) {
-      if (cleaned.length <= 3) {
-        return `+224 ${cleaned}`;
-      } else if (cleaned.length <= 5) {
-        return `+224 ${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
-      } else if (cleaned.length <= 7) {
-        return `+224 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5)}`;
-      } else {
-        return `+224 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5, 7)} ${cleaned.slice(7, 9)}`;
-      }
-    }
-
-    return value;
-  };
+    return () => clearTimeout(timer);
+  }, [formData]);
 
   const validateField = (fieldName: string, value: any): string => {
     switch (fieldName) {
@@ -217,20 +107,13 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         return '';
       case 'phone':
         if (!value) return 'Le numéro de téléphone est obligatoire';
-        const cleaned = value.replace(/\D/g, '');
-        if (cleaned.length < 9) {
-          return 'Le numéro doit contenir au moins 9 chiffres';
-        }
-        if (cleaned.startsWith('224') && cleaned.length !== 12) {
-          return 'Format attendu: +224 XXX XX XX XX';
+        if (!/^\+?[0-9\s]{8,}$/.test(value)) {
+          return 'Veuillez saisir un numéro de téléphone valide';
         }
         return '';
       case 'fullName':
         if (!value || value.trim().length < 3) {
           return 'Le nom complet doit contenir au moins 3 caractères';
-        }
-        if (!/^[a-zA-ZàâäéèêëïîôùûüÿæœçÀÂÄÉÈÊËÏÎÔÙÛÜŸÆŒÇ\s-]+$/.test(value)) {
-          return 'Le nom ne doit contenir que des lettres';
         }
         return '';
       default:
@@ -239,21 +122,8 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   };
 
   const updateField = (fieldName: string, value: any) => {
-    let processedValue = value;
-
-    if (fieldName === 'phone') {
-      processedValue = formatPhoneNumber(value);
-    }
-
-    if (fieldName === 'fullName') {
-      processedValue = value
-        .split(' ')
-        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-    }
-
-    setFormData({ ...formData, [fieldName]: processedValue });
-    const error = validateField(fieldName, processedValue);
+    setFormData({ ...formData, [fieldName]: value });
+    const error = validateField(fieldName, value);
     setErrors({ ...errors, [fieldName]: error });
   };
 
@@ -264,23 +134,8 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
     if (!formData.fullName) newErrors.fullName = 'Ce champ est obligatoire';
     if (!formData.email) newErrors.email = 'Ce champ est obligatoire';
     if (!formData.phone) newErrors.phone = 'Ce champ est obligatoire';
-    if (!formData.birthDate) newErrors.birthDate = 'La date de naissance est obligatoire';
-
-    // Validate birth date is not in the future
-    if (formData.birthDate) {
-      const birthDate = new Date(formData.birthDate);
-      const today = new Date();
-      if (birthDate > today) {
-        newErrors.birthDate = 'La date de naissance ne peut pas être dans le futur';
-      }
-      // Check if age is reasonable (between 16 and 100 years old)
-      const age = today.getFullYear() - birthDate.getFullYear();
-      if (age < 16) {
-        newErrors.birthDate = 'Vous devez avoir au moins 16 ans';
-      } else if (age > 100) {
-        newErrors.birthDate = 'Veuillez vérifier la date saisie';
-      }
-    }
+    if (!formData.acceptTerms) newErrors.acceptTerms = 'Vous devez accepter les conditions';
+    if (!formData.certifyAccuracy) newErrors.certifyAccuracy = 'Vous devez certifier l\'exactitude';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -293,88 +148,20 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
       return;
     }
 
-    if (!user?.id) {
-      alert('Erreur: Utilisateur introuvable');
-      return;
-    }
-
-    setSubmitting(true);
-
     try {
-      // Upload files if provided
-      let profilePhotoUrl = null;
-      let cvUrl = null;
-      let certificatesUrl = null;
-
-      if (formData.profilePhoto) {
-        const photoPath = `${user.id}/photo_${Date.now()}.${formData.profilePhoto.name.split('.').pop()}`;
-        const { error: photoError } = await supabase.storage
-          .from('candidate-profiles')
-          .upload(photoPath, formData.profilePhoto, { upsert: true });
-
-        if (!photoError) {
-          const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(photoPath);
-          profilePhotoUrl = data.publicUrl;
-        }
-      }
-
-      if (formData.cv) {
-        const cvPath = `${user.id}/cv_${Date.now()}.pdf`;
-        const { error: cvError } = await supabase.storage
-          .from('candidate-profiles')
-          .upload(cvPath, formData.cv, { upsert: true });
-
-        if (!cvError) {
-          const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(cvPath);
-          cvUrl = data.publicUrl;
-        }
-      }
-
-      if (formData.certificates) {
-        const certPath = `${user.id}/certificates_${Date.now()}.pdf`;
-        const { error: certError } = await supabase.storage
-          .from('candidate-profiles')
-          .upload(certPath, formData.certificates, { upsert: true });
-
-        if (!certError) {
-          const { data } = supabase.storage.from('candidate-profiles').getPublicUrl(certPath);
-          certificatesUrl = data.publicUrl;
-        }
-      }
-
-      // Use number of experiences as approximation of years (simple heuristic)
-      const totalExperienceYears = formData.experiences?.length || 0;
-
-      // Get education level from first formation
-      const educationLevel = formData.formations && formData.formations.length > 0
-        ? (formData.formations[0]?.['Diplôme obtenu'] || formData.formations[0]?.degree || '')
-        : '';
-
       // Update or insert candidate profile
       const candidateData = {
         profile_id: profile.id,
-        user_id: user.id,
-        full_name: formData.fullName,
-        birth_date: formData.birthDate || null,
-        gender: formData.gender || null,
-        location: formData.address || '',
-        nationality: formData.region || 'Guinéenne',
-        professional_status: formData.professionalStatus || null,
-        title: formData.currentPosition || formData.professionalStatus || '',
-        current_company: formData.currentCompany || null,
-        availability: formData.availability || 'Immédiate',
-        bio: formData.professionalSummary || '',
-        experience_years: totalExperienceYears,
-        work_experience: formData.experiences || [],
-        education: formData.formations || [],
-        skills: formData.skills || [],
-        languages: formData.languages || [],
-        english_level: formData.englishLevel || null,
-        professional_goal: formData.professionalGoal || null,
-        receive_alerts: formData.receiveAlerts || false,
-        profile_photo_url: profilePhotoUrl,
-        cv_url: cvUrl,
-        certificates_url: certificatesUrl,
+        title: formData.currentPosition || formData.professionalStatus,
+        bio: formData.professionalSummary,
+        experience_years: formData.experiences.length,
+        skills: formData.skills,
+        education: formData.formations,
+        work_experience: formData.experiences,
+        languages: formData.languages,
+        location: formData.address,
+        availability: formData.availability,
+        nationality: formData.region,
         visibility: formData.visibleInCVTheque ? 'public' : 'private',
         last_active_at: new Date().toISOString(),
       };
@@ -382,23 +169,15 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
       // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('candidate_profiles')
-        .select('id, profile_photo_url, cv_url, certificates_url')
+        .select('id')
         .eq('profile_id', profile.id)
         .maybeSingle();
 
-      // Only update file URLs if new files were uploaded
       if (existingProfile) {
-        const updateData = {
-          ...candidateData,
-          profile_photo_url: profilePhotoUrl || existingProfile.profile_photo_url,
-          cv_url: cvUrl || existingProfile.cv_url,
-          certificates_url: certificatesUrl || existingProfile.certificates_url,
-        };
-
         // Update existing profile
         const { error } = await supabase
           .from('candidate_profiles')
-          .update(updateData)
+          .update(candidateData)
           .eq('profile_id', profile.id);
 
         if (error) throw error;
@@ -411,62 +190,20 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         if (error) throw error;
       }
 
-      // Calculate profile completion percentage using the same data we just saved
-      const savedProfileData = {
-        full_name: formData.fullName || '',
-        desired_position: formData.currentPosition || formData.professionalStatus || '',
-        bio: formData.professionalSummary || '',
-        phone: formData.phone || '',
-        location: formData.address || '',
-        experience_years: totalExperienceYears,
-        education_level: educationLevel,
-        skills: formData.skills || [],
-        languages: formData.languages || [],
-        cv_url: cvUrl || candidateProfile?.cv_url || '',
-        linkedin_url: '',
-        portfolio_url: '',
-        desired_salary_min: '',
-        desired_salary_max: '',
-      };
-      const completionPercentage = calculateCandidateCompletion(savedProfileData);
-
       // Update main profile
       await supabase
         .from('profiles')
         .update({
           full_name: formData.fullName,
           phone: formData.phone,
-          profile_completion_percentage: completionPercentage,
         })
         .eq('id', profile.id);
 
       localStorage.removeItem('candidateProfileDraft');
-
-      // Refresh profile to update completion percentage in AuthContext
-      await refreshProfile();
-
-      // Show success message
-      setShowSuccessMessage(true);
-    } catch (error: any) {
+      alert('Profil enregistré avec succès ! Votre profil est maintenant visible dans la CVThèque.');
+    } catch (error) {
       console.error('Error saving profile:', error);
-
-      let errorMessage = 'Erreur inconnue';
-
-      if (error.message) {
-        errorMessage = error.message;
-      }
-
-      if (error.code === '23505') {
-        errorMessage = 'Un profil existe déjà pour cet utilisateur.';
-      } else if (error.code === '23502') {
-        errorMessage = 'Certains champs obligatoires sont manquants.';
-      } else if (error.code === '23503') {
-        errorMessage = 'Référence invalide dans les données du profil.';
-      }
-
-      alert(`Erreur lors de l'enregistrement du profil:\n\n${errorMessage}\n\nVeuillez réessayer ou contacter le support.`);
-    } finally {
-      setSubmitting(false);
+      alert('Erreur lors de l\'enregistrement du profil. Veuillez réessayer.');
     }
   };
 
@@ -479,105 +216,21 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
   };
 
   const handleAIAnalysis = () => {
-    if (!onNavigate) {
-      alert('Navigation non disponible');
-      return;
-    }
-
-    if (!candidateProfile) {
-      alert('Veuillez d\'abord enregistrer votre profil avant de l\'analyser.');
-      return;
-    }
-
-    onNavigate('premium-ai-services');
+    alert('Analyse IA du profil en cours... Cette fonctionnalité sera disponible prochainement.');
   };
 
   const progress = calculateProgress();
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="w-16 h-16 border-4 border-[#0E2F56] border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600">Chargement de votre profil...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative">
-      {/* Success Message Overlay */}
-      {showSuccessMessage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm cursor-pointer"
-          onClick={() => {
-            setShowSuccessMessage(false);
-            if (onNavigate) {
-              onNavigate('candidate-dashboard');
-            }
-          }}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform animate-bounce"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Profil Enregistré !
-              </h2>
-              <p className="text-gray-600 mb-1">
-                Votre profil a été enregistré avec succès.
-              </p>
-              <p className="text-gray-500 text-sm">
-                Cliquez n'importe où pour continuer...
-              </p>
-              <div className="mt-6">
-                <button
-                  onClick={() => {
-                    setShowSuccessMessage(false);
-                    if (onNavigate) {
-                      onNavigate('candidate-dashboard');
-                    }
-                  }}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  Continuer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
-        <div className="text-center border-b pb-4">
-          <h1 className="text-2xl font-bold text-gray-800">👤 Mon Profil Professionnel</h1>
-          <p className="text-gray-500 mt-2">
-            Complétez les informations ci-dessous pour créer ou mettre à jour votre profil professionnel.
-          </p>
-        </div>
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
+      <div className="text-center border-b pb-4">
+        <h1 className="text-2xl font-bold text-gray-800">👤 Créer mon profil JobGuinée</h1>
+        <p className="text-gray-500 mt-2">
+          Complétez les informations ci-dessous pour créer votre profil professionnel.
+        </p>
+      </div>
 
       {/* Progress Bar */}
-      <CVAutoFillButton
-        onDataExtracted={(data) => {
-          setFormData((prev: any) => ({
-            ...prev,
-            fullName: data.fullName || prev.fullName,
-            email: data.email || prev.email,
-            phone: data.phone || prev.phone,
-            currentPosition: data.currentPosition || prev.currentPosition,
-            experiences: data.experiences.length > 0 ? data.experiences : prev.experiences,
-            formations: data.formations.length > 0 ? data.formations : prev.formations,
-            skills: data.skills.length > 0 ? data.skills : prev.skills,
-            languages: data.languages.length > 0 ? data.languages : prev.languages,
-          }));
-        }}
-      />
-
       <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">Profil complété</span>
@@ -644,9 +297,6 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           label="Date de naissance"
           value={formData.birthDate}
           onChange={(value) => setFormData({ ...formData, birthDate: value })}
-          error={errors.birthDate}
-          required
-          helpText="Votre âge permet aux recruteurs d'évaluer votre profil selon les exigences du poste"
         />
         <Select
           label="Genre"
@@ -654,31 +304,11 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           value={formData.gender}
           onChange={(value) => setFormData({ ...formData, gender: value })}
         />
-        <AutocompleteInput
+        <Input
           label="Adresse / Ville de résidence"
           placeholder="Ex : Ratoma, Conakry"
           value={formData.address}
           onChange={(value) => setFormData({ ...formData, address: value })}
-          suggestions={[
-            'Ratoma, Conakry',
-            'Matoto, Conakry',
-            'Kaloum, Conakry',
-            'Dixinn, Conakry',
-            'Matam, Conakry',
-            'Boké',
-            'Kamsar',
-            'Kindia',
-            'Labé',
-            'Nzérékoré',
-            'Kankan',
-            'Siguiri',
-            'Mamou',
-            'Faranah',
-            'Dabola',
-            'Kissidougou',
-          ]}
-          icon={MapPin}
-          allowCustom={true}
         />
         <Select
           label="Région / Préfecture"
@@ -686,33 +316,10 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           value={formData.region}
           onChange={(value) => setFormData({ ...formData, region: value })}
         />
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Photo de profil
-          </label>
-          <div className="flex items-center gap-4">
-            {(formData.profilePhoto || candidateProfile?.profile_photo_url) && (
-              <div className="relative">
-                <img
-                  src={
-                    formData.profilePhoto
-                      ? URL.createObjectURL(formData.profilePhoto)
-                      : candidateProfile?.profile_photo_url || ''
-                  }
-                  alt="Aperçu photo de profil"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
-                />
-              </div>
-            )}
-            <Upload
-              label=""
-              onChange={(file) => setFormData({ ...formData, profilePhoto: file })}
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Format recommandé : JPG ou PNG, taille maximale 5 MB
-          </p>
-        </div>
+        <Upload
+          label="Photo de profil"
+          onChange={(file) => setFormData({ ...formData, profilePhoto: file })}
+        />
       </FormSection>
 
       <FormSection title="2️⃣ Situation professionnelle actuelle">
@@ -722,62 +329,17 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
           value={formData.professionalStatus}
           onChange={(value) => setFormData({ ...formData, professionalStatus: value })}
         />
-        <AutocompleteInput
+        <Input
           label="Intitulé actuel du poste"
           placeholder="Ex : Assistant RH"
           value={formData.currentPosition}
           onChange={(value) => setFormData({ ...formData, currentPosition: value })}
-          suggestions={[
-            'Assistant(e) RH',
-            'Chargé(e) de Recrutement',
-            'Responsable RH',
-            'Comptable',
-            'Assistant(e) Comptable',
-            'Contrôleur de Gestion',
-            'Ingénieur Logiciel',
-            'Développeur Web',
-            'Data Analyst',
-            'Chef de Projet',
-            'Responsable Logistique',
-            'Assistant(e) Achats',
-            'Commercial(e)',
-            'Chargé(e) de Communication',
-            'Juriste',
-            'Auditeur',
-            'Consultant',
-            'Formateur',
-            'Ingénieur Minier',
-            'Géologue',
-            'Superviseur HSE',
-          ]}
-          icon={Briefcase}
-          allowCustom={true}
         />
-        <AutocompleteInput
+        <Input
           label="Entreprise actuelle (si applicable)"
           placeholder="Ex : Winning Consortium"
           value={formData.currentCompany}
           onChange={(value) => setFormData({ ...formData, currentCompany: value })}
-          suggestions={[
-            'Winning Consortium',
-            'SMB-Winning',
-            'Compagnie des Bauxites de Guinée (CBG)',
-            'Alliance Mining Commodities (AMC)',
-            'Société Aurifère de Guinée (SAG)',
-            'Orange Guinée',
-            'MTN Guinée',
-            'Ecobank Guinée',
-            'Société Générale de Banques en Guinée',
-            'Total Guinée',
-            'Bolloré Africa Logistics',
-            'GETMA Guinée',
-            'ALCOA',
-            'Rio Tinto',
-            'Rusal',
-            'Compagnie Minière de Boffa (CMB)',
-          ]}
-          icon={Building}
-          allowCustom={true}
         />
         <Select
           label="Disponibilité"
@@ -875,26 +437,12 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
       </FormSection>
 
       <FormSection title="7️⃣ Assistance IA et analyse de profil">
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-6 mb-4">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl">
-              🧠
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900 mb-2">Analyse IA de votre profil</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Notre intelligence artificielle analysera votre profil pour vous donner un score de compatibilité avec les offres d'emploi et vous suggérer des formations adaptées.
-              </p>
-              <Button
-                variant="secondary"
-                onClick={handleAIAnalysis}
-                className="w-full sm:w-auto"
-              >
-                🧠 Analyser mon profil avec IA
-              </Button>
-            </div>
-          </div>
-        </div>
+        <Button variant="secondary" onClick={handleAIAnalysis}>
+          🧠 Analyser mon profil avec IA
+        </Button>
+        <p className="text-sm text-gray-500">
+          L'IA analysera vos informations pour suggérer des offres adaptées et améliorer votre CV.
+        </p>
         <Textarea
           label="Commentaire ou objectif professionnel"
           placeholder="Décrivez le type d'emploi ou secteur que vous recherchez..."
@@ -904,17 +452,21 @@ export default function CandidateProfileForm({ onNavigate }: CandidateProfileFor
         />
       </FormSection>
 
-      <FormSection title="8️⃣ Validation et enregistrement">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-sm text-blue-800">
-            En enregistrant votre profil, vous confirmez que les informations fournies sont exactes et à jour.
-          </p>
-        </div>
-        <Button variant="primary" type="submit" disabled={submitting}>
-          {submitting ? 'Enregistrement en cours...' : '✅ Enregistrer mon profil'}
+      <FormSection title="8️⃣ Sécurité et validation">
+        <Checkbox
+          label="J'accepte les conditions générales et la politique de confidentialité"
+          checked={formData.acceptTerms}
+          onChange={(checked) => setFormData({ ...formData, acceptTerms: checked })}
+        />
+        <Checkbox
+          label="Je certifie que les informations fournies sont exactes"
+          checked={formData.certifyAccuracy}
+          onChange={(checked) => setFormData({ ...formData, certifyAccuracy: checked })}
+        />
+        <Button variant="primary" type="submit">
+          ✅ Enregistrer mon profil
         </Button>
       </FormSection>
     </form>
-    </div>
   );
 }

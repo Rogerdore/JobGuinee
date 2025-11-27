@@ -1,11 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Download, Type } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useCMS } from '../contexts/CMSContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
-import ChatBot from './ChatBot';
-import FloatingSocialMedia from './FloatingSocialMedia';
-import Footer from './Footer';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,7 +11,6 @@ interface LayoutProps {
 
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, profile, signOut, isAdmin } = useAuth();
-  const { settings } = useCMS();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -47,7 +42,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { name: 'CVthèque', page: 'cvtheque', icon: Users },
     { name: 'Formations', page: 'formations', icon: BookOpen },
     { name: 'Blog', page: 'blog', icon: FileText },
-    { name: 'Ressources', page: 'resources', icon: Download },
   ];
 
   const handleSignOut = async () => {
@@ -61,7 +55,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
   return (
     <div className="min-h-screen">
-      <FloatingSocialMedia />
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'neo-clay backdrop-blur-md'
@@ -74,16 +67,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 onClick={() => onNavigate('home')}
                 className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
               >
-                {settings.site_logo ? (
-                  <img
-                    src={settings.site_logo}
-                    alt={settings.site_name || 'Logo'}
-                    className="h-10 w-auto object-contain"
-                  />
-                ) : (
-                  <Briefcase className="w-8 h-8" />
-                )}
-                <span>{settings.site_name || 'JobGuinée'}</span>
+                <Briefcase className="w-8 h-8" />
+                <span>JobGuinée</span>
               </button>
             </div>
 
@@ -131,34 +116,19 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       </div>
 
                       {isAdmin ? (
-                        <>
-                          <button
-                            onClick={() => {
-                              onNavigate('cms-admin');
-                              setAccountMenuOpen(false);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
-                          >
-                            <Settings className="w-4 h-4" />
-                            <div>
-                              <p className="font-medium">Administration CMS</p>
-                              <p className="text-xs text-gray-500">Gestion du contenu du site</p>
-                            </div>
-                          </button>
-                          <button
-                            onClick={() => {
-                              onNavigate('job-formatting');
-                              setAccountMenuOpen(false);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
-                          >
-                            <Type className="w-4 h-4" />
-                            <div>
-                              <p className="font-medium">Formatage des offres</p>
-                              <p className="text-xs text-gray-500">Style des descriptions</p>
-                            </div>
-                          </button>
-                        </>
+                        <button
+                          onClick={() => {
+                            onNavigate('cms-admin');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-700 hover:neo-clay-pressed transition rounded-lg mx-2"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">Administration CMS</p>
+                            <p className="text-xs text-gray-500">Gestion du contenu du site</p>
+                          </div>
+                        </button>
                       ) : (
                         <button
                           onClick={() => {
@@ -336,10 +306,60 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         {children}
       </main>
 
-      <Footer onNavigate={onNavigate} />
+      <footer className="bg-gray-900 text-white mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-2 mb-4">
+                <Briefcase className="w-8 h-8" />
+                <span className="text-xl font-bold">JobGuinée</span>
+              </div>
+              <p className="text-gray-400 mb-4">
+                La plateforme de recrutement moderne pour digitaliser le marché de l'emploi en Guinée.
+              </p>
+            </div>
 
-      {/* ChatBot */}
-      <ChatBot />
+            <div>
+              <h3 className="font-semibold mb-4">Liens rapides</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <button onClick={() => onNavigate('jobs')} className="hover:text-white transition">
+                    Offres d'emploi
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => onNavigate('cvtheque')} className="hover:text-white transition">
+                    CVthèque
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => onNavigate('formations')} className="hover:text-white transition">
+                    Formations
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => onNavigate('blog')} className="hover:text-white transition">
+                    Blog
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Contact</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>Email: contact@jobguinee.com</li>
+                <li>Tel: +224 XXX XX XX XX</li>
+                <li>Conakry, Guinée</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+            <p>&copy; 2025 JobGuinée. Tous droits réservés.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

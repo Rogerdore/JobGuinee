@@ -6,16 +6,15 @@ import { UserRole } from '../lib/supabase';
 interface AuthProps {
   mode: 'login' | 'signup';
   onNavigate: (page: string) => void;
-  defaultRole?: UserRole;
 }
 
-export default function Auth({ mode, onNavigate, defaultRole }: AuthProps) {
+export default function Auth({ mode, onNavigate }: AuthProps) {
   const { signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<UserRole>(defaultRole || 'candidate');
+  const [role, setRole] = useState<UserRole>('candidate');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

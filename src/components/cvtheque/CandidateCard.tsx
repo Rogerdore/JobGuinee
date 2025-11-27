@@ -1,4 +1,4 @@
-import { Download, MessageCircle, Heart, MapPin, Briefcase, GraduationCap, CheckCircle, Circle, Hexagon, Star, Clock } from 'lucide-react';
+import { Download, MessageCircle, Heart, MapPin, Briefcase, GraduationCap, CheckCircle, Circle, Hexagon, Star } from 'lucide-react';
 import { useState } from 'react';
 
 interface Candidate {
@@ -61,24 +61,6 @@ export default function CandidateCard({
   };
 
   const scoreColor = getScoreColor(score);
-
-  const getAvailabilityLabel = (availability?: string) => {
-    const labels: { [key: string]: string } = {
-      immediate: 'Immédiate',
-      '1_month': '1 mois',
-      '2_months': '2 mois',
-      '3_months': '3 mois',
-      negotiable: 'Négociable'
-    };
-    return availability ? labels[availability] || availability : 'Non spécifiée';
-  };
-
-  const getAvailabilityColor = (availability?: string) => {
-    if (availability === 'immediate') return 'bg-green-100 text-green-700';
-    if (availability === '1_month') return 'bg-blue-100 text-blue-700';
-    if (availability === '2_months' || availability === '3_months') return 'bg-yellow-100 text-yellow-700';
-    return 'bg-gray-100 text-gray-700';
-  };
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -155,15 +137,6 @@ export default function CandidateCard({
               <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
             </button>
           </div>
-
-          {candidate.availability && (
-            <div className="mb-2">
-              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getAvailabilityColor(candidate.availability)}`}>
-                <Clock className="w-3 h-3" />
-                Disponibilité: {getAvailabilityLabel(candidate.availability)}
-              </span>
-            </div>
-          )}
 
           {candidate.bio && (
             <p className="text-xs text-gray-600 line-clamp-2 mb-3 leading-relaxed">{candidate.bio}</p>

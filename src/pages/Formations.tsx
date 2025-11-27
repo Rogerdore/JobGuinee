@@ -27,7 +27,6 @@ import { supabase, TrainerProfile } from '../lib/supabase';
 import { sampleFormations, formationCategories } from '../utils/sampleFormationsData';
 import FormationDetailsModal from '../components/formations/FormationDetailsModal';
 import EnrollmentModal from '../components/formations/EnrollmentModal';
-import DynamicHead from '../components/DynamicHead';
 import CoachingBookingModal from '../components/formations/CoachingBookingModal';
 import TrainerApplicationModal from '../components/formations/TrainerApplicationModal';
 import FormationPublishForm from '../components/forms/FormationPublishForm';
@@ -165,15 +164,7 @@ export default function Formations({ onNavigate }: FormationsProps) {
   });
 
   return (
-    <>
-      <DynamicHead
-        title="Formations Professionnelles en Guinée - Développez vos Compétences"
-        description="Découvrez des formations professionnelles, certifications et programmes de coaching en Guinée. Formation en ligne et présentiel pour booster votre carrière."
-        keywords="formation professionnelle guinée, certification guinée, cours en ligne guinée, coaching carrière, développement compétences"
-        ogTitle="Formations Professionnelles en Guinée"
-        ogDescription="Accédez à des centaines de formations pour développer vos compétences professionnelles."
-      />
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div
         className="relative bg-gradient-to-br from-[#0E2F56] via-blue-900 to-blue-800 text-white py-20"
         style={{
@@ -615,6 +606,5 @@ export default function Formations({ onNavigate }: FormationsProps) {
         />
       )}
     </div>
-    </>
   );
 }

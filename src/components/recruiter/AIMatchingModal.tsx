@@ -1,7 +1,5 @@
-import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown, Calendar } from 'lucide-react';
+import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown } from 'lucide-react';
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
 interface AIMatchingModalProps {
   job: {
@@ -16,7 +14,6 @@ interface AIMatchingModalProps {
     id: string;
     ai_score: number;
     ai_category: string;
-    applied_at?: string;
     candidate: {
       full_name: string;
       email: string;
@@ -313,12 +310,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                             <Briefcase className="w-4 h-4" />
                             {app.candidate_profile?.title || 'Profil'}
                           </p>
-                          {app.applied_at && (
-                            <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                              <Calendar className="w-3 h-3" />
-                              Candidature {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true, locale: fr })}
-                            </p>
-                          )}
                         </div>
 
                         <div className="text-center">

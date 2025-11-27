@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
+import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
-import { calculateCandidateCompletion } from '../utils/profileCompletion';
-import MyApplications from '../components/candidate/MyApplications';
-import CandidateProfileForm from '../components/forms/CandidateProfileForm';
-import DocumentManager from '../components/candidate/DocumentManager';
-import WelcomeCreditsModal from '../components/candidate/WelcomeCreditsModal';
-import JobAlerts from '../components/candidate/JobAlerts';
-import MessagingSystem from '../components/messaging/MessagingSystem';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -22,7 +15,7 @@ interface Formation {
 }
 
 export default function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'applications' | 'profile' | 'formations' | 'alerts' | 'messages' | 'documents' | 'premium'>('dashboard');
   const [applications, setApplications] = useState<(Application & { jobs: Job & { companies: Company } })[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
@@ -30,10 +23,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [formations, setFormations] = useState<Formation[]>([]);
   const [isPremium, setIsPremium] = useState(false);
   const [selectedService, setSelectedService] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -48,47 +37,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
-    const init = async () => {
-      await refreshProfile();
-      await loadData();
-      checkForWelcomeModal();
-    };
-    init();
+    loadData();
   }, [profile?.id]);
-
-  useEffect(() => {
-    if (activeTab === 'dashboard') {
-      loadData();
-    }
-  }, [activeTab]);
-
-  const checkForWelcomeModal = () => {
-    // Vérifier si c'est la première visite (dans les dernières 24h de création du compte)
-    const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeCredits');
-    if (!hasSeenWelcome && user) {
-      // Afficher le modal après 2 secondes
-      setTimeout(() => {
-        setShowWelcomeModal(true);
-        localStorage.setItem('hasSeenWelcomeCredits', 'true');
-      }, 2000);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'dashboard' || activeTab === 'applications') {
-      loadData();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeTab === 'dashboard' || activeTab === 'applications') {
-        loadData();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [activeTab, profile?.id]);
 
   const loadData = async () => {
     if (!profile?.id) {
@@ -103,7 +53,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .from('applications')
           .select('*, jobs(*, companies(*))')
           .eq('candidate_id', profile.id)
-          .order('applied_at', { ascending: false }),
+          .order('created_at', { ascending: false }),
         supabase
           .from('candidate_profiles')
           .select('*')
@@ -133,54 +83,31 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   };
 
   const handleSaveProfile = async () => {
-    if (!profile?.id) {
-      setSaveError('Profil non trouvé');
-      return;
+    if (!profile?.id) return;
+
+    const dataToSave = {
+      profile_id: profile.id,
+      title: formData.desired_position,
+      skills: formData.skills,
+      experience_years: Number(formData.experience_years),
+      education_level: formData.education_level,
+      location: formData.location,
+      availability: formData.availability,
+      desired_salary_min: formData.desired_salary_min ? Number(formData.desired_salary_min) : null,
+      desired_salary_max: formData.desired_salary_max ? Number(formData.desired_salary_max) : null,
+    };
+
+    if (candidateProfile) {
+      await supabase
+        .from('candidate_profiles')
+        .update(dataToSave)
+        .eq('profile_id', profile.id);
+    } else {
+      await supabase.from('candidate_profiles').insert(dataToSave);
     }
 
-    setSaving(true);
-    setSaveError('');
-    setSaveSuccess(false);
-
-    try {
-      const dataToSave = {
-        profile_id: profile.id,
-        title: formData.desired_position,
-        skills: formData.skills,
-        experience_years: Number(formData.experience_years),
-        education_level: formData.education_level,
-        location: formData.location,
-        availability: formData.availability,
-        desired_salary_min: formData.desired_salary_min ? Number(formData.desired_salary_min) : null,
-        desired_salary_max: formData.desired_salary_max ? Number(formData.desired_salary_max) : null,
-      };
-
-      let result;
-      if (candidateProfile) {
-        result = await supabase
-          .from('candidate_profiles')
-          .update(dataToSave)
-          .eq('profile_id', profile.id);
-      } else {
-        result = await supabase.from('candidate_profiles').insert(dataToSave);
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      setSaveSuccess(true);
-      await loadData();
-
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
-    } catch (error: any) {
-      console.error('Error saving profile:', error);
-      setSaveError(error.message || 'Erreur lors de la sauvegarde du profil');
-    } finally {
-      setSaving(false);
-    }
+    alert('Profil mis à jour avec succès!');
+    loadData();
   };
 
   const addSkill = () => {
@@ -217,7 +144,17 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   };
 
   const calculateProfileCompletion = () => {
-    return profile?.profile_completion_percentage || 0;
+    let completion = 0;
+    const fields = [
+      formData.desired_position,
+      formData.education_level,
+      formData.location,
+      formData.skills.length > 0,
+      formData.experience_years > 0,
+      formData.desired_salary_min,
+    ];
+    completion = (fields.filter(Boolean).length / fields.length) * 100;
+    return Math.round(completion);
   };
 
   const getAIScore = () => {
@@ -234,12 +171,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       price: 'Inclus',
       color: 'bg-purple-100 text-purple-700',
       details: {
-        fullDescription: 'Analyse complète du profil avec intelligence artificielle.',
+        fullDescription: 'Analyse automatique complète de votre profil avec intelligence artificielle pour maximiser vos chances de succès.',
         features: [
-          'Analyse complète du profil',
-          'Score de compatibilité avec offres',
-          'Suggestions de formations personnalisées',
-          'Recommandations d\'amélioration',
+          'Score de compatibilité (0-100) entre votre profil et les offres',
+          'Analyse détaillée des compétences requises vs vos compétences',
+          'Suggestions de formations pour combler les lacunes',
+          'Recommandations personnalisées d\'amélioration',
+          'Mise à jour en temps réel du matching',
+          'Top 10 des meilleures offres correspondantes'
         ],
         benefits: 'Gagnez du temps et ciblez les offres qui correspondent vraiment à votre profil.',
       }
@@ -253,10 +192,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Création automatique de CV et lettres de motivation professionnels optimisés pour les systèmes de recrutement.',
         features: [
-          'Génération CV professionnel',
-          'Création lettre de motivation',
-          'Design moderne et ATS-friendly',
-          'Export PDF haute qualité',
+          'Génération de CV au format HTML téléchargeable',
+          'Design moderne et professionnel',
+          'Optimisé pour les systèmes ATS (Applicant Tracking System)',
+          'Lettres de motivation personnalisées par offre',
+          'Choix entre 3 tons : formel, créatif, simple',
+          'Import automatique depuis votre profil',
+          'Modifications et ajustements illimités'
         ],
         benefits: 'Présentez-vous de manière professionnelle et augmentez vos chances de décrocher des entretiens.',
       }
@@ -270,10 +212,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Système intelligent de notification qui détecte automatiquement les offres correspondant à votre profil.',
         features: [
-          'Alertes intelligentes personnalisées',
-          'Matching avancé IA',
-          'Notifications multi-canal',
-          'Suggestions d\'offres similaires',
+          'Notifications instantanées par email et SMS',
+          'Analyse automatique de toutes les nouvelles offres',
+          'Filtrage intelligent basé sur vos critères',
+          'Alertes personnalisées par secteur et compétences',
+          'Résumé hebdomadaire des opportunités',
+          'Désactivation/réactivation flexible'
         ],
         benefits: 'Ne ratez plus jamais une opportunité qui vous correspond.',
       }
@@ -287,10 +231,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Assistant virtuel disponible 24/7 pour répondre à toutes vos questions sur l\'emploi et le Code du Travail guinéen.',
         features: [
-          'Conseils juridiques emploi',
-          'Code du Travail guinéen',
-          'Réponses instantanées 24/7',
-          'Historique des conversations',
+          'Réponses instantanées et personnalisées',
+          'Base de connaissances sur le Code du Travail guinéen',
+          'Conseils sur la préparation d\'entretiens',
+          'Stratégies de recherche d\'emploi',
+          'Aide à la négociation salariale',
+          'Conseils de développement de carrière',
+          'Historique des conversations sauvegardé'
         ],
         benefits: 'Obtenez des réponses immédiates à vos questions professionnelles, 24h/24.',
       }
@@ -304,10 +251,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Rapport détaillé mensuel avec analyses et statistiques de votre activité sur la plateforme.',
         features: [
-          'Rapport détaillé mensuel',
-          'Statistiques de candidatures',
-          'Analyse de performance',
-          'Recommandations stratégiques',
+          'Statistiques de candidatures (envoyées, vues, réponses)',
+          'Évolution de votre score de matching',
+          'Analyse des formations suivies',
+          'Comparaison avec d\'autres candidats de votre secteur',
+          'Recommandations d\'amélioration personnalisées',
+          'Graphiques et visualisations claires',
+          'Export PDF pour vos archives'
         ],
         benefits: 'Suivez votre progression et optimisez votre stratégie de recherche d\'emploi.',
       }
@@ -321,10 +271,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       details: {
         fullDescription: 'Programme de coaching complet avec simulations d\'entretiens et feedback détaillé pour réussir vos recrutements.',
         features: [
-          'Simulations d\'entretien IA',
-          'Feedback personnalisé détaillé',
-          'Préparation questions techniques',
-          '3 sessions de coaching',
+          'Simulations d\'entretiens réalistes',
+          'Questions personnalisées selon le poste visé',
+          'Feedback détaillé sur vos réponses',
+          'Analyse de votre communication et présentation',
+          'Conseils d\'amélioration ciblés',
+          'Entraînement illimité',
+          'Suivi de progression'
         ],
         benefits: 'Préparez-vous efficacement et arrivez confiant à vos entretiens.',
       }
@@ -347,6 +300,26 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           'Valable 1 an'
         ],
         benefits: 'Démarquez-vous avec un profil vérifié et gagnez la confiance des recruteurs.',
+      }
+    },
+    {
+      icon: Cloud,
+      title: 'Espace cloud personnel',
+      description: 'Sauvegarde sécurisée documents RH',
+      price: 'Inclus Premium',
+      color: 'bg-teal-100 text-teal-700',
+      details: {
+        fullDescription: 'Espace de stockage sécurisé pour tous vos documents professionnels et RH.',
+        features: [
+          '10 Go de stockage cloud',
+          'Sauvegarde automatique de vos documents',
+          'Accès depuis n\'importe quel appareil',
+          'Partage sécurisé avec les recruteurs',
+          'Organisation par dossiers',
+          'Historique des versions',
+          'Chiffrement de bout en bout'
+        ],
+        benefits: 'Gardez tous vos documents professionnels organisés et accessibles en tout temps.',
       }
     },
   ];
@@ -383,22 +356,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       <div className="bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              {candidateProfile?.profile_photo_url ? (
-                <img
-                  src={candidateProfile.profile_photo_url}
-                  alt={profile?.full_name || 'Photo de profil'}
-                  className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-white/20 border-4 border-white shadow-lg flex items-center justify-center">
-                  <User className="w-10 h-10 text-white" />
-                </div>
-              )}
-              <div>
-                <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
-                <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
+              <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
             </div>
             {isPremium && (
               <div className="flex items-center gap-2 px-4 py-2 bg-[#FF8C00] rounded-full">
@@ -449,7 +409,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           <div className="flex border-b border-gray-200 overflow-x-auto">
             {[
               { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
-              { id: 'applications', label: 'Candidatures', icon: Briefcase, count: applications.length },
+              { id: 'applications', label: `Candidatures (${applications.length})`, icon: Briefcase },
               { id: 'profile', label: 'Mon profil', icon: Settings },
               { id: 'formations', label: 'Formations', icon: BookOpen },
               { id: 'alerts', label: 'Alertes emploi', icon: Bell },
@@ -462,7 +422,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-6 py-4 font-semibold whitespace-nowrap flex items-center gap-3 transition-all ${
+                  className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 transition ${
                     activeTab === tab.id
                       ? 'border-b-2 border-[#0E2F56] text-[#0E2F56] bg-blue-50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -470,15 +430,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 >
                   <Icon className="w-5 h-5" />
                   <span>{tab.label}</span>
-                  {tab.count !== undefined && tab.count > 0 && (
-                    <span className={`flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold ${
-                      activeTab === tab.id
-                        ? 'bg-[#0E2F56] text-white'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -489,73 +440,20 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               <div className="space-y-6">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">Complétez votre profil</h3>
-                        {profileCompletion >= 80 ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                            <CheckCircle className="w-3 h-3" />
-                            Visible CVThèque
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                            <Lock className="w-3 h-3" />
-                            Non visible
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">Votre profil est complété à {profileCompletion}%</p>
-                      {profileCompletion < 80 ? (
-                        <div className="flex items-start gap-2 mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                          <AlertCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
-                          <div className="text-sm">
-                            <p className="font-semibold text-gray-900 mb-1">
-                              Complétez au moins 80% de votre profil pour :
-                            </p>
-                            <ul className="text-gray-700 space-y-1 text-xs">
-                              <li className="flex items-center gap-1.5">
-                                <Eye className="w-3.5 h-3.5 text-[#FF8C00]" />
-                                <span>Être visible dans la <strong>CVThèque</strong></span>
-                              </li>
-                              <li className="flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5 text-[#FF8C00]" />
-                                <span>Recevoir plus <strong>d'opportunités</strong></span>
-                              </li>
-                              <li className="flex items-center gap-1.5">
-                                <TrendingUp className="w-3.5 h-3.5 text-[#FF8C00]" />
-                                <span>Augmenter vos <strong>interactions avec les recruteurs</strong></span>
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-start gap-2 mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                          <div className="text-sm">
-                            <p className="font-semibold text-green-900 mb-1">
-                              Profil excellent !
-                            </p>
-                            <p className="text-green-700 text-xs">
-                              Vous êtes visible dans la CVThèque et maximisez vos chances d'être contacté par les recruteurs.
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Complétez votre profil</h3>
+                      <p className="text-sm text-gray-600">Votre profil est complété à {profileCompletion}%</p>
                     </div>
                     <button
                       onClick={() => setActiveTab('profile')}
-                      className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition text-sm font-medium flex-shrink-0 ml-4"
+                      className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition text-sm font-medium"
                     >
                       Compléter
                     </button>
                   </div>
                   <div className="w-full bg-white rounded-full h-3 overflow-hidden">
                     <div
-                      className={`h-3 rounded-full transition-all duration-500 ${
-                        profileCompletion >= 80
-                          ? 'bg-gradient-to-r from-green-500 to-green-600'
-                          : 'bg-gradient-to-r from-[#FF8C00] to-orange-500'
-                      }`}
+                      className="bg-gradient-to-r from-[#0E2F56] to-blue-600 h-3 rounded-full transition-all duration-500"
                       style={{ width: `${profileCompletion}%` }}
                     ></div>
                   </div>
@@ -644,7 +542,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <h4 className="font-bold text-gray-900 mb-1">{app.jobs?.title}</h4>
-                              <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.name}</p>
+                              <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.company_name}</p>
                               {app.ai_match_score && (
                                 <div className="flex items-center gap-2">
                                   <div className="flex items-center gap-1 text-xs text-gray-600">
@@ -676,8 +574,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
             {activeTab === 'applications' && (
               <div>
-                <MyApplications />
-                {false && applications.length === 0 ? (
+                {applications.length === 0 ? (
                   <div className="text-center py-12">
                     <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 mb-4">Vous n'avez pas encore postulé à des offres</p>
@@ -688,7 +585,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       Découvrir les offres
                     </button>
                   </div>
-                ) : false && (
+                ) : (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Mes Candidatures</h2>
@@ -707,7 +604,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             >
                               {app.jobs?.title}
                             </h3>
-                            <p className="text-gray-600 mb-2 font-medium">{app.jobs?.companies?.name}</p>
+                            <p className="text-gray-600 mb-2 font-medium">{app.jobs?.companies?.company_name}</p>
                             {app.jobs?.location && (
                               <div className="flex items-center space-x-2 text-gray-500 text-sm">
                                 <MapPin className="w-4 h-4" />
@@ -759,7 +656,159 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
 
             {activeTab === 'profile' && (
-              <CandidateProfileForm onNavigate={onNavigate} />
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Mon Profil Professionnel</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Poste recherché *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.desired_position}
+                      onChange={(e) => setFormData({ ...formData, desired_position: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ex: Superviseur RH"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Années d'expérience *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.experience_years}
+                      onChange={(e) => setFormData({ ...formData, experience_years: Number(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Niveau d'études *
+                    </label>
+                    <select
+                      value={formData.education_level}
+                      onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    >
+                      <option value="">Sélectionner</option>
+                      <option value="Sans diplôme">Sans diplôme</option>
+                      <option value="Bac">Bac</option>
+                      <option value="Bac+2">Bac+2</option>
+                      <option value="Licence">Licence (Bac+3)</option>
+                      <option value="Master">Master (Bac+5)</option>
+                      <option value="Doctorat">Doctorat</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Localisation *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ex: Conakry, Boké, Kamsar..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Disponibilité
+                    </label>
+                    <select
+                      value={formData.availability}
+                      onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                    >
+                      <option value="immediate">Immédiate</option>
+                      <option value="1_month">Dans 1 mois</option>
+                      <option value="3_months">Dans 3 mois</option>
+                      <option value="negotiable">À négocier</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Salaire minimum souhaité (GNF)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.desired_salary_min}
+                      onChange={(e) => setFormData({ ...formData, desired_salary_min: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ex: 5000000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Salaire maximum souhaité (GNF)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.desired_salary_max}
+                      onChange={(e) => setFormData({ ...formData, desired_salary_max: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ex: 8000000"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Compétences *
+                  </label>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
+                      placeholder="Ajouter une compétence (Ex: Microsoft Excel)"
+                    />
+                    <button
+                      onClick={addSkill}
+                      className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Ajouter
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="px-4 py-2 bg-blue-100 text-[#0E2F56] rounded-full text-sm font-medium flex items-center space-x-2"
+                      >
+                        <span>{skill}</span>
+                        <button
+                          onClick={() => removeSkill(skill)}
+                          className="hover:text-blue-900"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-6 border-t border-gray-200">
+                  <button
+                    onClick={handleSaveProfile}
+                    className="px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition shadow-md"
+                  >
+                    Enregistrer les modifications
+                  </button>
+                </div>
+              </div>
             )}
 
             {activeTab === 'formations' && (
@@ -776,11 +825,40 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               </div>
             )}
 
-            {activeTab === 'alerts' && <JobAlerts />}
+            {activeTab === 'alerts' && (
+              <div className="text-center py-12">
+                <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Alertes Emploi</h3>
+                <p className="text-gray-600 mb-6">
+                  Configurez des alertes pour recevoir les nouvelles offres par email, SMS ou WhatsApp
+                </p>
+                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
+              </div>
+            )}
 
-            {activeTab === 'messages' && <MessagingSystem userType="candidate" onNavigate={onNavigate} />}
+            {activeTab === 'messages' && (
+              <div className="text-center py-12">
+                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Messagerie</h3>
+                <p className="text-gray-600 mb-6">Communiquez directement avec les recruteurs</p>
+                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
+              </div>
+            )}
 
-            {activeTab === 'documents' && <DocumentManager />}
+            {activeTab === 'documents' && (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Mes Documents</h3>
+                <p className="text-gray-600 mb-6">Gérez vos CV, lettres de motivation et autres documents</p>
+                <button
+                  onClick={() => alert('Fonctionnalité de téléchargement de documents disponible prochainement')}
+                  className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2 mx-auto"
+                >
+                  <Upload className="w-5 h-5" />
+                  Télécharger un document
+                </button>
+              </div>
+            )}
 
             {activeTab === 'premium' && (
               <div className="space-y-8">
@@ -792,23 +870,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
                     Boostez votre recherche d'emploi avec nos services intelligents propulsés par l'IA
                   </p>
-                  <div className="flex gap-4 justify-center">
-                    <button
-                      onClick={() => onNavigate('premium-ai')}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-                    >
-                      <Sparkles className="w-5 h-5" />
-                      Découvrir tous les services IA
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => onNavigate('ai-coach')}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-lg"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      Chatbot Emploi
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => onNavigate('premium-ai')}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Découvrir tous les services IA
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -870,9 +939,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         <div className="text-xl">GNF / mois</div>
                       </div>
                       <button
-                        onClick={() => {
-                          alert('🚀 Abonnement Premium PRO+\n\nPour souscrire à l\'abonnement Premium PRO+ (350 000 GNF/mois):\n\n📧 Email: premium@jobguinee.gn\n📱 Téléphone: +224 XXX XX XX XX\n💬 WhatsApp: +224 XXX XX XX XX\n\n💳 Modes de paiement acceptés:\n• Orange Money\n• MTN Mobile Money\n• LengoPay\n• DigitalPay SA\n\nVous recevrez vos identifiants Premium sous 24h après confirmation du paiement.');
-                        }}
+                        onClick={() => alert('Paiement: Orange Money • LengoPay • DigitalPay SA')}
                         className="w-full px-8 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold text-lg rounded-lg transition shadow-md border-2 border-white"
                       >
                         S'abonner maintenant
@@ -955,8 +1022,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                 <button
                   onClick={() => {
-                    const message = `🎯 Service: ${selectedService.title}\n💰 Prix: ${selectedService.price}\n\n✨ Pour activer ce service:\n\n📧 Email: premium@jobguinee.gn\n📱 Téléphone: +224 XXX XX XX XX\n💬 WhatsApp: +224 XXX XX XX XX\n\n💳 Modes de paiement:\n• Orange Money\n• MTN Mobile Money\n• LengoPay\n• DigitalPay SA\n\n✅ Activation sous 24h après confirmation du paiement`;
-                    alert(message);
+                    alert(`Service: ${selectedService.title}\nPrix: ${selectedService.price}\n\nPour activer ce service, veuillez nous contacter:\n\n📧 Email: premium@jobguinee.com\n📱 WhatsApp: +224 XXX XX XX XX\n\nPaiement accepté via:\n• Orange Money\n• LengoPay\n• DigitalPay SA`);
                     setSelectedService(null);
                   }}
                   className="w-full px-6 py-4 bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white rounded-xl font-bold text-lg hover:from-blue-900 hover:to-blue-900 transition-all shadow-lg"
@@ -968,13 +1034,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           </div>
         </div>
       )}
-
-      {/* Modal de bienvenue avec crédits gratuits */}
-      <WelcomeCreditsModal
-        isOpen={showWelcomeModal}
-        onClose={() => setShowWelcomeModal(false)}
-        onNavigateToServices={() => onNavigate('premium-ai')}
-      />
     </div>
   );
 }

@@ -1,1106 +1,312 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { getUserServiceAccessList, ServiceAccessInfo } from '../utils/serviceAccess';
+import { useAuth } from '../contexts/AuthContext';
 import {
-  Crown,
-  Brain,
-  FileText,
-  Bell,
-  MessageCircle,
-  BarChart3,
-  Users,
-  Check,
-  X,
   Sparkles,
-  Zap,
-  CreditCard,
-  Loader,
-  AlertCircle,
-  CheckCircle2,
-  ArrowRight,
-  Phone,
-  Copy,
-  Shield,
-  ArrowLeft,
-  Plus,
-  Package,
+  Target,
+  FileText,
+  Mail,
+  MessageCircle,
   TrendingUp,
+  Video,
+  Crown,
+  Check,
+  ArrowRight,
+  Loader,
+  ArrowLeft
 } from 'lucide-react';
 
-interface PremiumStatus {
-  subscription_type: string;
-  status: string;
-  credits: {
-    [key: string]: {
-      available: number;
-      used: number;
-      total: number;
-    };
-  };
-  creditsByService: {
-    [serviceCode: string]: number;
-  };
-}
-
-interface ServiceConfig {
+interface PremiumService {
   id: string;
   name: string;
   description: string;
-  icon: any;
-  color: string;
+  type: 'free' | 'premium';
+  category: string;
   price: number;
-  isIncluded: boolean;
-  credits?: number;
+  icon: string;
   features: string[];
-  serviceType: string;
+  is_active: boolean;
 }
+
+interface UserService {
+  service_id: string;
+  status: string;
+  expires_at: string | null;
+}
+
+const iconMap: Record<string, React.ReactNode> = {
+  target: <Target className="w-8 h-8" />,
+  'file-text': <FileText className="w-8 h-8" />,
+  mail: <Mail className="w-8 h-8" />,
+  'message-circle': <MessageCircle className="w-8 h-8" />,
+  'trending-up': <TrendingUp className="w-8 h-8" />,
+  video: <Video className="w-8 h-8" />,
+};
 
 interface PremiumAIServicesProps {
   onNavigate?: (page: string) => void;
-  onBack?: () => void;
 }
 
-export default function PremiumAIServices({ onNavigate, onBack }: PremiumAIServicesProps = {}) {
+export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps = {}) {
   const { user } = useAuth();
-  const [premiumStatus, setPremiumStatus] = useState<PremiumStatus | null>(null);
+  const [services, setServices] = useState<PremiumService[]>([]);
+  const [userServices, setUserServices] = useState<UserService[]>([]);
   const [loading, setLoading] = useState(true);
-  const [purchasingService, setPurchasingService] = useState<string | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedService, setSelectedService] = useState<ServiceConfig | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('orange_money');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [adminPhoneNumber, setAdminPhoneNumber] = useState<string>('');
-  const [showDirectPayment, setShowDirectPayment] = useState(false);
-  const [grantedServices, setGrantedServices] = useState<Record<string, ServiceAccessInfo>>({});
-  const [showCreditPacksModal, setShowCreditPacksModal] = useState(false);
-  const [creditPacks, setCreditPacks] = useState<any[]>([]);
-
-  const defaultServices: ServiceConfig[] = [
-    {
-      id: 'profile_analysis',
-      name: 'Analyse IA de profil',
-      description: 'Score CV vs offre + suggestions formations',
-      icon: Brain,
-      color: 'from-purple-500 to-purple-600',
-      price: 25000,
-      isIncluded: false,
-      credits: 50,
-      serviceType: 'profile_analysis',
-      features: [
-        'Analyse complète du profil',
-        'Score de compatibilité avec offres',
-        'Suggestions de formations personnalisées',
-        'Recommandations d\'amélioration',
-      ],
-    },
-    {
-      id: 'cv_generation',
-      name: 'Génération CV IA',
-      description: 'Génération automatique CV professionnel',
-      icon: FileText,
-      color: 'from-blue-500 to-blue-600',
-      price: 50000,
-      isIncluded: false,
-      credits: 100,
-      serviceType: 'cv_generation',
-      features: [
-        'Génération CV professionnel avec IA',
-        '4 styles de templates',
-        'Design moderne et ATS-friendly',
-        'Export PDF haute qualité',
-      ],
-    },
-    {
-      id: 'cover_letter_generation',
-      name: 'Lettre de Motivation IA',
-      description: 'Génération automatique de 2 versions',
-      icon: FileText,
-      color: 'from-indigo-500 to-indigo-600',
-      price: 20000,
-      isIncluded: false,
-      credits: 40,
-      serviceType: 'cover_letter_generation',
-      features: [
-        '2 versions générées (Pro & Résultats)',
-        'Analyse complète du profil',
-        'Adaptation à l\'offre d\'emploi',
-        'Éditeur de texte intégré',
-      ],
-    },
-    {
-      id: 'smart_alerts',
-      name: 'Alertes IA ciblées',
-      description: 'Détection auto d\'offres correspondantes',
-      icon: Bell,
-      color: 'from-orange-500 to-orange-600',
-      price: 0,
-      isIncluded: true,
-      serviceType: 'smart_alerts',
-      features: [
-        'Alertes intelligentes personnalisées',
-        'Matching avancé IA',
-        'Notifications multi-canal',
-        'Suggestions d\'offres similaires',
-      ],
-    },
-    {
-      id: 'chatbot',
-      name: 'Chatbot Travail & Emploi (accès 24h)',
-      description: 'Réponses Code du Travail guinéen',
-      icon: MessageCircle,
-      color: 'from-green-500 to-green-600',
-      price: 0,
-      isIncluded: false,
-      credits: 100,
-      serviceType: 'chatbot_queries',
-      features: [
-        'Accès complet 24 heures',
-        'Conseils juridiques emploi',
-        'Code du Travail guinéen',
-        'Réponses instantanées 24/7',
-        'Historique des conversations',
-      ],
-    },
-    {
-      id: 'monthly_report',
-      name: 'Rapport mensuel IA',
-      description: 'Stats candidatures, matching, formations',
-      icon: BarChart3,
-      color: 'from-indigo-500 to-indigo-600',
-      price: 150000,
-      isIncluded: false,
-      credits: 200,
-      serviceType: 'monthly_report',
-      features: [
-        'Rapport détaillé mensuel',
-        'Statistiques de candidatures',
-        'Analyse de performance',
-        'Recommandations stratégiques',
-      ],
-    },
-    {
-      id: 'career_coaching',
-      name: 'Coaching carrière IA',
-      description: 'Simulations entretien + feedbacks',
-      icon: Users,
-      color: 'from-pink-500 to-pink-600',
-      price: 250000,
-      isIncluded: false,
-      credits: 200,
-      serviceType: 'career_coaching',
-      features: [
-        'Simulations d\'entretien IA',
-        'Feedback personnalisé détaillé',
-        'Préparation questions techniques',
-        '3 sessions de coaching',
-      ],
-    },
-    {
-      id: 'verified_badge',
-      name: 'Badge Profil Vérifié',
-      description: '3 crédits/jour - Déduction automatique quotidienne',
-      icon: Shield,
-      color: 'from-yellow-500 to-yellow-600',
-      price: 50000,
-      isIncluded: false,
-      credits: 3,
-      serviceType: 'verified_badge',
-      features: [
-        'Déduction automatique: 3 crédits/jour',
-        'Vérification d\'identité complète',
-        'Badge visible sur votre profil',
-        'Score de crédibilité IA',
-        'Augmentation de visibilité +30%',
-        'Priorité dans les recherches',
-        'Confiance accrue des recruteurs',
-        'Désactivation automatique si crédits insuffisants',
-      ],
-    },
-  ];
-
-  const [services, setServices] = useState<ServiceConfig[]>(defaultServices);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadAll = async () => {
-      await loadServicesFromDB();
-      await loadCreditPacks();
-      if (user) {
-        await loadPremiumStatus();
-        await loadAdminPhoneNumber();
-        await loadGrantedServices();
-      } else {
-        // Si pas d'utilisateur, afficher quand même la page avec services par défaut
-        setPremiumStatus({
-          subscription_type: 'free',
-          status: 'active',
-          credits: {
-            global_balance: {
-              available: 0,
-              used: 0,
-              total: 0
-            }
-          },
-          creditsByService: {}
-        });
-        setLoading(false);
-      }
-    };
-    loadAll();
+    loadServices();
+    if (user) {
+      loadUserServices();
+    }
   }, [user]);
 
-  const loadGrantedServices = async () => {
-    if (!user) return;
-
-    try {
-      const accessMap = await getUserServiceAccessList(user.id);
-      setGrantedServices(accessMap);
-    } catch (error) {
-      console.error('Error loading granted services:', error);
-    }
-  };
-
-  const loadServicesFromDB = async () => {
-    try {
-      const { data: creditCosts } = await supabase
-        .from('service_credit_costs')
-        .select('*')
-        .eq('is_active', true);
-
-      if (creditCosts && creditCosts.length > 0) {
-        const updatedServices = defaultServices.map(service => {
-          const dbService = creditCosts.find(c => c.service_code === service.serviceType);
-          if (dbService) {
-            return {
-              ...service,
-              credits: dbService.credits_cost,
-            };
-          }
-          return service;
-        });
-        setServices(updatedServices);
-      } else {
-        setServices(defaultServices);
-      }
-    } catch (error) {
-      console.error('Error loading services from DB:', error);
-      setServices(defaultServices);
-    }
-  };
-
-  const loadCreditPacks = async () => {
+  const loadServices = async () => {
     try {
       const { data, error } = await supabase
-        .from('credit_packages')
+        .from('premium_services')
         .select('*')
         .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        .order('category');
 
-      if (!error && data) {
-        setCreditPacks(data);
-      }
+      if (error) throw error;
+      setServices(data || []);
     } catch (error) {
-      console.error('Erreur chargement packs crédits:', error);
-    }
-  };
-
-  const loadAdminPhoneNumber = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('phone')
-        .eq('user_type', 'admin')
-        .single();
-
-      if (!error && data?.phone) {
-        setAdminPhoneNumber(data.phone);
-      }
-    } catch (error) {
-      console.error('Erreur chargement numéro admin:', error);
-    }
-  };
-
-  const loadPremiumStatus = async () => {
-    if (!user) return;
-
-    try {
-      console.log('Loading premium status for user:', user.id);
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('credits_balance')
-        .eq('id', user.id)
-        .single();
-
-      const globalBalance = profile?.credits_balance || 0;
-
-      console.log('Global credits loaded:', globalBalance);
-
-      setPremiumStatus({
-        subscription_type: globalBalance > 0 ? 'premium' : 'free',
-        status: 'active',
-        credits: {
-          global_balance: {
-            available: globalBalance,
-            used: 0,
-            total: globalBalance
-          }
-        },
-        creditsByService: {}
-      });
-
-      console.log('Premium status set successfully');
-    } catch (error: any) {
-      console.error('Erreur chargement status:', error);
-      setPremiumStatus({
-        subscription_type: 'free',
-        status: 'active',
-        credits: {
-          global_balance: {
-            available: 0,
-            used: 0,
-            total: 0
-          }
-        },
-        creditsByService: {}
-      });
+      console.error('Error loading services:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePurchase = async (service: ServiceConfig) => {
-    setSelectedService(service);
-    setShowPaymentModal(true);
-  };
-
-  const processPayment = async () => {
-    if (!user || !selectedService) return;
-
-    setPurchasingService(selectedService.id);
+  const loadUserServices = async () => {
     try {
-      // Simuler un paiement (en production, intégrer Orange Money, MTN, etc.)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Acheter les crédits
-      const { error } = await supabase.rpc('purchase_service_credits', {
-        p_user_id: user.id,
-        p_service_type: selectedService.serviceType,
-        p_credits: selectedService.credits || 1,
-        p_amount: selectedService.price,
-        p_payment_method: paymentMethod,
-        p_payment_reference: `${paymentMethod}_${Date.now()}`,
-      });
+      const { data, error } = await supabase
+        .from('user_premium_services')
+        .select('service_id, status, expires_at')
+        .eq('user_id', user!.id)
+        .eq('status', 'active');
 
       if (error) throw error;
-
-      alert(`Service "${selectedService.name}" acheté avec succès!`);
-      setShowPaymentModal(false);
-      setSelectedService(null);
-      setPhoneNumber('');
-      loadPremiumStatus();
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      alert('Erreur lors de l\'achat: ' + error.message);
-    } finally {
-      setPurchasingService(null);
+      setUserServices(data || []);
+    } catch (error) {
+      console.error('Error loading user services:', error);
     }
   };
 
-  const handleUseService = async (service: ServiceConfig) => {
-    if (!user) return;
+  const hasAccess = (serviceId: string) => {
+    return userServices.some(us => us.service_id === serviceId);
+  };
 
-    // Naviguer vers le service approprié
-    switch (service.id) {
-      case 'profile_analysis':
-        onNavigate?.('ai-matching');
-        break;
-      case 'cv_generation':
-        onNavigate?.('ai-cv-generator');
-        break;
-      case 'cover_letter_generation':
-        onNavigate?.('ai-cover-letter');
-        break;
-      case 'career_coaching':
-        onNavigate?.('ai-coach');
-        break;
-      default:
-        alert(`Service ${service.name} bientôt disponible!`);
+  const handleServiceClick = (service: PremiumService) => {
+    if (service.type === 'free' || hasAccess(service.id)) {
+      navigateToService(service.category);
+    } else {
+      setSelectedService(service.id);
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-GN').format(price) + ' GNF';
-  };
+  const navigateToService = (category: string) => {
+    const routes: Record<string, string> = {
+      matching: 'ai-matching',
+      cv: 'ai-cv-generator',
+      cover_letter: 'ai-cover-letter',
+      coaching: 'ai-coach',
+      career_plan: 'ai-career-plan',
+      interview: 'ai-interview-simulator',
+      gold_profile: 'gold-profile',
+    };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert('Numéro copié!');
+    const page = routes[category];
+    if (page && onNavigate) {
+      onNavigate(page);
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader className="w-12 h-12 animate-spin text-blue-900 mx-auto mb-4" />
-          <p className="text-gray-600">Chargement...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      {/* Bouton de retour */}
-      <div className="mb-6">
-        <button
-          onClick={() => {
-            if (onBack) {
-              onBack();
-            } else {
-              window.history.back();
-            }
-          }}
-          className="flex items-center space-x-2 text-gray-600 hover:text-blue-900 transition"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Retour</span>
-        </button>
-      </div>
-
-      {/* En-tête Principal */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-500 rounded-full mb-6">
-          <Crown className="w-10 h-10 text-white" />
-        </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">Services Premium IA</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Boostez votre recherche d'emploi avec nos services intelligents propulsés par l'IA
-        </p>
-      </div>
-
-      {/* Boutons d'action principaux */}
-      <div className="flex justify-center gap-4 mb-8">
-        <button
-          onClick={() => {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-          }}
-          className="bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center space-x-2"
-        >
-          <Sparkles className="w-5 h-5" />
-          <span>Découvrir tous les services IA</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onNavigate?.('ai-coach')}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition flex items-center space-x-2"
-        >
-          <MessageCircle className="w-5 h-5" />
-          <span>Chatbot Emploi</span>
-        </button>
-      </div>
-
-      {/* Bannière Abonnement et Crédits */}
-      {premiumStatus && (
-        <div className="space-y-4 mb-8">
-          <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">
-                  Abonnement {premiumStatus.subscription_type === 'free' ? 'Gratuit' : 'Premium'}
-                </h2>
-                <p className="text-blue-100">
-                  Statut: {premiumStatus.status === 'active' ? 'Actif' : 'Inactif'}
-                </p>
-              </div>
-              <div className="bg-orange-500 rounded-xl p-3">
-                <Crown className="w-12 h-12 text-white" />
-              </div>
-            </div>
-          </div>
-
-          {/* Bannière Solde de Crédits */}
-          <div className={`bg-gradient-to-r ${
-            premiumStatus.credits.global_balance.available >= Math.min(...services.filter(s => !s.isIncluded && s.credits).map(s => s.credits || 0))
-              ? 'from-green-600 to-emerald-600'
-              : 'from-red-600 to-red-700'
-          } rounded-2xl p-6 text-white`}>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Solde de Crédits
-                </h3>
-                <p className="text-3xl font-bold mb-1">
-                  {premiumStatus.credits.global_balance.available.toLocaleString()}
-                </p>
-                <p className="text-white text-opacity-90 text-sm mb-3">
-                  crédits disponibles pour tous les services IA
-                </p>
-
-                {(() => {
-                  const globalBalance = premiumStatus.credits.global_balance.available;
-                  const minCost = Math.min(...services.filter(s => !s.isIncluded && s.credits).map(s => s.credits || 0));
-                  const canUseAnyService = globalBalance >= minCost;
-
-                  return canUseAnyService ? (
-                    <button
-                      onClick={() => setShowCreditPacksModal(true)}
-                      className="bg-white text-green-700 hover:bg-green-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-md"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Recharger des crédits</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setShowCreditPacksModal(true)}
-                      className="bg-white text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-md animate-pulse"
-                    >
-                      <AlertCircle className="w-4 h-4" />
-                      <span>Acheter des crédits maintenant</span>
-                    </button>
-                  );
-                })()}
-              </div>
-              <div className="text-right ml-4">
-                <CreditCard className="w-12 h-12 text-white opacity-80 mb-2" />
-                {premiumStatus.credits.global_balance.available >= Math.min(...services.filter(s => !s.isIncluded && s.credits).map(s => s.credits || 0)) ? (
-                  <span className="inline-flex items-center gap-1 text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Actif
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs bg-white bg-opacity-30 px-3 py-1 rounded-full">
-                    <AlertCircle className="w-3 h-3" />
-                    Insuffisant
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Services Grid - 3 colonnes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.map((service) => {
-          const Icon = service.icon;
-          const globalBalance = premiumStatus?.credits?.global_balance?.available || 0;
-          const serviceCost = service.credits || 0;
-          const hasEnoughCredits = globalBalance >= serviceCost;
-
-          const grantedAccess = grantedServices[service.serviceType];
-          const hasAdminAccess = grantedAccess?.hasAccess && !grantedAccess?.isExpired;
-          const canUseService = service.isIncluded || hasAdminAccess || hasEnoughCredits;
-
-          return (
-            <div
-              key={service.id}
-              className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300"
-            >
-              {/* En-tête coloré */}
-              <div className={`bg-gradient-to-br ${service.color} p-6 text-white relative`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-                    <Icon className="w-8 h-8" />
-                  </div>
-                  {hasAdminAccess && hasEnoughCredits ? (
-                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold flex items-center space-x-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Actif</span>
-                    </span>
-                  ) : service.isIncluded ? (
-                    <span className="px-3 py-1 bg-white text-gray-900 rounded-full text-xs font-bold">
-                      Inclus
-                    </span>
-                  ) : service.credits ? (
-                    <span className="px-3 py-1 bg-white bg-opacity-30 backdrop-blur-sm rounded-full text-xs font-bold flex items-center space-x-1">
-                      <span>{service.credits}</span>
-                      <Zap className="w-3 h-3" />
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 bg-white bg-opacity-30 backdrop-blur-sm rounded-full text-xs font-bold">
-                      {formatPrice(service.price)}
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-xl font-bold mb-2">{service.name}</h3>
-                <p className="text-white text-opacity-90 text-sm">{service.description}</p>
-              </div>
-
-              {/* Contenu */}
-              <div className="p-5 bg-white">
-                {/* Crédits disponibles */}
-                {!service.isIncluded && (
-                  <div className="mb-5">
-                    {hasEnoughCredits ? (
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                            <span className="text-sm font-semibold text-green-800">Crédits suffisants</span>
-                          </div>
-                          <span className="text-xs font-medium text-green-700">
-                            Solde: {globalBalance} ⚡
-                          </span>
-                        </div>
-                        <p className="text-xs text-green-700">
-                          Coût du service : <strong>{serviceCost} crédits</strong>
-                        </p>
-                        <div className="w-full bg-green-200 rounded-full h-2 mt-2">
-                          <div
-                            className="h-2 rounded-full bg-green-600 transition-all"
-                            style={{
-                              width: `${Math.min((globalBalance / serviceCost) * 100, 100)}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-red-600" />
-                            <span className="text-sm font-semibold text-red-800">Crédits insuffisants</span>
-                          </div>
-                          <span className="text-xs font-medium text-red-700">
-                            Solde: {globalBalance} ⚡
-                          </span>
-                        </div>
-                        <p className="text-xs text-red-700">
-                          Coût du service : <strong>{serviceCost} crédits</strong><br/>
-                          Il vous manque : <strong>{serviceCost - globalBalance} crédits</strong>
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Fonctionnalités */}
-                <ul className="space-y-2 mb-5">
-                  {service.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-xs text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Boutons d'action */}
-                {canUseService ? (
-                  <button
-                    onClick={() => handleUseService(service)}
-                    className="w-full bg-blue-900 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center space-x-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span className="text-sm">Utiliser le service</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handlePurchase(service)}
-                    className="w-full bg-orange-500 text-white px-5 py-3 rounded-lg font-medium hover:bg-orange-600 transition flex items-center justify-center space-x-2"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span className="text-sm">Acheter des crédits</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Modal de paiement */}
-      {showPaymentModal && selectedService && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
-          onClick={() => {
-            setShowPaymentModal(false);
-            setSelectedService(null);
-            setShowDirectPayment(false);
-            setPaymentMethod('orange_money');
-            setPhoneNumber('');
-          }}
-        >
-          <div
-            className="bg-white rounded-2xl max-w-md w-full p-8 my-8 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Back Button */}
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('candidate-dashboard')}
+            className="mb-8 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Acheter le service</h2>
-              <button
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setSelectedService(null);
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600 transition"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-medium">Retour au Dashboard</span>
+          </button>
+        )}
 
-            <div className="mb-6">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                {selectedService.name}
-              </h3>
-              <p className="text-gray-600 mb-4">{selectedService.description}</p>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700">Prix</span>
-                  <span className="text-2xl font-bold text-blue-900">
-                    {formatPrice(selectedService.price)}
-                  </span>
-                </div>
-                {selectedService.credits && (
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-gray-700">Crédits</span>
-                    <span className="font-semibold text-blue-900">
-                      {selectedService.credits} crédit(s)
-                    </span>
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-orange-500 rounded-full text-white mb-6">
+            <Sparkles className="w-5 h-5" />
+            <span className="font-semibold">Intelligence Artificielle</span>
+          </div>
+
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            Services Premium d'Assistance IA
+          </h1>
+
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Améliore ton profil, booste ta candidature et développe ton plan de carrière
+            avec l'intelligence artificielle
+          </p>
+        </div>
+
+        {/* Services Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {services.map((service) => {
+            const userHasAccess = hasAccess(service.id);
+            const isPremium = service.type === 'premium';
+
+            return (
+              <div
+                key={service.id}
+                className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-blue-200"
+              >
+                {/* Premium Badge */}
+                {isPremium && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full text-white text-xs font-bold shadow-lg">
+                      <Crown className="w-3 h-3" />
+                      PREMIUM
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Méthode de paiement
-                </label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'orange_money', label: 'Orange Money' },
-                    { value: 'mtn_money', label: 'MTN Mobile Money' },
-                    { value: 'moov_money', label: 'Moov Money' },
-                  ].map((method) => (
-                    <button
-                      key={method.value}
-                      onClick={() => {
-                        setPaymentMethod(method.value);
-                        setShowDirectPayment(false);
-                      }}
-                      className={`w-full p-4 rounded-lg border-2 transition flex items-center justify-between ${
-                        paymentMethod === method.value && !showDirectPayment
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="font-medium text-gray-900">{method.label}</span>
-                      {paymentMethod === method.value && !showDirectPayment && (
-                        <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                      )}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => {
-                      setShowDirectPayment(true);
-                      setPaymentMethod('direct_admin');
-                    }}
-                    className={`w-full p-4 rounded-lg border-2 transition ${
-                      showDirectPayment
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-orange-100 rounded-lg">
-                          <Phone className="w-5 h-5 text-orange-600" />
-                        </div>
-                        <div className="text-left">
-                          <div className="font-semibold text-gray-900">Paiement direct à l'admin</div>
-                          <div className="text-xs text-gray-500">Contactez l'administrateur par téléphone</div>
-                        </div>
-                      </div>
-                      {showDirectPayment && (
-                        <CheckCircle2 className="w-5 h-5 text-orange-600" />
-                      )}
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {showDirectPayment ? (
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-3 bg-orange-500 rounded-lg">
-                      <Phone className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-orange-900 text-lg">Contactez l'administrateur</h4>
-                      <p className="text-sm text-orange-700">Pour un paiement direct et rapide</p>
+                {/* Access Badge */}
+                {userHasAccess && (
+                  <div className="absolute top-4 left-4 z-10">
+                    <div className="flex items-center gap-1 px-3 py-1 bg-green-500 rounded-full text-white text-xs font-bold">
+                      <Check className="w-3 h-3" />
+                      Actif
                     </div>
                   </div>
+                )}
 
-                  <div className="space-y-4">
-                    {adminPhoneNumber ? (
-                      <div className="bg-white rounded-xl p-4 shadow-sm">
-                        <p className="text-sm text-gray-600 mb-2 font-medium">Numéro de téléphone:</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-gray-900">{adminPhoneNumber}</span>
-                          <button
-                            onClick={() => copyToClipboard(adminPhoneNumber)}
-                            className="p-3 text-orange-600 hover:bg-orange-100 rounded-lg transition"
-                            title="Copier le numéro"
-                          >
-                            <Copy className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-xl p-4 shadow-sm">
-                        <div className="flex items-start space-x-3">
-                          <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5" />
-                          <div>
-                            <p className="font-medium text-gray-900 mb-1">Numéro non disponible</p>
-                            <p className="text-sm text-gray-600">L'administrateur n'a pas encore configuré son numéro de téléphone. Veuillez réessayer plus tard ou utiliser un autre moyen de paiement.</p>
-                          </div>
-                        </div>
+                <div className="p-8">
+                  {/* Icon */}
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300">
+                    {iconMap[service.icon] || <Sparkles className="w-8 h-8" />}
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    {service.name}
+                  </h3>
+
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    {service.description}
+                  </p>
+
+                  {/* Features */}
+                  <ul className="space-y-3 mb-6">
+                    {service.features.slice(0, 3).map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Price & CTA */}
+                  <div className="pt-6 border-t border-gray-100">
+                    {isPremium && (
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-3xl font-bold text-gray-900">
+                          {service.price.toLocaleString()}
+                        </span>
+                        <span className="text-gray-600">GNF</span>
                       </div>
                     )}
 
-                    <div className="bg-white rounded-xl p-4 shadow-sm">
-                      <p className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-                        <CheckCircle2 className="w-5 h-5 text-orange-600" />
-                        <span>Instructions de paiement:</span>
-                      </p>
-                      <ol className="space-y-2 text-sm text-gray-700">
-                        <li className="flex items-start space-x-2">
-                          <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                          <span>Appelez ou envoyez un message WhatsApp au numéro ci-dessus</span>
-                        </li>
-                        <li className="flex items-start space-x-2">
-                          <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                          <span>Mentionnez le service: <span className="font-semibold text-orange-900">{selectedService.name}</span></span>
-                        </li>
-                        <li className="flex items-start space-x-2">
-                          <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                          <span>Effectuez le paiement de <span className="font-semibold text-orange-900">{formatPrice(selectedService.price)}</span></span>
-                        </li>
-                        <li className="flex items-start space-x-2">
-                          <span className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                          <span>L'admin activera votre service immédiatement après confirmation du paiement</span>
-                        </li>
-                      </ol>
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-start space-x-2">
-                        <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-blue-800">
-                          <span className="font-semibold">Paiement sécurisé:</span> Effectuez votre paiement directement auprès de l'administrateur. Vos crédits seront activés dès réception du paiement.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Numéro de téléphone
-                  </label>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Ex: 628 XX XX XX"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              )}
-            </div>
-
-            {!showDirectPayment && (
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">Note</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Vous recevrez une notification pour confirmer le paiement sur votre téléphone.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex space-x-4">
-              {showDirectPayment ? (
-                <button
-                  onClick={() => {
-                    alert('Contactez l\'admin au ' + adminPhoneNumber + ' pour finaliser votre achat. Votre service sera activé après confirmation du paiement.');
-                    setShowPaymentModal(false);
-                    setSelectedService(null);
-                    setShowDirectPayment(false);
-                  }}
-                  className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-700 transition flex items-center justify-center space-x-2"
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>J'ai compris</span>
-                </button>
-              ) : (
-                <button
-                  onClick={processPayment}
-                  disabled={purchasingService !== null || !phoneNumber}
-                  className="flex-1 bg-blue-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {purchasingService ? (
-                    <>
-                      <Loader className="w-5 h-5 animate-spin" />
-                      <span>Traitement...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      <span>Payer {formatPrice(selectedService.price)}</span>
-                    </>
-                  )}
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setSelectedService(null);
-                  setShowDirectPayment(false);
-                }}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Packs de Crédits */}
-      {showCreditPacksModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="text-2xl font-bold text-gray-900">Acheter des Crédits</h3>
-              <button
-                onClick={() => setShowCreditPacksModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
-                    <p className="font-semibold mb-1">Conversion : 1000 GNF = 10 crédits</p>
-                    <p>Les crédits bonus sont ajoutés automatiquement à votre achat</p>
-                  </div>
-                </div>
-              </div>
-
-              {creditPacks.length === 0 ? (
-                <div className="text-center py-12">
-                  <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Chargement des packs...</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {creditPacks.map((pack) => (
-                    <div
-                      key={pack.id}
-                      className={`relative bg-white rounded-xl border-2 shadow-lg overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 ${
-                        pack.is_popular ? 'border-blue-500' : 'border-gray-200'
+                    <button
+                      onClick={() => handleServiceClick(service)}
+                      className={`w-full py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                        userHasAccess || !isPremium
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+                          : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700'
                       }`}
                     >
-                      {pack.is_popular && (
-                        <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg flex items-center space-x-1">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>POPULAIRE</span>
-                        </div>
+                      {userHasAccess ? (
+                        <>
+                          Utiliser maintenant
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      ) : isPremium ? (
+                        <>
+                          <Crown className="w-5 h-5" />
+                          Passer à Premium
+                        </>
+                      ) : (
+                        <>
+                          Essayer gratuitement
+                          <ArrowRight className="w-5 h-5" />
+                        </>
                       )}
-
-                      <div className={`p-6 ${pack.is_popular ? 'bg-gradient-to-br from-blue-50 to-blue-100' : 'bg-gray-50'}`}>
-                        <h4 className="text-xl font-bold text-gray-900 mb-2">{pack.name}</h4>
-                        <p className="text-sm text-gray-600 mb-4">{pack.description}</p>
-
-                        <div className="text-center mb-4">
-                          <div className="text-3xl font-bold text-gray-900">
-                            {new Intl.NumberFormat('fr-GN').format(pack.price_amount)} GNF
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Crédits de base</span>
-                            <span className="font-semibold text-gray-900">{pack.credits_amount}</span>
-                          </div>
-                          {pack.bonus_credits > 0 && (
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">Crédits bonus</span>
-                              <span className="font-semibold text-green-600">+{pack.bonus_credits}</span>
-                            </div>
-                          )}
-                          <div className="pt-2 border-t border-gray-200">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-gray-900">Total</span>
-                              <span className="text-lg font-bold text-blue-600 flex items-center space-x-1">
-                                <TrendingUp className="w-5 h-5" />
-                                <span>{pack.credits_amount + pack.bonus_credits}</span>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6">
-                        <button
-                          onClick={() => {
-                            setSelectedService({
-                              id: pack.id,
-                              name: `Pack ${pack.name}`,
-                              description: pack.description,
-                              icon: Package,
-                              color: 'from-blue-500 to-blue-600',
-                              price: pack.price_amount,
-                              isIncluded: false,
-                              credits: pack.credits_amount + pack.bonus_credits,
-                              serviceType: 'credit_pack',
-                              features: [
-                                `${pack.credits_amount} crédits`,
-                                `+${pack.bonus_credits} crédits bonus`,
-                                `Total: ${pack.credits_amount + pack.bonus_credits} crédits`,
-                                'Valable indéfiniment',
-                              ],
-                            });
-                            setShowCreditPacksModal(false);
-                            setShowPaymentModal(true);
-                          }}
-                          className={`w-full py-3 rounded-lg font-semibold transition ${
-                            pack.is_popular
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-gray-900 text-white hover:bg-gray-800'
-                          }`}
-                        >
-                          Acheter
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowCreditPacksModal(false)}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
-                >
-                  Fermer
-                </button>
+                {/* Hover Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-orange-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               </div>
+            );
+          })}
+        </div>
+
+        {/* Benefits Section */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Pourquoi choisir nos services IA ?
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Des outils puissants pour maximiser vos chances de succès professionnel
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2">Technologie Avancée</h3>
+              <p className="text-gray-600 text-sm">
+                Intelligence artificielle de pointe pour des résultats professionnels
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+                <Target className="w-8 h-8 text-orange-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2">Personnalisation</h3>
+              <p className="text-gray-600 text-sm">
+                Chaque service adapté à votre profil et vos objectifs
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 mb-2">Résultats Rapides</h3>
+              <p className="text-gray-600 text-sm">
+                Obtenez des résultats professionnels en quelques minutes
+              </p>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

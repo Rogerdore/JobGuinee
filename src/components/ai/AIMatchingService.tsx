@@ -1,1050 +1,283 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { usePremiumEligibility } from '../../hooks/usePremiumEligibility';
-import { callAIService } from '../../utils/aiService';
-import {
-  Brain,
-  Sparkles,
-  TrendingUp,
-  CheckCircle2,
-  AlertCircle,
-  GraduationCap,
-  Lightbulb,
-  Download,
-  Loader,
-  ChevronRight,
-  BarChart3,
-  Award,
-  Briefcase,
-  Building,
-  Search,
-  X,
-} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft } from 'lucide-react';
 
-interface Job {
+interface JobMatch {
   id: string;
   title: string;
-  company_name: string;
+  company: string;
   location: string;
-}
-
-interface ProfileAnalysis {
-  id: string;
-  score: number;
-  skills_match?: number;
-  experience_match?: number;
-  education_match?: number;
-  points_forts: string[];
-  ameliorations: string[];
-  formations_suggerees: Array<{
-    titre: string;
-    domaine: string;
-    duree: string;
-    niveau: string;
-  }>;
-  recommandations: string[];
-  offer_title?: string;
-  offer_company?: string;
-  date_analyse: string;
+  matchScore: number;
+  reasons: string[];
+  skills_match: number;
+  experience_match: number;
+  education_match: number;
 }
 
 interface AIMatchingServiceProps {
-  onBack?: () => void;
   onNavigate?: (page: string) => void;
-  onNavigateToJobs?: () => void;
-  preSelectedJob?: Job | null;
 }
 
-export default function AIMatchingService({ onBack, onNavigate, onNavigateToJobs, preSelectedJob }: AIMatchingServiceProps) {
+export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps = {}) {
   const { user } = useAuth();
-  const eligibility = usePremiumEligibility('profile_analysis');
+  const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<ProfileAnalysis | null>(null);
-  const [analyses, setAnalyses] = useState<any[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [error, setError] = useState('');
+  const [matches, setMatches] = useState<JobMatch[]>([]);
+  const [profileScore, setProfileScore] = useState<number | null>(null);
 
-  // Sélection d'offre
-  const [showJobSelection, setShowJobSelection] = useState(false);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [manualPosition, setManualPosition] = useState('');
-
-  // Gestion des crédits
-  const [creditBalance, setCreditBalance] = useState(0);
-  const [serviceCost, setServiceCost] = useState(50);
-  const [loadingCredits, setLoadingCredits] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      loadAnalyses();
-      loadJobs();
-      loadCredits();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (preSelectedJob) {
-      setSelectedJob(preSelectedJob);
-      setShowJobSelection(false);
-    }
-  }, [preSelectedJob]);
-
-  const loadCredits = async () => {
-    if (!user) {
-      setLoadingCredits(false);
-      return;
-    }
-
-    setLoadingCredits(true);
-    try {
-      // Charger le solde global depuis profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('credits_balance')
-        .eq('id', user.id)
-        .single();
-
-      const globalBalance = profile?.credits_balance || 0;
-      console.log('Global balance loaded for matching:', globalBalance);
-
-      setCreditBalance(Number(globalBalance));
-
-      // Charger le coût du service
-      const { data: cost } = await supabase
-        .from('service_credit_costs')
-        .select('credits_cost')
-        .eq('service_code', 'profile_analysis')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (cost) {
-        const costValue = Number(cost.credits_cost);
-        console.log('Service Cost:', {
-          cost_data: cost,
-          cost_value: costValue,
-          cost_type: typeof costValue
-        });
-        setServiceCost(costValue);
-      }
-    } catch (error: any) {
-      console.error('Erreur chargement crédits:', error);
-    } finally {
-      setLoadingCredits(false);
-    }
-  };
-
-  const loadAnalyses = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase.rpc('get_user_profile_analyses', {
-        p_user_id: user.id,
-        p_limit: 10,
-      });
-
-      if (error) throw error;
-      setAnalyses(data || []);
-    } catch (error: any) {
-      console.error('Erreur:', error);
-    }
-  };
-
-  const loadJobs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select(`
-          id,
-          title,
-          location,
-          companies!inner(name)
-        `)
-        .eq('status', 'published')
-        .limit(50);
-
-      if (error) throw error;
-
-      const jobsFormatted = (data || []).map((job: any) => ({
-        id: job.id,
-        title: job.title,
-        company_name: job.companies?.name || 'Entreprise',
-        location: job.location,
-      }));
-
-      setJobs(jobsFormatted);
-    } catch (error: any) {
-      console.error('Erreur chargement offres:', error);
-    }
-  };
-
-  const analyzeProfile = async (jobId?: string, manual?: string) => {
-    if (!user) {
-      setError('Vous devez être connecté pour utiliser ce service');
-      return;
-    }
-
-    // Vérifier l'éligibilité (profil 80% + crédits suffisants)
-    if (!eligibility.isEligible) {
-      setError(eligibility.reason || 'Vous n\'êtes pas éligible à ce service');
-      return;
-    }
-
+  const analyzeProfile = async () => {
     setAnalyzing(true);
-    setError('');
-    setShowJobSelection(false);
-
     try {
-      // Utiliser les crédits
-      const { data: creditResult } = await supabase.rpc('consume_global_credits', {
-        p_service_code: 'profile_analysis',
-        p_metadata: {
-          offer_id: jobId,
-          manual_position: manual
-        }
-      });
-
-      if (!creditResult || !creditResult.success) {
-        setError(creditResult?.message || 'Crédits insuffisants');
-        return;
-      }
-
-      // Mettre à jour le solde
-      setCreditBalance(creditResult.new_balance);
-
-      // Récupérer le profil candidat
-      const { data: profileData, error: profileError } = await supabase.rpc('get_candidate_profile', {
-        p_user_id: user.id
-      });
-
-      if (profileError) throw profileError;
-      if (profileData?.error) {
-        setError(profileData.message || 'Profil candidat introuvable');
-        return;
-      }
-
-      // Récupérer l'offre si nécessaire
-      let jobData = null;
-      if (jobId) {
-        const { data: job, error: jobError } = await supabase
-          .from('jobs')
-          .select(`
-            *,
-            companies!inner(name)
-          `)
-          .eq('id', jobId)
-          .single();
-
-        if (!jobError && job) {
-          jobData = {
-            id: job.id,
-            title: job.title,
-            company_name: job.companies?.name,
-            description: job.description,
-            requirements: job.requirements,
-            skills_required: job.skills_required,
-            experience_required: job.experience_required,
-            education_required: job.education_required,
-          };
-        }
-      }
-
-      // Construire le prompt pour l'IA
-      const analysisType = jobData ? 'comparaison avec offre' : 'analyse générale';
-      const prompt = `Tu es un expert en recrutement et analyse de profils professionnels.
-
-${jobData ? `CONTEXTE : Analyser la compatibilité entre le profil candidat et l'offre d'emploi suivante :
-- Poste : ${jobData.title}
-- Entreprise : ${jobData.company_name}
-- Description : ${jobData.description || 'Non spécifiée'}
-- Compétences requises : ${JSON.stringify(jobData.skills_required || [])}
-- Expérience requise : ${jobData.experience_required || 'Non spécifiée'}
-- Formation requise : ${jobData.education_required || 'Non spécifiée'}
-` : 'CONTEXTE : Effectuer une analyse générale du profil candidat.'}
-
-PROFIL CANDIDAT :
-- Nom : ${profileData.full_name}
-- Poste actuel : ${profileData.title || 'Non spécifié'}
-- Expérience : ${profileData.experience_years || 0} ans
-- Niveau d'études : ${profileData.education_level || 'Non spécifié'}
-- Compétences : ${JSON.stringify(profileData.skills || [])}
-- Langues : ${JSON.stringify(profileData.languages || [])}
-- Bio : ${profileData.bio || 'Non renseignée'}
-- Statut professionnel : ${profileData.professional_status || 'Non spécifié'}
-
-MISSION :
-Fournis une analyse complète au format JSON STRICTEMENT comme suit :
-{
-  "score": <nombre entre 0 et 100>,
-  ${jobData ? `"skills_match": <nombre entre 0 et 100>,
-  "experience_match": <nombre entre 0 et 100>,
-  "education_match": <nombre entre 0 et 100>,` : ''}
-  "points_forts": [
-    "Point fort 1 spécifique et détaillé",
-    "Point fort 2 spécifique et détaillé",
-    "Point fort 3 spécifique et détaillé"
-  ],
-  "ameliorations": [
-    "Amélioration 1 concrète et actionnable",
-    "Amélioration 2 concrète et actionnable",
-    "Amélioration 3 concrète et actionnable"
-  ],
-  "formations_suggerees": [
-    {
-      "titre": "Nom de la formation",
-      "domaine": "Domaine",
-      "duree": "Durée estimée",
-      "niveau": "Niveau requis"
-    }
-  ],
-  "recommandations": [
-    "Recommandation 1 personnalisée",
-    "Recommandation 2 personnalisée",
-    "Recommandation 3 personnalisée"
-  ]
-}
-
-IMPORTANT : Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
-
-      // Appeler l'API IA centralisée
-      const aiResponse = await callAIService({
-        service_type: 'profile_analysis',
-        prompt: prompt,
-        context: {
-          profile: profileData,
-          job: jobData,
-          analysis_type: analysisType
-        },
-        temperature: 0.7,
-        max_tokens: 2000
-      });
-
-      if (!aiResponse.success || !aiResponse.data) {
-        throw new Error(aiResponse.error || 'Erreur lors de l\'appel à l\'API IA');
-      }
-
-      // Parser la réponse IA
-      let analysisResult;
-      try {
-        const content = aiResponse.data.content;
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error('Format de réponse invalide');
-        }
-        analysisResult = JSON.parse(jsonMatch[0]);
-      } catch (parseError) {
-        console.error('Erreur parsing:', parseError);
-        throw new Error('Impossible de parser la réponse IA');
-      }
-
-      // Sauvegarder l'analyse dans la base de données
-      const { data: savedAnalysis, error: saveError } = await supabase
-        .from('ai_profile_analysis')
-        .insert({
-          user_id: user.id,
-          offer_id: jobId || null,
-          score: analysisResult.score,
-          skills_match: analysisResult.skills_match || null,
-          experience_match: analysisResult.experience_match || null,
-          education_match: analysisResult.education_match || null,
-          points_forts: analysisResult.points_forts,
-          ameliorations: analysisResult.ameliorations,
-          formations_suggerees: analysisResult.formations_suggerees,
-          recommandations: analysisResult.recommandations,
-          rapport_json: analysisResult,
-          offer_title: jobData?.title || manual || 'Analyse générale',
-          offer_company: jobData?.company_name || null,
-          status: 'completed'
-        })
-        .select()
+      const { data: profile } = await supabase
+        .from('candidate_profiles')
+        .select('*')
+        .eq('user_id', user!.id)
         .single();
 
-      if (saveError) throw saveError;
+      if (!profile) {
+        alert('Veuillez compléter votre profil avant l\'analyse');
+        return;
+      }
 
-      setAnalysis({
-        id: savedAnalysis.id,
-        score: analysisResult.score,
-        skills_match: analysisResult.skills_match,
-        experience_match: analysisResult.experience_match,
-        education_match: analysisResult.education_match,
-        points_forts: analysisResult.points_forts || [],
-        ameliorations: analysisResult.ameliorations || [],
-        formations_suggerees: analysisResult.formations_suggerees || [],
-        recommandations: analysisResult.recommandations || [],
-        offer_title: jobData?.title || manual || 'Analyse générale',
-        offer_company: jobData?.company_name || null,
-        date_analyse: new Date().toISOString(),
+      const { data: jobs } = await supabase
+        .from('jobs')
+        .select('*, companies(name)')
+        .eq('status', 'published')
+        .limit(20);
+
+      if (!jobs) return;
+
+      const analyzedMatches: JobMatch[] = jobs.map(job => {
+        const skillsMatch = calculateSkillsMatch(profile.skills || [], job.required_skills || []);
+        const experienceMatch = calculateExperienceMatch(
+          profile.years_of_experience || 0,
+          job.min_experience || 0
+        );
+        const educationMatch = calculateEducationMatch(
+          profile.education_level,
+          job.education_level
+        );
+
+        const matchScore = Math.round(
+          (skillsMatch * 0.5 + experienceMatch * 0.3 + educationMatch * 0.2)
+        );
+
+        const reasons = generateMatchReasons(skillsMatch, experienceMatch, educationMatch);
+
+        return {
+          id: job.id,
+          title: job.title,
+          company: job.companies?.name || 'N/A',
+          location: job.location,
+          matchScore,
+          reasons,
+          skills_match: skillsMatch,
+          experience_match: experienceMatch,
+          education_match: educationMatch,
+        };
       });
 
-      await loadAnalyses();
+      const sortedMatches = analyzedMatches
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 10);
 
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Analyse de profil terminée',
-        message: `Votre score de compatibilité est de ${analysisResult.score}%`,
-        type: 'success',
-      });
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      setError('Une erreur est survenue lors de l\'analyse');
+      setMatches(sortedMatches);
+
+      const avgScore = sortedMatches.length > 0
+        ? Math.round(sortedMatches.reduce((sum, m) => sum + m.matchScore, 0) / sortedMatches.length)
+        : 0;
+      setProfileScore(avgScore);
+
+    } catch (error) {
+      console.error('Error analyzing profile:', error);
+      alert('Erreur lors de l\'analyse');
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const downloadReport = async () => {
-    if (!analysis) return;
+  const calculateSkillsMatch = (userSkills: string[], jobSkills: string[]): number => {
+    if (!jobSkills.length) return 100;
+    const matchingSkills = userSkills.filter(skill =>
+      jobSkills.some(js => js.toLowerCase().includes(skill.toLowerCase()))
+    );
+    return Math.round((matchingSkills.length / jobSkills.length) * 100);
+  };
 
-    try {
-      const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Rapport d'Analyse de Profil - JobGuinée</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
-    .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #3b82f6; padding-bottom: 20px; }
-    .score { font-size: 48px; font-weight: bold; color: #3b82f6; margin: 20px 0; }
-    .section { margin: 30px 0; }
-    .section-title { font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 15px; }
-    ul { list-style: none; padding: 0; }
-    li { padding: 10px; margin: 8px 0; background: #f3f4f6; border-radius: 8px; }
-    .formation { background: #eff6ff; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #3b82f6; }
-    .footer { text-align: center; margin-top: 50px; color: #6b7280; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Rapport d'Analyse de Profil</h1>
-    <p>JobGuinée - Analyse IA</p>
-    ${analysis.offer_title ? `<p><strong>${analysis.offer_title}</strong> ${analysis.offer_company ? `chez ${analysis.offer_company}` : ''}</p>` : '<p><strong>Analyse Générale</strong></p>'}
-    <p>Date: ${new Date(analysis.date_analyse).toLocaleDateString('fr-FR')}</p>
-  </div>
+  const calculateExperienceMatch = (userExp: number, requiredExp: number): number => {
+    if (userExp >= requiredExp) return 100;
+    return Math.round((userExp / requiredExp) * 100);
+  };
 
-  <div class="section">
-    <h2>Score Global</h2>
-    <div class="score">${analysis.score}%</div>
-  </div>
+  const calculateEducationMatch = (userEdu: string, jobEdu: string): number => {
+    const levels: Record<string, number> = {
+      'Aucun diplôme': 1,
+      'BEPC': 2,
+      'BAC': 3,
+      'BTS/DUT': 4,
+      'Licence': 5,
+      'Master': 6,
+      'Doctorat': 7,
+    };
+    const userLevel = levels[userEdu] || 0;
+    const jobLevel = levels[jobEdu] || 0;
+    return userLevel >= jobLevel ? 100 : Math.round((userLevel / jobLevel) * 100);
+  };
 
-  ${analysis.skills_match !== undefined ? `
-  <div class="section">
-    <h3>Détails des Scores</h3>
-    <ul>
-      <li>🎯 Compétences: ${analysis.skills_match}%</li>
-      <li>💼 Expérience: ${analysis.experience_match}%</li>
-      <li>🎓 Formation: ${analysis.education_match}%</li>
-    </ul>
-  </div>
-  ` : ''}
+  const generateMatchReasons = (skills: number, exp: number, edu: number): string[] => {
+    const reasons: string[] = [];
+    if (skills >= 80) reasons.push('Excellente correspondance des compétences');
+    else if (skills >= 60) reasons.push('Bonne correspondance des compétences');
+    else reasons.push('Compétences à développer');
 
-  <div class="section">
-    <div class="section-title">✅ Points Forts</div>
-    <ul>
-      ${analysis.points_forts.map((p: string) => `<li>${p}</li>`).join('')}
-    </ul>
-  </div>
+    if (exp >= 80) reasons.push('Expérience adéquate');
+    else reasons.push('Expérience à acquérir');
 
-  <div class="section">
-    <div class="section-title">📈 Axes d'Amélioration</div>
-    <ul>
-      ${analysis.ameliorations.map((a: string) => `<li>${a}</li>`).join('')}
-    </ul>
-  </div>
+    if (edu >= 100) reasons.push('Niveau d\'études requis atteint');
 
-  <div class="section">
-    <div class="section-title">🎓 Formations Suggérées</div>
-    ${analysis.formations_suggerees.map((f: any) => `
-      <div class="formation">
-        <h4>${f.titre}</h4>
-        <p><strong>Domaine:</strong> ${f.domaine} | <strong>Durée:</strong> ${f.duree} | <strong>Niveau:</strong> ${f.niveau}</p>
-      </div>
-    `).join('')}
-  </div>
-
-  <div class="section">
-    <div class="section-title">💡 Recommandations</div>
-    <ul>
-      ${analysis.recommandations.map((r: string) => `<li>${r}</li>`).join('')}
-    </ul>
-  </div>
-
-  <div class="footer">
-    <p>Ce rapport a été généré automatiquement par JobGuinée</p>
-    <p>© ${new Date().getFullYear()} JobGuinée - Tous droits réservés</p>
-  </div>
-</body>
-</html>`;
-
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `analyse-profil-${new Date().getTime()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      setError('Erreur lors du téléchargement du rapport');
-    }
+    return reasons;
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'from-green-500 to-emerald-600';
-    if (score >= 60) return 'from-blue-500 to-blue-600';
-    if (score >= 40) return 'from-yellow-500 to-orange-500';
-    return 'from-orange-500 to-red-500';
+    if (score >= 80) return 'text-green-600 bg-green-100';
+    if (score >= 60) return 'text-orange-600 bg-orange-100';
+    return 'text-red-600 bg-red-100';
   };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Bon';
-    if (score >= 40) return 'Moyen';
-    return 'À améliorer';
-  };
-
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.company_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="mb-4 text-blue-900 hover:text-blue-700 font-medium flex items-center space-x-2"
-          >
-            <ChevronRight className="w-5 h-5 rotate-180" />
-            <span>Retour</span>
-          </button>
+    <div className="max-w-6xl mx-auto p-6">
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate('premium-ai')}
+          className="mb-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Retour aux Services IA</span>
+        </button>
+      )}
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
+            <Target className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Analyse & Matching IA</h1>
+            <p className="text-gray-600">Découvrez les offres qui correspondent le mieux à votre profil</p>
+          </div>
+        </div>
+
+        {profileScore !== null && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Score global de votre profil</p>
+                <p className="text-4xl font-bold text-blue-600">{profileScore}/100</p>
+              </div>
+              <div className="text-right">
+                <TrendingUp className="w-12 h-12 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">{matches.length} offres analysées</p>
+              </div>
+            </div>
+          </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Analyse IA de Profil
-            </h1>
-            <p className="text-gray-600">
-              Obtenez une analyse complète de votre profil avec des recommandations personnalisées
-            </p>
-          </div>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center space-x-2"
-            disabled={!eligibility.isEligible}
-          >
-            <BarChart3 className="w-5 h-5" />
-            <span>{showHistory ? 'Nouvelle analyse' : 'Historique'}</span>
-          </button>
-        </div>
+        <button
+          onClick={analyzeProfile}
+          disabled={analyzing}
+          className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {analyzing ? (
+            <>
+              <Loader className="w-5 h-5 animate-spin" />
+              Analyse en cours...
+            </>
+          ) : (
+            <>
+              <Target className="w-5 h-5" />
+              {matches.length > 0 ? 'Relancer l\'analyse' : 'Lancer l\'analyse'}
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Message de blocage si non éligible */}
-      {!eligibility.isLoading && !eligibility.isEligible && (
-        <div className="mb-8 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-8">
-          <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-red-900 mb-2">
-                Service Premium Non Accessible
-              </h3>
-              <p className="text-red-800 mb-4">{eligibility.reason}</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="bg-white rounded-lg p-4 border border-red-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Connexion</span>
-                    {eligibility.isAuthenticated ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <X className="w-5 h-5 text-red-600" />
-                    )}
+      {matches.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Meilleures correspondances</h2>
+          {matches.map((match) => (
+            <div
+              key={match.id}
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{match.title}</h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="w-4 h-4" />
+                      {match.company}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {match.location}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-600">
-                    {eligibility.isAuthenticated ? 'Connecté' : 'Non connecté'}
-                  </p>
                 </div>
-
-                <div className="bg-white rounded-lg p-4 border border-red-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Profil</span>
-                    {eligibility.profileCompletion >= 80 ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <X className="w-5 h-5 text-red-600" />
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    {eligibility.profileCompletion}% / 80% requis
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg p-4 border border-red-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Crédits</span>
-                    {eligibility.hasCredits ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <X className="w-5 h-5 text-red-600" />
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    {eligibility.hasCredits ? 'Suffisants' : 'Insuffisants'}
-                  </p>
+                <div className={`px-4 py-2 rounded-full font-bold ${getScoreColor(match.matchScore)}`}>
+                  {match.matchScore}%
                 </div>
               </div>
 
-              <div className="flex space-x-3">
-                {eligibility.profileCompletion < 80 && onNavigate && (
-                  <button
-                    onClick={() => onNavigate('profile')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                  >
-                    Compléter mon profil
-                  </button>
-                )}
-                {!eligibility.hasCredits && onNavigate && (
-                  <button
-                    onClick={() => onNavigate('credits')}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
-                  >
-                    Recharger mes crédits
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showJobSelection && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Sélectionner une offre</h3>
-                <button
-                  onClick={() => setShowJobSelection(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Rechercher un poste ou une entreprise..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ou saisissez un poste manuellement
-                </label>
-                <input
-                  type="text"
-                  value={manualPosition}
-                  onChange={(e) => setManualPosition(e.target.value)}
-                  placeholder="Ex: Responsable RH"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                />
-                {manualPosition && (
-                  <button
-                    onClick={() => analyzeProfile(undefined, manualPosition)}
-                    className="mt-2 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
-                  >
-                    Analyser avec ce poste
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-3">
-                {filteredJobs.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">Aucune offre trouvée</p>
-                ) : (
-                  filteredJobs.map((job) => (
-                    <button
-                      key={job.id}
-                      onClick={() => {
-                        setSelectedJob(job);
-                        analyzeProfile(job.id);
-                      }}
-                      className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <Briefcase className="w-5 h-5 text-purple-600 mt-1" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{job.title}</h4>
-                          <p className="text-sm text-gray-600">{job.company_name}</p>
-                          <p className="text-sm text-gray-500">{job.location}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showHistory ? (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Mes Analyses Précédentes</h3>
-          {analyses.length === 0 ? (
-            <div className="text-center py-12">
-              <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Aucune analyse disponible</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {analyses.map((item) => (
-                <div
-                  key={item.id}
-                  className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center">
-                        <span className="text-2xl font-bold text-purple-900">
-                          {item.score}%
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900">
-                          {item.offer_title || 'Analyse générale'}
-                        </h4>
-                        {item.offer_company && (
-                          <p className="text-sm text-gray-600">{item.offer_company}</p>
-                        )}
-                        <p className="text-sm text-gray-500">
-                          {new Date(item.date_analyse).toLocaleDateString('fr-FR')}
-                        </p>
-                      </div>
+              <div className="mb-4">
+                <div className="grid grid-cols-3 gap-4 mb-3">
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Compétences</p>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full"
+                        style={{ width: `${match.skills_match}%` }}
+                      />
                     </div>
-                    <button
-                      onClick={async () => {
-                        const { data } = await supabase.rpc('get_profile_analysis_detail', {
-                          p_analysis_id: item.id,
-                        });
-                        if (data.success) {
-                          setAnalysis(data);
-                          setShowHistory(false);
-                        }
-                      }}
-                      className="text-purple-600 hover:text-purple-800 font-medium flex items-center space-x-1"
-                    >
-                      <span>Voir</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : !analysis ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl shadow-2xl p-8 text-white">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                  <Brain className="w-8 h-8" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Analyse Intelligente</h2>
-                  <p className="text-purple-100">Propulsée par l'IA</p>
-                </div>
-              </div>
-
-              <p className="text-purple-50 mb-6 leading-relaxed">
-                Notre IA analyse votre profil et le compare avec une offre d'emploi pour vous fournir
-                un score de compatibilité détaillé et des recommandations personnalisées.
-              </p>
-
-              <div className="mb-6 bg-white bg-opacity-10 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-purple-100">Coût du service:</span>
-                  <span className="text-xl font-bold text-white">{serviceCost} ⚡</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-purple-100">Votre solde:</span>
-                  <span className={`text-xl font-bold ${creditBalance >= serviceCost ? 'text-green-300' : 'text-red-300'}`}>
-                    {loadingCredits ? '...' : creditBalance} ⚡
-                  </span>
-                </div>
-                {(() => {
-                  console.log('Render check:', {
-                    creditBalance,
-                    serviceCost,
-                    loadingCredits,
-                    comparison: creditBalance < serviceCost,
-                    shouldShow: creditBalance < serviceCost && !loadingCredits
-                  });
-                  return null;
-                })()}
-                {creditBalance < serviceCost && !loadingCredits && (
-                  <div className="mt-3 pt-3 border-t border-white border-opacity-20">
-                    <p className="text-xs text-red-200 mb-2">Crédits insuffisants</p>
-                    <button className="w-full bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition text-sm">
-                      Acheter des crédits
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                {selectedJob && (
-                  <div className="bg-white bg-opacity-20 rounded-lg p-4 mb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <Briefcase className="w-4 h-4 text-white" />
-                          <h4 className="font-semibold text-white">{selectedJob.title}</h4>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm text-purple-100">
-                          <Building className="w-3 h-3" />
-                          <span>{selectedJob.company_name}</span>
-                        </div>
-                        {selectedJob.location && (
-                          <p className="text-xs text-purple-200 mt-1">{selectedJob.location}</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setSelectedJob(null)}
-                        className="text-white hover:text-red-300 transition"
-                        title="Supprimer la sélection"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Expérience</p>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full"
+                        style={{ width: `${match.experience_match}%` }}
+                      />
                     </div>
-                    <p className="text-xs text-green-300 font-medium mt-2">✓ Offre sélectionnée</p>
                   </div>
-                )}
-
-                {onNavigateToJobs && !selectedJob ? (
-                  <button
-                    onClick={onNavigateToJobs}
-                    disabled={analyzing || loadingCredits || creditBalance < serviceCost}
-                    className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg"
-                  >
-                    <Briefcase className="w-5 h-5" />
-                    <span>Comparer avec une offre ({serviceCost} ⚡)</span>
-                  </button>
-                ) : !selectedJob ? (
-                  <button
-                    onClick={() => setShowJobSelection(true)}
-                    disabled={analyzing || loadingCredits || creditBalance < serviceCost}
-                    className="w-full bg-white text-purple-900 px-6 py-4 rounded-lg font-bold hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg"
-                  >
-                    <Briefcase className="w-5 h-5" />
-                    <span>Comparer avec une offre ({serviceCost} ⚡)</span>
-                  </button>
-                ) : null}
-
-                <button
-                  onClick={() => analyzeProfile()}
-                  disabled={analyzing || loadingCredits || !eligibility.isEligible}
-                  className="w-full bg-purple-500 text-white px-6 py-4 rounded-lg font-bold hover:bg-purple-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader className="w-5 h-5 animate-spin" />
-                      <span>Analyse en cours...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      <span>Analyse générale ({serviceCost} ⚡)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {error && (
-                <div className="mt-4 bg-red-500 bg-opacity-20 border border-red-300 rounded-lg p-3">
-                  <p className="text-sm text-white">{error}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Ce que vous obtiendrez</h3>
-              <div className="space-y-4">
-                {[
-                  { icon: TrendingUp, title: 'Score de Compatibilité', desc: 'Un score détaillé de 0 à 100%', color: 'text-blue-600' },
-                  { icon: CheckCircle2, title: 'Points Forts', desc: 'Vos atouts professionnels', color: 'text-green-600' },
-                  { icon: AlertCircle, title: 'Points à Améliorer', desc: 'Domaines de progression', color: 'text-orange-600' },
-                  { icon: GraduationCap, title: 'Formations Suggérées', desc: 'Programmes adaptés', color: 'text-purple-600' },
-                  { icon: Lightbulb, title: 'Recommandations', desc: 'Conseils personnalisés', color: 'text-yellow-600' },
-                ].map((item, idx) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={idx} className="flex items-start space-x-3">
-                      <div className={`w-10 h-10 ${item.color} bg-opacity-10 rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        <Icon className={`w-5 h-5 ${item.color}`} />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{item.title}</h4>
-                        <p className="text-sm text-gray-600">{item.desc}</p>
-                      </div>
+                  <div>
+                    <p className="text-xs text-gray-600 mb-1">Formation</p>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full"
+                        style={{ width: `${match.education_match}%` }}
+                      />
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+
+                <ul className="space-y-1">
+                  {match.reasons.map((reason, idx) => (
+                    <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                      {reason}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl shadow-2xl p-8 text-white">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-3xl font-bold">Votre Analyse IA</h2>
-                {analysis.offer_title && (
-                  <p className="text-purple-200 mt-1">
-                    Pour: {analysis.offer_title}
-                    {analysis.offer_company && ` chez ${analysis.offer_company}`}
-                  </p>
-                )}
-              </div>
+
               <button
-                onClick={downloadReport}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2"
+                onClick={() => window.location.href = `/jobs/${match.id}`}
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
               >
-                <Download className="w-5 h-5" />
-                <span>PDF</span>
+                Voir l'offre
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-
-            <div className="bg-white bg-opacity-10 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 mb-1">Score Global</p>
-                  <p className="text-5xl font-bold">{analysis.score}%</p>
-                  <p className="text-purple-200 mt-1">{getScoreLabel(analysis.score)}</p>
-                </div>
-                {analysis.skills_match !== undefined && analysis.skills_match > 0 && (
-                  <div className="text-right space-y-1 text-sm">
-                    <p className="text-purple-100">Compétences: {analysis.skills_match}%</p>
-                    <p className="text-purple-100">Expérience: {analysis.experience_match}%</p>
-                    <p className="text-purple-100">Formation: {analysis.education_match}%</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="w-full bg-white bg-opacity-20 rounded-full h-3 mt-4">
-                <div
-                  className={`h-3 rounded-full bg-gradient-to-r ${getScoreColor(analysis.score)} transition-all duration-1000`}
-                  style={{ width: `${analysis.score}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
-                <span>Points Forts</span>
-              </h3>
-              <ul className="space-y-3">
-                {analysis.points_forts.map((point, idx) => (
-                  <li key={idx} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
-                    <span className="text-gray-700">{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                <AlertCircle className="w-6 h-6 text-orange-600" />
-                <span>Points à Améliorer</span>
-              </h3>
-              <ul className="space-y-3">
-                {analysis.ameliorations.map((point, idx) => (
-                  <li key={idx} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0" />
-                    <span className="text-gray-700">{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-              <GraduationCap className="w-6 h-6 text-purple-600" />
-              <span>Formations Suggérées</span>
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {analysis.formations_suggerees.map((formation, idx) => (
-                <div key={idx} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition">
-                  <h4 className="font-bold text-gray-900 mb-2">{formation.titre}</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p>🎯 {formation.domaine}</p>
-                    <p>⏱️ {formation.duree}</p>
-                    <p>📊 Niveau: {formation.niveau}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-              <Lightbulb className="w-6 h-6 text-yellow-600" />
-              <span>Recommandations</span>
-            </h3>
-            <ul className="space-y-3">
-              {analysis.recommandations.map((reco, idx) => (
-                <li key={idx} className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    {idx + 1}
-                  </div>
-                  <span className="text-gray-700">{reco}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={() => setAnalysis(null)}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
-            >
-              Nouvelle analyse
-            </button>
-            <button
-              onClick={downloadReport}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition flex items-center space-x-2"
-            >
-              <Download className="w-5 h-5" />
-              <span>Télécharger le rapport</span>
-            </button>
-          </div>
+          ))}
         </div>
       )}
     </div>
