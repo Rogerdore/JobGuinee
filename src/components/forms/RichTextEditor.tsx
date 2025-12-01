@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import {
@@ -57,6 +57,7 @@ export default function RichTextEditor({
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isUndoRedoRef = useRef(false);
 
   const combineAllContent = () => {
     const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
@@ -64,48 +65,72 @@ export default function RichTextEditor({
     onChange(combined);
   };
 
-  const addToHistory = (content: string) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(content);
+  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    if (newHistory.length > 50) {
-      newHistory.shift();
-    } else {
-      setHistoryIndex(historyIndex + 1);
+  const addToHistory = useCallback((content: string) => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
     }
 
-    setHistory(newHistory);
-  };
+    historyTimeoutRef.current = setTimeout(() => {
+      setHistory((prevHistory) => {
+        const newHistory = prevHistory.slice(0, historyIndex + 1);
 
-  const handleUndo = () => {
+        if (newHistory[newHistory.length - 1] === content) {
+          return prevHistory;
+        }
+
+        newHistory.push(content);
+
+        if (newHistory.length > 50) {
+          newHistory.shift();
+          return newHistory;
+        }
+
+        return newHistory;
+      });
+
+      setHistoryIndex((prev) => prev + 1);
+    }, 500);
+  }, [historyIndex]);
+
+  const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
+      isUndoRedoRef.current = true;
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       const previousContent = history[newIndex];
       setEditorContent(previousContent);
       setHasUnsavedChanges(true);
 
-      const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-      const combined = blocksContent ? `${blocksContent}\n\n${previousContent}` : previousContent;
-      onChange(combined);
+      setTimeout(() => {
+        const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
+        const combined = blocksContent ? `${blocksContent}\n\n${previousContent}` : previousContent;
+        onChange(combined);
+        isUndoRedoRef.current = false;
+      }, 50);
     }
-  };
+  }, [historyIndex, history, importedBlocks, onChange]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
+      isUndoRedoRef.current = true;
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       const nextContent = history[newIndex];
       setEditorContent(nextContent);
       setHasUnsavedChanges(true);
 
-      const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-      const combined = blocksContent ? `${blocksContent}\n\n${nextContent}` : nextContent;
-      onChange(combined);
+      setTimeout(() => {
+        const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
+        const combined = blocksContent ? `${blocksContent}\n\n${nextContent}` : nextContent;
+        onChange(combined);
+        isUndoRedoRef.current = false;
+      }, 50);
     }
-  };
+  }, [historyIndex, history, importedBlocks, onChange]);
 
-  const handleSaveContent = () => {
+  const handleSaveContent = useCallback(() => {
     setSavedContent(editorContent);
     setHasUnsavedChanges(false);
     combineAllContent();
@@ -120,7 +145,7 @@ export default function RichTextEditor({
     `;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
-  };
+  }, [editorContent, combineAllContent]);
 
   useEffect(() => {
     setEditorContent(value);
@@ -136,15 +161,13 @@ export default function RichTextEditor({
         handleRedo();
       } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (hasUnsavedChanges) {
-          handleSaveContent();
-        }
+        handleSaveContent();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, history, hasUnsavedChanges]);
+  }, [handleUndo, handleRedo, handleSaveContent]);
 
   const modules = {
     toolbar: [
@@ -292,7 +315,11 @@ export default function RichTextEditor({
     setTimeout(combineAllContent, 100);
   };
 
-  const handleEditorChange = (content: string) => {
+  const handleEditorChange = useCallback((content: string) => {
+    if (isUndoRedoRef.current) {
+      return;
+    }
+
     setEditorContent(content);
     setHasUnsavedChanges(true);
 
@@ -307,7 +334,7 @@ export default function RichTextEditor({
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
       onChange(combined);
     }, 300);
-  };
+  }, [addToHistory, importedBlocks, onChange]);
 
   const handleResetContent = () => {
     if (confirm('Êtes-vous sûr de vouloir réinitialiser tout le contenu ? Cette action est irréversible.')) {
