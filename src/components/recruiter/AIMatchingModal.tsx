@@ -1,5 +1,9 @@
-import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown } from 'lucide-react';
+import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown, Coins } from 'lucide-react';
 import { useState } from 'react';
+import { useConsumeCredits } from '../../hooks/useCreditService';
+import { SERVICES } from '../../services/creditService';
+import CreditConfirmModal from '../credits/CreditConfirmModal';
+import CreditBalance from '../credits/CreditBalance';
 
 interface AIMatchingModalProps {
   job: {
@@ -50,6 +54,8 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [results, setResults] = useState<MatchingResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const { consumeCredits } = useConsumeCredits();
 
   console.log('AIMatchingModal - isPremium:', isPremium);
   console.log('AIMatchingModal - applications count:', applications.length);
@@ -168,9 +174,9 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     };
   };
 
-  const startAnalysis = () => {
-    console.log('startAnalysis called - isPremium:', isPremium);
-    console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
+  const handleStartAnalysisClick = () => {
+    console.log('handleStartAnalysisClick called - isPremium:', isPremium);
+    console.log('handleStartAnalysisClick - selectedCandidates:', selectedCandidates.size);
 
     if (selectedCandidates.size === 0) {
       alert('Veuillez sélectionner au moins un candidat à analyser');
@@ -183,6 +189,22 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
       onUpgrade();
       return;
     }
+
+    setShowCreditModal(true);
+  };
+
+  const handleCreditConfirm = async (success: boolean, result?: any) => {
+    if (!success) {
+      alert(result?.message || 'Erreur lors de la consommation des crédits');
+      return;
+    }
+
+    await startAnalysis();
+  };
+
+  const startAnalysis = () => {
+    console.log('startAnalysis called');
+    console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
 
     console.log('Starting analysis...');
     setAnalyzing(true);
@@ -349,6 +371,19 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
 
               {applications.length > 0 && (
                 <div>
+                  {isPremium && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Coins className="w-5 h-5 text-yellow-600" />
+                          <span className="text-sm text-yellow-900">
+                            <span className="font-semibold">Coût :</span> 30 crédits par candidat sélectionné
+                          </span>
+                        </div>
+                        <CreditBalance />
+                      </div>
+                    </div>
+                  )}
                   {!isPremium && (
                     <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-400 rounded-2xl p-6 mb-4">
                       <div className="flex items-start gap-4">
@@ -409,7 +444,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                         </p>
                       </div>
                       <button
-                        onClick={startAnalysis}
+                        onClick={handleStartAnalysisClick}
                         disabled={selectedCandidates.size === 0}
                         className={`px-8 py-4 rounded-xl font-semibold text-lg flex items-center gap-3 transition-all ${
                           selectedCandidates.size === 0
@@ -628,6 +663,17 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
           </div>
         )}
       </div>
+
+      <CreditConfirmModal
+        isOpen={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        onConfirm={handleCreditConfirm}
+        serviceCode={SERVICES.AI_JOB_MATCHING}
+        serviceName="Matching Candidatures IA"
+        serviceCost={30 * selectedCandidates.size}
+        description={`Analysez ${selectedCandidates.size} candidature${selectedCandidates.size > 1 ? 's' : ''} avec scoring automatique et recommandations`}
+        inputPayload={{ jobId: job.id, jobTitle: job.title, candidatesCount: selectedCandidates.size }}
+      />
     </div>
   );
 }

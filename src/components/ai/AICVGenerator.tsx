@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Download, Loader, Upload, Sparkles, ArrowLeft } from 'lucide-react';
+import { useConsumeCredits } from '../../hooks/useCreditService';
+import { SERVICES } from '../../services/creditService';
+import CreditConfirmModal from '../credits/CreditConfirmModal';
+import CreditBalance from '../credits/CreditBalance';
 
 interface CVData {
   fullName: string;
@@ -47,6 +51,8 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
   });
   const [generatedCV, setGeneratedCV] = useState<string>('');
   const [useExistingProfile, setUseExistingProfile] = useState(true);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const { consumeCredits } = useConsumeCredits();
 
   useEffect(() => {
     if (useExistingProfile && user) {
@@ -88,6 +94,19 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateClick = () => {
+    setShowCreditModal(true);
+  };
+
+  const handleCreditConfirm = async (success: boolean, result?: any) => {
+    if (!success) {
+      alert(result?.message || 'Erreur lors de la consommation des crédits');
+      return;
+    }
+
+    await generateCV();
   };
 
   const generateCV = async () => {
@@ -276,8 +295,15 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
           </div>
         )}
 
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-600">
+            Coût: <span className="font-bold text-blue-600">50 crédits</span>
+          </div>
+          <CreditBalance />
+        </div>
+
         <button
-          onClick={generateCV}
+          onClick={handleGenerateClick}
           disabled={generating || !cvData.fullName}
           className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
@@ -313,6 +339,17 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
           />
         </div>
       )}
+
+      <CreditConfirmModal
+        isOpen={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        onConfirm={handleCreditConfirm}
+        serviceCode={SERVICES.AI_CV_GENERATION}
+        serviceName="Génération de CV IA"
+        serviceCost={50}
+        description="Créez un CV professionnel avec mise en forme automatique"
+        inputPayload={{ fullName: cvData.fullName, title: cvData.title }}
+      />
     </div>
   );
 }

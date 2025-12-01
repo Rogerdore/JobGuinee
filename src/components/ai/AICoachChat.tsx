@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { MessageCircle, Send, Loader, Bot, User, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Send, Loader, Bot, User, ArrowLeft, Coins } from 'lucide-react';
+import { useConsumeCredits } from '../../hooks/useCreditService';
+import { SERVICES } from '../../services/creditService';
+import CreditBalance from '../credits/CreditBalance';
 
 interface Message {
   id: string;
@@ -28,6 +31,7 @@ export default function AICoachChat({ onNavigate }: AICoachChatProps = {}) {
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { consumeCredits } = useConsumeCredits();
 
   const quickQuestions = [
     'Comment préparer un entretien d\'embauche ?',
@@ -178,6 +182,23 @@ N'hésitez pas à me poser des questions plus spécifiques sur :
     setLoading(true);
 
     try {
+      const creditResult = await consumeCredits(
+        SERVICES.AI_INTERVIEW_COACHING,
+        { message: text, sessionId },
+        null
+      );
+
+      if (!creditResult.success) {
+        const errorMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: `❌ ${creditResult.message}\n\nVeuillez recharger vos crédits pour continuer à utiliser JobCoach IA.`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        return;
+      }
+
       await supabase.from('ai_chat_history').insert({
         user_id: user!.id,
         session_id: sessionId,
@@ -230,13 +251,24 @@ N'hésitez pas à me poser des questions plus spécifiques sur :
       )}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-              <MessageCircle className="w-6 h-6" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <MessageCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">JobCoach IA</h1>
+                <p className="text-blue-100">Votre assistant personnel pour le développement de carrière</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">JobCoach IA</h1>
-              <p className="text-blue-100">Votre assistant personnel pour le développement de carrière</p>
+            <div className="bg-white/20 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Coins className="w-4 h-4" />
+                <span>100 crédits/message</span>
+              </div>
+              <div className="mt-1">
+                <CreditBalance />
+              </div>
             </div>
           </div>
         </div>

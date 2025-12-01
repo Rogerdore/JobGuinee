@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Wand2, X, Loader } from 'lucide-react';
+import { Wand2, X, Loader, Coins } from 'lucide-react';
+import { useConsumeCredits } from '../../hooks/useCreditService';
+import { SERVICES } from '../../services/creditService';
+import CreditBalance from '../credits/CreditBalance';
 
 interface AIJobGeneratorProps {
   onGenerate: (data: JobGenerationData) => void;
@@ -16,6 +19,7 @@ export interface JobGenerationData {
 
 export default function AIJobGenerator({ onGenerate, onClose }: AIJobGeneratorProps) {
   const [loading, setLoading] = useState(false);
+  const { consumeCredits } = useConsumeCredits();
   const [formData, setFormData] = useState<JobGenerationData>({
     job_title: '',
     department: '',
@@ -28,6 +32,18 @@ export default function AIJobGenerator({ onGenerate, onClose }: AIJobGeneratorPr
     if (!formData.job_title || !formData.location) return;
 
     setLoading(true);
+
+    const creditResult = await consumeCredits(
+      SERVICES.AI_CV_GENERATION,
+      { jobTitle: formData.job_title, location: formData.location }
+    );
+
+    if (!creditResult.success) {
+      alert(creditResult.message);
+      setLoading(false);
+      return;
+    }
+
     await onGenerate(formData);
     setLoading(false);
   };
@@ -54,6 +70,16 @@ export default function AIJobGenerator({ onGenerate, onClose }: AIJobGeneratorPr
         </div>
 
         <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-yellow-600" />
+              <span className="text-sm text-yellow-900">
+                <span className="font-semibold">Coût :</span> 50 crédits
+              </span>
+            </div>
+            <CreditBalance />
+          </div>
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
               <span className="font-semibold">Service Premium :</span> Notre IA va générer automatiquement une description complète,

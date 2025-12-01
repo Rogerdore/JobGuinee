@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useConsumeCredits } from '../../hooks/useCreditService';
+import { SERVICES } from '../../services/creditService';
+import CreditConfirmModal from '../credits/CreditConfirmModal';
+import CreditBalance from '../credits/CreditBalance';
 
 interface JobMatch {
   id: string;
@@ -25,6 +29,21 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
   const [analyzing, setAnalyzing] = useState(false);
   const [matches, setMatches] = useState<JobMatch[]>([]);
   const [profileScore, setProfileScore] = useState<number | null>(null);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const { consumeCredits } = useConsumeCredits();
+
+  const handleAnalyzeClick = () => {
+    setShowCreditModal(true);
+  };
+
+  const handleCreditConfirm = async (success: boolean, result?: any) => {
+    if (!success) {
+      alert(result?.message || 'Erreur lors de la consommation des crédits');
+      return;
+    }
+
+    await analyzeProfile();
+  };
 
   const analyzeProfile = async () => {
     setAnalyzing(true);
@@ -182,8 +201,15 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
           </div>
         )}
 
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-600">
+            Coût: <span className="font-bold text-blue-600">20 crédits</span>
+          </div>
+          <CreditBalance />
+        </div>
+
         <button
-          onClick={analyzeProfile}
+          onClick={handleAnalyzeClick}
           disabled={analyzing}
           className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
@@ -280,6 +306,16 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
           ))}
         </div>
       )}
+
+      <CreditConfirmModal
+        isOpen={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        onConfirm={handleCreditConfirm}
+        serviceCode={SERVICES.AI_JOB_MATCHING}
+        serviceName="Matching Emplois IA"
+        serviceCost={20}
+        description="Analysez votre profil et trouvez les emplois qui correspondent le mieux"
+      />
     </div>
   );
 }
