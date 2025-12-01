@@ -50,14 +50,10 @@ export default function RichTextEditor({
   const [showBlocks, setShowBlocks] = useState(true);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editorContent, setEditorContent] = useState(value);
-  const [history, setHistory] = useState<string[]>([value]);
-  const [historyIndex, setHistoryIndex] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [savedContent, setSavedContent] = useState(value);
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isUndoRedoRef = useRef(false);
 
   const combineAllContent = () => {
     const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
@@ -65,73 +61,21 @@ export default function RichTextEditor({
     onChange(combined);
   };
 
-  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const addToHistory = useCallback((content: string) => {
-    if (historyTimeoutRef.current) {
-      clearTimeout(historyTimeoutRef.current);
+  const handleUndo = () => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      quill.history.undo();
     }
+  };
 
-    historyTimeoutRef.current = setTimeout(() => {
-      setHistory((prevHistory) => {
-        const newHistory = prevHistory.slice(0, historyIndex + 1);
-
-        if (newHistory[newHistory.length - 1] === content) {
-          return prevHistory;
-        }
-
-        newHistory.push(content);
-
-        if (newHistory.length > 50) {
-          newHistory.shift();
-          return newHistory;
-        }
-
-        return newHistory;
-      });
-
-      setHistoryIndex((prev) => prev + 1);
-    }, 500);
-  }, [historyIndex]);
-
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      isUndoRedoRef.current = true;
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      const previousContent = history[newIndex];
-      setEditorContent(previousContent);
-      setHasUnsavedChanges(true);
-
-      setTimeout(() => {
-        const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-        const combined = blocksContent ? `${blocksContent}\n\n${previousContent}` : previousContent;
-        onChange(combined);
-        isUndoRedoRef.current = false;
-      }, 50);
+  const handleRedo = () => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      quill.history.redo();
     }
-  }, [historyIndex, history, importedBlocks, onChange]);
+  };
 
-  const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      isUndoRedoRef.current = true;
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      const nextContent = history[newIndex];
-      setEditorContent(nextContent);
-      setHasUnsavedChanges(true);
-
-      setTimeout(() => {
-        const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-        const combined = blocksContent ? `${blocksContent}\n\n${nextContent}` : nextContent;
-        onChange(combined);
-        isUndoRedoRef.current = false;
-      }, 50);
-    }
-  }, [historyIndex, history, importedBlocks, onChange]);
-
-  const handleSaveContent = useCallback(() => {
-    setSavedContent(editorContent);
+  const handleSaveContent = () => {
     setHasUnsavedChanges(false);
     combineAllContent();
 
@@ -145,7 +89,7 @@ export default function RichTextEditor({
     `;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
-  }, [editorContent, combineAllContent]);
+  };
 
   useEffect(() => {
     setEditorContent(value);
@@ -167,7 +111,7 @@ export default function RichTextEditor({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, handleSaveContent]);
+  }, [editorContent, importedBlocks]);
 
   const modules = {
     toolbar: [
@@ -185,6 +129,11 @@ export default function RichTextEditor({
       ['link', 'image', 'video'],
       ['clean'],
     ],
+    history: {
+      delay: 500,
+      maxStack: 100,
+      userOnly: true,
+    },
   };
 
   const formats = [
@@ -315,15 +264,9 @@ export default function RichTextEditor({
     setTimeout(combineAllContent, 100);
   };
 
-  const handleEditorChange = useCallback((content: string) => {
-    if (isUndoRedoRef.current) {
-      return;
-    }
-
+  const handleEditorChange = (content: string) => {
     setEditorContent(content);
     setHasUnsavedChanges(true);
-
-    addToHistory(content);
 
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
@@ -334,15 +277,18 @@ export default function RichTextEditor({
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
       onChange(combined);
     }, 300);
-  }, [addToHistory, importedBlocks, onChange]);
+  };
 
   const handleResetContent = () => {
     if (confirm('Êtes-vous sûr de vouloir réinitialiser tout le contenu ? Cette action est irréversible.')) {
       setEditorContent('');
-      setHistory(['']);
-      setHistoryIndex(0);
       setHasUnsavedChanges(false);
       onChange('');
+
+      const quill = quillRef.current?.getEditor();
+      if (quill) {
+        quill.history.clear();
+      }
 
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-slide-up';
@@ -444,8 +390,7 @@ export default function RichTextEditor({
           <button
             type="button"
             onClick={handleUndo}
-            disabled={historyIndex === 0}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
             title="Annuler (Ctrl+Z)"
           >
             <Undo2 className="w-4 h-4" />
@@ -453,8 +398,7 @@ export default function RichTextEditor({
           <button
             type="button"
             onClick={handleRedo}
-            disabled={historyIndex >= history.length - 1}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
             title="Rétablir (Ctrl+Y)"
           >
             <Redo2 className="w-4 h-4" />
