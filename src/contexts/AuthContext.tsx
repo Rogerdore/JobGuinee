@@ -28,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching profile:', error);
       return null;
     }
     return data;
@@ -98,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .update({ full_name: fullName })
       .eq('id', data.user.id);
 
-    if (updateError) console.error('Error updating profile:', updateError);
+    if (updateError) throw updateError;
 
     if (role === 'trainer') {
       const { error: trainerError } = await supabase
@@ -113,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           total_students: 0
         });
 
-      if (trainerError) console.error('Error creating trainer profile:', trainerError);
+      if (trainerError) throw trainerError;
     }
   };
 
