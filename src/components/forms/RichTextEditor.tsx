@@ -96,6 +96,49 @@ export default function RichTextEditor({
   }, []);
 
   useEffect(() => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+
+      const items = clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const base64 = event.target?.result as string;
+              const range = quill.getSelection(true);
+
+              if (range) {
+                quill.insertEmbed(range.index, 'image', base64);
+                quill.setSelection(range.index + 1);
+                setHasUnsavedChanges(true);
+              }
+            };
+            reader.readAsDataURL(blob);
+          }
+          break;
+        }
+      }
+    };
+
+    const editorElement = quill.root;
+    editorElement.addEventListener('paste', handlePaste);
+
+    return () => {
+      editorElement.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
@@ -122,102 +165,72 @@ export default function RichTextEditor({
       const images = editorElement.querySelectorAll('img');
 
       images.forEach((img: HTMLImageElement) => {
-        if (img.classList.contains('manipulable-image')) return;
+        if (img.dataset.manipulable === 'true') return;
 
+        img.dataset.manipulable = 'true';
         img.classList.add('manipulable-image');
-        img.style.cursor = 'move';
         img.style.maxWidth = '100%';
         img.style.height = 'auto';
         img.draggable = false;
 
-        let isDragging = false;
         let isResizing = false;
         let startX = 0;
-        let startY = 0;
         let startWidth = 0;
-        let startHeight = 0;
-        let imgRect: DOMRect;
 
-        const onMouseDown = (e: MouseEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-
-          imgRect = img.getBoundingClientRect();
-          startX = e.clientX;
-          startY = e.clientY;
-          startWidth = img.offsetWidth;
-          startHeight = img.offsetHeight;
-
-          const isNearRightEdge = e.clientX > imgRect.right - 20;
-          const isNearBottomEdge = e.clientY > imgRect.bottom - 20;
-          const isNearCorner = isNearRightEdge && isNearBottomEdge;
-
-          if (isNearCorner || isNearRightEdge || isNearBottomEdge) {
-            isResizing = true;
-            img.style.cursor = 'nwse-resize';
-          } else {
-            isDragging = true;
-            img.style.opacity = '0.6';
-          }
-
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
-        };
-
-        const onMouseMove = (e: MouseEvent) => {
-          if (isResizing) {
-            const deltaX = e.clientX - startX;
-            const newWidth = startWidth + deltaX;
-
-            if (newWidth > 50 && newWidth <= editorElement.offsetWidth) {
-              img.style.width = `${newWidth}px`;
-              img.style.height = 'auto';
-            }
-          } else if (isDragging) {
-            const range = quill.getSelection();
-            if (range) {
-              const [blot] = quill.getLeaf(range.index);
-              if (blot && blot.domNode === img) {
-                const deltaY = e.clientY - startY;
-                if (Math.abs(deltaY) > 50) {
-                  const newIndex = deltaY > 0 ? range.index + 1 : Math.max(0, range.index - 1);
-                  const delta = quill.getContents(range.index, 1);
-                  quill.deleteText(range.index, 1);
-                  quill.insertEmbed(newIndex, 'image', img.src);
-                  quill.setSelection(newIndex + 1);
-                  startY = e.clientY;
-                }
-              }
-            }
-          }
-        };
-
-        const onMouseUp = () => {
-          isDragging = false;
-          isResizing = false;
-          img.style.cursor = 'move';
-          img.style.opacity = '1';
-
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-
-          setHasUnsavedChanges(true);
-        };
-
-        const onMouseEnter = (e: MouseEvent) => {
+        const updateCursor = (e: MouseEvent) => {
           const rect = img.getBoundingClientRect();
-          const isNearRightEdge = e.clientX > rect.right - 20;
-          const isNearBottomEdge = e.clientY > rect.bottom - 20;
+          const isNearRightEdge = e.clientX > rect.right - 15;
+          const isNearBottomEdge = e.clientY > rect.bottom - 15;
 
           if ((isNearRightEdge && isNearBottomEdge) || isNearRightEdge || isNearBottomEdge) {
             img.style.cursor = 'nwse-resize';
           } else {
-            img.style.cursor = 'move';
+            img.style.cursor = 'default';
+          }
+        };
+
+        const onMouseDown = (e: MouseEvent) => {
+          const rect = img.getBoundingClientRect();
+          const isNearRightEdge = e.clientX > rect.right - 15;
+          const isNearBottomEdge = e.clientY > rect.bottom - 15;
+
+          if (isNearRightEdge || isNearBottomEdge) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = img.offsetWidth;
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+          }
+        };
+
+        const onMouseMove = (e: MouseEvent) => {
+          if (!isResizing) return;
+
+          e.preventDefault();
+          const deltaX = e.clientX - startX;
+          const newWidth = startWidth + deltaX;
+
+          if (newWidth > 50 && newWidth <= editorElement.offsetWidth) {
+            img.style.width = `${newWidth}px`;
+            img.style.height = 'auto';
+          }
+        };
+
+        const onMouseUp = () => {
+          if (isResizing) {
+            isResizing = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            setHasUnsavedChanges(true);
           }
         };
 
         img.addEventListener('mousedown', onMouseDown);
-        img.addEventListener('mousemove', onMouseEnter);
+        img.addEventListener('mousemove', updateCursor);
       });
     };
 
@@ -245,6 +258,9 @@ export default function RichTextEditor({
       delay: 500,
       maxStack: 100,
       userOnly: true,
+    },
+    clipboard: {
+      matchVisual: false,
     },
   };
 
@@ -718,9 +734,9 @@ export default function RichTextEditor({
             Manipulation des images
           </p>
           <div className="space-y-1 text-xs text-blue-800">
-            <p>• <strong>Déplacer</strong> : Cliquez et glissez l'image vers le haut ou le bas</p>
+            <p>• <strong>Coller une image</strong> : Ctrl+V avec une image dans le presse-papiers</p>
             <p>• <strong>Redimensionner</strong> : Glissez depuis le bord droit ou le coin bas-droit</p>
-            <p>• Le curseur change selon l'action disponible</p>
+            <p>• Le curseur change en ↔️ quand le redimensionnement est possible</p>
           </div>
         </div>
         <p className="text-xs text-blue-700 italic mt-2">

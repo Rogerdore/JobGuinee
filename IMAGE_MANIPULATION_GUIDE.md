@@ -2,19 +2,41 @@
 
 ## 🖼️ Vue d'ensemble
 
-L'éditeur de texte riche permet maintenant de manipuler directement les images insérées : redimensionnement et déplacement intuitifs par glisser-déposer.
+L'éditeur de texte riche permet de manipuler directement les images insérées : collage depuis le presse-papiers et redimensionnement interactif.
 
 ## ✨ Fonctionnalités
 
-### 1. 🔍 Détection Automatique des Images
+### 1. 📋 Collage d'Images depuis le Presse-Papiers
+
+**Nouvelle fonctionnalité !** Vous pouvez maintenant coller directement des images dans l'éditeur :
+
+#### Comment coller une image
+1. **Copiez une image** depuis n'importe quelle source (navigateur, explorateur de fichiers, capture d'écran)
+2. **Cliquez dans l'éditeur** pour positionner le curseur
+3. **Appuyez sur Ctrl+V (ou Cmd+V sur Mac)**
+4. **L'image apparaît instantanément** à la position du curseur
+
+#### Sources supportées
+- ✅ Images copiées depuis un navigateur web
+- ✅ Captures d'écran (outil de capture Windows, Snipping Tool)
+- ✅ Images copiées depuis l'explorateur de fichiers
+- ✅ Images depuis des applications (Photoshop, GIMP, etc.)
+- ✅ Images copiées depuis des documents (Word, PDF, etc.)
+
+#### Format
+- L'image est automatiquement convertie en **base64**
+- Aucune dépendance externe requise
+- L'image est intégrée directement dans le contenu
+
+### 2. 🔍 Détection Automatique des Images
 
 Toutes les images insérées dans l'éditeur sont automatiquement détectées et rendues manipulables :
-- Images importées depuis des fichiers
 - Images collées depuis le presse-papiers
+- Images importées depuis des fichiers
 - Images ajoutées via la barre d'outils Quill
 - Images dans les blocs importés
 
-### 2. 📏 Redimensionnement Interactif
+### 3. 📏 Redimensionnement Interactif
 
 #### Comment redimensionner
 1. **Survolez l'image** : Le curseur change selon la zone
@@ -32,20 +54,6 @@ Toutes les images insérées dans l'éditeur sont automatiquement détectées et
 - **Taille maximale** : Largeur de l'éditeur (100%)
 - **Ratio d'aspect** : Maintenu automatiquement (hauteur = auto)
 
-### 3. 🔀 Déplacement des Images
-
-#### Comment déplacer
-1. **Cliquez sur l'image** : Évitez les bords (zone de redimensionnement)
-2. **Maintenez le bouton enfoncé** : L'image devient semi-transparente (opacity: 0.6)
-3. **Glissez vers le haut ou le bas** : Déplacez d'au moins 50px
-4. **Relâchez** : L'image est repositionnée
-
-#### Comportement
-- **Déplacement vertical uniquement** : Haut ou bas dans le document
-- **Seuil de déclenchement** : 50px de mouvement vertical
-- **Feedback visuel** : L'image devient transparente pendant le déplacement
-- **Réinsertion automatique** : L'image est supprimée de sa position d'origine et réinsérée à la nouvelle position
-
 ### 4. 🎨 Indicateurs Visuels
 
 #### Au survol (hover)
@@ -58,18 +66,64 @@ Toutes les images insérées dans l'éditeur sont automatiquement détectées et
 #### Pendant la manipulation
 ```css
 - Redimensionnement : cursor: nwse-resize
-- Déplacement : cursor: move + opacity: 0.6
-- Feedback tactile : transform: scale(0.98) au clic
+- État par défaut : cursor: default (pas d'interférence avec l'édition)
 ```
 
 #### Curseurs dynamiques
-- **Zone centrale** : `move` (déplacement)
+- **Zone centrale** : `default` (édition normale du texte)
 - **Bord droit/bas** : `nwse-resize` (redimensionnement)
 - **Coin bas-droit** : `nwse-resize` (redimensionnement diagonal)
 
 ## 🔧 Architecture Technique
 
-### 1. Détection et Initialisation
+### 1. Gestion du Collage d'Images
+
+```typescript
+useEffect(() => {
+  const quill = quillRef.current?.getEditor();
+  if (!quill) return;
+
+  const handlePaste = (e: ClipboardEvent) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const items = clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (item.type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+
+        if (blob) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target?.result as string;
+            const range = quill.getSelection(true);
+
+            if (range) {
+              quill.insertEmbed(range.index, 'image', base64);
+              quill.setSelection(range.index + 1);
+              setHasUnsavedChanges(true);
+            }
+          };
+          reader.readAsDataURL(blob);
+        }
+        break;
+      }
+    }
+  };
+
+  const editorElement = quill.root;
+  editorElement.addEventListener('paste', handlePaste);
+
+  return () => {
+    editorElement.removeEventListener('paste', handlePaste);
+  };
+}, []);
+```
+
+### 2. Détection et Initialisation des Images
 
 ```typescript
 useEffect(() => {
@@ -78,17 +132,17 @@ useEffect(() => {
     const images = quill.root.querySelectorAll('img');
 
     images.forEach((img: HTMLImageElement) => {
-      // Évite les duplications
-      if (img.classList.contains('manipulable-image')) return;
+      // Évite les duplications avec data-attribute
+      if (img.dataset.manipulable === 'true') return;
 
-      // Ajoute la classe et les styles
+      // Marque l'image comme manipulable
+      img.dataset.manipulable = 'true';
       img.classList.add('manipulable-image');
-      img.style.cursor = 'move';
       img.draggable = false;
 
       // Attache les event listeners
       img.addEventListener('mousedown', onMouseDown);
-      img.addEventListener('mousemove', onMouseEnter);
+      img.addEventListener('mousemove', updateCursor);
     });
   };
 
@@ -96,49 +150,46 @@ useEffect(() => {
 }, [editorContent]);
 ```
 
-### 2. Gestion du Redimensionnement
+### 3. Gestion du Redimensionnement
 
 ```typescript
 const onMouseDown = (e: MouseEvent) => {
-  const imgRect = img.getBoundingClientRect();
-  const isNearRightEdge = e.clientX > imgRect.right - 20;
-  const isNearBottomEdge = e.clientY > imgRect.bottom - 20;
+  const rect = img.getBoundingClientRect();
+  const isNearRightEdge = e.clientX > rect.right - 15;
+  const isNearBottomEdge = e.clientY > rect.bottom - 15;
 
   if (isNearRightEdge || isNearBottomEdge) {
+    e.preventDefault();
+    e.stopPropagation();
+
     isResizing = true;
-    img.style.cursor = 'nwse-resize';
+    startX = e.clientX;
+    startWidth = img.offsetWidth;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 };
 
 const onMouseMove = (e: MouseEvent) => {
+  if (!isResizing) return;
+
+  e.preventDefault();
+  const deltaX = e.clientX - startX;
+  const newWidth = startWidth + deltaX;
+
+  if (newWidth > 50 && newWidth <= editorElement.offsetWidth) {
+    img.style.width = `${newWidth}px`;
+    img.style.height = 'auto';
+  }
+};
+
+const onMouseUp = () => {
   if (isResizing) {
-    const deltaX = e.clientX - startX;
-    const newWidth = startWidth + deltaX;
-
-    if (newWidth > 50 && newWidth <= editorElement.offsetWidth) {
-      img.style.width = `${newWidth}px`;
-      img.style.height = 'auto';
-    }
-  }
-};
-```
-
-### 3. Gestion du Déplacement
-
-```typescript
-const onMouseMove = (e: MouseEvent) => {
-  if (isDragging) {
-    const range = quill.getSelection();
-    const deltaY = e.clientY - startY;
-
-    if (Math.abs(deltaY) > 50) {
-      const newIndex = deltaY > 0 ? range.index + 1 : range.index - 1;
-
-      // Suppression et réinsertion
-      quill.deleteText(range.index, 1);
-      quill.insertEmbed(newIndex, 'image', img.src);
-      quill.setSelection(newIndex + 1);
-    }
+    isResizing = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    setHasUnsavedChanges(true);
   }
 };
 ```
@@ -147,9 +198,10 @@ const onMouseMove = (e: MouseEvent) => {
 
 ```css
 .manipulable-image {
-  transition: opacity 0.2s, box-shadow 0.2s, transform 0.1s;
+  transition: box-shadow 0.2s;
   border: 2px solid transparent;
   border-radius: 4px;
+  cursor: default !important;
 }
 
 .manipulable-image:hover {
@@ -157,38 +209,53 @@ const onMouseMove = (e: MouseEvent) => {
   border-color: #3b82f6;
 }
 
-.manipulable-image:active {
-  transform: scale(0.98);
+.ql-editor img.manipulable-image {
+  display: inline-block;
+  position: relative;
+}
+
+.ql-editor {
+  cursor: text;
 }
 ```
 
 ## 🎯 Cas d'Usage
 
-### Scénario 1 : Ajuster la taille d'une image importée
+### Scénario 1 : Coller une capture d'écran
 
 ```
-1. Importer une image via le bouton "Importer fichier(s)"
-2. L'image apparaît dans l'éditeur (taille par défaut)
-3. Survoler le bord droit de l'image
-4. Le curseur change en ↔️
-5. Cliquer et glisser vers la droite
-6. L'image s'agrandit en maintenant ses proportions
-7. Relâcher pour valider
+1. Faire une capture d'écran (Win+Shift+S sur Windows)
+2. Cliquer dans l'éditeur à l'endroit souhaité
+3. Appuyer sur Ctrl+V
+4. L'image de la capture apparaît instantanément
+5. Redimensionner si nécessaire via les bords
+6. Ctrl+S pour enregistrer
 ```
 
-### Scénario 2 : Repositionner une image dans le texte
+### Scénario 2 : Copier une image depuis un site web
 
 ```
-1. Rédiger plusieurs paragraphes avec une image entre eux
-2. Décider de déplacer l'image vers le haut
-3. Cliquer au centre de l'image (curseur = move)
-4. Maintenir enfoncé et glisser vers le haut
-5. L'image devient semi-transparente (feedback)
-6. Glisser d'au moins 50px vers le haut
-7. Relâcher : l'image se repositionne automatiquement
+1. Clic droit sur une image web → "Copier l'image"
+2. Retourner dans l'éditeur
+3. Positionner le curseur
+4. Ctrl+V
+5. L'image s'insère directement
+6. Ajuster la taille si besoin
 ```
 
-### Scénario 3 : Redimensionner plusieurs images pour uniformité
+### Scénario 3 : Redimensionner une image collée
+
+```
+1. Image collée dans l'éditeur (Ctrl+V)
+2. Survoler le bord droit de l'image
+3. Le curseur change en ↔️
+4. Cliquer et glisser vers la droite ou gauche
+5. L'image se redimensionne en temps réel
+6. Relâcher pour valider la nouvelle taille
+7. Ctrl+S pour enregistrer
+```
+
+### Scénario 4 : Redimensionner plusieurs images pour uniformité
 
 ```
 1. Avoir plusieurs images dans le document

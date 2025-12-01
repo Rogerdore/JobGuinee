@@ -32,9 +32,10 @@
   }
 
   .manipulable-image {
-    transition: opacity 0.2s, box-shadow 0.2s, transform 0.1s;
+    transition: box-shadow 0.2s;
     border: 2px solid transparent;
     border-radius: 4px;
+    cursor: default !important;
   }
 
   .manipulable-image:hover {
@@ -42,13 +43,13 @@
     border-color: #3b82f6;
   }
 
-  .manipulable-image:active {
-    transform: scale(0.98);
-  }
-
   .ql-editor img.manipulable-image {
     display: inline-block;
     position: relative;
+  }
+
+  .ql-editor {
+    cursor: text;
   }
 
   @keyframes float {
