@@ -23,8 +23,9 @@ import AIMatchingService from './components/ai/AIMatchingService';
 import AICVGenerator from './components/ai/AICVGenerator';
 import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
+import CreditStore from './pages/CreditStore';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -79,6 +80,7 @@ function AppContent() {
       {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
+      {currentPage === 'credit-store' && <CreditStore />}
     </Layout>
   );
 }
