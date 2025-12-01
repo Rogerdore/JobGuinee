@@ -54,6 +54,7 @@ export default function RichTextEditor({
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isManipulatingRef = useRef(false);
 
   const combineAllContent = () => {
     const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
@@ -198,6 +199,7 @@ export default function RichTextEditor({
             e.preventDefault();
             e.stopPropagation();
 
+            isManipulatingRef.current = true;
             isResizing = true;
             startX = e.clientX;
             startWidth = img.offsetWidth;
@@ -223,6 +225,9 @@ export default function RichTextEditor({
         const onMouseUp = () => {
           if (isResizing) {
             isResizing = false;
+            setTimeout(() => {
+              isManipulatingRef.current = false;
+            }, 100);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
             setHasUnsavedChanges(true);
@@ -234,9 +239,10 @@ export default function RichTextEditor({
       });
     };
 
-    const timeoutId = setTimeout(makeImagesManipulable, 100);
-    return () => clearTimeout(timeoutId);
-  }, [editorContent]);
+    const intervalId = setInterval(makeImagesManipulable, 500);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const modules = {
     toolbar: [
@@ -255,12 +261,9 @@ export default function RichTextEditor({
       ['clean'],
     ],
     history: {
-      delay: 500,
+      delay: 1000,
       maxStack: 100,
       userOnly: true,
-    },
-    clipboard: {
-      matchVisual: false,
     },
   };
 
@@ -393,6 +396,10 @@ export default function RichTextEditor({
   };
 
   const handleEditorChange = (content: string) => {
+    if (isManipulatingRef.current) {
+      return;
+    }
+
     setEditorContent(content);
     setHasUnsavedChanges(true);
 
@@ -404,7 +411,7 @@ export default function RichTextEditor({
       const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
       onChange(combined);
-    }, 300);
+    }, 1000);
   };
 
   const handleResetContent = () => {
