@@ -57,8 +57,10 @@ export default function RichTextEditor({
   const isManipulatingRef = useRef(false);
 
   const combineAllContent = () => {
+    const quill = quillRef.current?.getEditor();
+    const currentContent = quill ? quill.root.innerHTML : editorContent;
     const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-    const combined = blocksContent ? `${blocksContent}\n\n${editorContent}` : editorContent;
+    const combined = blocksContent ? `${blocksContent}\n\n${currentContent}` : currentContent;
     onChange(combined);
   };
 
@@ -77,6 +79,10 @@ export default function RichTextEditor({
   };
 
   const handleSaveContent = () => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      setEditorContent(quill.root.innerHTML);
+    }
     setHasUnsavedChanges(false);
     combineAllContent();
 
@@ -400,7 +406,6 @@ export default function RichTextEditor({
       return;
     }
 
-    setEditorContent(content);
     setHasUnsavedChanges(true);
 
     if (updateTimeoutRef.current) {
@@ -411,6 +416,7 @@ export default function RichTextEditor({
       const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
       onChange(combined);
+      setEditorContent(content);
     }, 1000);
   };
 
@@ -702,7 +708,7 @@ export default function RichTextEditor({
         <ReactQuill
           ref={quillRef}
           theme="snow"
-          value={editorContent}
+          defaultValue={editorContent}
           onChange={handleEditorChange}
           modules={modules}
           formats={formats}
