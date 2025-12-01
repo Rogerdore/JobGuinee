@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { PaymentProviderFactory, PaymentSessionInput } from './paymentProviders';
+import { isDemoMode, paymentConfig } from '../config/payment.config';
 
 export interface CreditPackage {
   id: string;
@@ -81,7 +83,8 @@ export class CreditStoreService {
 
   static async createPurchase(
     packageId: string,
-    paymentMethod?: PaymentMethod
+    paymentMethod?: PaymentMethod,
+    customerInfo?: { phone?: string; email?: string }
   ): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
     try {
       const { data, error } = await supabase.rpc('create_credit_purchase', {
@@ -106,16 +109,52 @@ export class CreditStoreService {
         };
       }
 
+      const purchaseData = {
+        purchase_id: data.purchase_id,
+        payment_reference: data.payment_reference,
+        amount: data.amount,
+        currency: data.currency,
+        credits: data.credits
+      };
+
+      if (paymentMethod && !isDemoMode()) {
+        try {
+          const provider = PaymentProviderFactory.getProvider(paymentMethod);
+
+          const sessionInput: PaymentSessionInput = {
+            amount: data.amount,
+            currency: data.currency,
+            reference: data.payment_reference,
+            purchaseId: data.purchase_id,
+            customerPhone: customerInfo?.phone,
+            customerEmail: customerInfo?.email,
+            returnUrl: `${window.location.origin}/payment/success`,
+            cancelUrl: `${window.location.origin}/payment/cancel`
+          };
+
+          const sessionResult = await provider.createPaymentSession(sessionInput);
+
+          if (sessionResult.success && sessionResult.redirectUrl) {
+            return {
+              success: true,
+              message: sessionResult.message || data.message,
+              data: {
+                ...purchaseData,
+                redirect_url: sessionResult.redirectUrl,
+                provider_id: sessionResult.providerId,
+                requires_redirect: true
+              }
+            };
+          }
+        } catch (providerError) {
+          console.error('Provider error:', providerError);
+        }
+      }
+
       return {
         success: true,
         message: data.message,
-        data: {
-          purchase_id: data.purchase_id,
-          payment_reference: data.payment_reference,
-          amount: data.amount,
-          currency: data.currency,
-          credits: data.credits
-        }
+        data: purchaseData
       };
     } catch (error) {
       console.error('Error in createPurchase:', error);
@@ -125,6 +164,29 @@ export class CreditStoreService {
         error: 'EXCEPTION'
       };
     }
+  }
+
+  static async createPurchaseAndInitiatePayment(
+    packageId: string,
+    paymentMethod: PaymentMethod,
+    customerInfo?: { phone?: string; email?: string }
+  ): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
+    const purchaseResult = await this.createPurchase(packageId, paymentMethod, customerInfo);
+
+    if (!purchaseResult.success) {
+      return purchaseResult;
+    }
+
+    if (isDemoMode()) {
+      setTimeout(async () => {
+        await this.completePurchase(
+          purchaseResult.data.purchase_id,
+          `DEMO-${Date.now()}`
+        );
+      }, 2000);
+    }
+
+    return purchaseResult;
   }
 
   static async completePurchase(

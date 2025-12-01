@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Zap, TrendingUp, Gift, Check, ArrowRight, Star, Sparkles } from 'lucide-react';
+import { ShoppingCart, Zap, TrendingUp, Gift, Check, ArrowRight, Star, Sparkles, AlertCircle } from 'lucide-react';
 import { CreditStoreService, CreditPackage, PaymentMethod } from '../services/creditStoreService';
 import { useAuth } from '../contexts/AuthContext';
 import CreditBalance from '../components/credits/CreditBalance';
+import { getPaymentModeLabel, isDemoMode } from '../config/payment.config';
 
 interface PurchaseModalProps {
   pack: CreditPackage | null;
@@ -241,21 +242,30 @@ export default function CreditStore() {
 
   const handlePurchase = async (packageId: string, method: PaymentMethod) => {
     try {
-      const result = await CreditStoreService.createPurchase(packageId, method);
+      const result = await CreditStoreService.createPurchaseAndInitiatePayment(packageId, method);
 
       if (result.success) {
-        showAlert('success', 'Achat initié! Redirection vers le paiement...');
+        if (result.data.requires_redirect && result.data.redirect_url) {
+          showAlert('success', 'Redirection vers le paiement...');
+          setTimeout(() => {
+            window.location.href = result.data.redirect_url;
+          }, 1000);
+        } else if (isDemoMode()) {
+          showAlert('success', 'Achat initié! Paiement simulé en cours...');
 
-        setTimeout(async () => {
-          const completeResult = await CreditStoreService.completePurchase(
-            result.data.purchase_id,
-            'DEMO-' + Date.now()
-          );
+          setTimeout(async () => {
+            const completeResult = await CreditStoreService.completePurchase(
+              result.data.purchase_id,
+              'DEMO-' + Date.now()
+            );
 
-          if (completeResult.success) {
-            showAlert('success', `${completeResult.data.credits_added} crédits ajoutés! Nouveau solde: ${completeResult.data.new_balance}`);
-          }
-        }, 2000);
+            if (completeResult.success) {
+              showAlert('success', `${completeResult.data.credits_added} crédits ajoutés! Nouveau solde: ${completeResult.data.new_balance}`);
+            }
+          }, 2000);
+        } else {
+          showAlert('success', 'Achat créé! En attente de confirmation de paiement...');
+        }
       } else {
         showAlert('error', result.message);
       }
@@ -286,6 +296,18 @@ export default function CreditStore() {
           }`}>
             {alert.type === 'success' ? <Check className="w-6 h-6" /> : <Star className="w-6 h-6" />}
             <span className="font-semibold">{alert.message}</span>
+          </div>
+        )}
+
+        {isDemoMode() && (
+          <div className="mb-6 p-4 rounded-xl border-2 bg-yellow-50 border-yellow-300 flex items-center gap-3">
+            <AlertCircle className="w-6 h-6 text-yellow-700" />
+            <div>
+              <span className="font-semibold text-yellow-900">{getPaymentModeLabel()}</span>
+              <p className="text-sm text-yellow-700 mt-1">
+                Les paiements sont simulés automatiquement. Aucune transaction réelle n'est effectuée.
+              </p>
+            </div>
           </div>
         )}
 
