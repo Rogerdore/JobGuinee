@@ -5,6 +5,7 @@ import {
   CheckCircle2, Upload as UploadIcon, Download, Wand2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import RichTextEditor from '../forms/RichTextEditor';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -437,16 +438,11 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
           <FormSection title="2. Description du poste" icon={FileText}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Présentation du poste *
-                </label>
-                <textarea
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
+                  onChange={(value) => setFormData({ ...formData, description: value })}
                   placeholder="Décrivez brièvement le poste..."
-                  required
+                  label="Présentation du poste *"
                 />
               </div>
 
