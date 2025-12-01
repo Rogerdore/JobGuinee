@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Check } from 'lucide-react';
-import { useAutoComplete } from '../../hooks/useAutoComplete';
 
 interface AutoCompleteInputProps {
   value: string;
@@ -25,29 +24,29 @@ export default function AutoCompleteInput({
   minChars = 2,
   disabled = false,
 }: AutoCompleteInputProps) {
-  const [localValue, setLocalValue] = useState(value);
-
-  const {
-    inputValue,
-    setInputValue,
-    filteredSuggestions,
-    showSuggestions,
-    selectedIndex,
-    handleSelectSuggestion,
-    handleKeyDown,
-    handleBlur,
-    handleFocus,
-  } = useAutoComplete({ suggestions, minChars });
+  const [internalValue, setInternalValue] = useState(value);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const initialValueRef = useRef(value);
 
   useEffect(() => {
-    setLocalValue(value);
-    if (value !== inputValue) {
-      setInputValue(value);
+    if (initialValueRef.current !== value) {
+      setInternalValue(value);
+      initialValueRef.current = value;
     }
   }, [value]);
+
+  const filteredSuggestions = internalValue.length >= minChars
+    ? suggestions.filter(s => s.toLowerCase().includes(internalValue.toLowerCase())).slice(0, 10)
+    : [];
+
+  useEffect(() => {
+    setShowSuggestions(filteredSuggestions.length > 0 && internalValue.length >= minChars);
+    setSelectedIndex(-1);
+  }, [internalValue, filteredSuggestions.length, minChars]);
 
   useEffect(() => {
     if (showSuggestions && selectedIndex >= 0 && listRef.current) {
@@ -61,18 +60,70 @@ export default function AutoCompleteInput({
     }
   }, [selectedIndex, showSuggestions]);
 
-  const handleChange = (val: string) => {
-    setLocalValue(val);
-    setInputValue(val);
-    onChange(val);
-  };
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    onChange(newValue);
+    initialValueRef.current = newValue;
+  }, [onChange]);
 
-  const handleSelect = (suggestion: string) => {
-    setLocalValue(suggestion);
-    handleSelectSuggestion(suggestion);
+  const handleSelectSuggestion = useCallback((suggestion: string) => {
+    setInternalValue(suggestion);
     onChange(suggestion);
+    initialValueRef.current = suggestion;
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
     inputRef.current?.blur();
-  };
+  }, [onChange]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!showSuggestions || filteredSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev < filteredSuggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredSuggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < filteredSuggestions.length) {
+          handleSelectSuggestion(filteredSuggestions[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+      case 'Tab':
+        if (selectedIndex >= 0 && selectedIndex < filteredSuggestions.length) {
+          e.preventDefault();
+          handleSelectSuggestion(filteredSuggestions[selectedIndex]);
+        }
+        break;
+    }
+  }, [showSuggestions, filteredSuggestions, selectedIndex, handleSelectSuggestion]);
+
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      setShowSuggestions(false);
+      setSelectedIndex(-1);
+    }, 200);
+  }, []);
+
+  const handleFocus = useCallback(() => {
+    if (internalValue.length >= minChars && filteredSuggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  }, [internalValue, minChars, filteredSuggestions.length]);
 
   return (
     <div className="relative">
@@ -85,8 +136,8 @@ export default function AutoCompleteInput({
         <input
           ref={inputRef}
           type="text"
-          value={inputValue}
-          onChange={(e) => handleChange(e.target.value)}
+          value={internalValue}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           onFocus={handleFocus}
@@ -105,13 +156,13 @@ export default function AutoCompleteInput({
           >
             {filteredSuggestions.map((suggestion, index) => {
               const isSelected = index === selectedIndex;
-              const isExactMatch = suggestion.toLowerCase() === inputValue.toLowerCase();
+              const isExactMatch = suggestion.toLowerCase() === internalValue.toLowerCase();
 
               return (
                 <button
                   key={index}
                   type="button"
-                  onClick={() => handleSelect(suggestion)}
+                  onClick={() => handleSelectSuggestion(suggestion)}
                   className={`w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center justify-between ${
                     isSelected ? 'bg-blue-100 text-blue-900' : 'text-gray-700'
                   }`}
