@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
+import { useServiceCost } from '../../hooks/usePricing';
 import CreditConfirmModal from '../credits/CreditConfirmModal';
 import CreditBalance from '../credits/CreditBalance';
 
@@ -31,6 +32,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
   const [profileScore, setProfileScore] = useState<number | null>(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const { consumeCredits } = useConsumeCredits();
+  const serviceCost = useServiceCost(SERVICES.AI_PROFILE_ANALYSIS) || 20;
 
   const handleAnalyzeClick = () => {
     setShowCreditModal(true);
@@ -313,7 +315,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         onConfirm={handleCreditConfirm}
         serviceCode={SERVICES.AI_JOB_MATCHING}
         serviceName="Matching Emplois IA"
-        serviceCost={20}
+        serviceCost={serviceCost}
         description="Analysez votre profil et trouvez les emplois qui correspondent le mieux"
       />
     </div>

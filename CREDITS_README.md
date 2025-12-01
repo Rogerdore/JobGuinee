@@ -38,6 +38,16 @@ Bienvenue dans la documentation du système unifié de gestion des crédits IA d
 - Checklist de migration
 - **Temps de lecture : 15-20 minutes**
 
+### 4. 💰 [IA_PRICING_ENGINE_DOCUMENTATION.md](./IA_PRICING_ENGINE_DOCUMENTATION.md)
+**Moteur de Tarification IA Dynamique**
+
+- Gestion centralisée des coûts
+- Système de promotions
+- Interface Admin complète
+- Intégration dans les composants
+- Statistiques et analytics
+- **Temps de lecture : 20-30 minutes**
+
 ---
 
 ## 🚀 Démarrage Rapide
@@ -51,13 +61,15 @@ import CreditBalance from './components/credits/CreditBalance';
 <CreditBalance showDetails />
 ```
 
-#### 2. Consommer des Crédits (avec confirmation)
+#### 2. Consommer des Crédits (avec confirmation et coût dynamique)
 ```typescript
 import { useState } from 'react';
 import { SERVICES } from './services/creditService';
+import { useServiceCost } from './hooks/usePricing';
 import CreditConfirmModal from './components/credits/CreditConfirmModal';
 
 const [showModal, setShowModal] = useState(false);
+const serviceCost = useServiceCost(SERVICES.AI_CV_GENERATION) || 50;
 
 const handleConfirm = (success: boolean, result?: any) => {
   if (success) {
@@ -71,7 +83,7 @@ const handleConfirm = (success: boolean, result?: any) => {
   onConfirm={handleConfirm}
   serviceCode={SERVICES.AI_CV_GENERATION}
   serviceName="Génération de CV IA"
-  serviceCost={50}
+  serviceCost={serviceCost}
 />
 ```
 

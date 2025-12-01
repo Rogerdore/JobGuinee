@@ -16,6 +16,7 @@ import CVTheque from './pages/CVTheque';
 import CMSAdmin from './pages/CMSAdmin';
 import UserManagement from './pages/UserManagement';
 import AdminCreditsIA from './pages/AdminCreditsIA';
+import AdminIAPricing from './pages/AdminIAPricing';
 import CandidateProfileForm from './components/forms/CandidateProfileForm';
 import PremiumAIServices from './pages/PremiumAIServices';
 import AIMatchingService from './components/ai/AIMatchingService';
@@ -23,7 +24,7 @@ import AICVGenerator from './components/ai/AICVGenerator';
 import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-coach' | 'gold-profile';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -71,6 +72,7 @@ function AppContent() {
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
       {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
       {currentPage === 'admin-credits-ia' && <AdminCreditsIA onNavigate={handleNavigate} />}
+      {currentPage === 'admin-ia-pricing' && <AdminIAPricing />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}

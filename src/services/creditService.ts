@@ -1,11 +1,20 @@
 import { supabase } from '../lib/supabase';
 
 export interface CreditServiceConfig {
+  id?: string;
   service_code: string;
   service_name: string;
+  service_description?: string;
   credits_cost: number;
   is_active: boolean;
   category: string;
+  promotion_active?: boolean;
+  discount_percent?: number;
+  effective_cost?: number;
+  display_order?: number;
+  icon?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreditBalance {
@@ -268,3 +277,196 @@ export const SERVICES = {
 } as const;
 
 export type ServiceCode = typeof SERVICES[keyof typeof SERVICES];
+
+export interface PricingUpdateParams {
+  service_code: string;
+  credits_cost?: number;
+  is_active?: boolean;
+  promotion_active?: boolean;
+  discount_percent?: number;
+  display_order?: number;
+  icon?: string;
+  service_description?: string;
+}
+
+export interface NewServiceParams {
+  service_code: string;
+  service_name: string;
+  service_description: string;
+  credits_cost: number;
+  category?: string;
+  icon?: string;
+  is_active?: boolean;
+}
+
+export interface ServiceStatistics {
+  service_code: string;
+  service_name: string;
+  total_usage_count: number;
+  total_credits_consumed: number;
+  last_used_at: string | null;
+  unique_users_count: number;
+}
+
+export class PricingEngine {
+  static async fetchAllPricing(): Promise<CreditServiceConfig[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_all_ia_services');
+
+      if (error) {
+        console.error('Error fetching all pricing:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in fetchAllPricing:', error);
+      return [];
+    }
+  }
+
+  static async getServiceCost(serviceCode: string): Promise<number | null> {
+    try {
+      const { data, error } = await supabase.rpc('get_effective_cost', {
+        p_service_code: serviceCode
+      });
+
+      if (error) {
+        console.error('Error fetching service cost:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getServiceCost:', error);
+      return null;
+    }
+  }
+
+  static async getServiceDetails(serviceCode: string): Promise<CreditServiceConfig | null> {
+    try {
+      const allServices = await this.fetchAllPricing();
+      return allServices.find(s => s.service_code === serviceCode) || null;
+    } catch (error) {
+      console.error('Error in getServiceDetails:', error);
+      return null;
+    }
+  }
+
+  static async updatePricing(params: PricingUpdateParams): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('update_ia_service_pricing', {
+        p_service_code: params.service_code,
+        p_credits_cost: params.credits_cost || null,
+        p_is_active: params.is_active !== undefined ? params.is_active : null,
+        p_promotion_active: params.promotion_active !== undefined ? params.promotion_active : null,
+        p_discount_percent: params.discount_percent !== undefined ? params.discount_percent : null,
+        p_display_order: params.display_order !== undefined ? params.display_order : null,
+        p_icon: params.icon || null,
+        p_service_description: params.service_description || null
+      });
+
+      if (error) {
+        console.error('Error updating pricing:', error);
+        return {
+          success: false,
+          message: 'Erreur lors de la mise à jour',
+          error: error.message
+        };
+      }
+
+      if (!data || !data.success) {
+        return {
+          success: false,
+          message: data?.message || 'Erreur inconnue',
+          error: data?.error
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Service mis à jour avec succès'
+      };
+    } catch (error) {
+      console.error('Error in updatePricing:', error);
+      return {
+        success: false,
+        message: 'Une erreur inattendue est survenue',
+        error: 'EXCEPTION'
+      };
+    }
+  }
+
+  static async addService(params: NewServiceParams): Promise<{ success: boolean; message: string; error?: string; service_id?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('add_new_ia_service', {
+        p_service_code: params.service_code,
+        p_service_name: params.service_name,
+        p_service_description: params.service_description,
+        p_credits_cost: params.credits_cost,
+        p_category: params.category || 'ia_services',
+        p_icon: params.icon || 'Sparkles',
+        p_is_active: params.is_active !== undefined ? params.is_active : true
+      });
+
+      if (error) {
+        console.error('Error adding service:', error);
+        return {
+          success: false,
+          message: 'Erreur lors de la création',
+          error: error.message
+        };
+      }
+
+      if (!data || !data.success) {
+        return {
+          success: false,
+          message: data?.message || 'Erreur inconnue',
+          error: data?.error
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Service créé avec succès',
+        service_id: data.service_id
+      };
+    } catch (error) {
+      console.error('Error in addService:', error);
+      return {
+        success: false,
+        message: 'Une erreur inattendue est survenue',
+        error: 'EXCEPTION'
+      };
+    }
+  }
+
+  static async getStatistics(): Promise<ServiceStatistics[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_service_statistics');
+
+      if (error) {
+        console.error('Error fetching statistics:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getStatistics:', error);
+      return [];
+    }
+  }
+
+  static calculateEffectiveCost(
+    baseCost: number,
+    promotionActive: boolean = false,
+    discountPercent: number = 0
+  ): number {
+    if (!promotionActive || discountPercent === 0) {
+      return baseCost;
+    }
+
+    const discount = Math.floor(baseCost * discountPercent / 100);
+    return Math.max(0, baseCost - discount);
+  }
+}

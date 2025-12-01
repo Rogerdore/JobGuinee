@@ -42,6 +42,7 @@ Un workflow complet, centralisé et sécurisé de consommation des crédits IA a
 ### Documentation
 7. **`/CREDIT_WORKFLOW_DOCUMENTATION.md`** (Documentation complète - 800+ lignes)
 8. **`/CREDIT_SYSTEM_SUMMARY.md`** (Ce fichier - Résumé exécutif)
+9. **`/IA_PRICING_ENGINE_DOCUMENTATION.md`** (Guide complet du moteur de tarification)
 
 ---
 
@@ -206,12 +207,23 @@ Database Tables
 
 Pour intégrer un nouveau service IA :
 
-- [ ] Ajouter le service dans `service_credit_costs` (DB)
-- [ ] Ajouter la constante dans `SERVICES` (TypeScript)
+- [ ] Ajouter le service via l'interface Admin "Tarification IA" (ou DB)
+- [ ] Ajouter la constante dans `SERVICES` (TypeScript) si nécessaire
+- [ ] Importer `useServiceCost` pour obtenir le coût dynamique
 - [ ] Importer `useConsumeCredits` dans votre composant
 - [ ] Appeler `consumeCredits(serviceCode, inputData)`
 - [ ] Gérer `result.success === false`
 - [ ] Tester le workflow complet
+
+### Moteur de Tarification Dynamique
+
+Tous les services IA utilisent maintenant des coûts dynamiques récupérés depuis la base de données :
+
+- [ ] Interface Admin accessible via `/admin-ia-pricing`
+- [ ] Modification des coûts en temps réel sans redéploiement
+- [ ] Système de promotions intégré
+- [ ] Statistiques d'utilisation par service
+- [ ] Ajout de nouveaux services via l'interface
 
 ---
 
@@ -244,7 +256,11 @@ Ce composant démontre :
    DROP FUNCTION IF EXISTS use_service_credits;
    ```
 
-2. **Vérifier les coûts des services**
+2. **Les coûts sont maintenant gérés dynamiquement**
+   - Utiliser l'interface Admin "Tarification IA"
+   - Plus besoin de modifier le code pour changer un prix
+   - Système de promotion intégré
+
    ```sql
    SELECT service_code, service_name, credits_cost
    FROM service_credit_costs

@@ -2,6 +2,7 @@ import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle,
 import { useState } from 'react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
+import { useServiceCost } from '../../hooks/usePricing';
 import CreditConfirmModal from '../credits/CreditConfirmModal';
 import CreditBalance from '../credits/CreditBalance';
 
@@ -56,6 +57,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [showResults, setShowResults] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const { consumeCredits } = useConsumeCredits();
+  const costPerCandidate = useServiceCost(SERVICES.AI_JOB_MATCHING) || 30;
 
   console.log('AIMatchingModal - isPremium:', isPremium);
   console.log('AIMatchingModal - applications count:', applications.length);
@@ -377,7 +379,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                         <div className="flex items-center gap-2">
                           <Coins className="w-5 h-5 text-yellow-600" />
                           <span className="text-sm text-yellow-900">
-                            <span className="font-semibold">Coût :</span> 30 crédits par candidat sélectionné
+                            <span className="font-semibold">Coût :</span> {costPerCandidate} crédits par candidat sélectionné
                           </span>
                         </div>
                         <CreditBalance />
@@ -670,7 +672,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
         onConfirm={handleCreditConfirm}
         serviceCode={SERVICES.AI_JOB_MATCHING}
         serviceName="Matching Candidatures IA"
-        serviceCost={30 * selectedCandidates.size}
+        serviceCost={costPerCandidate * selectedCandidates.size}
         description={`Analysez ${selectedCandidates.size} candidature${selectedCandidates.size > 1 ? 's' : ''} avec scoring automatique et recommandations`}
         inputPayload={{ jobId: job.id, jobTitle: job.title, candidatesCount: selectedCandidates.size }}
       />

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Download, Loader, Upload, Sparkles, ArrowLeft } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
+import { useServiceCost } from '../../hooks/usePricing';
 import CreditConfirmModal from '../credits/CreditConfirmModal';
 import CreditBalance from '../credits/CreditBalance';
 
@@ -37,6 +38,7 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const serviceCost = useServiceCost(SERVICES.AI_CV_GENERATION) || 50;
   const [cvData, setCVData] = useState<CVData>({
     fullName: '',
     title: '',
@@ -346,7 +348,7 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
         onConfirm={handleCreditConfirm}
         serviceCode={SERVICES.AI_CV_GENERATION}
         serviceName="Génération de CV IA"
-        serviceCost={50}
+        serviceCost={serviceCost}
         description="Créez un CV professionnel avec mise en forme automatique"
         inputPayload={{ fullName: cvData.fullName, title: cvData.title }}
       />
