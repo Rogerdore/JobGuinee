@@ -55,12 +55,8 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
       clearTimeout(timeoutRef.current);
     }
 
-    setStatus('idle');
-
     timeoutRef.current = setTimeout(async () => {
       if (!isMountedRef.current) return;
-
-      setStatus('saving');
 
       try {
         const saveData = {
@@ -72,8 +68,8 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
         localStorage.setItem(`autosave_${key}`, JSON.stringify(saveData));
 
         if (isMountedRef.current) {
-          setStatus('saved');
           setLastSaved(new Date());
+          setStatus('saved');
 
           setTimeout(() => {
             if (isMountedRef.current) {

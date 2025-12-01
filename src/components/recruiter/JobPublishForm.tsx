@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../forms/RichTextEditor';
 import AutoCompleteInput from '../forms/AutoCompleteInput';
+import AutoSaveIndicator from '../forms/AutoSaveIndicator';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import {
   jobTitleSuggestions,
@@ -109,7 +110,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
   const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft, hasDraft } = useAutoSave({
     data: formData,
     key: `job-draft-${profile?.id || 'anonymous'}`,
-    delay: 3000,
+    delay: 5000,
     enabled: !draftLoaded,
   });
 
@@ -309,8 +310,8 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" style={{ contain: 'layout' }}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8" style={{ contain: 'content' }}>
         <div className="sticky top-0 bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
@@ -331,7 +332,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
 
         <div className="p-6 space-y-6 max-h-[calc(90vh-100px)] overflow-y-auto">
           {showDraftRecovery && (
-            <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-4 animate-pulse">
+            <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -362,44 +363,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
             </div>
           )}
 
-          <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {autoSaveStatus === 'saving' && (
-                  <>
-                    <Loader className="w-5 h-5 text-blue-600 animate-spin" />
-                    <p className="text-sm text-gray-700 font-medium">Enregistrement automatique en cours...</p>
-                  </>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <>
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <p className="text-sm text-green-700 font-medium">Brouillon enregistré automatiquement</p>
-                  </>
-                )}
-                {autoSaveStatus === 'idle' && lastSaved && (
-                  <>
-                    <Clock className="w-5 h-5 text-gray-500" />
-                    <p className="text-sm text-gray-600">
-                      Dernier enregistrement : {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </>
-                )}
-                {autoSaveStatus === 'error' && (
-                  <>
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                    <p className="text-sm text-red-600 font-medium">Erreur d'enregistrement automatique</p>
-                  </>
-                )}
-                {autoSaveStatus === 'idle' && !lastSaved && (
-                  <>
-                    <Save className="w-5 h-5 text-gray-400" />
-                    <p className="text-sm text-gray-500">L'enregistrement automatique est activé</p>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+          <AutoSaveIndicator status={autoSaveStatus} lastSaved={lastSaved} />
 
           <div className="bg-orange-50 border-2 border-[#FF8C00]/30 rounded-xl p-4">
             <p className="text-sm text-gray-800 text-center">
