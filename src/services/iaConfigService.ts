@@ -380,4 +380,300 @@ export class IAConfigService {
 
     return labels[category] || category;
   }
+
+  static async getTemplates(serviceCode: string, activeOnly: boolean = true): Promise<IAServiceTemplate[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_ia_service_templates', {
+        p_service_code: serviceCode,
+        p_active_only: activeOnly
+      });
+
+      if (error) {
+        console.error('Error fetching templates:', error);
+        return [];
+      }
+
+      if (!data || !data.success) {
+        return [];
+      }
+
+      return data.templates || [];
+    } catch (error) {
+      console.error('Error in getTemplates:', error);
+      return [];
+    }
+  }
+
+  static async getTemplate(templateId: string): Promise<IAServiceTemplate | null> {
+    try {
+      const { data, error } = await supabase
+        .from('ia_service_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching template:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getTemplate:', error);
+      return null;
+    }
+  }
+
+  static async getDefaultTemplate(serviceCode: string): Promise<IAServiceTemplate | null> {
+    try {
+      const { data, error } = await supabase.rpc('get_default_template', {
+        p_service_code: serviceCode
+      });
+
+      if (error || !data || !data.success) {
+        return null;
+      }
+
+      return data.template;
+    } catch (error) {
+      console.error('Error in getDefaultTemplate:', error);
+      return null;
+    }
+  }
+
+  static async createTemplate(
+    template: Partial<IAServiceTemplate>
+  ): Promise<{ success: boolean; message: string; templateId?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('create_ia_service_template', {
+        p_template: template
+      });
+
+      if (error) {
+        return { success: false, message: 'Erreur lors de la creation' };
+      }
+
+      if (!data || !data.success) {
+        return { success: false, message: data?.message || 'Erreur inconnue' };
+      }
+
+      return {
+        success: true,
+        message: data.message,
+        templateId: data.template_id
+      };
+    } catch (error) {
+      console.error('Error in createTemplate:', error);
+      return { success: false, message: 'Une erreur est survenue' };
+    }
+  }
+
+  static async updateTemplate(
+    templateId: string,
+    updates: Partial<IAServiceTemplate>,
+    changeReason?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const { data, error } = await supabase.rpc('update_ia_service_template', {
+        p_template_id: templateId,
+        p_updates: updates,
+        p_change_reason: changeReason || null
+      });
+
+      if (error) {
+        return { success: false, message: 'Erreur lors de la mise a jour' };
+      }
+
+      if (!data || !data.success) {
+        return { success: false, message: data?.message || 'Erreur inconnue' };
+      }
+
+      return { success: true, message: data.message };
+    } catch (error) {
+      console.error('Error in updateTemplate:', error);
+      return { success: false, message: 'Une erreur est survenue' };
+    }
+  }
+
+  static async deleteTemplate(templateId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('ia_service_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) {
+        console.error('Error deleting template:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in deleteTemplate:', error);
+      return false;
+    }
+  }
+
+  static applyTemplate(contentData: any, templateStructure: string): string {
+    let result = templateStructure;
+
+    const applyData = (data: any, prefix: string = ''): void => {
+      if (!data || typeof data !== 'object') return;
+
+      for (const [key, value] of Object.entries(data)) {
+        const placeholder = prefix ? `${prefix}.${key}` : key;
+
+        if (Array.isArray(value)) {
+          const arrayPattern = new RegExp(
+            `{{#each\\s+${placeholder}}}([\\s\\S]*?){{/each}}`,
+            'g'
+          );
+
+          result = result.replace(arrayPattern, (match, itemTemplate) => {
+            return value
+              .map((item, index) => {
+                let itemResult = itemTemplate;
+
+                itemResult = itemResult.replace(/{{number}}/g, String(index + 1));
+
+                if (typeof item === 'object' && item !== null) {
+                  for (const [itemKey, itemValue] of Object.entries(item)) {
+                    const itemPlaceholder = `{{${itemKey}}}`;
+                    itemResult = itemResult.replace(
+                      new RegExp(itemPlaceholder, 'g'),
+                      String(itemValue || '')
+                    );
+                  }
+                } else {
+                  itemResult = itemResult.replace(/{{this}}/g, String(item || ''));
+                }
+
+                return itemResult;
+              })
+              .join('');
+          });
+        } else if (value && typeof value === 'object') {
+          applyData(value, placeholder);
+        } else {
+          const regex = new RegExp(`{{${placeholder}}}`, 'g');
+          result = result.replace(regex, String(value || ''));
+        }
+      }
+    };
+
+    applyData(contentData);
+
+    result = result.replace(/{{[^}]+}}/g, '');
+
+    return result;
+  }
+
+  static validateTemplatePlaceholders(
+    templateStructure: string,
+    outputSchema: any
+  ): { valid: boolean; missingFields: string[]; extraPlaceholders: string[] } {
+    const placeholderRegex = /{{([^}]+)}}/g;
+    const placeholders = new Set<string>();
+
+    let match;
+    while ((match = placeholderRegex.exec(templateStructure)) !== null) {
+      const placeholder = match[1].trim();
+      if (!placeholder.startsWith('#') && !placeholder.startsWith('/') && placeholder !== 'this') {
+        placeholders.add(placeholder.split('.')[0]);
+      }
+    }
+
+    const schemaFields = new Set<string>();
+    if (outputSchema && outputSchema.properties) {
+      for (const field of Object.keys(outputSchema.properties)) {
+        schemaFields.add(field);
+      }
+    }
+
+    const missingFields: string[] = [];
+    const extraPlaceholders: string[] = [];
+
+    for (const field of schemaFields) {
+      if (!placeholders.has(field)) {
+        missingFields.push(field);
+      }
+    }
+
+    for (const placeholder of placeholders) {
+      if (!schemaFields.has(placeholder)) {
+        extraPlaceholders.push(placeholder);
+      }
+    }
+
+    return {
+      valid: missingFields.length === 0 && extraPlaceholders.length === 0,
+      missingFields,
+      extraPlaceholders
+    };
+  }
+
+  static extractPlaceholders(templateStructure: string): string[] {
+    const placeholderRegex = /{{([^}]+)}}/g;
+    const placeholders: string[] = [];
+
+    let match;
+    while ((match = placeholderRegex.exec(templateStructure)) !== null) {
+      const placeholder = match[1].trim();
+      if (!placeholder.startsWith('#') && !placeholder.startsWith('/')) {
+        placeholders.push(placeholder);
+      }
+    }
+
+    return [...new Set(placeholders)];
+  }
+
+  static previewTemplate(template: IAServiceTemplate, sampleData: any): string {
+    try {
+      return this.applyTemplate(sampleData, template.template_structure);
+    } catch (error) {
+      console.error('Error previewing template:', error);
+      return 'Error rendering preview';
+    }
+  }
+
+  static async getTemplateHistory(templateId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('ia_service_templates_history')
+        .select('*')
+        .eq('template_id', templateId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching template history:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getTemplateHistory:', error);
+      return [];
+    }
+  }
+}
+
+export interface IAServiceTemplate {
+  id: string;
+  service_code: string;
+  template_name: string;
+  template_description?: string;
+  template_structure: string;
+  format: 'html' | 'markdown' | 'text' | 'json';
+  css_styles?: string;
+  preview_data?: any;
+  is_default: boolean;
+  is_active: boolean;
+  display_order: number;
+  placeholders?: string[];
+  required_fields?: string[];
+  tags?: string[];
+  created_by?: string;
+  updated_by?: string;
+  created_at: string;
+  updated_at: string;
 }
