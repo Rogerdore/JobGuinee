@@ -449,6 +449,75 @@ SELECT update_ia_service_pricing(
 2. Vérifier `credits_cost` positif
 3. Tester `get_effective_cost()` en SQL
 
+## Historique des Modifications
+
+### Table: `service_credit_cost_history`
+
+Le système inclut maintenant un historique complet et immutable de tous les changements:
+
+**Champs de la table:**
+- id, service_id, service_code, service_name
+- old/new values pour: credits_cost, is_active, promotion_active, discount_percent, description
+- change_type: 'created' | 'updated' | 'deleted'
+- changed_by (uuid), changed_by_email (text)
+- change_reason (text), created_at (timestamptz)
+
+### Fonctionnalités de l'Historique
+
+**1. Tracking Automatique**
+- Tous les changements enregistrés via trigger SQL
+- Capture avant/après chaque modification
+- Email de l'admin responsable
+- Type de changement automatique
+
+**2. Interface Admin**
+- Modal d'historique pour chaque service
+- Historique global accessible
+- Activité récente sur dashboard
+- Tri chronologique inverse
+
+**3. API TypeScript**
+```typescript
+// Historique d'un service spécifique
+const history = await PricingEngine.getHistory('ai_cv_generation');
+
+// Historique de tous les services
+const allHistory = await PricingEngine.getHistory();
+
+// N derniers changements
+const recent = await PricingEngine.getRecentChanges(10);
+```
+
+## Système de Cache
+
+### Cache Intelligent Intégré
+
+Le PricingEngine inclut un cache en mémoire pour optimiser les performances:
+
+```typescript
+// Utilisation avec cache (5 min)
+const cost = await PricingEngine.getServiceCostCached('ai_cv_generation');
+
+// Invalidation après modification
+PricingEngine.clearCache('ai_cv_generation'); // Service spécifique
+PricingEngine.clearCache(); // Tous les services
+```
+
+### Caractéristiques
+
+- **Durée**: 5 minutes (configurable)
+- **Stockage**: Map en mémoire (léger)
+- **Invalidation**: Automatique après modifications
+- **Granularité**: Par service ou global
+- **Transparent**: Les composants n'ont rien à changer
+
+### Avantages
+
+- Réduit la charge sur Supabase
+- Améliore les temps de réponse
+- Invalidation intelligente
+- Pas de cache stale
+
 ## Conclusion
 
 Le Moteur de Tarification IA de JobGuinée est un système de niveau SaaS professionnel qui offre:
@@ -458,5 +527,7 @@ Le Moteur de Tarification IA de JobGuinée est un système de niveau SaaS profes
 - **Évolutivité garantie** pour nouveaux services
 - **Monétisation optimisée** via promotions et analytics
 - **Expérience admin** intuitive et puissante
+- **Historique complet** avec audit trail immutable
+- **Cache intelligent** pour performances optimales
 
 Ce système positionne JobGuinée au même niveau que les leaders du marché (Notion, Jasper, Copy.ai) en termes de gestion tarifaire dynamique.

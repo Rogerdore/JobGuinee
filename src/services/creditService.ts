@@ -308,6 +308,24 @@ export interface ServiceStatistics {
   unique_users_count: number;
 }
 
+export interface ServiceCostHistory {
+  id: string;
+  service_code: string;
+  service_name: string;
+  old_credits_cost: number | null;
+  new_credits_cost: number | null;
+  old_is_active: boolean | null;
+  new_is_active: boolean | null;
+  old_promotion_active: boolean | null;
+  new_promotion_active: boolean | null;
+  old_discount_percent: number | null;
+  new_discount_percent: number | null;
+  change_type: 'created' | 'updated' | 'deleted';
+  changed_by_email: string | null;
+  change_reason: string | null;
+  created_at: string;
+}
+
 export class PricingEngine {
   static async fetchAllPricing(): Promise<CreditServiceConfig[]> {
     try {
@@ -383,6 +401,8 @@ export class PricingEngine {
         };
       }
 
+      this.clearCache(params.service_code);
+
       return {
         success: true,
         message: data.message || 'Service mis à jour avec succès'
@@ -426,6 +446,8 @@ export class PricingEngine {
         };
       }
 
+      this.clearCache();
+
       return {
         success: true,
         message: data.message || 'Service créé avec succès',
@@ -468,5 +490,60 @@ export class PricingEngine {
 
     const discount = Math.floor(baseCost * discountPercent / 100);
     return Math.max(0, baseCost - discount);
+  }
+
+  static async getHistory(serviceCode?: string): Promise<ServiceCostHistory[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_service_cost_history', {
+        p_service_code: serviceCode || null
+      });
+
+      if (error) {
+        console.error('Error fetching history:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getHistory:', error);
+      return [];
+    }
+  }
+
+  static async getRecentChanges(limit: number = 20): Promise<ServiceCostHistory[]> {
+    try {
+      const allHistory = await this.getHistory();
+      return allHistory.slice(0, limit);
+    } catch (error) {
+      console.error('Error in getRecentChanges:', error);
+      return [];
+    }
+  }
+
+  private static pricingCache: Map<string, { cost: number; timestamp: number }> = new Map();
+  private static readonly CACHE_DURATION = 5 * 60 * 1000;
+
+  static async getServiceCostCached(serviceCode: string): Promise<number | null> {
+    const cached = this.pricingCache.get(serviceCode);
+    const now = Date.now();
+
+    if (cached && (now - cached.timestamp) < this.CACHE_DURATION) {
+      return cached.cost;
+    }
+
+    const cost = await this.getServiceCost(serviceCode);
+    if (cost !== null) {
+      this.pricingCache.set(serviceCode, { cost, timestamp: now });
+    }
+
+    return cost;
+  }
+
+  static clearCache(serviceCode?: string): void {
+    if (serviceCode) {
+      this.pricingCache.delete(serviceCode);
+    } else {
+      this.pricingCache.clear();
+    }
   }
 }

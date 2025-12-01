@@ -15,15 +15,19 @@ import {
   X,
   AlertCircle,
   CheckCircle,
-  Percent
+  Percent,
+  History,
+  Clock
 } from 'lucide-react';
 import {
   PricingEngine,
   CreditServiceConfig,
   PricingUpdateParams,
   NewServiceParams,
-  ServiceStatistics
+  ServiceStatistics,
+  ServiceCostHistory
 } from '../services/creditService';
+import ServiceHistoryModal from '../components/admin/ServiceHistoryModal';
 
 interface EditModalProps {
   service: CreditServiceConfig | null;
@@ -455,22 +459,40 @@ export default function AdminIAPricing() {
   const [editingService, setEditingService] = useState<CreditServiceConfig | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyServiceCode, setHistoryServiceCode] = useState<string | undefined>();
+  const [historyServiceName, setHistoryServiceName] = useState<string | undefined>();
+  const [recentChanges, setRecentChanges] = useState<ServiceCostHistory[]>([]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [servicesData, statsData] = await Promise.all([
+      const [servicesData, statsData, historyData] = await Promise.all([
         PricingEngine.fetchAllPricing(),
-        PricingEngine.getStatistics()
+        PricingEngine.getStatistics(),
+        PricingEngine.getRecentChanges(5)
       ]);
       setServices(servicesData);
       setStatistics(statsData);
+      setRecentChanges(historyData);
     } catch (error) {
       console.error('Error loading data:', error);
       showAlert('error', 'Erreur lors du chargement des données');
     } finally {
       setLoading(false);
     }
+  };
+
+  const openHistory = (serviceCode: string, serviceName: string) => {
+    setHistoryServiceCode(serviceCode);
+    setHistoryServiceName(serviceName);
+    setShowHistoryModal(true);
+  };
+
+  const openAllHistory = () => {
+    setHistoryServiceCode(undefined);
+    setHistoryServiceName('Tous les services');
+    setShowHistoryModal(true);
   };
 
   useEffect(() => {
@@ -544,6 +566,13 @@ export default function AdminIAPricing() {
           </div>
           <div className="flex gap-3">
             <button
+              onClick={openAllHistory}
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition flex items-center gap-2"
+            >
+              <History className="w-5 h-5" />
+              Historique
+            </button>
+            <button
               onClick={loadData}
               className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition flex items-center gap-2"
             >
@@ -560,6 +589,60 @@ export default function AdminIAPricing() {
           </div>
         </div>
       </div>
+
+      {recentChanges.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-2xl p-6 mb-8 border-2 border-purple-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-6 h-6 text-purple-600" />
+              <h2 className="text-xl font-bold text-purple-900">Activité Récente</h2>
+            </div>
+            <button
+              onClick={openAllHistory}
+              className="text-sm font-semibold text-purple-700 hover:text-purple-900 transition"
+            >
+              Voir tout →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {recentChanges.map((change) => (
+              <div
+                key={change.id}
+                className="bg-white rounded-lg p-4 border border-purple-200 flex items-center justify-between hover:shadow-md transition"
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    change.change_type === 'created' ? 'bg-green-100 text-green-700' :
+                    change.change_type === 'updated' ? 'bg-blue-100 text-blue-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {change.change_type === 'created' ? 'Créé' :
+                     change.change_type === 'updated' ? 'Modifié' : 'Supprimé'}
+                  </span>
+                  <div>
+                    <div className="font-semibold text-gray-900">{change.service_name}</div>
+                    <div className="text-sm text-gray-600">
+                      {change.old_credits_cost !== change.new_credits_cost && (
+                        <span>
+                          {change.old_credits_cost} cr → {change.new_credits_cost} cr
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right text-sm text-gray-500">
+                  {new Date(change.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 border-2 border-blue-200 shadow-sm">
@@ -695,13 +778,22 @@ export default function AdminIAPricing() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => setEditingService(service)}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2 mx-auto"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Modifier
-                      </button>
+                      <div className="flex items-center gap-2 justify-center">
+                        <button
+                          onClick={() => setEditingService(service)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Modifier
+                        </button>
+                        <button
+                          onClick={() => openHistory(service.service_code, service.service_name)}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center gap-2"
+                        >
+                          <History className="w-4 h-4" />
+                          Historique
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -722,6 +814,13 @@ export default function AdminIAPricing() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAdd}
+      />
+
+      <ServiceHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        serviceCode={historyServiceCode}
+        serviceName={historyServiceName}
       />
     </div>
   );
