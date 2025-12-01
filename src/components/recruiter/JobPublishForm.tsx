@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
@@ -135,43 +135,64 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
     setDraftLoaded(true);
   };
 
-  const handleAddSkill = () => {
-    if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
-      setFormData({ ...formData, skills: [...formData.skills, skillInput.trim()] });
+  const updateFormField = useCallback((field: keyof JobFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleInputChange = useCallback((field: keyof JobFormData) => {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked :
+                    e.target.type === 'number' ? Number(e.target.value) :
+                    e.target.value;
+      updateFormField(field, value);
+    };
+  }, [updateFormField]);
+
+  const handleAddSkill = useCallback(() => {
+    if (skillInput.trim()) {
+      setFormData(prev => {
+        if (prev.skills.includes(skillInput.trim())) return prev;
+        return { ...prev, skills: [...prev.skills, skillInput.trim()] };
+      });
       setSkillInput('');
     }
-  };
+  }, [skillInput]);
 
-  const handleRemoveSkill = (skill: string) => {
-    setFormData({ ...formData, skills: formData.skills.filter(s => s !== skill) });
-  };
+  const handleRemoveSkill = useCallback((skill: string) => {
+    setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
+  }, []);
 
-  const handleAddBenefit = () => {
-    if (benefitInput.trim() && !formData.benefits.includes(benefitInput.trim())) {
-      setFormData({ ...formData, benefits: [...formData.benefits, benefitInput.trim()] });
+  const handleAddBenefit = useCallback(() => {
+    if (benefitInput.trim()) {
+      setFormData(prev => {
+        if (prev.benefits.includes(benefitInput.trim())) return prev;
+        return { ...prev, benefits: [...prev.benefits, benefitInput.trim()] };
+      });
       setBenefitInput('');
     }
-  };
+  }, [benefitInput]);
 
-  const handleRemoveBenefit = (benefit: string) => {
-    setFormData({ ...formData, benefits: formData.benefits.filter(b => b !== benefit) });
-  };
+  const handleRemoveBenefit = useCallback((benefit: string) => {
+    setFormData(prev => ({ ...prev, benefits: prev.benefits.filter(b => b !== benefit) }));
+  }, []);
 
-  const toggleLanguage = (lang: string) => {
-    if (formData.languages.includes(lang)) {
-      setFormData({ ...formData, languages: formData.languages.filter(l => l !== lang) });
-    } else {
-      setFormData({ ...formData, languages: [...formData.languages, lang] });
-    }
-  };
+  const toggleLanguage = useCallback((lang: string) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages.includes(lang)
+        ? prev.languages.filter(l => l !== lang)
+        : [...prev.languages, lang]
+    }));
+  }, []);
 
-  const toggleDocument = (doc: string) => {
-    if (formData.required_documents.includes(doc)) {
-      setFormData({ ...formData, required_documents: formData.required_documents.filter(d => d !== doc) });
-    } else {
-      setFormData({ ...formData, required_documents: [...formData.required_documents, doc] });
-    }
-  };
+  const toggleDocument = useCallback((doc: string) => {
+    setFormData(prev => ({
+      ...prev,
+      required_documents: prev.required_documents.includes(doc)
+        ? prev.required_documents.filter(d => d !== doc)
+        : [...prev.required_documents, doc]
+    }));
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
     if (e.key === 'Enter') {
@@ -417,7 +438,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
               <div className="md:col-span-2">
                 <AutoCompleteInput
                   value={formData.title}
-                  onChange={(value) => setFormData({ ...formData, title: value })}
+                  onChange={(value) => updateFormField('title', value)}
                   suggestions={jobTitleSuggestions}
                   placeholder="Ex : Superviseur Ressources Humaines"
                   label="Titre du poste"
@@ -513,7 +534,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
               <div>
                 <RichTextEditor
                   value={formData.description}
-                  onChange={(value) => setFormData({ ...formData, description: value })}
+                  onChange={(value) => updateFormField('description', value)}
                   placeholder="Décrivez brièvement le poste..."
                   label="Présentation du poste *"
                 />
@@ -649,7 +670,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
               <div className="md:col-span-2">
                 <AutoCompleteInput
                   value={formData.company_name}
-                  onChange={(value) => setFormData({ ...formData, company_name: value })}
+                  onChange={(value) => updateFormField('company_name', value)}
                   suggestions={companySuggestions}
                   placeholder="Ex : Winning Consortium"
                   label="Nom de l'entreprise"
@@ -661,7 +682,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
               <div>
                 <AutoCompleteInput
                   value={formData.sector}
-                  onChange={(value) => setFormData({ ...formData, sector: value })}
+                  onChange={(value) => updateFormField('sector', value)}
                   suggestions={sectorSuggestions}
                   placeholder="Ex : Mines, Banque, IT..."
                   label="Secteur d'activité"
@@ -673,7 +694,7 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
               <div>
                 <AutoCompleteInput
                   value={formData.location}
-                  onChange={(value) => setFormData({ ...formData, location: value })}
+                  onChange={(value) => updateFormField('location', value)}
                   suggestions={locationSuggestions}
                   placeholder="Ex : Kinshasa, Lubumbashi..."
                   label="Localisation du poste"

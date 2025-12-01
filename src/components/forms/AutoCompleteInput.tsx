@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { Check } from 'lucide-react';
 
 interface AutoCompleteInputProps {
@@ -13,7 +13,7 @@ interface AutoCompleteInputProps {
   disabled?: boolean;
 }
 
-export default function AutoCompleteInput({
+const AutoCompleteInput = memo(function AutoCompleteInput({
   value,
   onChange,
   suggestions,
@@ -184,4 +184,12 @@ export default function AutoCompleteInput({
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  return prevProps.value === nextProps.value &&
+         prevProps.placeholder === nextProps.placeholder &&
+         prevProps.label === nextProps.label &&
+         prevProps.required === nextProps.required &&
+         prevProps.disabled === nextProps.disabled;
+});
+
+export default AutoCompleteInput;
