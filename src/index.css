@@ -31,6 +31,26 @@
     }
   }
 
+  .manipulable-image {
+    transition: opacity 0.2s, box-shadow 0.2s, transform 0.1s;
+    border: 2px solid transparent;
+    border-radius: 4px;
+  }
+
+  .manipulable-image:hover {
+    box-shadow: 0 0 0 2px #3b82f6;
+    border-color: #3b82f6;
+  }
+
+  .manipulable-image:active {
+    transform: scale(0.98);
+  }
+
+  .ql-editor img.manipulable-image {
+    display: inline-block;
+    position: relative;
+  }
+
   @keyframes float {
     0%, 100% {
       transform: translateY(0px);

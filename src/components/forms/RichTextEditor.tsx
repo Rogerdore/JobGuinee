@@ -113,6 +113,118 @@ export default function RichTextEditor({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [editorContent, importedBlocks]);
 
+  useEffect(() => {
+    const makeImagesManipulable = () => {
+      const quill = quillRef.current?.getEditor();
+      if (!quill) return;
+
+      const editorElement = quill.root;
+      const images = editorElement.querySelectorAll('img');
+
+      images.forEach((img: HTMLImageElement) => {
+        if (img.classList.contains('manipulable-image')) return;
+
+        img.classList.add('manipulable-image');
+        img.style.cursor = 'move';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.draggable = false;
+
+        let isDragging = false;
+        let isResizing = false;
+        let startX = 0;
+        let startY = 0;
+        let startWidth = 0;
+        let startHeight = 0;
+        let imgRect: DOMRect;
+
+        const onMouseDown = (e: MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          imgRect = img.getBoundingClientRect();
+          startX = e.clientX;
+          startY = e.clientY;
+          startWidth = img.offsetWidth;
+          startHeight = img.offsetHeight;
+
+          const isNearRightEdge = e.clientX > imgRect.right - 20;
+          const isNearBottomEdge = e.clientY > imgRect.bottom - 20;
+          const isNearCorner = isNearRightEdge && isNearBottomEdge;
+
+          if (isNearCorner || isNearRightEdge || isNearBottomEdge) {
+            isResizing = true;
+            img.style.cursor = 'nwse-resize';
+          } else {
+            isDragging = true;
+            img.style.opacity = '0.6';
+          }
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        };
+
+        const onMouseMove = (e: MouseEvent) => {
+          if (isResizing) {
+            const deltaX = e.clientX - startX;
+            const newWidth = startWidth + deltaX;
+
+            if (newWidth > 50 && newWidth <= editorElement.offsetWidth) {
+              img.style.width = `${newWidth}px`;
+              img.style.height = 'auto';
+            }
+          } else if (isDragging) {
+            const range = quill.getSelection();
+            if (range) {
+              const [blot] = quill.getLeaf(range.index);
+              if (blot && blot.domNode === img) {
+                const deltaY = e.clientY - startY;
+                if (Math.abs(deltaY) > 50) {
+                  const newIndex = deltaY > 0 ? range.index + 1 : Math.max(0, range.index - 1);
+                  const delta = quill.getContents(range.index, 1);
+                  quill.deleteText(range.index, 1);
+                  quill.insertEmbed(newIndex, 'image', img.src);
+                  quill.setSelection(newIndex + 1);
+                  startY = e.clientY;
+                }
+              }
+            }
+          }
+        };
+
+        const onMouseUp = () => {
+          isDragging = false;
+          isResizing = false;
+          img.style.cursor = 'move';
+          img.style.opacity = '1';
+
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+
+          setHasUnsavedChanges(true);
+        };
+
+        const onMouseEnter = (e: MouseEvent) => {
+          const rect = img.getBoundingClientRect();
+          const isNearRightEdge = e.clientX > rect.right - 20;
+          const isNearBottomEdge = e.clientY > rect.bottom - 20;
+
+          if ((isNearRightEdge && isNearBottomEdge) || isNearRightEdge || isNearBottomEdge) {
+            img.style.cursor = 'nwse-resize';
+          } else {
+            img.style.cursor = 'move';
+          }
+        };
+
+        img.addEventListener('mousedown', onMouseDown);
+        img.addEventListener('mousemove', onMouseEnter);
+      });
+    };
+
+    const timeoutId = setTimeout(makeImagesManipulable, 100);
+    return () => clearTimeout(timeoutId);
+  }, [editorContent]);
+
   const modules = {
     toolbar: [
       [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -600,7 +712,18 @@ export default function RichTextEditor({
             <span>Supprimer la sélection</span>
           </div>
         </div>
-        <p className="text-xs text-blue-700 italic">
+        <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 mt-2">
+          <p className="text-xs font-semibold text-blue-900 mb-1 flex items-center gap-1">
+            <ImageIcon className="w-3 h-3" />
+            Manipulation des images
+          </p>
+          <div className="space-y-1 text-xs text-blue-800">
+            <p>• <strong>Déplacer</strong> : Cliquez et glissez l'image vers le haut ou le bas</p>
+            <p>• <strong>Redimensionner</strong> : Glissez depuis le bord droit ou le coin bas-droit</p>
+            <p>• Le curseur change selon l'action disponible</p>
+          </div>
+        </div>
+        <p className="text-xs text-blue-700 italic mt-2">
           💡 Utilisez la barre d'outils pour formater. Les blocs importés sont modifiables individuellement.
         </p>
       </div>
