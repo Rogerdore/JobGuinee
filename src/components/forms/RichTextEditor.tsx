@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import {
@@ -55,6 +55,7 @@ export default function RichTextEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isManipulatingRef = useRef(false);
+  const changeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const combineAllContent = () => {
     const quill = quillRef.current?.getEditor();
@@ -262,7 +263,7 @@ export default function RichTextEditor({
     return () => observer.disconnect();
   }, []);
 
-  const modules = {
+  const modules = useMemo(() => ({
     toolbar: [
       [{ header: [1, 2, 3, 4, 5, 6, false] }],
       [{ font: [] }],
@@ -283,9 +284,9 @@ export default function RichTextEditor({
       maxStack: 100,
       userOnly: true,
     },
-  };
+  }), []);
 
-  const formats = [
+  const formats = useMemo(() => [
     'header',
     'font',
     'size',
@@ -306,7 +307,7 @@ export default function RichTextEditor({
     'link',
     'image',
     'video',
-  ];
+  ], []);
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -418,8 +419,15 @@ export default function RichTextEditor({
       return;
     }
 
-    setHasUnsavedChanges(true);
     setEditorContent(content);
+
+    if (changeTimeoutRef.current) {
+      clearTimeout(changeTimeoutRef.current);
+    }
+
+    changeTimeoutRef.current = setTimeout(() => {
+      setHasUnsavedChanges(true);
+    }, 500);
 
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
@@ -718,8 +726,9 @@ export default function RichTextEditor({
         </div>
       )}
 
-      <div className="border-2 border-gray-300 rounded-xl overflow-hidden">
+      <div className="border-2 border-gray-300 rounded-xl overflow-hidden" style={{ contain: 'layout' }}>
         <ReactQuill
+          key="main-editor"
           ref={quillRef}
           theme="snow"
           defaultValue={editorContent}
@@ -729,6 +738,7 @@ export default function RichTextEditor({
           placeholder={placeholder}
           className="bg-white"
           style={{ minHeight: '300px' }}
+          preserveWhitespace
         />
       </div>
     </div>
