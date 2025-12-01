@@ -18,19 +18,21 @@ export function calculateRecruiterCompletion(profile: any, company?: any): numbe
   return score;
 }
 
-export function calculateCandidateCompletion(candidateProfile: any, profile?: any): number {
+export function calculateCandidateCompletion(profile: any): number {
   let score = 0;
-
-  if (profile?.full_name?.trim()) score += 10;
-  if (profile?.phone?.trim()) score += 10;
-  if (candidateProfile?.title?.trim()) score += 15;
-  if (candidateProfile?.bio?.trim()) score += 15;
-  if (candidateProfile?.location?.trim()) score += 10;
-  if (candidateProfile?.experience_years !== undefined && candidateProfile.experience_years >= 0) score += 10;
-  if (candidateProfile?.skills && candidateProfile.skills.length > 0) score += 10;
-  if (candidateProfile?.languages && candidateProfile.languages.length > 0) score += 5;
-  if (candidateProfile?.cv_url?.trim()) score += 10;
-  if (candidateProfile?.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0) score += 5;
+  if (profile.full_name?.trim()) score += 10;
+  if (profile.desired_position?.trim()) score += 10;
+  if (profile.bio?.trim()) score += 10;
+  if (profile.phone?.trim()) score += 10;
+  if (profile.location?.trim()) score += 10;
+  if (profile.experience_years !== undefined && profile.experience_years >= 0) score += 10;
+  if (profile.education_level?.trim()) score += 10;
+  if (profile.skills && profile.skills.length > 0) score += 10;
+  if (profile.languages && profile.languages.length > 0) score += 4;
+  if (profile.cv_url?.trim()) score += 4;
+  if (profile.linkedin_url?.trim()) score += 4;
+  if (profile.portfolio_url?.trim()) score += 4;
+  if (profile.desired_salary_min?.trim() || profile.desired_salary_max?.trim()) score += 4;
   return score;
 }
 
@@ -87,17 +89,15 @@ export function getMissingRecruiterFields(profile: any, company?: any): string[]
   return missing;
 }
 
-export function getMissingCandidateFields(candidateProfile: any, profile?: any): string[] {
+export function getMissingCandidateFields(profile: any): string[] {
   const missing: string[] = [];
-  if (!profile?.full_name?.trim()) missing.push('Nom complet');
-  if (!profile?.phone?.trim()) missing.push('Téléphone');
-  if (!candidateProfile?.title?.trim()) missing.push('Titre professionnel');
-  if (!candidateProfile?.bio?.trim()) missing.push('Présentation');
-  if (!candidateProfile?.location?.trim()) missing.push('Localisation');
-  if (candidateProfile?.experience_years === undefined || candidateProfile.experience_years < 0) missing.push('Années d\'expérience');
-  if (!candidateProfile?.skills || candidateProfile.skills.length === 0) missing.push('Compétences');
-  if (!candidateProfile?.languages || candidateProfile.languages.length === 0) missing.push('Langues');
-  if (!candidateProfile?.cv_url?.trim()) missing.push('CV');
-  if (!candidateProfile?.education || !Array.isArray(candidateProfile.education) || candidateProfile.education.length === 0) missing.push('Formation');
+  if (!profile.full_name?.trim()) missing.push('Nom complet');
+  if (!profile.desired_position?.trim()) missing.push('Poste recherché');
+  if (!profile.bio?.trim()) missing.push('Présentation');
+  if (!profile.phone?.trim()) missing.push('Téléphone');
+  if (!profile.location?.trim()) missing.push('Localisation');
+  if (profile.experience_years === undefined || profile.experience_years < 0) missing.push('Années d\'expérience');
+  if (!profile.education_level?.trim()) missing.push('Niveau d\'études');
+  if (!profile.skills || profile.skills.length === 0) missing.push('Compétences');
   return missing;
 }
