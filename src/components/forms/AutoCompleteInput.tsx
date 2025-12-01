@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { useAutoComplete } from '../../hooks/useAutoComplete';
 
@@ -14,7 +14,7 @@ interface AutoCompleteInputProps {
   disabled?: boolean;
 }
 
-const AutoCompleteInput = memo(function AutoCompleteInput({
+export default function AutoCompleteInput({
   value,
   onChange,
   suggestions,
@@ -25,6 +25,8 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
   minChars = 2,
   disabled = false,
 }: AutoCompleteInputProps) {
+  const [localValue, setLocalValue] = useState(value);
+
   const {
     inputValue,
     setInputValue,
@@ -41,10 +43,11 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setLocalValue(value);
     if (value !== inputValue) {
       setInputValue(value);
     }
-  }, [value, inputValue, setInputValue]);
+  }, [value]);
 
   useEffect(() => {
     if (showSuggestions && selectedIndex >= 0 && listRef.current) {
@@ -59,11 +62,13 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
   }, [selectedIndex, showSuggestions]);
 
   const handleChange = (val: string) => {
+    setLocalValue(val);
     setInputValue(val);
     onChange(val);
   };
 
   const handleSelect = (suggestion: string) => {
+    setLocalValue(suggestion);
     handleSelectSuggestion(suggestion);
     onChange(suggestion);
     inputRef.current?.blur();
@@ -128,6 +133,4 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
       )}
     </div>
   );
-});
-
-export default AutoCompleteInput;
+}
