@@ -45,17 +45,20 @@ export default function RichTextEditor({
   const [isImporting, setIsImporting] = useState(false);
   const [showBlocks, setShowBlocks] = useState(true);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editorContent, setEditorContent] = useState(value);
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (importedBlocks.length > 0) {
-      const combinedContent = importedBlocks
-        .map((block) => block.content)
-        .join('\n\n');
-      onChange(combinedContent);
-    }
-  }, [importedBlocks]);
+    setEditorContent(value);
+  }, []);
+
+  const combineAllContent = () => {
+    const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
+    const combined = blocksContent ? `${blocksContent}\n\n${editorContent}` : editorContent;
+    onChange(combined);
+  };
 
   const modules = {
     toolbar: [
@@ -132,6 +135,13 @@ export default function RichTextEditor({
       };
 
       setImportedBlocks((prev) => [...prev, newBlock]);
+
+      setTimeout(() => {
+        const allBlocks = [...importedBlocks, newBlock];
+        const blocksContent = allBlocks.map((block) => block.content).join('\n\n');
+        const combined = blocksContent ? `${blocksContent}\n\n${editorContent}` : editorContent;
+        onChange(combined);
+      }, 200);
     } catch (error) {
       console.error('Error importing file:', error);
       alert('Erreur lors de l\'import du fichier. Veuillez réessayer.');
@@ -188,10 +198,26 @@ export default function RichTextEditor({
 
   const handleDeleteBlock = (blockId: string) => {
     setImportedBlocks((prev) => prev.filter((block) => block.id !== blockId));
+    setTimeout(combineAllContent, 100);
   };
 
   const handleSaveBlock = (blockId: string) => {
     setEditingBlockId(null);
+    setTimeout(combineAllContent, 100);
+  };
+
+  const handleEditorChange = (content: string) => {
+    setEditorContent(content);
+
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    updateTimeoutRef.current = setTimeout(() => {
+      const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
+      const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
+      onChange(combined);
+    }, 300);
   };
 
   const handleDownloadAsPDF = async () => {
@@ -392,8 +418,8 @@ export default function RichTextEditor({
         <ReactQuill
           ref={quillRef}
           theme="snow"
-          value={value}
-          onChange={onChange}
+          value={editorContent}
+          onChange={handleEditorChange}
           modules={modules}
           formats={formats}
           placeholder={placeholder}
