@@ -12,6 +12,10 @@ import {
   Eye,
   EyeOff,
   X,
+  Undo2,
+  Redo2,
+  RotateCcw,
+  CheckCircle2,
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -46,19 +50,101 @@ export default function RichTextEditor({
   const [showBlocks, setShowBlocks] = useState(true);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editorContent, setEditorContent] = useState(value);
+  const [history, setHistory] = useState<string[]>([value]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [savedContent, setSavedContent] = useState(value);
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setEditorContent(value);
-  }, []);
 
   const combineAllContent = () => {
     const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
     const combined = blocksContent ? `${blocksContent}\n\n${editorContent}` : editorContent;
     onChange(combined);
   };
+
+  const addToHistory = (content: string) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(content);
+
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
+    }
+
+    setHistory(newHistory);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      const previousContent = history[newIndex];
+      setEditorContent(previousContent);
+      setHasUnsavedChanges(true);
+
+      const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
+      const combined = blocksContent ? `${blocksContent}\n\n${previousContent}` : previousContent;
+      onChange(combined);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      const nextContent = history[newIndex];
+      setEditorContent(nextContent);
+      setHasUnsavedChanges(true);
+
+      const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
+      const combined = blocksContent ? `${blocksContent}\n\n${nextContent}` : nextContent;
+      onChange(combined);
+    }
+  };
+
+  const handleSaveContent = () => {
+    setSavedContent(editorContent);
+    setHasUnsavedChanges(false);
+    combineAllContent();
+
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-slide-up';
+    notification.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>Modifications enregistrées avec succès !</span>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+  };
+
+  useEffect(() => {
+    setEditorContent(value);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges) {
+          handleSaveContent();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [historyIndex, history, hasUnsavedChanges]);
 
   const modules = {
     toolbar: [
@@ -208,6 +294,9 @@ export default function RichTextEditor({
 
   const handleEditorChange = (content: string) => {
     setEditorContent(content);
+    setHasUnsavedChanges(true);
+
+    addToHistory(content);
 
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
@@ -218,6 +307,40 @@ export default function RichTextEditor({
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
       onChange(combined);
     }, 300);
+  };
+
+  const handleResetContent = () => {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser tout le contenu ? Cette action est irréversible.')) {
+      setEditorContent('');
+      setHistory(['']);
+      setHistoryIndex(0);
+      setHasUnsavedChanges(false);
+      onChange('');
+
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-slide-up';
+      notification.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        <span>Contenu réinitialisé</span>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+  };
+
+  const handleClearSelection = () => {
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      const selection = quill.getSelection();
+      if (selection && selection.length > 0) {
+        quill.deleteText(selection.index, selection.length);
+        setHasUnsavedChanges(true);
+      } else {
+        alert('Veuillez sélectionner du texte à supprimer');
+      }
+    }
   };
 
   const handleDownloadAsPDF = async () => {
@@ -279,10 +402,65 @@ export default function RichTextEditor({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-gray-700">
-          {label}
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="block text-sm font-semibold text-gray-700">
+            {label}
+          </label>
+          {hasUnsavedChanges && (
+            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full flex items-center gap-1">
+              <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+              Non enregistré
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={historyIndex === 0}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Annuler (Ctrl+Z)"
+          >
+            <Undo2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={historyIndex >= history.length - 1}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Rétablir (Ctrl+Y)"
+          >
+            <Redo2 className="w-4 h-4" />
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button
+            type="button"
+            onClick={handleClearSelection}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+            title="Supprimer la sélection"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleResetContent}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+            title="Réinitialiser tout"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button
+            type="button"
+            onClick={handleSaveContent}
+            disabled={!hasUnsavedChanges}
+            className="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Enregistrer les modifications"
+          >
+            <Save className="w-4 h-4" />
+            Enregistrer
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
           <button
             type="button"
             onClick={() => setShowBlocks(!showBlocks)}
@@ -428,10 +606,33 @@ export default function RichTextEditor({
         />
       </div>
 
-      <p className="text-xs text-gray-500 flex items-center gap-1">
-        <FileText className="w-3 h-3" />
-        Utilisez la barre d'outils pour formater le texte. Les blocs importés peuvent être modifiés individuellement.
-      </p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+        <p className="text-xs font-semibold text-blue-900 flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          Guide d'utilisation rapide
+        </p>
+        <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Ctrl+Z</kbd>
+            <span>Annuler</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Ctrl+Y</kbd>
+            <span>Rétablir</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Ctrl+S</kbd>
+            <span>Enregistrer</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Trash2 className="w-3 h-3 text-red-600" />
+            <span>Supprimer la sélection</span>
+          </div>
+        </div>
+        <p className="text-xs text-blue-700 italic">
+          💡 Utilisez la barre d'outils pour formater. Les blocs importés sont modifiables individuellement.
+        </p>
+      </div>
     </div>
   );
 }
