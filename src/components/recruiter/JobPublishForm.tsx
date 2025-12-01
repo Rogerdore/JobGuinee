@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon, Download, Wand2
+  CheckCircle2, Upload as UploadIcon, Download, Wand2, Save, Clock, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../forms/RichTextEditor';
+import AutoCompleteInput from '../forms/AutoCompleteInput';
+import { useAutoSave } from '../../hooks/useAutoSave';
+import {
+  jobTitleSuggestions,
+  companySuggestions,
+  locationSuggestions,
+  skillSuggestions,
+  benefitSuggestions,
+  sectorSuggestions,
+} from '../../utils/jobSuggestions';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -56,6 +66,8 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
   const [benefitInput, setBenefitInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [importingFile, setImportingFile] = useState(false);
+  const [showDraftRecovery, setShowDraftRecovery] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -93,6 +105,34 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
     auto_renewal: false,
     legal_compliance: false,
   });
+
+  const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft, hasDraft } = useAutoSave({
+    data: formData,
+    key: `job-draft-${profile?.id || 'anonymous'}`,
+    delay: 3000,
+    enabled: !draftLoaded,
+  });
+
+  useEffect(() => {
+    if (hasDraft() && !draftLoaded) {
+      setShowDraftRecovery(true);
+    }
+  }, [hasDraft, draftLoaded]);
+
+  const handleRecoverDraft = () => {
+    const draft = loadDraft();
+    if (draft) {
+      setFormData(draft);
+      setDraftLoaded(true);
+      setShowDraftRecovery(false);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowDraftRecovery(false);
+    setDraftLoaded(true);
+  };
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
@@ -290,6 +330,77 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
         </div>
 
         <div className="p-6 space-y-6 max-h-[calc(90vh-100px)] overflow-y-auto">
+          {showDraftRecovery && (
+            <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-4 animate-pulse">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-blue-900 text-lg">Brouillon détecté</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Nous avons trouvé un brouillon non publié. Voulez-vous le récupérer pour continuer votre travail ?
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleRecoverDraft}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-medium text-sm shadow-md hover:shadow-lg"
+                  >
+                    Récupérer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDiscardDraft}
+                    className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-all font-medium text-sm"
+                  >
+                    Ignorer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {autoSaveStatus === 'saving' && (
+                  <>
+                    <Loader className="w-5 h-5 text-blue-600 animate-spin" />
+                    <p className="text-sm text-gray-700 font-medium">Enregistrement automatique en cours...</p>
+                  </>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <p className="text-sm text-green-700 font-medium">Brouillon enregistré automatiquement</p>
+                  </>
+                )}
+                {autoSaveStatus === 'idle' && lastSaved && (
+                  <>
+                    <Clock className="w-5 h-5 text-gray-500" />
+                    <p className="text-sm text-gray-600">
+                      Dernier enregistrement : {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </>
+                )}
+                {autoSaveStatus === 'error' && (
+                  <>
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                    <p className="text-sm text-red-600 font-medium">Erreur d'enregistrement automatique</p>
+                  </>
+                )}
+                {autoSaveStatus === 'idle' && !lastSaved && (
+                  <>
+                    <Save className="w-5 h-5 text-gray-400" />
+                    <p className="text-sm text-gray-500">L'enregistrement automatique est activé</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-orange-50 border-2 border-[#FF8C00]/30 rounded-xl p-4">
             <p className="text-sm text-gray-800 text-center">
               <span className="font-semibold text-[#FF8C00]">📋 Formulaire complet :</span> Remplissez toutes les sections pour créer une offre professionnelle et conforme.
@@ -340,16 +451,14 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
           <FormSection title="1. Informations générales" icon={FileText}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Titre du poste *
-                </label>
-                <input
-                  type="text"
+                <AutoCompleteInput
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                  onChange={(value) => setFormData({ ...formData, title: value })}
+                  suggestions={jobTitleSuggestions}
                   placeholder="Ex : Superviseur Ressources Humaines"
+                  label="Titre du poste"
                   required
+                  minChars={2}
                 />
               </div>
 
@@ -477,14 +586,15 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
                   Compétences clés
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, handleAddSkill)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                    placeholder="Ex: Excel, Leadership, Gestion de projet..."
-                  />
+                  <div className="flex-1">
+                    <AutoCompleteInput
+                      value={skillInput}
+                      onChange={setSkillInput}
+                      suggestions={skillSuggestions}
+                      placeholder="Ex: Excel, Leadership, Gestion de projet..."
+                      minChars={2}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={handleAddSkill}
@@ -573,50 +683,38 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
           <FormSection title="3. Informations sur l'entreprise" icon={Building2}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nom de l'entreprise *
-                </label>
-                <input
-                  type="text"
+                <AutoCompleteInput
                   value={formData.company_name}
-                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                  onChange={(value) => setFormData({ ...formData, company_name: value })}
+                  suggestions={companySuggestions}
                   placeholder="Ex : Winning Consortium"
+                  label="Nom de l'entreprise"
                   required
+                  minChars={2}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Secteur d'activité *
-                </label>
-                <select
+                <AutoCompleteInput
                   value={formData.sector}
-                  onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="Mines">Mines</option>
-                  <option value="BTP">BTP</option>
-                  <option value="RH">Ressources Humaines</option>
-                  <option value="Comptabilité">Comptabilité</option>
-                  <option value="Sécurité">Sécurité</option>
-                  <option value="Transport">Transport</option>
-                  <option value="IT">IT / Informatique</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, sector: value })}
+                  suggestions={sectorSuggestions}
+                  placeholder="Ex : Mines, Banque, IT..."
+                  label="Secteur d'activité"
+                  required
+                  minChars={1}
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                  <MapPin className="w-4 h-4 mr-2 text-[#FF8C00]" />
-                  Localisation du poste *
-                </label>
-                <input
-                  type="text"
+                <AutoCompleteInput
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  placeholder="Ex : Boké, Kamsar"
+                  onChange={(value) => setFormData({ ...formData, location: value })}
+                  suggestions={locationSuggestions}
+                  placeholder="Ex : Kinshasa, Lubumbashi..."
+                  label="Localisation du poste"
                   required
+                  minChars={2}
                 />
               </div>
 
@@ -683,14 +781,15 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
                   Avantages
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={benefitInput}
-                    onChange={(e) => setBenefitInput(e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, handleAddBenefit)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                    placeholder="Ex: logement, repas, transport, couverture santé..."
-                  />
+                  <div className="flex-1">
+                    <AutoCompleteInput
+                      value={benefitInput}
+                      onChange={setBenefitInput}
+                      suggestions={benefitSuggestions}
+                      placeholder="Ex: logement, repas, transport, couverture santé..."
+                      minChars={2}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={handleAddBenefit}
