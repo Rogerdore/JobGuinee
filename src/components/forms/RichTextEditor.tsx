@@ -245,9 +245,21 @@ export default function RichTextEditor({
       });
     };
 
-    const intervalId = setInterval(makeImagesManipulable, 500);
+    makeImagesManipulable();
 
-    return () => clearInterval(intervalId);
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(makeImagesManipulable);
+    });
+
+    const quill = quillRef.current?.getEditor();
+    if (quill) {
+      observer.observe(quill.root, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    return () => observer.disconnect();
   }, []);
 
   const modules = {
@@ -401,12 +413,13 @@ export default function RichTextEditor({
     setTimeout(combineAllContent, 100);
   };
 
-  const handleEditorChange = (content: string) => {
-    if (isManipulatingRef.current) {
+  const handleEditorChange = (content: string, delta: any, source: any) => {
+    if (source !== 'user' || isManipulatingRef.current) {
       return;
     }
 
     setHasUnsavedChanges(true);
+    setEditorContent(content);
 
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
@@ -416,7 +429,6 @@ export default function RichTextEditor({
       const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
       onChange(combined);
-      setEditorContent(content);
     }, 1000);
   };
 
