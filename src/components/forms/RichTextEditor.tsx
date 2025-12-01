@@ -717,45 +717,6 @@ export default function RichTextEditor({
           style={{ minHeight: '300px' }}
         />
       </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-        <p className="text-xs font-semibold text-blue-900 flex items-center gap-2">
-          <FileText className="w-4 h-4" />
-          Guide d'utilisation rapide
-        </p>
-        <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
-          <div className="flex items-center gap-2">
-            <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Ctrl+Z</kbd>
-            <span>Annuler</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Ctrl+Y</kbd>
-            <span>Rétablir</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <kbd className="px-2 py-1 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Ctrl+S</kbd>
-            <span>Enregistrer</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trash2 className="w-3 h-3 text-red-600" />
-            <span>Supprimer la sélection</span>
-          </div>
-        </div>
-        <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 mt-2">
-          <p className="text-xs font-semibold text-blue-900 mb-1 flex items-center gap-1">
-            <ImageIcon className="w-3 h-3" />
-            Manipulation des images
-          </p>
-          <div className="space-y-1 text-xs text-blue-800">
-            <p>• <strong>Coller une image</strong> : Ctrl+V avec une image dans le presse-papiers</p>
-            <p>• <strong>Redimensionner</strong> : Glissez depuis le bord droit ou le coin bas-droit</p>
-            <p>• Le curseur change en ↔️ quand le redimensionnement est possible</p>
-          </div>
-        </div>
-        <p className="text-xs text-blue-700 italic mt-2">
-          💡 Utilisez la barre d'outils pour formater. Les blocs importés sont modifiables individuellement.
-        </p>
-      </div>
     </div>
   );
 }
