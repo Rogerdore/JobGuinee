@@ -297,61 +297,61 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${profile?.full_name ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={profile?.full_name ? 'text-gray-900' : 'text-gray-500'}>
-                        Nom complet
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <CheckCircle className={`w-5 h-5 ${candidateProfile?.title ? 'text-green-600' : 'text-gray-300'}`} />
-                      <span className={candidateProfile?.title ? 'text-gray-900' : 'text-gray-500'}>
-                        Titre professionnel
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <CheckCircle className={`w-5 h-5 ${candidateProfile?.bio ? 'text-green-600' : 'text-gray-300'}`} />
-                      <span className={candidateProfile?.bio ? 'text-gray-900' : 'text-gray-500'}>
-                        Présentation
+                        Nom complet (10%)
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${profile?.phone ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={profile?.phone ? 'text-gray-900' : 'text-gray-500'}>
-                        Téléphone
+                        Téléphone (10%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle className={`w-5 h-5 ${candidateProfile?.title ? 'text-green-600' : 'text-gray-300'}`} />
+                      <span className={candidateProfile?.title ? 'text-gray-900' : 'text-gray-500'}>
+                        Titre professionnel (15%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle className={`w-5 h-5 ${candidateProfile?.bio ? 'text-green-600' : 'text-gray-300'}`} />
+                      <span className={candidateProfile?.bio ? 'text-gray-900' : 'text-gray-500'}>
+                        Présentation (15%)
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${candidateProfile?.location ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={candidateProfile?.location ? 'text-gray-900' : 'text-gray-500'}>
-                        Localisation
+                        Localisation (10%)
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${candidateProfile?.experience_years !== undefined && candidateProfile.experience_years >= 0 ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={candidateProfile?.experience_years !== undefined && candidateProfile.experience_years >= 0 ? 'text-gray-900' : 'text-gray-500'}>
-                        Années d'expérience
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <CheckCircle className={`w-5 h-5 ${candidateProfile?.education_level ? 'text-green-600' : 'text-gray-300'}`} />
-                      <span className={candidateProfile?.education_level ? 'text-gray-900' : 'text-gray-500'}>
-                        Niveau d'études
+                        Expérience (10%)
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${candidateProfile?.skills?.length ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={candidateProfile?.skills?.length ? 'text-gray-900' : 'text-gray-500'}>
-                        Compétences
+                        Compétences (10%)
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${candidateProfile?.languages?.length ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={candidateProfile?.languages?.length ? 'text-gray-900' : 'text-gray-500'}>
-                        Langues
+                        Langues (5%)
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <CheckCircle className={`w-5 h-5 ${candidateProfile?.cv_url ? 'text-green-600' : 'text-gray-300'}`} />
                       <span className={candidateProfile?.cv_url ? 'text-gray-900' : 'text-gray-500'}>
-                        CV téléchargé
+                        CV téléchargé (10%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle className={`w-5 h-5 ${candidateProfile?.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0 ? 'text-green-600' : 'text-gray-300'}`} />
+                      <span className={candidateProfile?.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                        Formation (5%)
                       </span>
                     </div>
                   </div>
