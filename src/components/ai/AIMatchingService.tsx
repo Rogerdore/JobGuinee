@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft, User, Edit3, Check, AlertCircle, Sparkles } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';
 import CreditConfirmModal from '../credits/CreditConfirmModal';
 import CreditBalance from '../credits/CreditBalance';
+import TemplateSelector from './TemplateSelector';
+import { IAConfigService } from '../../services/iaConfigService';
+import UserProfileService from '../../services/userProfileService';
 
 interface JobMatch {
   id: string;
@@ -24,6 +27,8 @@ interface AIMatchingServiceProps {
   onNavigate?: (page: string) => void;
 }
 
+type InputMode = 'profile' | 'manual';
+
 export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps = {}) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -32,32 +37,122 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
   const [profileScore, setProfileScore] = useState<number | null>(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const { consumeCredits } = useConsumeCredits();
-  const serviceCost = useServiceCost(SERVICES.AI_PROFILE_ANALYSIS) || 20;
+  const serviceCost = useServiceCost(SERVICES.AI_JOB_MATCHING) || 20;
 
-  const handleAnalyzeClick = () => {
-    setShowCreditModal(true);
+  const [inputMode, setInputMode] = useState<InputMode>('profile');
+  const [matchingData, setMatchingData] = useState<any>({
+    competences: [],
+    experience: 0,
+    niveau_etude: '',
+    localisation_preferee: '',
+    type_contrat_prefere: 'CDI',
+    secteur_prefere: ''
+  });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileSummary, setProfileSummary] = useState<string>('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (inputMode === 'profile') {
+      loadProfileData();
+    } else {
+      setProfileLoaded(false);
+      setProfileSummary('');
+    }
+  }, [inputMode, user]);
+
+  const loadProfileData = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    setValidationErrors([]);
+
+    try {
+      const result = await UserProfileService.loadUserData(user.id);
+
+      if (result.success && result.profile) {
+        const input = UserProfileService.buildMatchingInputFromProfile(
+          result.profile,
+          result.cv
+        );
+        setMatchingData(input);
+        setProfileLoaded(true);
+
+        const summary = `
+          ✓ ${input.competences.length} compétences
+          ✓ ${input.experience} années d'expérience
+          ✓ Niveau: ${input.niveau_etude}
+          ✓ Localisation: ${input.localisation_preferee || 'Non spécifiée'}
+        `;
+        setProfileSummary(summary);
+
+        if (input.competences.length === 0) {
+          setValidationErrors(['Veuillez ajouter des compétences à votre profil']);
+        }
+      } else {
+        setProfileLoaded(false);
+        setValidationErrors(['Aucun profil trouvé']);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      setValidationErrors(['Erreur lors du chargement du profil']);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreditConfirm = async (success: boolean, result?: any) => {
-    if (!success) {
-      alert(result?.message || 'Erreur lors de la consommation des crédits');
+  const handleAnalyzeClick = () => {
+    if (!user) {
+      alert('Vous devez être connecté');
       return;
     }
 
+    if (matchingData.competences.length === 0) {
+      setValidationErrors(['Veuillez ajouter au moins une compétence']);
+      return;
+    }
+
+    setValidationErrors([]);
+    setShowCreditModal(true);
+  };
+
+  const handleCreditConfirm = async () => {
+    setShowCreditModal(false);
     await analyzeProfile();
   };
 
   const analyzeProfile = async () => {
     setAnalyzing(true);
     try {
+      const creditResult = await consumeCredits(SERVICES.AI_JOB_MATCHING);
+      if (!creditResult.success) {
+        alert(creditResult.message);
+        setAnalyzing(false);
+        return;
+      }
+
+      const config = await IAConfigService.getConfig('ai_matching');
+      if (!config) {
+        throw new Error('Configuration IA non trouvée');
+      }
+
+      const validationResult = IAConfigService.validateInput(matchingData, config.input_schema);
+      if (!validationResult.valid) {
+        throw new Error('Données invalides: ' + validationResult.errors.join(', '));
+      }
+
       const { data: profile } = await supabase
         .from('candidate_profiles')
         .select('*')
         .eq('user_id', user!.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile) {
+      if (!profile && inputMode === 'profile') {
         alert('Veuillez compléter votre profil avant l\'analyse');
+        setAnalyzing(false);
         return;
       }
 
@@ -67,16 +162,19 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         .eq('status', 'published')
         .limit(20);
 
-      if (!jobs) return;
+      if (!jobs) {
+        setAnalyzing(false);
+        return;
+      }
 
       const analyzedMatches: JobMatch[] = jobs.map(job => {
-        const skillsMatch = calculateSkillsMatch(profile.skills || [], job.required_skills || []);
+        const skillsMatch = calculateSkillsMatch(matchingData.competences || [], job.required_skills || []);
         const experienceMatch = calculateExperienceMatch(
-          profile.years_of_experience || 0,
+          matchingData.experience || 0,
           job.min_experience || 0
         );
         const educationMatch = calculateEducationMatch(
-          profile.education_level,
+          matchingData.niveau_etude,
           job.education_level
         );
 
@@ -109,6 +207,27 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         ? Math.round(sortedMatches.reduce((sum, m) => sum + m.matchScore, 0) / sortedMatches.length)
         : 0;
       setProfileScore(avgScore);
+
+      const outputData = {
+        matches: sortedMatches.map(m => ({
+          job_id: m.id,
+          title: m.title,
+          score: m.matchScore,
+          reasons: m.reasons
+        })),
+        profile_score: avgScore,
+        total_analyzed: jobs.length
+      };
+
+      await IAConfigService.logServiceUsage(
+        user!.id,
+        'ai_matching',
+        matchingData,
+        outputData,
+        creditResult.cost || serviceCost
+      );
+
+      alert('Analyse terminée!');
 
     } catch (error) {
       console.error('Error analyzing profile:', error);
@@ -166,72 +285,207 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
     return 'text-red-600 bg-red-100';
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-center mb-4">Connexion requise</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {onNavigate && (
-        <button
-          onClick={() => onNavigate('premium-ai')}
-          className="mb-6 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors group"
-        >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-medium">Retour aux Services IA</span>
-        </button>
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 py-12 px-4">
+      <div className="max-w-6xl mx-auto">
+      <div className="mb-8 flex items-center justify-between">
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('premium-ai')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Retour
+          </button>
+        )}
+        <CreditBalance />
+      </div>
+
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
-            <Target className="w-6 h-6 text-white" />
+          <div className="p-3 bg-blue-100 rounded-lg">
+            <Target className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Analyse & Matching IA</h1>
-            <p className="text-gray-600">Découvrez les offres qui correspondent le mieux à votre profil</p>
+            <h1 className="text-3xl font-bold text-gray-800">Matching IA</h1>
+            <p className="text-gray-600">Trouvez les emplois correspondant à votre profil</p>
           </div>
         </div>
 
-        {profileScore !== null && (
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Score global de votre profil</p>
-                <p className="text-4xl font-bold text-blue-600">{profileScore}/100</p>
-              </div>
-              <div className="text-right">
-                <TrendingUp className="w-12 h-12 text-blue-600 mb-2" />
-                <p className="text-sm text-gray-600">{matches.length} offres analysées</p>
-              </div>
-            </div>
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-blue-600" />
+            <p className="text-sm text-blue-800">
+              <strong>Coût:</strong> {serviceCost} crédits
+            </p>
           </div>
+        </div>
+
+        <div className="mb-8 bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+          <h3 className="font-semibold text-gray-800 mb-4">Source des données</h3>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <button
+              onClick={() => setInputMode('profile')}
+              className={`p-4 rounded-lg border-2 ${
+                inputMode === 'profile' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <User className={`w-6 h-6 ${inputMode === 'profile' ? 'text-blue-600' : 'text-gray-500'}`} />
+                <div className="text-left">
+                  <p className="font-semibold">Utiliser mon profil</p>
+                  <p className="text-xs text-gray-600">Auto</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setInputMode('manual')}
+              className={`p-4 rounded-lg border-2 ${
+                inputMode === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Edit3 className={`w-6 h-6 ${inputMode === 'manual' ? 'text-blue-600' : 'text-gray-500'}`} />
+                <div className="text-left">
+                  <p className="font-semibold">Saisie manuelle</p>
+                  <p className="text-xs text-gray-600">Formulaire</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {inputMode === 'profile' && profileLoaded && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <Check className="w-5 h-5 text-green-600 mb-2" />
+              <p className="font-medium text-green-800 mb-2">Profil chargé</p>
+              <pre className="text-xs text-green-700 whitespace-pre-line">{profileSummary}</pre>
+            </div>
+          )}
+
+          {validationErrors.length > 0 && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-600 mb-2" />
+              <ul className="text-sm text-red-700 list-disc list-inside">
+                {validationErrors.map((error, idx) => <li key={idx}>{error}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Chargement...</p>
+          </div>
+        ) : (
+          <>
+            <TemplateSelector
+              serviceCode="ai_matching"
+              selectedTemplateId={selectedTemplateId}
+              onSelect={setSelectedTemplateId}
+              className="mb-6"
+            />
+
+            {inputMode === 'manual' && (
+              <div className="space-y-4 mb-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    placeholder="Années d'expérience"
+                    value={matchingData.experience}
+                    onChange={(e) => setMatchingData({ ...matchingData, experience: parseInt(e.target.value) || 0 })}
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Niveau d'études"
+                    value={matchingData.niveau_etude}
+                    onChange={(e) => setMatchingData({ ...matchingData, niveau_etude: e.target.value })}
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Localisation préférée"
+                    value={matchingData.localisation_preferee}
+                    onChange={(e) => setMatchingData({ ...matchingData, localisation_preferee: e.target.value })}
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Secteur préféré"
+                    value={matchingData.secteur_prefere}
+                    onChange={(e) => setMatchingData({ ...matchingData, secteur_prefere: e.target.value })}
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                </div>
+                <textarea
+                  placeholder="Compétences (séparées par des virgules)"
+                  value={matchingData.competences.join(', ')}
+                  onChange={(e) => setMatchingData({
+                    ...matchingData,
+                    competences: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                  })}
+                  className="w-full px-4 py-2 border rounded-lg"
+                  rows={3}
+                />
+              </div>
+            )}
+          </>
         )}
 
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">
-            Coût: <span className="font-bold text-blue-600">20 crédits</span>
-          </div>
-          <CreditBalance />
+        <div className="flex justify-center">
+          <button
+            onClick={handleAnalyzeClick}
+            disabled={analyzing || validationErrors.length > 0 || loading}
+            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            {analyzing ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Analyse en cours...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Analyser ({serviceCost} crédits)
+              </>
+            )}
+          </button>
         </div>
-
-        <button
-          onClick={handleAnalyzeClick}
-          disabled={analyzing}
-          className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {analyzing ? (
-            <>
-              <Loader className="w-5 h-5 animate-spin" />
-              Analyse en cours...
-            </>
-          ) : (
-            <>
-              <Target className="w-5 h-5" />
-              {matches.length > 0 ? 'Relancer l\'analyse' : 'Lancer l\'analyse'}
-            </>
-          )}
-        </button>
       </div>
 
       {matches.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Meilleures correspondances</h2>
+        <>
+          {profileScore !== null && (
+            <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Score global de votre profil</p>
+                  <p className="text-4xl font-bold text-blue-600">{profileScore}/100</p>
+                </div>
+                <div className="text-right">
+                  <TrendingUp className="w-12 h-12 text-blue-600 mb-2" />
+                  <p className="text-sm text-gray-600">{matches.length} offres analysées</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Meilleures correspondances</h2>
           {matches.map((match) => (
             <div
               key={match.id}
@@ -307,17 +561,18 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
             </div>
           ))}
         </div>
+        </>
       )}
+      </div>
 
-      <CreditConfirmModal
-        isOpen={showCreditModal}
-        onClose={() => setShowCreditModal(false)}
-        onConfirm={handleCreditConfirm}
-        serviceCode={SERVICES.AI_JOB_MATCHING}
-        serviceName="Matching Emplois IA"
-        serviceCost={serviceCost}
-        description="Analysez votre profil et trouvez les emplois qui correspondent le mieux"
-      />
+      {showCreditModal && (
+        <CreditConfirmModal
+          serviceName="Matching Emplois IA"
+          cost={serviceCost}
+          onConfirm={handleCreditConfirm}
+          onCancel={() => setShowCreditModal(false)}
+        />
+      )}
     </div>
   );
 }

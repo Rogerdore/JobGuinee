@@ -223,6 +223,160 @@ export class UserProfileService {
       inputData
     };
   }
+
+  /**
+   * Build input for Cover Letter service
+   */
+  static buildCoverLetterInputFromProfile(
+    profile: CandidateProfile | null,
+    cv: CandidateCV | null,
+    jobData?: {
+      title: string;
+      company: string;
+      description?: string;
+      requirements?: string[];
+    }
+  ): any {
+    if (!profile) {
+      return {
+        nom: '',
+        poste_cible: jobData?.title || '',
+        entreprise: jobData?.company || '',
+        date: new Date().toLocaleDateString('fr-FR'),
+        extrait_offre: jobData?.description || '',
+        competences_candidat: [],
+        ton: 'moderne'
+      };
+    }
+
+    return {
+      nom: profile.full_name || '',
+      poste_cible: jobData?.title || profile.title || '',
+      entreprise: jobData?.company || '',
+      date: new Date().toLocaleDateString('fr-FR'),
+      extrait_offre: jobData?.description || '',
+      competences_candidat: profile.skills || [],
+      ton: 'moderne'
+    };
+  }
+
+  /**
+   * Build input for Matching service
+   */
+  static buildMatchingInputFromProfile(
+    profile: CandidateProfile | null,
+    jobData?: {
+      title: string;
+      required_skills?: string[];
+      min_experience?: number;
+      education_level?: string;
+    }
+  ): any {
+    if (!profile) {
+      return {
+        profil_candidat: {
+          competences: [],
+          experience_annees: 0,
+          formations: []
+        },
+        offre_emploi: {
+          titre: jobData?.title || '',
+          competences_requises: jobData?.required_skills || [],
+          experience_requise: jobData?.min_experience || 0
+        }
+      };
+    }
+
+    const experienceYears = profile.experience?.length || 0;
+    const formations = (profile.education || []).map((edu: any) =>
+      edu.degree || edu.diploma || ''
+    );
+
+    return {
+      profil_candidat: {
+        competences: profile.skills || [],
+        experience_annees: experienceYears,
+        formations
+      },
+      offre_emploi: {
+        titre: jobData?.title || '',
+        competences_requises: jobData?.required_skills || [],
+        experience_requise: jobData?.min_experience || 0
+      }
+    };
+  }
+
+  /**
+   * Build input for Career Plan service
+   */
+  static buildCareerPlanInputFromProfile(
+    profile: CandidateProfile | null,
+    cv: CandidateCV | null
+  ): any {
+    if (!profile) {
+      return {
+        profil_actuel: {
+          poste: '',
+          competences: [],
+          experience_annees: 0
+        },
+        objectif: '',
+        horizon: '3_ans',
+        contraintes: ''
+      };
+    }
+
+    const experienceYears = profile.experience?.length || 0;
+    const currentJob = profile.experience?.[0];
+
+    return {
+      profil_actuel: {
+        poste: currentJob?.position || currentJob?.title || profile.title || '',
+        competences: profile.skills || [],
+        experience_annees: experienceYears
+      },
+      objectif: profile.bio || '',
+      horizon: '3_ans',
+      contraintes: ''
+    };
+  }
+
+  /**
+   * Get job application data for candidate
+   */
+  static async getCandidateApplications(userId: string, jobId?: string): Promise<any[]> {
+    try {
+      let query = supabase
+        .from('candidate_applications')
+        .select(`
+          *,
+          jobs:job_id(
+            title,
+            description,
+            required_skills,
+            min_experience,
+            companies(name)
+          )
+        `)
+        .eq('candidate_id', userId);
+
+      if (jobId) {
+        query = query.eq('job_id', jobId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading applications:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getCandidateApplications:', error);
+      return [];
+    }
+  }
 }
 
 export default UserProfileService;
