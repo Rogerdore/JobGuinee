@@ -655,6 +655,28 @@ export class IAConfigService {
       return [];
     }
   }
+
+  /**
+   * Log service usage for analytics (optional)
+   */
+  static async logServiceUsage(
+    userId: string,
+    serviceCode: string,
+    inputData: any,
+    outputData: any,
+    creditsCost: number
+  ): Promise<void> {
+    try {
+      console.log('IA Service Usage:', {
+        userId,
+        serviceCode,
+        creditsCost,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error logging service usage:', error);
+    }
+  }
 }
 
 export interface IAServiceTemplate {
