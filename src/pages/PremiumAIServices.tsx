@@ -15,6 +15,7 @@ import {
   Loader,
   ArrowLeft
 } from 'lucide-react';
+import CVCentralModal from '../components/ai/CVCentralModal';
 
 interface PremiumService {
   id: string;
@@ -54,6 +55,7 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   const [userServices, setUserServices] = useState<UserService[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [showCVModal, setShowCVModal] = useState(false);
 
   useEffect(() => {
     loadServices();
@@ -99,6 +101,11 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   };
 
   const handleServiceClick = (service: PremiumService) => {
+    if (service.category === 'cv') {
+      setShowCVModal(true);
+      return;
+    }
+
     if (service.type === 'free' || hasAccess(service.id)) {
       navigateToService(service.category);
     } else {
@@ -308,6 +315,10 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
           </div>
         </div>
       </div>
+
+      {showCVModal && (
+        <CVCentralModal onClose={() => setShowCVModal(false)} />
+      )}
     </div>
   );
 }
