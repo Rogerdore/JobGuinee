@@ -1,0 +1,400 @@
+  avg_ai_score numeric(5,2),
+  avg_time_to_hire_days numeric(5,1),
+  strong_profiles_count integer DEFAULT 0,
+  medium_profiles_count integer DEFAULT 0,
+  weak_profiles_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE(company_id, job_id, date)
+);
+
+-- ============================================================================
+-- 2.3 CVthèque / Talent Pool System
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS talent_searches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  recruiter_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  search_query text,
+  filters jsonb DEFAULT '{}',
+  results_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS favorite_candidates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  recruiter_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  candidate_id uuid REFERENCES candidate_profiles(id) ON DELETE CASCADE NOT NULL,
+  notes text,
+  tags text[] DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(recruiter_id, candidate_id)
+);
+
+CREATE TABLE IF NOT EXISTS candidate_contacts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  recruiter_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  candidate_id uuid REFERENCES candidate_profiles(id) ON DELETE CASCADE NOT NULL,
+  message text NOT NULL,
+  status text DEFAULT 'sent',
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS profile_verifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id uuid REFERENCES candidate_profiles(id) ON DELETE CASCADE NOT NULL,
+  verification_type text NOT NULL,
+  is_verified boolean DEFAULT false,
+  verified_at timestamptz,
+  verified_by uuid REFERENCES profiles(id),
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cv_downloads (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  recruiter_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  candidate_id uuid REFERENCES candidate_profiles(id) ON DELETE CASCADE NOT NULL,
+  downloaded_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- 2.4 Profile Cart and Purchases
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS profile_cart (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_id text,
+  candidate_id uuid REFERENCES candidate_profiles(id) ON DELETE CASCADE NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  CONSTRAINT profile_cart_user_or_session CHECK (
+    (user_id IS NOT NULL AND session_id IS NULL) OR
+    (user_id IS NULL AND session_id IS NOT NULL)
+  )
+);
+
+CREATE TABLE IF NOT EXISTS profile_purchases (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  buyer_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  candidate_id uuid REFERENCES candidate_profiles(id) ON DELETE CASCADE NOT NULL,
+  amount integer NOT NULL,
+  payment_status text NOT NULL DEFAULT 'pending',
+  payment_method text,
+  transaction_id text,
+  purchased_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
+  CONSTRAINT profile_purchases_payment_status_check CHECK (
+    payment_status IN ('pending', 'completed', 'failed', 'refunded')
+  ),
+  CONSTRAINT profile_purchases_unique_purchase UNIQUE (buyer_id, candidate_id)
+);
+
+-- ============================================================================
+-- 2.5 Job Features
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS saved_jobs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  job_id uuid REFERENCES jobs(id) ON DELETE CASCADE NOT NULL,
+  saved_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE(candidate_id, job_id)
+);
+
+CREATE TABLE IF NOT EXISTS job_views (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id uuid REFERENCES jobs(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  viewed_at timestamptz DEFAULT now() NOT NULL,
+  ip_address text,
+  user_agent text
+);
+
+-- ============================================================================
+-- 2.6 Newsletter
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text UNIQUE NOT NULL,
+  domain text DEFAULT 'all',
+  subscribed_at timestamptz DEFAULT now(),
+  is_active boolean DEFAULT true,
+  unsubscribed_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- 2.7 CMS System
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS site_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  setting_key TEXT UNIQUE NOT NULL,
+  setting_value JSONB NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT,
+  is_public BOOLEAN DEFAULT true,
+  updated_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cms_pages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  meta_description TEXT,
+  meta_keywords TEXT[],
+  content JSONB NOT NULL,
+  template TEXT DEFAULT 'default',
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+  published_at TIMESTAMPTZ,
+  author_id UUID REFERENCES profiles(id),
+  featured_image TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cms_sections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  section_key TEXT UNIQUE NOT NULL,
+  section_name TEXT NOT NULL,
+  content JSONB NOT NULL,
+  section_type TEXT NOT NULL,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cms_media (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size INTEGER,
+  alt_text TEXT,
+  caption TEXT,
+  uploaded_by UUID REFERENCES profiles(id),
+  folder TEXT DEFAULT 'general',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cms_navigation (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  menu_location TEXT NOT NULL,
+  label TEXT NOT NULL,
+  url TEXT,
+  page_id UUID REFERENCES cms_pages(id) ON DELETE CASCADE,
+  parent_id UUID REFERENCES cms_navigation(id) ON DELETE CASCADE,
+  icon TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  open_in_new_tab BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cms_translations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  translation_key TEXT NOT NULL,
+  language_code TEXT DEFAULT 'fr' CHECK (language_code IN ('fr', 'en')),
+  translation_value TEXT NOT NULL,
+  category TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(translation_key, language_code)
+);
+
+CREATE TABLE IF NOT EXISTS admin_activity_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES profiles(id) NOT NULL,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id UUID,
+  details JSONB,
+  ip_address TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- 2.8 Premium AI Services System
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS premium_services (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text NOT NULL,
+  type text NOT NULL CHECK (type IN ('free', 'premium')),
+  category text NOT NULL,
+  price numeric DEFAULT 0,
+  credits_cost INTEGER DEFAULT 0,
+  icon text,
+  is_active boolean DEFAULT true,
+  features jsonb DEFAULT '[]'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_premium_services (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  service_id uuid NOT NULL REFERENCES premium_services(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
+  purchased_at timestamptz DEFAULT now(),
+  expires_at timestamptz,
+  payment_method text,
+  transaction_id text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ai_cv_generations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  profile_data jsonb NOT NULL,
+  generated_cv text NOT NULL,
+  format text DEFAULT 'html',
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ai_cover_letters (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  job_id uuid REFERENCES jobs(id) ON DELETE SET NULL,
+  tone text DEFAULT 'formal' CHECK (tone IN ('formal', 'creative', 'simple')),
+  generated_letter text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ai_career_plans (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  current_profile jsonb NOT NULL,
+  short_term_plan jsonb DEFAULT '{}'::jsonb,
+  mid_term_plan jsonb DEFAULT '{}'::jsonb,
+  long_term_plan jsonb DEFAULT '{}'::jsonb,
+  recommended_skills jsonb DEFAULT '[]'::jsonb,
+  recommended_trainings jsonb DEFAULT '[]'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ai_chat_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  session_id uuid NOT NULL,
+  message text NOT NULL,
+  response text,
+  message_type text NOT NULL CHECK (message_type IN ('user', 'ai')),
+  created_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- 2.9 Gold Profile System
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS coaching_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  coach_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  session_type text NOT NULL CHECK (session_type IN ('cv_review', 'interview_prep', 'career_planning', 'salary_negotiation', 'general_coaching')),
+  scheduled_at timestamptz NOT NULL,
+  duration_minutes integer DEFAULT 60,
+  status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled', 'no_show')),
+  notes text,
+  coach_feedback text,
+  rating integer CHECK (rating >= 1 AND rating <= 5),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS video_cvs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  description text,
+  video_url text,
+  thumbnail_url text,
+  duration_seconds integer,
+  file_size_mb numeric,
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'processing', 'published', 'archived')),
+  view_count integer DEFAULT 0,
+  is_featured boolean DEFAULT false,
+  created_by_coach boolean DEFAULT false,
+  coach_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS profile_visibility_stats (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  date date NOT NULL DEFAULT CURRENT_DATE,
+  first_page_appearances integer DEFAULT 0,
+  total_appearances integer DEFAULT 0,
+  profile_views integer DEFAULT 0,
+  contact_reveals integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, date)
+);
+
+-- ============================================================================
+-- 2.10 Credit System
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS service_credit_costs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  service_code TEXT UNIQUE NOT NULL,
+  service_name TEXT NOT NULL,
+  service_description TEXT,
+  credits_cost INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  category TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS credit_purchases (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  credits_amount integer NOT NULL,
+  price_gnf bigint NOT NULL,
+  payment_method text,
+  payment_status text DEFAULT 'pending',
+  transaction_id text,
+  purchased_at timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- 2.11 Formations System
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS trainer_profiles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id uuid UNIQUE REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  organization_name text,
+  organization_type text DEFAULT 'individual' CHECK (organization_type IN ('individual', 'company', 'institute')),
+  bio text,
+  specializations text[] DEFAULT '{}',
+  certifications jsonb DEFAULT '[]',
+  experience_years integer DEFAULT 0,
+  website text,
+  linkedin_url text,
+  hourly_rate numeric DEFAULT 0,
+  is_verified boolean DEFAULT false,
+  rating numeric DEFAULT 0 CHECK (rating >= 0 AND rating <= 5),
+  total_students integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS formation_enrollments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  formation_id uuid REFERENCES formations(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+  payment_method text NOT NULL CHECK (payment_method IN ('orange_money', 'lengopay', 'digitalpay', 'card')),
+  amount integer NOT NULL CHECK (amount >= 0),
+  full_name text NOT NULL,
