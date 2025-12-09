@@ -23,6 +23,7 @@ interface PremiumService {
   type: 'free' | 'premium';
   category: string;
   price: number;
+  credits_cost: number;
   icon: string;
   features: string[];
   is_active: boolean;
@@ -217,14 +218,14 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                     ))}
                   </ul>
 
-                  {/* Price & CTA */}
+                  {/* Credits Cost & CTA */}
                   <div className="pt-6 border-t border-gray-100">
                     {isPremium && (
                       <div className="flex items-baseline gap-2 mb-4">
                         <span className="text-3xl font-bold text-gray-900">
-                          {service.price.toLocaleString()}
+                          {service.credits_cost}
                         </span>
-                        <span className="text-gray-600">GNF</span>
+                        <span className="text-gray-600">crédits</span>
                       </div>
                     )}
 
