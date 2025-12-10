@@ -14,7 +14,9 @@ import {
   User,
   Edit3,
   FileDown,
-  Briefcase
+  Briefcase,
+  Search,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConsumeCredits } from '../../hooks/useCreditService';
@@ -28,6 +30,7 @@ import UserProfileService, { CVInputData } from '../../services/userProfileServi
 import { CVBuilderService } from '../../services/cvBuilderService';
 import { CVImproverService } from '../../services/cvImproverService';
 import { CVTargetedService, JobOffer } from '../../services/cvTargetedService';
+import { supabase } from '../../lib/supabase';
 
 type CVMode = 'create' | 'improve' | 'target';
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -35,6 +38,22 @@ type InputSource = 'profile' | 'manual';
 
 interface CVCentralModalProps {
   onClose: () => void;
+}
+
+interface JobListing {
+  id: string;
+  title: string;
+  location: string;
+  contract_type: string;
+  salary_min: number;
+  salary_max: number;
+  description: string;
+  requirements: string;
+  responsibilities: string;
+  company: {
+    name: string;
+    logo_url: string;
+  };
 }
 
 export default function CVCentralModal({ onClose }: CVCentralModalProps) {
@@ -60,6 +79,11 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
 
   const [finalCV, setFinalCV] = useState<string>('');
   const [finalFormat, setFinalFormat] = useState<string>('html');
+
+  const [showJobSelector, setShowJobSelector] = useState(false);
+  const [jobListings, setJobListings] = useState<JobListing[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const serviceCost = useServiceCost(SERVICES.AI_CV_GENERATION) || 50;
   const { consumeCredits } = useConsumeCredits();
@@ -95,6 +119,73 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadJobListings = async () => {
+    setLoadingJobs(true);
+    setShowJobSelector(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select(`
+          id,
+          title,
+          location,
+          contract_type,
+          salary_min,
+          salary_max,
+          description,
+          requirements,
+          responsibilities,
+          company:companies!inner (
+            name,
+            logo_url
+          )
+        `)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      const formattedJobs = data?.map(job => ({
+        ...job,
+        company: Array.isArray(job.company) ? job.company[0] : job.company
+      })) || [];
+
+      setJobListings(formattedJobs);
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+      alert('Erreur lors du chargement des offres');
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  const handleSelectJob = (job: JobListing) => {
+    const fullDescription = `
+${job.title} - ${job.company.name}
+Localisation: ${job.location}
+Type de contrat: ${job.contract_type}
+
+DESCRIPTION:
+${job.description}
+
+EXIGENCES:
+${job.requirements}
+
+RESPONSABILITÉS:
+${job.responsibilities}
+    `.trim();
+
+    setJobDescription(fullDescription);
+    setJobOffer({
+      title: job.title,
+      company: job.company.name,
+      description: fullDescription
+    });
+    setShowJobSelector(false);
   };
 
   const handleModeSelect = (mode: CVMode) => {
@@ -592,6 +683,19 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
 
               {!loading && (
                 <>
+                  <div className="mb-8">
+                    <button
+                      onClick={loadJobListings}
+                      className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2 mb-4"
+                    >
+                      <Target className="w-5 h-5" />
+                      Charger les offres d'emploi
+                    </button>
+                    <p className="text-sm text-gray-600 text-center">
+                      Sélectionnez une offre depuis notre base de données pour remplir automatiquement
+                    </p>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Description de l'offre d'emploi *
@@ -784,6 +888,127 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
           onConfirm={confirmGeneration}
           onCancel={() => setShowCreditModal(false)}
         />
+      )}
+
+      {showJobSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col m-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <Briefcase className="w-6 h-6 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Sélectionner une offre d'emploi</h3>
+                  <p className="text-sm text-gray-600">
+                    {jobListings.length} offre{jobListings.length > 1 ? 's' : ''} disponible{jobListings.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowJobSelector(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher par titre, entreprise, localisation..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingJobs ? (
+                <div className="text-center py-12">
+                  <Loader className="w-12 h-12 animate-spin text-teal-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Chargement des offres...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {jobListings
+                    .filter(job => {
+                      if (!searchQuery) return true;
+                      const query = searchQuery.toLowerCase();
+                      return (
+                        job.title.toLowerCase().includes(query) ||
+                        job.company.name.toLowerCase().includes(query) ||
+                        job.location.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((job) => (
+                      <button
+                        key={job.id}
+                        onClick={() => handleSelectJob(job)}
+                        className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-teal-500 hover:shadow-lg transition-all text-left group"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                            {job.company.logo_url ? (
+                              <img
+                                src={job.company.logo_url}
+                                alt={job.company.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Building2 className="w-6 h-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                              {job.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 mb-2">{job.company.name}</p>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                {job.location}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                                {job.contract_type}
+                              </span>
+                              {job.salary_min && (
+                                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                                  {(job.salary_min / 1000000).toFixed(0)}-{(job.salary_max / 1000000).toFixed(0)}M GNF
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-teal-600 transition-colors" />
+                        </div>
+                      </button>
+                    ))}
+
+                  {jobListings.filter(job => {
+                    if (!searchQuery) return true;
+                    const query = searchQuery.toLowerCase();
+                    return (
+                      job.title.toLowerCase().includes(query) ||
+                      job.company.name.toLowerCase().includes(query) ||
+                      job.location.toLowerCase().includes(query)
+                    );
+                  }).length === 0 && (
+                    <div className="text-center py-12">
+                      <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucune offre ne correspond à votre recherche</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
