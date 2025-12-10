@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft, User, Edit3, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft, User, CreditCard as Edit3, Check, AlertCircle, Sparkles } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';
