@@ -674,22 +674,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           Complété à {candidateProfile?.profile_completion_percentage || 0}%
                         </p>
                       </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => setIsEditingProfile(true)}
-                          className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
-                        >
-                          <Edit className="w-5 h-5" />
-                          Modifier
-                        </button>
-                        <button
-                          onClick={() => onNavigate('premium-ai')}
-                          className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
-                        >
-                          <Sparkles className="w-5 h-5" />
-                          Améliorer avec IA
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setIsEditingProfile(true)}
+                        className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
+                      >
+                        <Edit className="w-5 h-5" />
+                        Modifier/Compléter
+                      </button>
                     </div>
 
                     {!candidateProfile ? (
@@ -699,8 +690,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         <p className="text-gray-600 mb-6">Créez votre profil pour commencer à postuler</p>
                         <button
                           onClick={() => setIsEditingProfile(true)}
-                          className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition"
+                          className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 mx-auto"
                         >
+                          <Edit className="w-5 h-5" />
                           Créer mon profil
                         </button>
                       </div>
