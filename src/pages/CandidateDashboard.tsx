@@ -145,19 +145,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     return labels[status] || status;
   };
 
-  const calculateProfileCompletion = () => {
-    let completion = 0;
-    const fields = [
-      formData.desired_position,
-      formData.education_level,
-      formData.location,
-      formData.skills.length > 0,
-      formData.experience_years > 0,
-      formData.desired_salary_min,
-    ];
-    completion = (fields.filter(Boolean).length / fields.length) * 100;
-    return Math.round(completion);
-  };
 
   const getAIScore = () => {
     return applications.length > 0
@@ -350,7 +337,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     return null;
   }
 
-  const profileCompletion = calculateProfileCompletion();
+  const profileCompletion = candidateProfile?.profile_completion_percentage || 0;
   const aiScore = getAIScore();
 
   return (

@@ -165,29 +165,30 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   }
 
   const calculateProgress = useCallback(() => {
-    const weights = {
-      identity: 15,
-      professional: 20,
-      experience: 20,
-      education: 15,
-      skills: 15,
-      location: 5,
-      salary: 5,
-      links: 5,
-    };
+    const totalFields = 20;
+    let completedFields = 0;
 
-    let score = 0;
+    // Calcul simplifié basé sur les champs principaux du formulaire
+    // Note: Le calcul final sera fait par le trigger SQL en base de données
+    if (formData.desiredPosition && formData.desiredPosition !== '') completedFields += 2; // title + desired_position
+    if (formData.professionalSummary && formData.professionalSummary !== '') completedFields++; // bio
+    if (formData.city && formData.city !== '') completedFields++; // location
+    if (formData.skills && formData.skills.length > 0) completedFields++; // skills
+    if (formData.experiences && formData.experiences.length > 0) completedFields += 2; // experience_years + work_experience
+    if (formData.formations && formData.formations.length > 0) completedFields += 2; // education + education_level
+    if (formData.cv) completedFields++; // cv_url
+    if (formData.desiredSalaryMin) completedFields++; // desired_salary_min
+    if (formData.desiredSectors && formData.desiredSectors.length > 0) completedFields++; // desired_sectors
+    if (formData.mobility && formData.mobility.length > 0) completedFields++; // mobility
+    if (formData.availability && formData.availability !== '') completedFields++; // availability
+    if (formData.languagesDetailed && formData.languagesDetailed.length > 0) completedFields++; // languages
+    if (formData.linkedinUrl && formData.linkedinUrl !== '') completedFields++; // linkedin_url
+    if (formData.portfolioUrl && formData.portfolioUrl !== '') completedFields++; // portfolio_url
+    if (formData.githubUrl && formData.githubUrl !== '') completedFields++; // github_url
+    if (formData.drivingLicense && formData.drivingLicense.length > 0) completedFields++; // driving_license
+    if (formData.nationality && formData.nationality !== '') completedFields++; // nationality
 
-    if (formData.fullName && formData.email && formData.phone) score += weights.identity;
-    if (formData.professionalSummary && formData.desiredPosition) score += weights.professional;
-    if (formData.experiences.length > 0) score += weights.experience;
-    if (formData.formations.length > 0) score += weights.education;
-    if (formData.skills.length >= 3) score += weights.skills;
-    if (formData.city) score += weights.location;
-    if (formData.desiredSalaryMin && formData.desiredSalaryMax) score += weights.salary;
-    if (formData.linkedinUrl || formData.portfolioUrl) score += weights.links;
-
-    return Math.min(100, score);
+    return Math.round((completedFields / totalFields) * 100);
   }, [formData]);
 
   useEffect(() => {
