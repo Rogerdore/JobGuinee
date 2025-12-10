@@ -70,9 +70,13 @@ export default function EnhancedAICVGenerator({ onNavigate }: EnhancedAICVGenera
         const summary = `
           ✓ Profil: ${assembled.nom || 'Non défini'}
           ✓ Titre: ${assembled.titre || 'Non défini'}
+          ${assembled.email ? `✓ Email: ${assembled.email}` : ''}
+          ${assembled.telephone ? `✓ Téléphone: ${assembled.telephone}` : ''}
+          ${assembled.lieu ? `✓ Lieu: ${assembled.lieu}` : ''}
           ✓ ${assembled.competences.length} compétences
           ✓ ${assembled.experiences.length} expériences
           ✓ ${assembled.formations.length} formations
+          ${assembled.resume ? `✓ Résumé professionnel disponible` : ''}
         `;
         setProfileSummary(summary);
 

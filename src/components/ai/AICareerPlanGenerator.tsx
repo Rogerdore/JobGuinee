@@ -74,9 +74,14 @@ export default function AICareerPlanGenerator({ onNavigate }: AICareerPlanGenera
         setProfileLoaded(true);
 
         const summary = `
+          ${input.profil_actuel.nom ? `✓ Nom: ${input.profil_actuel.nom}` : ''}
           ✓ Poste actuel: ${input.profil_actuel.poste}
-          ✓ ${input.profil_actuel.competences.length} compétences
+          ✓ ${input.profil_actuel.competences?.length || 0} compétences
           ✓ ${input.profil_actuel.experience_annees} années d'expérience
+          ✓ ${input.profil_actuel.experiences?.length || 0} expériences détaillées
+          ✓ ${input.profil_actuel.formations?.length || 0} formations
+          ${input.profil_actuel.bio ? `✓ Bio disponible` : ''}
+          ${input.aspirations ? `✓ Aspirations définies` : ''}
         `;
         setProfileSummary(summary);
       } else {

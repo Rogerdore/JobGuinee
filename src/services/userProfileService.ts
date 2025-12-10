@@ -284,7 +284,7 @@ export class UserProfileService {
   }
 
   /**
-   * Build input for Cover Letter service
+   * Build input for Cover Letter service - ENRICHED WITH CV DATA
    */
   static buildCoverLetterInputFromProfile(
     profile: CandidateProfile | null,
@@ -296,7 +296,7 @@ export class UserProfileService {
       requirements?: string[];
     }
   ): any {
-    if (!profile) {
+    if (!profile && !cv) {
       return {
         nom: '',
         poste_cible: jobData?.title || '',
@@ -304,17 +304,45 @@ export class UserProfileService {
         date: new Date().toLocaleDateString('fr-FR'),
         extrait_offre: jobData?.description || '',
         competences_candidat: [],
+        experiences_pertinentes: [],
+        formations_pertinentes: [],
         ton: 'moderne'
       };
     }
 
+    const cvData = cv?.cv_data || {};
+
+    // Merge skills from both profile and CV
+    const allSkills = this.mergeDedupSkills(profile, cvData);
+
+    // Get relevant experiences from CV or profile
+    const experiences = ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
+      .slice(0, 3)
+      .map((exp: any) => ({
+        poste: exp.position || exp.title || exp.poste || '',
+        entreprise: exp.company || exp.entreprise || '',
+        periode: exp.period || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || exp.periode || '',
+        realisations: Array.isArray(exp.missions) ? exp.missions.slice(0, 2) :
+                      Array.isArray(exp.tasks) ? exp.tasks.slice(0, 2) :
+                      (exp.description ? [exp.description] : [])
+      }));
+
+    // Get relevant education
+    const formations = this.mergeDedupEducation(profile, cvData)
+      .slice(0, 2)
+      .map((edu: any) => `${edu.degree} - ${edu.school} (${edu.graduation_year})`);
+
     return {
-      nom: profile.full_name || '',
-      poste_cible: jobData?.title || profile.title || '',
+      nom: profile?.full_name || cvData.full_name || cvData.name || '',
+      poste_actuel: profile?.title || profile?.desired_position || cvData.title || '',
+      poste_cible: jobData?.title || profile?.title || '',
       entreprise: jobData?.company || '',
       date: new Date().toLocaleDateString('fr-FR'),
       extrait_offre: jobData?.description || '',
-      competences_candidat: profile.skills || [],
+      competences_candidat: allSkills,
+      experiences_pertinentes: experiences,
+      formations_pertinentes: formations,
+      bio: profile?.bio || cvData.summary || '',
       ton: 'moderne'
     };
   }
@@ -515,18 +543,21 @@ export class UserProfileService {
   }
 
   /**
-   * Build input for Career Plan service
+   * Build input for Career Plan service - ENRICHED WITH CV DATA
    */
   static buildCareerPlanInputFromProfile(
     profile: CandidateProfile | null,
     cv: CandidateCV | null
   ): any {
-    if (!profile) {
+    if (!profile && !cv) {
       return {
         profil_actuel: {
+          nom: '',
           poste: '',
           competences: [],
-          experience_annees: 0
+          experience_annees: 0,
+          experiences: [],
+          formations: []
         },
         objectif: '',
         horizon: '3_ans',
@@ -534,18 +565,49 @@ export class UserProfileService {
       };
     }
 
-    const experienceYears = profile.experience?.length || 0;
-    const currentJob = profile.experience?.[0];
+    const cvData = cv?.cv_data || {};
+
+    // Merge all skills
+    const allSkills = this.mergeDedupSkills(profile, cvData);
+
+    // Get experiences with details
+    const experiences = ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
+      .map((exp: any) => ({
+        poste: exp.position || exp.title || exp.poste || '',
+        entreprise: exp.company || exp.entreprise || '',
+        periode: exp.period || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || exp.periode || '',
+        realisations: Array.isArray(exp.missions) ? exp.missions :
+                      Array.isArray(exp.tasks) ? exp.tasks :
+                      (exp.description ? [exp.description] : [])
+      }));
+
+    const experienceYears = profile?.experience_years || experiences.length || 0;
+    const currentJob = experiences[0];
+
+    // Get education
+    const formations = this.mergeDedupEducation(profile, cvData)
+      .map((edu: any) => ({
+        diplome: edu.degree,
+        ecole: edu.school,
+        annee: edu.graduation_year,
+        domaine: edu.field
+      }));
 
     return {
       profil_actuel: {
-        poste: currentJob?.position || currentJob?.title || profile.title || '',
-        competences: profile.skills || [],
-        experience_annees: experienceYears
+        nom: profile?.full_name || cvData.full_name || cvData.name || '',
+        poste: currentJob?.poste || profile?.title || profile?.desired_position || cvData.title || '',
+        competences: allSkills,
+        experience_annees: experienceYears,
+        experiences: experiences,
+        formations: formations,
+        bio: profile?.bio || cvData.summary || cvData.bio || '',
+        secteurs_interets: profile?.desired_sectors || []
       },
-      objectif: profile.bio || '',
+      objectif: profile?.bio || cvData.summary || '',
       horizon: '3_ans',
-      contraintes: ''
+      contraintes: '',
+      aspirations: profile?.desired_position || ''
     };
   }
 

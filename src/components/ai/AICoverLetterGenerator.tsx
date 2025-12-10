@@ -80,9 +80,13 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
 
         const summary = `
           ✓ Nom: ${input.nom}
+          ${input.poste_actuel ? `✓ Poste actuel: ${input.poste_actuel}` : ''}
           ✓ Poste ciblé: ${input.poste_cible}
           ✓ Entreprise: ${input.entreprise}
           ✓ ${input.competences_candidat?.length || 0} compétences
+          ✓ ${input.experiences_pertinentes?.length || 0} expériences chargées
+          ✓ ${input.formations_pertinentes?.length || 0} formations chargées
+          ${input.bio ? `✓ Bio disponible` : ''}
         `;
         setProfileSummary(summary);
 
