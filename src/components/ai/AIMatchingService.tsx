@@ -53,6 +53,14 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
+  // Job selection features
+  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+  const [showJobSelector, setShowJobSelector] = useState(false);
+  const [jobsLoaded, setJobsLoaded] = useState(false);
+  const [minScoreFilter, setMinScoreFilter] = useState(60);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+
   useEffect(() => {
     if (!user) return;
 
@@ -145,6 +153,38 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
     return response.json();
   };
 
+  const loadAvailableJobs = async () => {
+    try {
+      setLoading(true);
+      const { data: jobs } = await supabase
+        .from('jobs')
+        .select('id, title, location, sector, companies(name), min_experience, contract_type')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (jobs) {
+        setAvailableJobs(jobs);
+        setJobsLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+      alert('Erreur lors du chargement des offres');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleJobSelection = (jobId: string) => {
+    const newSelected = new Set(selectedJobIds);
+    if (newSelected.has(jobId)) {
+      newSelected.delete(jobId);
+    } else {
+      newSelected.add(jobId);
+    }
+    setSelectedJobIds(newSelected);
+  };
+
   const handleAnalyzeClick = () => {
     if (!user) {
       alert('Vous devez être connecté');
@@ -153,6 +193,11 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
 
     if (matchingData.competences.length === 0) {
       setValidationErrors(['Veuillez ajouter au moins une compétence']);
+      return;
+    }
+
+    if (selectedJobIds.size === 0) {
+      setValidationErrors(['Veuillez sélectionner au moins une offre']);
       return;
     }
 
@@ -168,13 +213,6 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
   const analyzeProfile = async () => {
     setAnalyzing(true);
     try {
-      const creditResult = await consumeCredits(SERVICES.AI_JOB_MATCHING);
-      if (!creditResult.success) {
-        alert(creditResult.message);
-        setAnalyzing(false);
-        return;
-      }
-
       // Load complete profile data
       const result = await UserProfileService.loadUserData(user!.id);
       if (!result.success || !result.profile) {
@@ -189,22 +227,27 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         result.cv
       );
 
-      // Fetch published jobs
-      const { data: jobs } = await supabase
-        .from('jobs')
-        .select('*, companies(name)')
-        .eq('status', 'published')
-        .limit(20);
+      // Get selected jobs (with full details)
+      const selectedJobsData = availableJobs.filter(job => selectedJobIds.has(job.id));
 
-      if (!jobs || jobs.length === 0) {
-        alert('Aucune offre d\'emploi disponible');
+      if (selectedJobsData.length === 0) {
+        alert('Aucune offre sélectionnée');
         setAnalyzing(false);
         return;
       }
 
-      // Call AI matching service for each job
+      // Calculate cost based on number of selected jobs
+      const totalCost = serviceCost * selectedJobsData.length;
+      const creditResult = await consumeCredits(SERVICES.AI_JOB_MATCHING, undefined, undefined, totalCost);
+      if (!creditResult.success) {
+        alert(creditResult.message);
+        setAnalyzing(false);
+        return;
+      }
+
+      // Call AI matching service for each selected job
       const analyzedMatches: JobMatch[] = [];
-      for (const job of jobs) {
+      for (const job of selectedJobsData) {
         try {
           const aiResult = await callAIMatchingService(job, completeProfile);
 
@@ -472,27 +515,123 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
                 />
               </div>
             )}
+
+            <div className="mb-8">
+              <button
+                onClick={loadAvailableJobs}
+                className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2 mb-4"
+              >
+                <Target className="w-5 h-5" />
+                {jobsLoaded ? `Offres chargées (${availableJobs.length})` : 'Charger les offres d\'emploi'}
+              </button>
+
+              {jobsLoaded && availableJobs.length > 0 && showJobSelector && (
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-800">
+                      Sélectionnez les offres à analyser ({selectedJobIds.size} sélectionnée(s))
+                    </h3>
+                    <button
+                      onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      {showAdvancedOptions ? 'Masquer les options' : 'Options avancées'}
+                    </button>
+                  </div>
+
+                  {showAdvancedOptions && (
+                    <div className="mb-4 p-4 bg-white rounded-lg border border-gray-300">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Score minimum: {minScoreFilter}%
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={minScoreFilter}
+                        onChange={(e) => setMinScoreFilter(parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-600 mt-2">
+                        Filtre les offres par score minimum attendu
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {availableJobs.map((job) => (
+                      <label key={job.id} className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition">
+                        <input
+                          type="checkbox"
+                          checked={selectedJobIds.has(job.id)}
+                          onChange={() => toggleJobSelection(job.id)}
+                          className="w-4 h-4 text-blue-600 rounded"
+                        />
+                        <div className="ml-4 flex-1">
+                          <p className="font-medium text-gray-900">{job.title}</p>
+                          <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                            <span>{job.companies?.name}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {job.location}
+                            </span>
+                            <span>•</span>
+                            <span>{job.min_experience}+ ans</span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                    <p className="font-medium">Coût total: {selectedJobIds.size * serviceCost} crédits ({selectedJobIds.size} × {serviceCost})</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         )}
 
-        <div className="flex justify-center">
-          <button
-            onClick={handleAnalyzeClick}
-            disabled={analyzing || validationErrors.length > 0 || loading}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {analyzing ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                Analyse en cours...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Analyser ({serviceCost} crédits)
-              </>
+        <div className="space-y-4">
+          {jobsLoaded && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-800">
+                <strong>Offres sélectionnées:</strong> {selectedJobIds.size}
+                {selectedJobIds.size > 0 && ` - Coût: ${selectedJobIds.size * serviceCost} crédits`}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-center gap-4">
+            {jobsLoaded && (
+              <button
+                onClick={() => setShowJobSelector(!showJobSelector)}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 flex items-center gap-2"
+              >
+                <Briefcase className="w-5 h-5" />
+                {showJobSelector ? 'Masquer la liste' : 'Afficher la liste'}
+              </button>
             )}
-          </button>
+
+            <button
+              onClick={handleAnalyzeClick}
+              disabled={analyzing || validationErrors.length > 0 || loading || selectedJobIds.size === 0}
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {analyzing ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin" />
+                  Analyse en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Analyser {selectedJobIds.size > 0 && `(${selectedJobIds.size * serviceCost} crédits)`}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
