@@ -83,7 +83,11 @@ const COMMON_POSITIONS = [
   'Ingénieur',
 ];
 
-export default function CandidateProfileForm() {
+interface CandidateProfileFormProps {
+  onSaveSuccess?: () => void;
+}
+
+export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfileFormProps = {}) {
   const { user, profile } = useAuth();
   const { mapToFormData } = useCVParsing();
 
@@ -325,6 +329,10 @@ export default function CandidateProfileForm() {
 
       localStorage.removeItem('candidateProfileDraft');
       alert('Profil enregistré avec succès! Votre profil est maintenant complet.');
+
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Erreur lors de l\'enregistrement du profil. Veuillez réessayer.');

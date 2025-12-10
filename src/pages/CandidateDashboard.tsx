@@ -24,6 +24,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [formations, setFormations] = useState<Formation[]>([]);
   const [isPremium, setIsPremium] = useState(false);
   const [selectedService, setSelectedService] = useState<any>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -658,7 +659,264 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
             {activeTab === 'profile' && (
               <div className="-m-6">
-                <CandidateProfileForm />
+                {isEditingProfile ? (
+                  <CandidateProfileForm onSaveSuccess={() => {
+                    setIsEditingProfile(false);
+                    loadData();
+                  }} />
+                ) : (
+                  <div className="p-6">
+                    {/* Header avec boutons d'action */}
+                    <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">Mon Profil</h2>
+                        <p className="text-gray-600 text-sm mt-1">
+                          Complété à {candidateProfile?.profile_completion_percentage || 0}%
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setIsEditingProfile(true)}
+                          className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
+                        >
+                          <Edit className="w-5 h-5" />
+                          Modifier
+                        </button>
+                        <button
+                          onClick={() => onNavigate('premium-ai')}
+                          className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          Améliorer avec IA
+                        </button>
+                      </div>
+                    </div>
+
+                    {!candidateProfile ? (
+                      <div className="text-center py-12 bg-gray-50 rounded-xl">
+                        <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun profil enregistré</h3>
+                        <p className="text-gray-600 mb-6">Créez votre profil pour commencer à postuler</p>
+                        <button
+                          onClick={() => setIsEditingProfile(true)}
+                          className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition"
+                        >
+                          Créer mon profil
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Informations personnelles */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <User className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Informations personnelles</h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Nom complet</label>
+                              <p className="text-gray-900 font-medium mt-1">{profile?.full_name || '-'}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Email</label>
+                              <p className="text-gray-900 font-medium mt-1">{user?.email || '-'}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                              <p className="text-gray-900 font-medium mt-1">{candidateProfile.phone || '-'}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Localisation</label>
+                              <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                                {candidateProfile.location || '-'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Résumé professionnel */}
+                        {candidateProfile.bio && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-purple-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Résumé professionnel</h3>
+                            </div>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{candidateProfile.bio}</p>
+                          </div>
+                        )}
+
+                        {/* Poste recherché et disponibilité */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <Target className="w-6 h-6 text-green-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Objectif professionnel</h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Poste recherché</label>
+                              <p className="text-gray-900 font-medium mt-1">{candidateProfile.desired_position || candidateProfile.title || '-'}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Disponibilité</label>
+                              <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.availability || '-'}</p>
+                            </div>
+                            {(candidateProfile.desired_salary_min || candidateProfile.desired_salary_max) && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm font-medium text-gray-500">Prétentions salariales</label>
+                                <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
+                                  <DollarSign className="w-4 h-4 text-gray-400" />
+                                  {candidateProfile.desired_salary_min && `${candidateProfile.desired_salary_min.toLocaleString()} GNF`}
+                                  {candidateProfile.desired_salary_min && candidateProfile.desired_salary_max && ' - '}
+                                  {candidateProfile.desired_salary_max && `${candidateProfile.desired_salary_max.toLocaleString()} GNF`}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Compétences */}
+                        {candidateProfile.skills && candidateProfile.skills.length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Award className="w-6 h-6 text-blue-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Compétences</h3>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {candidateProfile.skills.map((skill: string, index: number) => (
+                                <span
+                                  key={index}
+                                  className="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-200"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expérience professionnelle */}
+                        {candidateProfile.work_experience && Array.isArray(candidateProfile.work_experience) && candidateProfile.work_experience.length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <Briefcase className="w-6 h-6 text-orange-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Expérience professionnelle</h3>
+                            </div>
+                            <div className="space-y-4">
+                              {candidateProfile.work_experience.map((exp: any, index: number) => (
+                                <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                                  <h4 className="font-bold text-gray-900">{exp.title || exp.position}</h4>
+                                  <p className="text-gray-600 text-sm mt-1">{exp.company}</p>
+                                  <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {exp.start_date} - {exp.end_date || 'Présent'}
+                                  </p>
+                                  {exp.description && (
+                                    <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp.description}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Formation */}
+                        {candidateProfile.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="w-6 h-6 text-green-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Formation</h3>
+                            </div>
+                            <div className="space-y-4">
+                              {candidateProfile.education.map((edu: any, index: number) => (
+                                <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                                  <h4 className="font-bold text-gray-900">{edu.degree || edu.title}</h4>
+                                  <p className="text-gray-600 text-sm mt-1">{edu.school || edu.institution}</p>
+                                  <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {edu.start_date || edu.year} {edu.end_date && `- ${edu.end_date}`}
+                                  </p>
+                                  {edu.description && (
+                                    <p className="text-gray-700 text-sm mt-2">{edu.description}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Langues */}
+                        {candidateProfile.languages && Array.isArray(candidateProfile.languages) && candidateProfile.languages.length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                                <MessageCircle className="w-6 h-6 text-pink-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Langues</h3>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {candidateProfile.languages.map((lang: any, index: number) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                  <p className="font-medium text-gray-900">{lang.language}</p>
+                                  <p className="text-sm text-gray-600">{lang.level}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Liens */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                              <Share2 className="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Liens et réseaux</h3>
+                          </div>
+                          <div className="space-y-2">
+                            {candidateProfile.linkedin_url && (
+                              <a
+                                href={candidateProfile.linkedin_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                <Share2 className="w-4 h-4" />
+                                LinkedIn
+                              </a>
+                            )}
+                            {candidateProfile.portfolio_url && (
+                              <a
+                                href={candidateProfile.portfolio_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                <Share2 className="w-4 h-4" />
+                                Portfolio
+                              </a>
+                            )}
+                            {!candidateProfile.linkedin_url && !candidateProfile.portfolio_url && (
+                              <p className="text-gray-500 text-sm">Aucun lien ajouté</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
