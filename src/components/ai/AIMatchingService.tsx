@@ -102,15 +102,15 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         );
 
         const summary = `
-          ✓ Profil: ${completeProfile.candidate_profile.full_name || 'Non défini'}
-          ✓ Titre: ${completeProfile.candidate_profile.title || 'Non défini'}
-          ✓ ${completeProfile.candidate_profile.skills?.length || 0} compétences
-          ✓ ${completeProfile.candidate_profile.years_of_experience} années d'expérience
-          ✓ ${completeProfile.candidate_profile.work_experience?.length || 0} expériences détaillées
-          ✓ ${completeProfile.candidate_profile.education?.length || 0} formations
-          ✓ Niveau: ${completeProfile.candidate_profile.education_level}
-          ✓ Localisation: ${completeProfile.candidate_profile.location || 'Non spécifiée'}
-          ${completeProfile.candidate_profile.languages?.length ? `✓ ${completeProfile.candidate_profile.languages.length} langues` : ''}
+          ✓ Profil: ${completeProfile?.candidate_profile?.full_name || 'Non défini'}
+          ✓ Titre: ${completeProfile?.candidate_profile?.title || 'Non défini'}
+          ✓ ${completeProfile?.candidate_profile?.skills?.length || 0} compétences
+          ✓ ${completeProfile?.candidate_profile?.years_of_experience || 0} années d'expérience
+          ✓ ${completeProfile?.candidate_profile?.work_experience?.length || 0} expériences détaillées
+          ✓ ${completeProfile?.candidate_profile?.education?.length || 0} formations
+          ✓ Niveau: ${completeProfile?.candidate_profile?.education_level || 'Non spécifié'}
+          ✓ Localisation: ${completeProfile?.candidate_profile?.location || 'Non spécifiée'}
+          ${completeProfile?.candidate_profile?.languages?.length ? `✓ ${completeProfile.candidate_profile.languages.length} langues` : ''}
         `;
         setProfileSummary(summary);
 

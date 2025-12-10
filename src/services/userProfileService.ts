@@ -317,6 +317,7 @@ export class UserProfileService {
 
     // Get relevant experiences from CV or profile
     const experiences = ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
+      .filter((exp: any) => exp && (exp.position || exp.title || exp.poste))
       .slice(0, 3)
       .map((exp: any) => ({
         poste: exp.position || exp.title || exp.poste || '',
@@ -330,7 +331,8 @@ export class UserProfileService {
     // Get relevant education
     const formations = this.mergeDedupEducation(profile, cvData)
       .slice(0, 2)
-      .map((edu: any) => `${edu.degree} - ${edu.school} (${edu.graduation_year})`);
+      .map((edu: any) => `${edu.degree || ''} - ${edu.school || ''} ${edu.graduation_year ? `(${edu.graduation_year})` : ''}`.trim())
+      .filter(f => f.length > 3);
 
     return {
       nom: profile?.full_name || cvData.full_name || cvData.name || '',
@@ -572,6 +574,7 @@ export class UserProfileService {
 
     // Get experiences with details
     const experiences = ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
+      .filter((exp: any) => exp && (exp.position || exp.title || exp.poste))
       .map((exp: any) => ({
         poste: exp.position || exp.title || exp.poste || '',
         entreprise: exp.company || exp.entreprise || '',
@@ -582,15 +585,16 @@ export class UserProfileService {
       }));
 
     const experienceYears = profile?.experience_years || experiences.length || 0;
-    const currentJob = experiences[0];
+    const currentJob = experiences.length > 0 ? experiences[0] : null;
 
     // Get education
     const formations = this.mergeDedupEducation(profile, cvData)
+      .filter((edu: any) => edu && (edu.degree || edu.school))
       .map((edu: any) => ({
-        diplome: edu.degree,
-        ecole: edu.school,
-        annee: edu.graduation_year,
-        domaine: edu.field
+        diplome: edu.degree || '',
+        ecole: edu.school || '',
+        annee: edu.graduation_year || '',
+        domaine: edu.field || ''
       }));
 
     return {
