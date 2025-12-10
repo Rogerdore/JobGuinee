@@ -69,11 +69,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) throw error;
+
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        throw new Error('Email ou mot de passe incorrect');
+      }
+      throw error;
+    }
+
+    if (!data.user) {
+      throw new Error('Connexion échouée');
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
@@ -89,16 +99,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) throw error;
-    if (!data.user) throw new Error('No user returned');
+    if (!data.user) throw new Error('Inscription échouée. Veuillez réessayer.');
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const { error: updateError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .update({ full_name: fullName })
-      .eq('id', data.user.id);
+      .select('*')
+      .eq('id', data.user.id)
+      .maybeSingle();
 
-    if (updateError) console.error('Error updating profile:', updateError);
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      throw new Error('Erreur lors de la création du profil');
+    }
+
+    if (!profileData) {
+      throw new Error('Le profil n\'a pas été créé. Veuillez contacter le support.');
+    }
 
     if (role === 'trainer') {
       const { error: trainerError } = await supabase
