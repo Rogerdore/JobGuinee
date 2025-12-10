@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Upload as UploadIcon, AlertCircle, HelpCircle } from 'lucide-react';
 
 interface InputProps {
@@ -91,6 +91,20 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({ label, options, value = [], onChange }: MultiSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const toggleOption = (option: string) => {
     const newValue = value.includes(option)
       ? value.filter((v) => v !== option)
@@ -99,24 +113,69 @@ export function MultiSelect({ label, options, value = [], onChange }: MultiSelec
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={dropdownRef}>
       <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => toggleOption(option)}
-            className={`px-4 py-2 rounded-lg border-2 transition ${
-              value.includes(option)
-                ? 'bg-[#0E2F56] text-white border-[#0E2F56]'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-            }`}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent outline-none transition bg-white text-left flex items-center justify-between"
+        >
+          <span className="text-gray-700">
+            {value.length === 0
+              ? 'Sélectionner...'
+              : `${value.length} sélectionné${value.length > 1 ? 's' : ''}`
+            }
+          </span>
+          <svg
+            className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            {option}
-          </button>
-        ))}
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {options.map((option) => (
+              <label
+                key={option}
+                className="flex items-center px-4 py-2.5 hover:bg-gray-50 cursor-pointer transition"
+              >
+                <input
+                  type="checkbox"
+                  checked={value.includes(option)}
+                  onChange={() => toggleOption(option)}
+                  className="w-4 h-4 text-[#0E2F56] border-gray-300 rounded focus:ring-[#0E2F56] cursor-pointer"
+                />
+                <span className="ml-3 text-gray-700">{option}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
+
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {value.map((item) => (
+            <span
+              key={item}
+              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#0E2F56] text-white"
+            >
+              {item}
+              <button
+                type="button"
+                onClick={() => toggleOption(item)}
+                className="ml-2 hover:text-gray-300 transition"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
