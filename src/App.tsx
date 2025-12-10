@@ -29,8 +29,9 @@ import CreditStore from './pages/CreditStore';
 import AdminIAConfig from './pages/AdminIAConfig';
 import AdminIATemplates from './pages/AdminIATemplates';
 import AdminChatbot from './pages/AdminChatbot';
+import AdminIACenter from './pages/AdminIACenter';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -82,6 +83,7 @@ function AppContent() {
       {currentPage === 'admin-ia-config' && <AdminIAConfig />}
       {currentPage === 'admin-ia-templates' && <AdminIATemplates />}
       {currentPage === 'admin-chatbot' && <AdminChatbot />}
+      {currentPage === 'admin-ia-center' && <AdminIACenter />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
