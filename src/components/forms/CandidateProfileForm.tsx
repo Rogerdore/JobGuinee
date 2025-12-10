@@ -147,6 +147,7 @@ export default function CandidateProfileForm() {
 
       drivingLicense: [] as string[],
       cv: null as File | null,
+      coverLetter: null as File | null,
       certificates: null as File | null,
 
       visibleInCVTheque: false,
@@ -207,6 +208,30 @@ export default function CandidateProfileForm() {
     setFormData((prev: any) => ({ ...prev, [fieldName]: value }));
   }, []);
 
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    if (!file || !user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(folder)
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from(folder)
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error(`Error uploading file to ${folder}:`, error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -233,6 +258,10 @@ export default function CandidateProfileForm() {
     }
 
     try {
+      // Upload files if provided
+      const cvUrl = formData.cv ? await uploadFile(formData.cv, 'candidate-cvs') : null;
+      const coverLetterUrl = formData.coverLetter ? await uploadFile(formData.coverLetter, 'candidate-cover-letters') : null;
+      const certificatesUrl = formData.certificates ? await uploadFile(formData.certificates, 'candidate-certificates') : null;
       const candidateData = {
         profile_id: profile.id,
         user_id: user?.id,
@@ -260,6 +289,9 @@ export default function CandidateProfileForm() {
         portfolio_url: formData.portfolioUrl,
         github_url: formData.githubUrl,
         other_urls: formData.otherUrls,
+        cv_url: cvUrl,
+        cover_letter_url: coverLetterUrl,
+        certificates_url: certificatesUrl,
         cv_parsed_data: formData.cvParsedData,
         cv_parsed_at: formData.cvParsedAt,
         profile_completion_percentage: calculateProgress(),
@@ -689,6 +721,11 @@ export default function CandidateProfileForm() {
               label="CV principal (PDF ou Word)"
               onChange={(file) => updateField('cv', file)}
               helpText="Téléchargez votre CV le plus récent (max 5 Mo)"
+            />
+            <Upload
+              label="Lettre de motivation (optionnel)"
+              onChange={(file) => updateField('coverLetter', file)}
+              helpText="Formats acceptés: PDF, Word, JPG, PNG"
             />
             <Upload
               label="Certificats / Attestations (optionnel)"
