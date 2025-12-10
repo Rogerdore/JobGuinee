@@ -128,10 +128,18 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       return;
     }
 
-    if (service.type === 'free' || hasAccess(service.id)) {
+    if (service.category === 'chatbot') {
+      alert('Le chatbot est déjà disponible en bas à droite de votre écran !');
+      return;
+    }
+
+    if (service.category === 'alerts') {
+      alert('Les alertes IA sont automatiquement activées pour tous les utilisateurs. Vous recevrez des notifications quand de nouvelles offres correspondent à votre profil.');
+      return;
+    }
+
+    if (service.type === 'free' || hasEnoughCredits(service.credits_cost)) {
       navigateToService(service.category);
-    } else {
-      setSelectedService(service.id);
     }
   };
 
@@ -142,13 +150,14 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       cover_letter: 'ai-cover-letter',
       coaching: 'ai-coach',
       career_plan: 'ai-career-plan',
-      interview: 'ai-interview-simulator',
       gold_profile: 'gold-profile',
     };
 
     const page = routes[category];
     if (page && onNavigate) {
       onNavigate(page);
+    } else {
+      alert('Ce service sera bientôt disponible !');
     }
   };
 

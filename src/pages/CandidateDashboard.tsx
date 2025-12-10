@@ -55,7 +55,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .from('applications')
           .select('*, jobs(*, companies(*))')
           .eq('candidate_id', profile.id)
-          .order('created_at', { ascending: false }),
+          .order('applied_at', { ascending: false }),
         supabase
           .from('candidate_profiles')
           .select('*')
