@@ -191,6 +191,84 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   }, [formData]);
 
   useEffect(() => {
+    const loadExistingProfile = async () => {
+      if (!profile?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('candidate_profiles')
+          .select('*')
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading candidate profile:', error);
+          return;
+        }
+
+        if (data) {
+          setFormData({
+            fullName: profile?.full_name || '',
+            email: user?.email || '',
+            phone: data.phone || profile?.phone || '',
+            birthDate: data.birth_date || '',
+            gender: data.gender || '',
+            nationality: data.nationality || '',
+            address: data.address || '',
+            city: data.city || data.location || '',
+            region: data.region || '',
+            profilePhoto: null,
+
+            desiredPosition: data.desired_position || data.title || '',
+            desiredSectors: data.desired_sectors || [],
+            desiredContractTypes: data.desired_contract_types || [],
+            availability: data.availability || '',
+
+            professionalStatus: data.professional_status || '',
+            currentPosition: data.current_position || '',
+            currentCompany: data.current_company || '',
+            professionalSummary: data.bio || data.professional_summary || '',
+
+            experiences: data.work_experience || [],
+            formations: data.education || [],
+
+            skills: data.skills || [],
+            languagesDetailed: data.languages || [],
+
+            mobility: data.mobility || [],
+            willingToRelocate: data.willing_to_relocate || false,
+
+            desiredSalaryMin: data.desired_salary_min?.toString() || '',
+            desiredSalaryMax: data.desired_salary_max?.toString() || '',
+
+            linkedinUrl: data.linkedin_url || '',
+            portfolioUrl: data.portfolio_url || '',
+            githubUrl: data.github_url || '',
+            otherUrls: data.other_urls || [],
+
+            drivingLicense: data.driving_license || [],
+            cv: null,
+            coverLetter: null,
+            certificates: null,
+
+            visibleInCVTheque: data.visible_in_cvtheque || false,
+            receiveAlerts: data.receive_alerts || false,
+            acceptTerms: true,
+            certifyAccuracy: true,
+
+            cvParsedData: data.cv_parsed_data || null,
+            cvParsedAt: data.cv_parsed_at || null,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+
+    loadExistingProfile();
+  }, [profile?.id, user?.email]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setAutoSaving(true);
       localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
