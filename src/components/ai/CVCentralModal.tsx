@@ -94,6 +94,12 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
     }
   }, [currentStep, inputSource]);
 
+  useEffect(() => {
+    if (currentStep === 2 && selectedMode === 'target' && jobListings.length === 0 && !loadingJobs) {
+      loadJobListings();
+    }
+  }, [currentStep, selectedMode]);
+
   const loadProfileData = async () => {
     if (!user) return;
 
@@ -699,29 +705,75 @@ ${job.responsibilities}
 
               {!loading && (
                 <>
-                  <div className="mb-8">
-                    <button
-                      onClick={loadJobListings}
-                      className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2 mb-4"
-                    >
-                      <Target className="w-5 h-5" />
-                      Charger les offres d'emploi
-                    </button>
-                    <p className="text-sm text-gray-600 text-center">
-                      Sélectionnez une offre depuis notre base de données pour remplir automatiquement
-                    </p>
+                  <div className="mb-8 bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <Briefcase className="w-5 h-5" />
+                      Offres d'emploi disponibles
+                    </h4>
+
+                    {loadingJobs ? (
+                      <div className="text-center py-8">
+                        <Loader className="w-8 h-8 animate-spin text-teal-600 mx-auto mb-3" />
+                        <p className="text-sm text-gray-600">Chargement des offres...</p>
+                      </div>
+                    ) : jobListings.length > 0 ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <Check className="w-5 h-5 text-green-600 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="font-medium text-green-800 mb-2">
+                              {jobListings.length} offres chargées avec succès
+                            </p>
+                            <button
+                              onClick={() => setShowJobSelector(true)}
+                              className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm"
+                            >
+                              <Search className="w-4 h-4" />
+                              Parcourir les offres
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={loadJobListings}
+                        className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2"
+                      >
+                        <Target className="w-5 h-5" />
+                        Charger les offres d'emploi
+                      </button>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description de l'offre d'emploi *
+                      Description de l'offre d'emploi {jobOffer ? '' : '*'}
                     </label>
+                    {jobOffer && (
+                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold text-blue-900">{jobOffer.title}</p>
+                            <p className="text-sm text-blue-700">{jobOffer.company}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setJobOffer(null);
+                              setJobDescription('');
+                            }}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <textarea
                       value={jobDescription}
                       onChange={(e) => setJobDescription(e.target.value)}
                       rows={8}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      placeholder="Collez la description complète de l'offre d'emploi ici..."
+                      placeholder="Collez la description complète de l'offre d'emploi ici ou sélectionnez une offre ci-dessus..."
                     />
                   </div>
 
