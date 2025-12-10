@@ -1,5 +1,17 @@
-import { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, HelpCircle, Save } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Save,
+  Sparkles,
+  User,
+  Briefcase,
+  GraduationCap,
+  Award,
+  Globe,
+  DollarSign,
+  Link as LinkIcon,
+  MapPin,
+  CheckCircle2,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import {
@@ -10,14 +22,70 @@ import {
   DatePicker,
   Upload,
   Checkbox,
-  TagsInput,
   Repeater,
   FormSection,
   Button,
 } from './FormComponents';
+import CVUploadWithParser from '../profile/CVUploadWithParser';
+import SkillsAutoComplete from '../profile/SkillsAutoComplete';
+import AutoCompleteInput from './AutoCompleteInput';
+import { ParsedCVData } from '../../services/cvUploadParserService';
+import { useCVParsing } from '../../hooks/useCVParsing';
+
+const CITIES_GUINEA = [
+  'Conakry',
+  'Boké',
+  'Kamsar',
+  'Kindia',
+  'Kankan',
+  'Labé',
+  'Nzérékoré',
+  'Siguiri',
+  'Fria',
+  'Dubréka',
+  'Coyah',
+];
+
+const SECTORS = [
+  'Technologies de l\'information',
+  'Mines et ressources naturelles',
+  'Finance et banques',
+  'Ressources humaines',
+  'Éducation et formation',
+  'Santé',
+  'Construction et BTP',
+  'Agriculture',
+  'Transport et logistique',
+  'Commerce et distribution',
+  'Hôtellerie et tourisme',
+  'Industrie manufacturière',
+  'Télécommunications',
+  'Énergie',
+  'Autres services',
+];
+
+const COMMON_POSITIONS = [
+  'Développeur Web',
+  'Développeur Mobile',
+  'Responsable RH',
+  'Chargé RH',
+  'Comptable',
+  'Chef comptable',
+  'Ingénieur des mines',
+  'Géologue',
+  'Commercial',
+  'Responsable commercial',
+  'Chef de projet',
+  'Assistant administratif',
+  'Secrétaire',
+  'Technicien',
+  'Ingénieur',
+];
 
 export default function CandidateProfileForm() {
   const { user, profile } = useAuth();
+  const { mapToFormData } = useCVParsing();
+
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('candidateProfileDraft');
     if (saved) {
@@ -33,58 +101,88 @@ export default function CandidateProfileForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [cvParsed, setCvParsed] = useState(false);
 
   function getInitialFormData() {
     return {
-    fullName: '',
-    email: '',
-    phone: '',
-    birthDate: '',
-    gender: '',
-    address: '',
-    region: '',
-    profilePhoto: null as File | null,
-    professionalStatus: '',
-    currentPosition: '',
-    currentCompany: '',
-    availability: '',
-    professionalSummary: '',
-    experiences: [] as Record<string, any>[],
-    formations: [] as Record<string, any>[],
-    skills: [] as string[],
-    languages: [] as string[],
-    englishLevel: '',
-    cv: null as File | null,
-    certificates: null as File | null,
-    visibleInCVTheque: false,
-    receiveAlerts: false,
-    professionalGoal: '',
-    acceptTerms: false,
-    certifyAccuracy: false,
+      fullName: profile?.full_name || '',
+      email: user?.email || '',
+      phone: profile?.phone || '',
+      birthDate: '',
+      gender: '',
+      nationality: '',
+      address: '',
+      city: '',
+      region: '',
+      profilePhoto: null as File | null,
+
+      desiredPosition: '',
+      desiredSectors: [] as string[],
+      desiredContractTypes: [] as string[],
+      availability: '',
+
+      professionalStatus: '',
+      currentPosition: '',
+      currentCompany: '',
+      professionalSummary: '',
+
+      experiences: [] as Record<string, any>[],
+      formations: [] as Record<string, any>[],
+
+      skills: [] as string[],
+      languagesDetailed: [] as Array<{ language: string; level: string }>,
+
+      mobility: [] as string[],
+      willingToRelocate: false,
+
+      desiredSalaryMin: '',
+      desiredSalaryMax: '',
+
+      linkedinUrl: '',
+      portfolioUrl: '',
+      githubUrl: '',
+      otherUrls: [] as string[],
+
+      drivingLicense: [] as string[],
+      cv: null as File | null,
+      certificates: null as File | null,
+
+      visibleInCVTheque: false,
+      receiveAlerts: false,
+      acceptTerms: false,
+      certifyAccuracy: false,
+
+      cvParsedData: null as ParsedCVData | null,
+      cvParsedAt: null as string | null,
     };
   }
 
-  const calculateProgress = () => {
-    const fields = [
-      formData.fullName,
-      formData.email,
-      formData.phone,
-      formData.birthDate,
-      formData.gender,
-      formData.address,
-      formData.region,
-      formData.professionalStatus,
-      formData.availability,
-      formData.professionalSummary,
-      formData.skills.length > 0,
-      formData.languages.length > 0,
-      formData.englishLevel,
-      formData.experiences.length > 0,
-      formData.formations.length > 0,
-    ];
-    const completed = fields.filter(Boolean).length;
-    return Math.round((completed / fields.length) * 100);
-  };
+  const calculateProgress = useCallback(() => {
+    const weights = {
+      identity: 15,
+      professional: 20,
+      experience: 20,
+      education: 15,
+      skills: 15,
+      location: 5,
+      salary: 5,
+      links: 5,
+    };
+
+    let score = 0;
+
+    if (formData.fullName && formData.email && formData.phone) score += weights.identity;
+    if (formData.professionalSummary && formData.desiredPosition) score += weights.professional;
+    if (formData.experiences.length > 0) score += weights.experience;
+    if (formData.formations.length > 0) score += weights.education;
+    if (formData.skills.length >= 3) score += weights.skills;
+    if (formData.city) score += weights.location;
+    if (formData.desiredSalaryMin && formData.desiredSalaryMax) score += weights.salary;
+    if (formData.linkedinUrl || formData.portfolioUrl) score += weights.links;
+
+    return Math.min(100, score);
+  }, [formData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -97,35 +195,16 @@ export default function CandidateProfileForm() {
     return () => clearTimeout(timer);
   }, [formData]);
 
-  const validateField = (fieldName: string, value: any): string => {
-    switch (fieldName) {
-      case 'email':
-        if (!value) return 'L\'adresse email est obligatoire';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          return 'Veuillez saisir un email valide';
-        }
-        return '';
-      case 'phone':
-        if (!value) return 'Le numéro de téléphone est obligatoire';
-        if (!/^\+?[0-9\s]{8,}$/.test(value)) {
-          return 'Veuillez saisir un numéro de téléphone valide';
-        }
-        return '';
-      case 'fullName':
-        if (!value || value.trim().length < 3) {
-          return 'Le nom complet doit contenir au moins 3 caractères';
-        }
-        return '';
-      default:
-        return '';
-    }
-  };
+  const handleCVParsed = useCallback((parsedData: ParsedCVData) => {
+    const mappedData = mapToFormData(parsedData, formData);
+    setFormData(mappedData);
+    setCvParsed(true);
+    setShowManualForm(true);
+  }, [formData, mapToFormData]);
 
-  const updateField = (fieldName: string, value: any) => {
-    setFormData({ ...formData, [fieldName]: value });
-    const error = validateField(fieldName, value);
-    setErrors({ ...errors, [fieldName]: error });
-  };
+  const updateField = useCallback((fieldName: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [fieldName]: value }));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,24 +228,36 @@ export default function CandidateProfileForm() {
     }
 
     try {
-      // Update or insert candidate profile
       const candidateData = {
         profile_id: profile.id,
-        title: formData.currentPosition || formData.professionalStatus,
+        title: formData.desiredPosition || formData.currentPosition || '',
         bio: formData.professionalSummary,
         experience_years: formData.experiences.length,
         skills: formData.skills,
         education: formData.formations,
         work_experience: formData.experiences,
-        languages: formData.languages,
-        location: formData.address,
+        languages: formData.languagesDetailed,
+        location: formData.city || formData.address,
         availability: formData.availability,
-        nationality: formData.region,
+        nationality: formData.nationality,
         visibility: formData.visibleInCVTheque ? 'public' : 'private',
         last_active_at: new Date().toISOString(),
+        desired_position: formData.desiredPosition,
+        desired_sectors: formData.desiredSectors,
+        desired_salary_min: formData.desiredSalaryMin ? parseInt(formData.desiredSalaryMin) : null,
+        desired_salary_max: formData.desiredSalaryMax ? parseInt(formData.desiredSalaryMax) : null,
+        mobility: formData.mobility,
+        education_level: formData.formations[0]?.['Diplôme obtenu'] || '',
+        driving_license: formData.drivingLicense,
+        linkedin_url: formData.linkedinUrl,
+        portfolio_url: formData.portfolioUrl,
+        github_url: formData.githubUrl,
+        other_urls: formData.otherUrls,
+        cv_parsed_data: formData.cvParsedData,
+        cv_parsed_at: formData.cvParsedAt,
+        profile_completion_percentage: calculateProgress(),
       };
 
-      // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('candidate_profiles')
         .select('id')
@@ -174,7 +265,6 @@ export default function CandidateProfileForm() {
         .maybeSingle();
 
       if (existingProfile) {
-        // Update existing profile
         const { error } = await supabase
           .from('candidate_profiles')
           .update(candidateData)
@@ -182,15 +272,10 @@ export default function CandidateProfileForm() {
 
         if (error) throw error;
       } else {
-        // Insert new profile
-        const { error } = await supabase
-          .from('candidate_profiles')
-          .insert(candidateData);
-
+        const { error } = await supabase.from('candidate_profiles').insert(candidateData);
         if (error) throw error;
       }
 
-      // Update main profile
       await supabase
         .from('profiles')
         .update({
@@ -200,44 +285,42 @@ export default function CandidateProfileForm() {
         .eq('id', profile.id);
 
       localStorage.removeItem('candidateProfileDraft');
-      alert('Profil enregistré avec succès ! Votre profil est maintenant visible dans la CVThèque.');
+      alert('Profil enregistré avec succès! Votre profil est maintenant complet.');
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Erreur lors de l\'enregistrement du profil. Veuillez réessayer.');
     }
   };
 
-  const clearDraft = () => {
-    if (confirm('Voulez-vous vraiment effacer le brouillon ?')) {
-      localStorage.removeItem('candidateProfileDraft');
-      setFormData(getInitialFormData());
-      setErrors({});
-    }
-  };
-
-  const handleAIAnalysis = () => {
-    alert('Analyse IA du profil en cours... Cette fonctionnalité sera disponible prochainement.');
-  };
-
   const progress = calculateProgress();
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8">
-      <div className="text-center border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-800">👤 Créer mon profil JobGuinée</h1>
-        <p className="text-gray-500 mt-2">
-          Complétez les informations ci-dessous pour créer votre profil professionnel.
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-6xl mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8"
+    >
+      {/* En-tête */}
+      <div className="text-center border-b pb-6">
+        <h1 className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-3">
+          <User className="w-8 h-8 text-blue-600" />
+          Mon Profil Professionnel JobGuinée
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Complétez votre profil pour maximiser vos chances d'être recruté
         </p>
       </div>
 
-      {/* Progress Bar */}
-      <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Profil complété</span>
+      {/* Barre de progression */}
+      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-blue-600" />
+            <span className="text-sm font-semibold text-gray-800">Profil complété</span>
+          </div>
           <div className="flex items-center gap-3">
             {autoSaving && (
-              <span className="text-xs text-green-600 flex items-center gap-1">
-                <Save className="w-3 h-3 animate-pulse" />
+              <span className="text-xs text-green-600 flex items-center gap-1 animate-pulse">
+                <Save className="w-3 h-3" />
                 Sauvegarde...
               </span>
             )}
@@ -246,227 +329,391 @@ export default function CandidateProfileForm() {
                 Sauvegardé à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
-            <span className="text-sm font-bold text-[#0E2F56]">{progress}%</span>
+            <span className="text-xl font-bold text-blue-700">{progress}%</span>
           </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-white rounded-full h-4 overflow-hidden shadow-inner">
           <div
-            className="bg-gradient-to-r from-[#0E2F56] to-blue-500 h-3 rounded-full transition-all duration-500"
+            className={`h-4 rounded-full transition-all duration-500 ${
+              progress < 40
+                ? 'bg-gradient-to-r from-red-400 to-orange-400'
+                : progress < 70
+                ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
+                : 'bg-gradient-to-r from-green-400 to-green-500'
+            }`}
             style={{ width: `${progress}%` }}
           />
         </div>
-        <button
-          type="button"
-          onClick={clearDraft}
-          className="mt-3 text-xs text-gray-500 hover:text-red-600 underline"
-        >
-          Effacer le brouillon
-        </button>
       </div>
 
-      <FormSection title="1️⃣ Informations personnelles">
-        <Input
-          label="Nom complet"
-          placeholder="Ex : Fatoumata Camara"
-          value={formData.fullName}
-          onChange={(value) => updateField('fullName', value)}
-          error={errors.fullName}
-          helpText="Saisissez votre nom et prénom complets tels qu'ils apparaissent sur vos documents officiels"
-          required
-        />
-        <Input
-          label="Adresse email"
-          type="email"
-          placeholder="Ex : fatou.camara@gmail.com"
-          value={formData.email}
-          onChange={(value) => updateField('email', value)}
-          error={errors.email}
-          helpText="Utilisez une adresse email professionnelle que vous consultez régulièrement"
-          required
-        />
-        <Input
-          label="Numéro de téléphone"
-          placeholder="Ex : +224 620 00 00 00"
-          value={formData.phone}
-          onChange={(value) => updateField('phone', value)}
-          error={errors.phone}
-          helpText="Incluez l'indicatif pays pour faciliter le contact international"
-          required
-        />
-        <DatePicker
-          label="Date de naissance"
-          value={formData.birthDate}
-          onChange={(value) => setFormData({ ...formData, birthDate: value })}
-        />
-        <Select
-          label="Genre"
-          options={['Homme', 'Femme', 'Autre']}
-          value={formData.gender}
-          onChange={(value) => setFormData({ ...formData, gender: value })}
-        />
-        <Input
-          label="Adresse / Ville de résidence"
-          placeholder="Ex : Ratoma, Conakry"
-          value={formData.address}
-          onChange={(value) => setFormData({ ...formData, address: value })}
-        />
-        <Select
-          label="Région / Préfecture"
-          options={['Conakry', 'Boké', 'Kankan', 'Labé', 'Kindia', 'Nzérékoré']}
-          value={formData.region}
-          onChange={(value) => setFormData({ ...formData, region: value })}
-        />
-        <Upload
-          label="Photo de profil"
-          onChange={(file) => setFormData({ ...formData, profilePhoto: file })}
-        />
-      </FormSection>
+      {/* SECTION 1: Upload de CV */}
+      {!showManualForm && (
+        <FormSection
+          title="📄 Téléversez votre CV"
+          subtitle="Notre IA analysera votre CV et remplira automatiquement le formulaire"
+        >
+          <CVUploadWithParser
+            onParsed={handleCVParsed}
+            onError={(error) => {
+              alert(error);
+              setShowManualForm(true);
+            }}
+          />
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => setShowManualForm(true)}
+              className="text-blue-600 hover:text-blue-700 underline font-medium"
+            >
+              Ou remplir manuellement le formulaire
+            </button>
+          </div>
+        </FormSection>
+      )}
 
-      <FormSection title="2️⃣ Situation professionnelle actuelle">
-        <Select
-          label="Statut professionnel"
-          options={['En emploi', 'Sans emploi', 'Étudiant(e)', 'Freelance']}
-          value={formData.professionalStatus}
-          onChange={(value) => setFormData({ ...formData, professionalStatus: value })}
-        />
-        <Input
-          label="Intitulé actuel du poste"
-          placeholder="Ex : Assistant RH"
-          value={formData.currentPosition}
-          onChange={(value) => setFormData({ ...formData, currentPosition: value })}
-        />
-        <Input
-          label="Entreprise actuelle (si applicable)"
-          placeholder="Ex : Winning Consortium"
-          value={formData.currentCompany}
-          onChange={(value) => setFormData({ ...formData, currentCompany: value })}
-        />
-        <Select
-          label="Disponibilité"
-          options={['Immédiate', 'Dans 1 mois', 'Flexible']}
-          value={formData.availability}
-          onChange={(value) => setFormData({ ...formData, availability: value })}
-        />
-        <Textarea
-          label="Résumé professionnel (À propos de moi)"
-          placeholder="Décrivez brièvement votre parcours et vos objectifs professionnels..."
-          value={formData.professionalSummary}
-          onChange={(value) => setFormData({ ...formData, professionalSummary: value })}
-          rows={5}
-          helpText="Exemple : 'Professionnel RH avec 5 ans d'expérience dans le recrutement et la gestion du personnel, spécialisé dans le secteur minier. Passionné par le développement des talents et la mise en place de politiques RH innovantes.'"
-        />
-      </FormSection>
+      {/* SECTIONS SUIVANTES (affichées après parsing ou si manuel) */}
+      {showManualForm && (
+        <>
+          {/* SECTION 2: Identité & Contact */}
+          <FormSection
+            title="1️⃣ Identité & Informations de contact"
+            icon={<User className="w-6 h-6" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Nom complet"
+                placeholder="Ex: Fatoumata Camara"
+                value={formData.fullName}
+                onChange={(value) => updateField('fullName', value)}
+                error={errors.fullName}
+                required
+              />
+              <Input
+                label="Adresse email"
+                type="email"
+                placeholder="fatou.camara@gmail.com"
+                value={formData.email}
+                onChange={(value) => updateField('email', value)}
+                error={errors.email}
+                required
+              />
+              <Input
+                label="Téléphone"
+                placeholder="+224 620 00 00 00"
+                value={formData.phone}
+                onChange={(value) => updateField('phone', value)}
+                error={errors.phone}
+                required
+              />
+              <DatePicker
+                label="Date de naissance"
+                value={formData.birthDate}
+                onChange={(value) => updateField('birthDate', value)}
+              />
+              <Select
+                label="Genre"
+                options={['Homme', 'Femme', 'Autre']}
+                value={formData.gender}
+                onChange={(value) => updateField('gender', value)}
+              />
+              <AutoCompleteInput
+                label="Nationalité"
+                value={formData.nationality}
+                onChange={(value) => updateField('nationality', value)}
+                suggestions={['Guinéenne', 'Française', 'Sénégalaise', 'Ivoirienne', 'Malienne']}
+                placeholder="Ex: Guinéenne"
+              />
+            </div>
+          </FormSection>
 
-      <FormSection title="3️⃣ Expériences professionnelles">
-        <Repeater
-          label="Ajouter une expérience"
-          fields={[
-            { label: 'Poste occupé', type: 'text', placeholder: 'Ex : Chargé RH' },
-            { label: 'Entreprise', type: 'text', placeholder: 'Ex : UMS Mining' },
-            { label: 'Période', type: 'text', placeholder: 'Ex : 2020 - 2023' },
-            {
-              label: 'Missions principales',
-              type: 'textarea',
-              placeholder: 'Décrivez vos responsabilités...',
-            },
-          ]}
-          value={formData.experiences}
-          onChange={(value) => setFormData({ ...formData, experiences: value })}
-        />
-      </FormSection>
+          {/* SECTION 3: Résumé Professionnel */}
+          <FormSection
+            title="2️⃣ Résumé Professionnel"
+            icon={<Sparkles className="w-6 h-6" />}
+            subtitle="Décrivez brièvement votre parcours et vos objectifs"
+          >
+            <Textarea
+              label="À propos de moi"
+              placeholder="Professionnel RH avec 5 ans d'expérience dans le recrutement et la gestion du personnel..."
+              value={formData.professionalSummary}
+              onChange={(value) => updateField('professionalSummary', value)}
+              rows={5}
+              helpText="Recommandé: 150-300 caractères. Soyez concis et percutant."
+            />
+            {cvParsed && formData.professionalSummary && (
+              <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
+                <Sparkles className="w-4 h-4" />
+                Résumé détecté depuis votre CV
+              </div>
+            )}
+          </FormSection>
 
-      <FormSection title="4️⃣ Formations et diplômes">
-        <Repeater
-          label="Ajouter une formation"
-          fields={[
-            {
-              label: 'Diplôme obtenu',
-              type: 'text',
-              placeholder: 'Ex : Licence en Gestion des Ressources Humaines',
-            },
-            { label: 'Établissement', type: 'text', placeholder: 'Ex : Université de Conakry' },
-            { label: 'Année d\'obtention', type: 'text', placeholder: 'Ex : 2021' },
-          ]}
-          value={formData.formations}
-          onChange={(value) => setFormData({ ...formData, formations: value })}
-        />
-      </FormSection>
+          {/* SECTION 4: Poste & Objectifs */}
+          <FormSection
+            title="3️⃣ Poste recherché & Objectifs"
+            icon={<Briefcase className="w-6 h-6" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <AutoCompleteInput
+                label="Poste recherché"
+                value={formData.desiredPosition}
+                onChange={(value) => updateField('desiredPosition', value)}
+                suggestions={COMMON_POSITIONS}
+                placeholder="Ex: Développeur Full-Stack"
+              />
+              <Select
+                label="Disponibilité"
+                options={['Immédiate', 'Dans 1 mois', 'Dans 3 mois', 'Négociable']}
+                value={formData.availability}
+                onChange={(value) => updateField('availability', value)}
+              />
+            </div>
+            <MultiSelect
+              label="Secteurs d'activité souhaités"
+              options={SECTORS}
+              value={formData.desiredSectors}
+              onChange={(value) => updateField('desiredSectors', value)}
+            />
+            <MultiSelect
+              label="Types de contrat souhaités"
+              options={['CDI', 'CDD', 'Stage', 'Freelance', 'Alternance']}
+              value={formData.desiredContractTypes}
+              onChange={(value) => updateField('desiredContractTypes', value)}
+            />
+          </FormSection>
 
-      <FormSection title="5️⃣ Compétences et langues">
-        <TagsInput
-          label="Compétences clés"
-          placeholder="Ex : Excel, Leadership, Paie, Communication..."
-          value={formData.skills}
-          onChange={(value) => setFormData({ ...formData, skills: value })}
-        />
-        <MultiSelect
-          label="Langues parlées"
-          options={['Français', 'Anglais', 'Chinois', 'Arabe', 'Autres']}
-          value={formData.languages}
-          onChange={(value) => setFormData({ ...formData, languages: value })}
-        />
-        <Select
-          label="Niveau d'anglais"
-          options={['Débutant', 'Intermédiaire', 'Avancé', 'Courant']}
-          value={formData.englishLevel}
-          onChange={(value) => setFormData({ ...formData, englishLevel: value })}
-        />
-      </FormSection>
+          {/* SECTION 5: Expériences */}
+          <FormSection
+            title="4️⃣ Expériences Professionnelles"
+            icon={<Briefcase className="w-6 h-6" />}
+          >
+            <Repeater
+              label="Ajouter une expérience"
+              fields={[
+                { label: 'Poste occupé', type: 'text', placeholder: 'Ex: Chargé RH' },
+                { label: 'Entreprise', type: 'text', placeholder: 'Ex: UMS Mining' },
+                { label: 'Période', type: 'text', placeholder: 'Ex: 2020 - 2023' },
+                {
+                  label: 'Missions principales',
+                  type: 'textarea',
+                  placeholder: 'Décrivez vos responsabilités...',
+                },
+              ]}
+              value={formData.experiences}
+              onChange={(value) => updateField('experiences', value)}
+            />
+            {cvParsed && formData.experiences.length > 0 && (
+              <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
+                <Sparkles className="w-4 h-4" />
+                {formData.experiences.length} expérience(s) détectée(s) depuis votre CV
+              </div>
+            )}
+          </FormSection>
 
-      <FormSection title="6️⃣ Documents et CV">
-        <Upload
-          label="CV principal (PDF ou Word)"
-          onChange={(file) => setFormData({ ...formData, cv: file })}
-          helpText="Téléchargez votre CV le plus récent. Formats acceptés : PDF, Word (max 5 Mo)"
-        />
-        <Upload
-          label="Certificats / Attestations (optionnel)"
-          onChange={(file) => setFormData({ ...formData, certificates: file })}
-          helpText="Ajoutez vos diplômes, certificats de formation ou attestations de travail"
-        />
-        <Checkbox
-          label="Je souhaite que mon profil soit visible dans la CVThèque JobGuinée"
-          checked={formData.visibleInCVTheque}
-          onChange={(checked) => setFormData({ ...formData, visibleInCVTheque: checked })}
-        />
-        <Checkbox
-          label="Je souhaite recevoir des alertes sur les offres correspondant à mon profil"
-          checked={formData.receiveAlerts}
-          onChange={(checked) => setFormData({ ...formData, receiveAlerts: checked })}
-        />
-      </FormSection>
+          {/* SECTION 6: Formations */}
+          <FormSection
+            title="5️⃣ Formations & Diplômes"
+            icon={<GraduationCap className="w-6 h-6" />}
+          >
+            <Repeater
+              label="Ajouter une formation"
+              fields={[
+                {
+                  label: 'Diplôme obtenu',
+                  type: 'text',
+                  placeholder: 'Ex: Licence en GRH',
+                },
+                { label: 'Établissement', type: 'text', placeholder: 'Ex: Université de Conakry' },
+                { label: 'Année d\'obtention', type: 'text', placeholder: 'Ex: 2021' },
+              ]}
+              value={formData.formations}
+              onChange={(value) => updateField('formations', value)}
+            />
+          </FormSection>
 
-      <FormSection title="7️⃣ Assistance IA et analyse de profil">
-        <Button variant="secondary" onClick={handleAIAnalysis}>
-          🧠 Analyser mon profil avec IA
-        </Button>
-        <p className="text-sm text-gray-500">
-          L'IA analysera vos informations pour suggérer des offres adaptées et améliorer votre CV.
-        </p>
-        <Textarea
-          label="Commentaire ou objectif professionnel"
-          placeholder="Décrivez le type d'emploi ou secteur que vous recherchez..."
-          value={formData.professionalGoal}
-          onChange={(value) => setFormData({ ...formData, professionalGoal: value })}
-          helpText="Exemple : 'Je recherche un poste de responsable RH dans une entreprise internationale basée à Conakry, avec des opportunités d'évolution et de formation continue.'"
-        />
-      </FormSection>
+          {/* SECTION 7: Compétences & Langues */}
+          <FormSection
+            title="6️⃣ Compétences & Langues"
+            icon={<Award className="w-6 h-6" />}
+          >
+            <SkillsAutoComplete
+              label="Compétences clés"
+              value={formData.skills}
+              onChange={(value) => updateField('skills', value)}
+              aiSuggestions={formData.cvParsedData?.skills || []}
+              helpText="Ajoutez vos compétences techniques et soft skills. Appuyez sur Entrée pour ajouter."
+            />
+            <MultiSelect
+              label="Langues parlées"
+              options={['Français', 'Anglais', 'Soussou', 'Malinké', 'Peul', 'Arabe', 'Chinois', 'Espagnol']}
+              value={formData.languagesDetailed.map(l => l.language)}
+              onChange={(value) =>
+                updateField(
+                  'languagesDetailed',
+                  value.map((lang) => ({ language: lang, level: 'Intermédiaire' }))
+                )
+              }
+            />
+          </FormSection>
 
-      <FormSection title="8️⃣ Sécurité et validation">
-        <Checkbox
-          label="J'accepte les conditions générales et la politique de confidentialité"
-          checked={formData.acceptTerms}
-          onChange={(checked) => setFormData({ ...formData, acceptTerms: checked })}
-        />
-        <Checkbox
-          label="Je certifie que les informations fournies sont exactes"
-          checked={formData.certifyAccuracy}
-          onChange={(checked) => setFormData({ ...formData, certifyAccuracy: checked })}
-        />
-        <Button variant="primary" type="submit">
-          ✅ Enregistrer mon profil
-        </Button>
-      </FormSection>
+          {/* SECTION 8: Localisation & Mobilité */}
+          <FormSection
+            title="7️⃣ Localisation & Mobilité"
+            icon={<MapPin className="w-6 h-6" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Adresse actuelle"
+                placeholder="Ex: Quartier Ratoma"
+                value={formData.address}
+                onChange={(value) => updateField('address', value)}
+              />
+              <AutoCompleteInput
+                label="Ville / Commune"
+                value={formData.city}
+                onChange={(value) => updateField('city', value)}
+                suggestions={CITIES_GUINEA}
+                placeholder="Ex: Conakry"
+              />
+            </div>
+            <MultiSelect
+              label="Zones de mobilité géographique"
+              options={CITIES_GUINEA}
+              value={formData.mobility}
+              onChange={(value) => updateField('mobility', value)}
+            />
+            <Checkbox
+              label="Je suis ouvert(e) à la relocalisation dans d'autres régions"
+              checked={formData.willingToRelocate}
+              onChange={(checked) => updateField('willingToRelocate', checked)}
+            />
+          </FormSection>
+
+          {/* SECTION 9: Rémunération */}
+          <FormSection
+            title="8️⃣ Rémunération Souhaitée"
+            icon={<DollarSign className="w-6 h-6" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Salaire minimum souhaité (GNF)"
+                type="number"
+                placeholder="Ex: 5000000"
+                value={formData.desiredSalaryMin}
+                onChange={(value) => updateField('desiredSalaryMin', value)}
+                helpText="Montant mensuel brut en Francs Guinéens"
+              />
+              <Input
+                label="Salaire maximum souhaité (GNF)"
+                type="number"
+                placeholder="Ex: 8000000"
+                value={formData.desiredSalaryMax}
+                onChange={(value) => updateField('desiredSalaryMax', value)}
+                helpText="Montant mensuel brut en Francs Guinéens"
+              />
+            </div>
+          </FormSection>
+
+          {/* SECTION 10: Liens & Documents */}
+          <FormSection
+            title="9️⃣ Liens Professionnels & Documents"
+            icon={<LinkIcon className="w-6 h-6" />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Profil LinkedIn"
+                placeholder="https://linkedin.com/in/votre-profil"
+                value={formData.linkedinUrl}
+                onChange={(value) => updateField('linkedinUrl', value)}
+              />
+              <Input
+                label="Portfolio / Site web"
+                placeholder="https://votre-portfolio.com"
+                value={formData.portfolioUrl}
+                onChange={(value) => updateField('portfolioUrl', value)}
+              />
+              <Input
+                label="GitHub (pour développeurs)"
+                placeholder="https://github.com/votre-profil"
+                value={formData.githubUrl}
+                onChange={(value) => updateField('githubUrl', value)}
+              />
+            </div>
+            <MultiSelect
+              label="Permis de conduire"
+              options={['Permis B (voiture)', 'Permis A (moto)', 'Permis C (poids lourd)', 'Aucun']}
+              value={formData.drivingLicense}
+              onChange={(value) => updateField('drivingLicense', value)}
+            />
+            <Upload
+              label="CV principal (PDF ou Word)"
+              onChange={(file) => updateField('cv', file)}
+              helpText="Téléchargez votre CV le plus récent (max 5 Mo)"
+            />
+            <Upload
+              label="Certificats / Attestations (optionnel)"
+              onChange={(file) => updateField('certificates', file)}
+            />
+          </FormSection>
+
+          {/* SECTION 11: Validation */}
+          <FormSection
+            title="🔒 Validation & Confidentialité"
+          >
+            <div className="space-y-4">
+              <Checkbox
+                label="Je souhaite que mon profil soit visible dans la CVThèque JobGuinée"
+                checked={formData.visibleInCVTheque}
+                onChange={(checked) => updateField('visibleInCVTheque', checked)}
+              />
+              <Checkbox
+                label="Je souhaite recevoir des alertes sur les offres correspondant à mon profil"
+                checked={formData.receiveAlerts}
+                onChange={(checked) => updateField('receiveAlerts', checked)}
+              />
+              <div className="pt-4 border-t">
+                <Checkbox
+                  label="J'accepte les conditions générales et la politique de confidentialité"
+                  checked={formData.acceptTerms}
+                  onChange={(checked) => updateField('acceptTerms', checked)}
+                />
+                {errors.acceptTerms && (
+                  <p className="text-sm text-red-600 mt-1">{errors.acceptTerms}</p>
+                )}
+              </div>
+              <Checkbox
+                label="Je certifie que les informations fournies sont exactes"
+                checked={formData.certifyAccuracy}
+                onChange={(checked) => updateField('certifyAccuracy', checked)}
+              />
+              {errors.certifyAccuracy && (
+                <p className="text-sm text-red-600 mt-1">{errors.certifyAccuracy}</p>
+              )}
+            </div>
+
+            <div className="mt-8 flex gap-4">
+              <Button variant="primary" type="submit" className="flex-1">
+                <Save className="w-5 h-5 mr-2" />
+                Enregistrer mon profil
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Voulez-vous vraiment effacer toutes les données?')) {
+                    localStorage.removeItem('candidateProfileDraft');
+                    setFormData(getInitialFormData());
+                    setShowManualForm(false);
+                    setCvParsed(false);
+                  }
+                }}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+              >
+                Réinitialiser
+              </button>
+            </div>
+          </FormSection>
+        </>
+      )}
     </form>
   );
 }

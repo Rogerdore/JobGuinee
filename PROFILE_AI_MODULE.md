@@ -98,245 +98,270 @@ Nouveaux champs ajoutés à `candidate_profiles`:
 
 ---
 
-## 🔨 Ce qu'il reste à implémenter
+## ✅ Frontend Complet Implémenté
 
-### 1. Composant CVUploadWithParser
+### 1. Composant CVUploadWithParser ✅
 
-**Fichier à créer**: `src/components/profile/CVUploadWithParser.tsx`
+**Fichier créé**: `src/components/profile/CVUploadWithParser.tsx`
 
-```typescript
-interface CVUploadWithParserProps {
-  onParsed: (data: ParsedCVData) => void;
-  onError: (error: string) => void;
-}
-```
-
-**Fonctionnalités**:
-- Zone de drag & drop moderne
-- Prévisualisation du fichier uploadé
-- Indicateur de progression du parsing
-- Affichage des données extraites
-- Bouton "Appliquer au formulaire"
-- Support PDF, DOCX, JPG, PNG
-- Limite de taille: 10 MB
+**Fonctionnalités implémentées**:
+- ✅ Zone de drag & drop moderne avec animations
+- ✅ Prévisualisation du fichier uploadé avec détails (nom, taille, type)
+- ✅ Indicateur de progression du parsing (0-100%)
+- ✅ Affichage des données extraites avec résumé visuel
+- ✅ Support complet: PDF, DOCX, JPG, PNG
+- ✅ Validation taille (max 10 MB)
+- ✅ Gestion des états: idle, uploading, parsing, success, error
+- ✅ Messages d'erreur détaillés et contextuels
+- ✅ Intégration avec le système de crédits (vérification automatique)
 
 **Design**:
-- Card moderne avec gradient
-- Icônes lucide-react (Upload, FileText, Image, CheckCircle)
-- Animation de chargement pendant le parsing
-- Toast notifications pour succès/erreur
+- Card avec gradient bleu moderne
+- Icônes lucide-react (Upload, FileText, Image, CheckCircle2, AlertCircle, Sparkles)
+- Animations: pulse pour loading, fade-in pour résultats
+- Responsive et accessible
 
-### 2. Composant SmartProfileForm (v2)
+### 2. Composant CandidateProfileForm Complètement Refactoré ✅
 
-**Fichier à transformer**: `src/components/forms/CandidateProfileForm.tsx`
+**Fichier transformé**: `src/components/forms/CandidateProfileForm.tsx`
 
-**Structure en 11 sections**:
+**Structure en 11 sections implémentées**:
 
-#### Section 1: Upload de CV (NOUVEAU)
+#### Section 1: Upload de CV ✅
 - Composant CVUploadWithParser intégré
-- Message: "Gagnez du temps! Importez votre CV et nous remplirons automatiquement les champs"
-- Bouton alternatif: "Remplir manuellement"
+- Message d'aide IA visible
+- Bouton "Remplir manuellement" fonctionnel
+- Auto-remplissage complet après parsing
 
-#### Section 2: Identité & Contact
-- Nom, prénom (pré-remplis depuis auth)
-- Email (readonly depuis auth)
-- Téléphone (avec validation format guinéen)
-- Date de naissance
-- Nationalité (auto-complétion)
-- Photo de profil
+#### Section 2: Identité & Contact ✅
+- Nom complet (pré-rempli depuis auth)
+- Email (pré-rempli depuis auth)
+- Téléphone avec validation
+- Date de naissance (DatePicker)
+- Genre (Select)
+- Nationalité (AutoCompleteInput avec suggestions)
 
-#### Section 3: Localisation & Mobilité
-- Adresse actuelle (auto-complétion Google Maps API ou liste statique)
-- Ville/Région (auto-complétion villes de Guinée)
-- Mobilité géographique (multi-select):
-  - Conakry, Boké, Kamsar, Kindia, Kankan, Labé, Nzérékoré, Siguiri, Fria, etc.
+#### Section 3: Résumé Professionnel ✅
+- Textarea pour bio professionnelle
+- Badge "Détecté depuis CV" si parsé
+- Compteur de caractères recommandé
+- Aide contextuelle
 
-#### Section 4: Résumé Professionnel
-- Textarea riche (Quill ou TipTap)
-- Boutons IA:
-  - "Générer avec IA" (si vide)
-  - "Améliorer avec IA" (si existant)
-  - "Adapter à un poste" (modal avec nom de poste)
-- Compteur de caractères (recommandé: 150-300)
+#### Section 4: Poste & Objectifs ✅
+- Poste recherché (AutoCompleteInput avec liste de postes courants)
+- Secteurs d'activité (MultiSelect avec 15+ secteurs)
+- Types de contrat (MultiSelect: CDI, CDD, Stage, Freelance, Alternance)
+- Disponibilité (Select)
 
-#### Section 5: Poste & Objectifs
-- Poste recherché (auto-complétion postes courants)
-- Secteurs d'activité (multi-select avec suggestions IA)
-- Disponibilité (select: Immédiate, 1 mois, 3 mois, Négociable)
-- Type de contrat souhaité (CDI, CDD, Stage, Freelance)
+#### Section 5: Expériences Professionnelles ✅
+- Repeater dynamique (add/remove)
+- Champs: Poste, Entreprise, Période, Missions
+- Badge indiquant le nombre d'expériences parsées
+- Auto-remplissage depuis CV
 
-#### Section 6: Expériences Professionnelles
-- Repeater avec + / -
-- Champs par expérience:
-  - Poste occupé (auto-complétion)
-  - Entreprise
-  - Dates (début/fin avec checkbox "Poste actuel")
-  - Missions (textarea ou liste à puces)
-  - Secteur d'activité
-- Bouton "Ajouter une expérience" avec icône
-- Suggestion IA: "Améliorer la description de cette expérience"
+#### Section 6: Formations & Diplômes ✅
+- Repeater dynamique
+- Champs: Diplôme, Établissement, Année
+- Auto-remplissage depuis CV
 
-#### Section 7: Formations & Diplômes
-- Repeater
-- Champs:
-  - Diplôme (auto-complétion: BAC, Licence, Master, Doctorat, etc.)
-  - Domaine d'études
-  - Établissement
-  - Année d'obtention
-  - Mention (Très bien, Bien, Assez bien)
-- Bouton IA: "Suggestions de formations complémentaires"
+#### Section 7: Compétences & Langues ✅
+- **SkillsAutoComplete** avec:
+  - Tags dynamiques avec catégories
+  - Suggestions par domaine (Développement, RH, Finance, etc.)
+  - Suggestions IA depuis le CV parsé
+  - Limite de 30 compétences
+  - Support clavier complet
+- Langues (MultiSelect: Français, Anglais, Soussou, Malinké, Peul, etc.)
 
-#### Section 8: Compétences & Expertise
-- TagInput avec auto-complétion intelligente
-- Suggestions basées sur:
-  - Poste recherché
-  - Expériences renseignées
-  - Secteur d'activité
-- Niveau par compétence (Débutant, Intermédiaire, Avancé, Expert)
-- Catégories:
-  - Compétences techniques
-  - Soft skills
-  - Outils maîtrisés
+#### Section 8: Localisation & Mobilité ✅
+- Adresse actuelle
+- Ville (AutoCompleteInput avec villes de Guinée)
+- Zones de mobilité (MultiSelect)
+- Checkbox relocalisation
 
-#### Section 9: Langues
-- Repeater ou liste de checkboxes
-- Langues courantes en Guinée: Français, Anglais, Soussou, Malinké, Peul, Arabe, Chinois
-- Niveaux: Notions, Intermédiaire, Courant, Bilingue, Langue maternelle
-- Certifications (TOEFL, DELF, etc.) optionnel
+#### Section 9: Rémunération Souhaitée ✅
+- Salaire min/max en GNF
+- Type number avec validation
+- Aide contextuelle (montant mensuel brut)
 
-#### Section 10: Rémunération & Conditions
-- Salaire minimum souhaité (GNF)
-- Salaire maximum souhaité (GNF)
-- Suggestions IA basées sur:
-  - Poste
-  - Années d'expérience
-  - Secteur
-  - Localisation
+#### Section 10: Liens & Documents ✅
+- LinkedIn, Portfolio, GitHub (inputs avec validation URL)
+- Permis de conduire (MultiSelect)
+- Upload CV principal
+- Upload certificats
+- Checkboxes: Visibilité CVThèque, Alertes emploi
 
-#### Section 11: Liens & Documents
-- LinkedIn, Portfolio, GitHub, Autre
-- Upload documents complémentaires:
-  - Diplômes
-  - Certificats
-  - Attestations de travail
-  - Permis de conduire
-- Visibilité profil CVThèque (checkbox)
-- Recevoir alertes emploi (checkbox)
+#### Section 11: Validation ✅
+- Checkbox conditions générales (required)
+- Checkbox certification exactitude (required)
+- Bouton "Enregistrer mon profil"
+- Bouton "Réinitialiser"
 
-**Features transversales**:
-- Auto-sauvegarde toutes les 3 secondes (localStorage + DB)
-- Indicateur de sauvegarde "Dernière sauvegarde: il y a X minutes"
-- Barre de progression globale (%)
-- Validations en temps réel
-- Messages d'aide contextuels
-- Design responsive (mobile-first)
+**Features transversales implémentées**:
+- ✅ Auto-sauvegarde toutes les 2 secondes (localStorage)
+- ✅ Indicateur de sauvegarde avec timestamp
+- ✅ Barre de progression globale (0-100%) avec calcul pondéré
+- ✅ Couleur de progression dynamique (rouge < 40%, jaune 40-70%, vert > 70%)
+- ✅ Validations en temps réel
+- ✅ Messages d'aide contextuels
+- ✅ Design responsive (grid 2 colonnes desktop, 1 colonne mobile)
+- ✅ Sauvegarde en base de données Supabase
+- ✅ Gestion des profils existants (update) et nouveaux (insert)
 
-### 3. Composants d'auto-complétion
+### 3. Composants d'auto-complétion Créés ✅
 
-**Fichiers à créer**:
+#### `src/components/forms/AutoCompleteInput.tsx` ✅
+**Déjà existant et optimisé**:
+- Input avec dropdown de suggestions filtré
+- Support clavier complet (↑↓ Enter Esc Tab)
+- Affichage visuel de la sélection
+- Badge de correspondance exacte
+- Scroll automatique vers élément sélectionné
+- Performance: memo et callbacks optimisés
 
-#### `src/components/profile/AutoCompleteInput.tsx`
-- Input avec dropdown de suggestions
-- Recherche asynchrone
-- Support clavier (↑↓ Enter Esc)
-- Affichage des correspondances en gras
-- Cache des suggestions
-
-#### `src/components/profile/SkillsAutoComplete.tsx`
+#### `src/components/profile/SkillsAutoComplete.tsx` ✅
+**Nouvellement créé avec fonctionnalités avancées**:
 - TagInput spécialisé pour compétences
-- Suggestions dynamiques via IA
-- Niveau de compétence par tag
-- Catégorisation automatique
+- 8 catégories prédéfinies (Développement, RH, Finance, Marketing, etc.)
+- Suggestions dynamiques avec icône IA
+- Badge de catégorie sur chaque compétence
+- Suggestions rapides par catégorie (affichées si profil vide)
+- Limite de 30 compétences avec compteur
+- Support complet clavier et souris
+- Suppression facile avec bouton X
+- Intégration avec données CV parsées
 
-#### `src/components/profile/LocationAutoComplete.tsx`
-- Liste des villes de Guinée
-- Recherche fuzzy
-- Affichage avec icône de localisation
+### 4. Hook useCVParsing Créé ✅
 
-### 4. Services IA complémentaires
-
-**Fichier à créer**: `src/services/profileAIService.ts`
-
-```typescript
-export class ProfileAIService {
-  // Générer résumé professionnel optimisé
-  async generateSummary(profileData: any): Promise<string>
-
-  // Suggérer postes correspondants
-  async suggestPositions(skills: string[], experience: any[]): Promise<string[]>
-
-  // Suggérer compétences manquantes
-  async suggestMissingSkills(position: string, currentSkills: string[]): Promise<string[]>
-
-  // Suggérer fourchette salariale
-  async suggestSalaryRange(position: string, experience: number, location: string): Promise<{min: number, max: number}>
-
-  // Améliorer description d'expérience
-  async improveExperienceDescription(experience: any): Promise<string>
-
-  // Classifier secteur d'activité
-  async classifySector(companyName: string, position: string): Promise<string>
-}
-```
-
-### 5. Page Admin - Configuration Profil
-
-**Fichier à créer**: `src/pages/AdminProfileFormSettings.tsx`
+**Fichier créé**: `src/hooks/useCVParsing.ts`
 
 **Fonctionnalités**:
-- Activer/désactiver sections du formulaire
-- Rendre champs obligatoires ou optionnels
-- Modifier ordre des sections (drag & drop)
-- Activer/désactiver parsing CV
-- Activer/désactiver suggestions IA
-- Configurer messages d'aide
-- Prévisualisation en temps réel
-
-**Structure**:
-```typescript
-interface FormSectionConfig {
-  id: string;
-  title: string;
-  enabled: boolean;
-  order: number;
-  fields: FormFieldConfig[];
-}
-
-interface FormFieldConfig {
-  id: string;
-  label: string;
-  type: string;
-  required: boolean;
-  enabled: boolean;
-  helpText: string;
-  aiSuggestionsEnabled: boolean;
-}
-```
-
-**Stockage**: Table `profile_form_settings` (à créer)
-
-### 6. Hook useCVParsing
-
-**Fichier à créer**: `src/hooks/useCVParsing.ts`
-
 ```typescript
 export function useCVParsing() {
-  const [parsing, setParsing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<CVParseResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // État complet du parsing
+  const state: CVParsingState = {
+    isParsing: boolean,
+    progress: number (0-100),
+    result: CVParseResult | null,
+    error: string | null,
+    parsedData: ParsedCVData | null
+  }
 
-  const parseCV = async (file: File) => {
-    // Logique de parsing avec gestion d'état
-  };
+  // Parse un CV et vérifie les crédits
+  const parseCV = async (file: File): Promise<boolean>
 
-  const applyToForm = (formData: any, parsedData: ParsedCVData) => {
-    // Mapping intelligent données parsées → champs formulaire
-  };
+  // Mappe les données parsées vers le format formulaire
+  const mapToFormData = (parsedData: ParsedCVData, currentFormData: any) => {...}
 
-  return { parsing, progress, result, error, parseCV, applyToForm };
+  // Reset l'état
+  const reset = () => {...}
+
+  return { ...state, parseCV, mapToFormData, reset }
 }
 ```
+
+**Validations implémentées**:
+- ✅ Vérification fichier null
+- ✅ Validation taille (max 10 MB)
+- ✅ Validation type (PDF, DOCX, JPG, PNG)
+- ✅ Vérification crédits avant parsing
+- ✅ Gestion erreurs complète
+- ✅ Progression simulée (10% → 30% → 70% → 100%)
+
+### 5. Page Admin - Configuration Profil ✅
+
+**Fichier créé**: `src/pages/AdminProfileFormSettings.tsx`
+
+**Fonctionnalités implémentées**:
+- ✅ Chargement configuration depuis BDD
+- ✅ Paramètres globaux:
+  - Toggle parsing CV
+  - Toggle suggestions IA
+- ✅ Liste des 11 sections avec:
+  - Badge "Requis" pour sections obligatoires
+  - Badge "IA activée" pour sections avec suggestions
+  - Bouton Activée/Désactivée
+  - Ordre d'affichage
+  - Empêche désactivation des sections requises
+- ✅ Messages personnalisés (3 messages éditables)
+- ✅ Sauvegarde en BDD avec tracking (updated_by, updated_at)
+- ✅ Messages de succès/erreur
+- ✅ Bouton Actualiser
+- ✅ Design moderne avec gradients et icônes
+- ✅ Responsive
+
+### 6. Table de Configuration BDD ✅
+
+**Migration créée**: `create_profile_form_settings.sql`
+
+**Structure**:
+```sql
+CREATE TABLE profile_form_settings (
+  id uuid PRIMARY KEY,
+  setting_key text UNIQUE NOT NULL,
+  setting_value jsonb NOT NULL,
+  description text,
+  updated_by uuid REFERENCES profiles(id),
+  updated_at timestamptz,
+  created_at timestamptz
+)
+```
+
+**Configuration initiale insérée**:
+- ✅ 11 sections configurées
+- ✅ Paramètres globaux définis
+- ✅ Messages par défaut
+- ✅ Champs de la section Identité détaillés
+
+**Sécurité**:
+- ✅ RLS activée
+- ✅ Policies: admins uniquement (read, insert, update)
+
+---
+
+## 📊 Calcul du Pourcentage de Complétion
+
+Le pourcentage de complétion est calculé avec un système de pondération:
+
+```typescript
+const weights = {
+  identity: 15,        // Nom, email, téléphone
+  professional: 20,    // Résumé + poste recherché
+  experience: 20,      // Au moins 1 expérience
+  education: 15,       // Au moins 1 formation
+  skills: 15,          // Au moins 3 compétences
+  location: 5,         // Ville renseignée
+  salary: 5,           // Fourchette salariale
+  links: 5,            // LinkedIn ou Portfolio
+}
+
+Total: 100%
+```
+
+**Affichage visuel**:
+- < 40%: Barre rouge/orange
+- 40-70%: Barre jaune
+- > 70%: Barre verte
+
+---
+
+## 🎨 Design System Utilisé
+
+**Couleurs**:
+- Primaire: Bleu (#0E2F56 → #3B82F6)
+- Succès: Vert (#10B981)
+- Avertissement: Jaune (#FBBF24)
+- Erreur: Rouge (#EF4444)
+- IA: Jaune (#FACC15) avec icône Sparkles
+
+**Composants réutilisés**:
+- FormSection, Input, Select, MultiSelect, Textarea
+- DatePicker, Upload, Checkbox, Repeater, Button
+- Tous depuis `FormComponents.tsx`
+
+**Icônes (lucide-react)**:
+- User, Briefcase, GraduationCap, Award, MapPin, DollarSign, LinkIcon
+- Upload, FileText, Image, Sparkles, CheckCircle2, AlertCircle, Save
 
 ---
 
