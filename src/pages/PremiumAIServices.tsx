@@ -16,6 +16,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import CVCentralModal from '../components/ai/CVCentralModal';
+import CreditBalance from '../components/credits/CreditBalance';
 
 interface PremiumService {
   id: string;
@@ -169,6 +170,14 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
           </p>
         </div>
 
+        {/* Credit Balance */}
+        <div className="mb-8">
+          <CreditBalance
+            variant="prominent"
+            onBuyCredits={() => onNavigate?.('credit-store')}
+          />
+        </div>
+
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {services.map((service) => {
@@ -227,14 +236,19 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
 
                   {/* Credits Cost & CTA */}
                   <div className="pt-6 border-t border-gray-100">
-                    {isPremium && (
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-3xl font-bold text-gray-900">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className={`text-3xl font-bold ${isPremium ? 'text-orange-600' : 'text-green-600'}`}>
                           {service.credits_cost}
                         </span>
                         <span className="text-gray-600">crédits</span>
                       </div>
-                    )}
+                      {!isPremium && service.credits_cost === 0 && (
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                          GRATUIT
+                        </span>
+                      )}
+                    </div>
 
                     <button
                       onClick={() => handleServiceClick(service)}
