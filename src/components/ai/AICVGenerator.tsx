@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Download, Loader, Upload, Sparkles, ArrowLeft } from 'lucide-react';
+import { FileText, Download, Loader, Sparkles, ArrowLeft } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';

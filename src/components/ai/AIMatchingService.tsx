@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Target, TrendingUp, Briefcase, MapPin, Loader, ArrowRight, ArrowLeft, User, CreditCard as Edit3, Check, AlertCircle, Sparkles } from 'lucide-react';
@@ -245,7 +245,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
 
       // Calculate cost based on number of selected jobs
       const totalCost = serviceCost * selectedJobsData.length;
-      const creditResult = await consumeCredits(SERVICES.AI_JOB_MATCHING, undefined, undefined, totalCost);
+      const creditResult = await consumeCredits(SERVICES.AI_JOB_MATCHING, { jobCount: selectedJobsData.length });
       if (!creditResult.success) {
         alert(creditResult.message);
         setAnalyzing(false);
@@ -294,7 +294,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
           reasons: m.reasons
         })),
         profile_score: avgScore,
-        total_analyzed: jobs.length,
+        total_analyzed: selectedJobsData.length,
         analysis_type: 'ai_enhanced'
       };
 
@@ -303,7 +303,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         'ai_matching',
         completeProfile,
         outputData,
-        creditResult.cost || serviceCost
+        serviceCost
       );
 
       alert('Analyse IA terminée avec succès!');
@@ -775,10 +775,12 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
 
       {showCreditModal && (
         <CreditConfirmModal
-          serviceName="Matching Emplois IA"
-          cost={serviceCost}
+          isOpen={showCreditModal}
+          onClose={() => setShowCreditModal(false)}
           onConfirm={handleCreditConfirm}
-          onCancel={() => setShowCreditModal(false)}
+          serviceCode={SERVICES.AI_JOB_MATCHING}
+          serviceName="Matching Emplois IA"
+          serviceCost={serviceCost}
         />
       )}
     </div>

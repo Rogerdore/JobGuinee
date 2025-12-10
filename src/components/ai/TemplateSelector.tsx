@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { FileText, Crown, Sparkles } from 'lucide-react';
-import { IAConfigService, IAServiceTemplate } from '../../services/iaConfigService';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 

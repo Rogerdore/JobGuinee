@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Mail, Download, Loader, Sparkles, ArrowLeft, FileDown, User, Edit3, Check, AlertCircle, Briefcase } from 'lucide-react';
+import { Mail, Download, Loader, Sparkles, ArrowLeft, FileDown, User, Edit3, Check, AlertCircle } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';
@@ -165,7 +165,7 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
         'ai_cover_letter',
         letterData,
         outputData,
-        creditResult.cost || serviceCost
+        serviceCost
       );
 
       alert('Lettre générée avec succès!');
@@ -417,10 +417,13 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
 
       {showCreditModal && (
         <CreditConfirmModal
-          serviceName="Lettre de Motivation IA"
-          cost={serviceCost}
+          isOpen={showCreditModal}
+          onClose={() => setShowCreditModal(false)}
           onConfirm={confirmGeneration}
-          onCancel={() => setShowCreditModal(false)}
+          serviceCode={SERVICES.AI_COVER_LETTER}
+          serviceName="Lettre de Motivation IA"
+          serviceCost={serviceCost}
+          inputPayload={letterData}
         />
       )}
     </div>

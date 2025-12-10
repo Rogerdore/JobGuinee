@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { TrendingUp, Download, Loader, Sparkles, ArrowLeft, FileDown, User, Edit3, Check, AlertCircle } from 'lucide-react';
+import { TrendingUp, Download, Loader, Sparkles, ArrowLeft, User, Edit3, Check, AlertCircle } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';
@@ -152,7 +152,7 @@ export default function AICareerPlanGenerator({ onNavigate }: AICareerPlanGenera
         'ai_career_plan',
         planData,
         outputData,
-        creditResult.cost || serviceCost
+        serviceCost
       );
 
       alert('Plan généré!');
@@ -342,10 +342,13 @@ export default function AICareerPlanGenerator({ onNavigate }: AICareerPlanGenera
 
       {showCreditModal && (
         <CreditConfirmModal
-          serviceName="Plan de Carrière IA"
-          cost={serviceCost}
+          isOpen={showCreditModal}
+          onClose={() => setShowCreditModal(false)}
           onConfirm={confirmGeneration}
-          onCancel={() => setShowCreditModal(false)}
+          serviceCode={SERVICES.AI_CAREER_PATH}
+          serviceName="Plan de Carrière IA"
+          serviceCost={serviceCost}
+          inputPayload={planData}
         />
       )}
     </div>

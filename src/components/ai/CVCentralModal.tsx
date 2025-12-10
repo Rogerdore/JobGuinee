@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   FileText,
@@ -310,7 +310,7 @@ ${job.responsibilities}
         'ai_cv_generation',
         cvData,
         { preview },
-        creditResult.cost || serviceCost
+        serviceCost
       );
 
       setCurrentStep(5);
@@ -951,10 +951,13 @@ ${job.responsibilities}
 
       {showCreditModal && (
         <CreditConfirmModal
-          serviceName="Génération CV IA"
-          cost={serviceCost}
+          isOpen={showCreditModal}
+          onClose={() => setShowCreditModal(false)}
           onConfirm={confirmGeneration}
-          onCancel={() => setShowCreditModal(false)}
+          serviceCode="ai_cv_generation"
+          serviceName="Génération CV IA"
+          serviceCost={serviceCost}
+          inputPayload={cvData}
         />
       )}
 

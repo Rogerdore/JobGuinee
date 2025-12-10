@@ -185,7 +185,7 @@ export default function ServiceHistoryModal({ isOpen, onClose, serviceCode, serv
             </div>
           ) : (
             <div className="space-y-4">
-              {history.map((entry, index) => (
+              {history.map((entry) => (
                 <div
                   key={entry.id}
                   className="border-2 border-gray-200 rounded-xl p-5 hover:border-purple-300 hover:shadow-md transition"

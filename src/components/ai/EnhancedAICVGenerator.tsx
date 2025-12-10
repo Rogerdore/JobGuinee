@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Download, Loader, Sparkles, ArrowLeft, FileDown, User, Edit3, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
@@ -177,7 +177,7 @@ export default function EnhancedAICVGenerator({ onNavigate }: EnhancedAICVGenera
         'ai_cv_generation',
         inputData,
         outputData,
-        creditResult.cost || serviceCost
+        serviceCost
       );
 
       alert('CV généré avec succès!');
@@ -540,10 +540,13 @@ export default function EnhancedAICVGenerator({ onNavigate }: EnhancedAICVGenera
 
       {showCreditModal && (
         <CreditConfirmModal
-          serviceName="Génération CV IA"
-          cost={serviceCost}
+          isOpen={showCreditModal}
+          onClose={() => setShowCreditModal(false)}
           onConfirm={confirmGeneration}
-          onCancel={() => setShowCreditModal(false)}
+          serviceCode={SERVICES.AI_CV_GENERATION}
+          serviceName="Génération CV IA"
+          serviceCost={serviceCost}
+          inputPayload={cvData}
         />
       )}
     </div>
