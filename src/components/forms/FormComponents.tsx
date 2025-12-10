@@ -439,12 +439,20 @@ export function Repeater({ label, fields, value = [], onChange }: RepeaterProps)
 interface FormSectionProps {
   title: string;
   children: React.ReactNode;
+  subtitle?: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
-export function FormSection({ title, children }: FormSectionProps) {
+export function FormSection({ title, children, subtitle, icon }: FormSectionProps) {
   return (
     <div className="border-2 border-gray-200 rounded-xl p-6 space-y-4">
-      <h2 className="text-lg font-bold text-gray-800 border-b pb-3">{title}</h2>
+      <div className="border-b pb-3">
+        <div className="flex items-center gap-2 mb-2">
+          {icon}
+          <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+        </div>
+        {subtitle && <div className="text-sm mt-2">{subtitle}</div>}
+      </div>
       <div className="space-y-4">{children}</div>
     </div>
   );

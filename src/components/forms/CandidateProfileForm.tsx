@@ -11,6 +11,7 @@ import {
   Link as LinkIcon,
   MapPin,
   CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -213,12 +214,16 @@ export default function CandidateProfileForm() {
     if (!formData.fullName) newErrors.fullName = 'Ce champ est obligatoire';
     if (!formData.email) newErrors.email = 'Ce champ est obligatoire';
     if (!formData.phone) newErrors.phone = 'Ce champ est obligatoire';
+    if (formData.experiences.length === 0) newErrors.experiences = 'Au moins une expérience professionnelle est obligatoire';
+    if (formData.formations.length === 0) newErrors.formations = 'Au moins une formation/diplôme est obligatoire';
+    if (!formData.city && formData.mobility.length === 0) newErrors.location = 'La localisation ou la mobilité est obligatoire';
     if (!formData.acceptTerms) newErrors.acceptTerms = 'Vous devez accepter les conditions';
     if (!formData.certifyAccuracy) newErrors.certifyAccuracy = 'Vous devez certifier l\'exactitude';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      alert('Veuillez corriger les erreurs dans le formulaire');
+      const errorMessages = Object.values(newErrors).join('\n');
+      alert('Veuillez corriger les erreurs suivantes:\n\n' + errorMessages);
       return;
     }
 
@@ -486,6 +491,14 @@ export default function CandidateProfileForm() {
           <FormSection
             title="4️⃣ Expériences Professionnelles"
             icon={<Briefcase className="w-6 h-6" />}
+            subtitle={
+              <span className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                  OBLIGATOIRE
+                </span>
+                <span className="text-gray-600">Au moins une expérience requise</span>
+              </span>
+            }
           >
             <Repeater
               label="Ajouter une expérience"
@@ -502,6 +515,12 @@ export default function CandidateProfileForm() {
               value={formData.experiences}
               onChange={(value) => updateField('experiences', value)}
             />
+            {errors.experiences && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4" />
+                {errors.experiences}
+              </div>
+            )}
             {cvParsed && formData.experiences.length > 0 && (
               <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
                 <Sparkles className="w-4 h-4" />
@@ -514,6 +533,14 @@ export default function CandidateProfileForm() {
           <FormSection
             title="5️⃣ Formations & Diplômes"
             icon={<GraduationCap className="w-6 h-6" />}
+            subtitle={
+              <span className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                  OBLIGATOIRE
+                </span>
+                <span className="text-gray-600">Au moins une formation/diplôme requis</span>
+              </span>
+            }
           >
             <Repeater
               label="Ajouter une formation"
@@ -529,6 +556,12 @@ export default function CandidateProfileForm() {
               value={formData.formations}
               onChange={(value) => updateField('formations', value)}
             />
+            {errors.formations && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4" />
+                {errors.formations}
+              </div>
+            )}
           </FormSection>
 
           {/* SECTION 7: Compétences & Langues */}
@@ -560,6 +593,14 @@ export default function CandidateProfileForm() {
           <FormSection
             title="7️⃣ Localisation & Mobilité"
             icon={<MapPin className="w-6 h-6" />}
+            subtitle={
+              <span className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                  OBLIGATOIRE
+                </span>
+                <span className="text-gray-600">Ville ou zones de mobilité requises</span>
+              </span>
+            }
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
@@ -587,6 +628,12 @@ export default function CandidateProfileForm() {
               checked={formData.willingToRelocate}
               onChange={(checked) => updateField('willingToRelocate', checked)}
             />
+            {errors.location && (
+              <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4" />
+                {errors.location}
+              </div>
+            )}
           </FormSection>
 
           {/* SECTION 9: Rémunération */}
