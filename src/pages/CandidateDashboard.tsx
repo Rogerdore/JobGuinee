@@ -704,15 +704,39 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             </div>
                             <div>
                               <label className="text-sm font-medium text-gray-500">Téléphone</label>
-                              <p className="text-gray-900 font-medium mt-1">{candidateProfile.phone || '-'}</p>
+                              <p className="text-gray-900 font-medium mt-1">{candidateProfile.phone || profile?.phone || '-'}</p>
                             </div>
                             <div>
                               <label className="text-sm font-medium text-gray-500">Localisation</label>
                               <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
                                 <MapPin className="w-4 h-4 text-gray-400" />
-                                {candidateProfile.location || '-'}
+                                {candidateProfile.location || candidateProfile.city || '-'}
                               </p>
                             </div>
+                            {candidateProfile.birth_date && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Date de naissance</label>
+                                <p className="text-gray-900 font-medium mt-1">{new Date(candidateProfile.birth_date).toLocaleDateString('fr-FR')}</p>
+                              </div>
+                            )}
+                            {candidateProfile.gender && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Genre</label>
+                                <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.gender}</p>
+                              </div>
+                            )}
+                            {candidateProfile.nationality && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Nationalité</label>
+                                <p className="text-gray-900 font-medium mt-1">{candidateProfile.nationality}</p>
+                              </div>
+                            )}
+                            {candidateProfile.address && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm font-medium text-gray-500">Adresse complète</label>
+                                <p className="text-gray-900 font-medium mt-1">{candidateProfile.address}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -746,6 +770,43 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                               <label className="text-sm font-medium text-gray-500">Disponibilité</label>
                               <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.availability || '-'}</p>
                             </div>
+                            {candidateProfile.desired_sectors && candidateProfile.desired_sectors.length > 0 && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm font-medium text-gray-500">Secteurs recherchés</label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {candidateProfile.desired_sectors.map((sector: string, index: number) => (
+                                    <span key={index} className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
+                                      {sector}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {candidateProfile.desired_contract_types && candidateProfile.desired_contract_types.length > 0 && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm font-medium text-gray-500">Types de contrat recherchés</label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {candidateProfile.desired_contract_types.map((type: string, index: number) => (
+                                    <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border border-gray-300">
+                                      {type}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {candidateProfile.mobility && candidateProfile.mobility.length > 0 && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm font-medium text-gray-500">Mobilité géographique</label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {candidateProfile.mobility.map((city: string, index: number) => (
+                                    <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {city}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             {(candidateProfile.desired_salary_min || candidateProfile.desired_salary_max) && (
                               <div className="md:col-span-2">
                                 <label className="text-sm font-medium text-gray-500">Prétentions salariales</label>
@@ -794,14 +855,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             <div className="space-y-4">
                               {candidateProfile.work_experience.map((exp: any, index: number) => (
                                 <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                                  <h4 className="font-bold text-gray-900">{exp.title || exp.position}</h4>
-                                  <p className="text-gray-600 text-sm mt-1">{exp.company}</p>
+                                  <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
+                                  <p className="text-gray-600 text-sm mt-1">{exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
                                   <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    {exp.start_date} - {exp.end_date || 'Présent'}
+                                    {exp['Date de début'] || exp.start_date || '-'} - {exp['Date de fin'] || exp.end_date || 'Présent'}
                                   </p>
-                                  {exp.description && (
-                                    <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp.description}</p>
+                                  {(exp['Description des responsabilités'] || exp.description) && (
+                                    <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Description des responsabilités'] || exp.description}</p>
                                   )}
                                 </div>
                               ))}
@@ -821,14 +882,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             <div className="space-y-4">
                               {candidateProfile.education.map((edu: any, index: number) => (
                                 <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                                  <h4 className="font-bold text-gray-900">{edu.degree || edu.title}</h4>
-                                  <p className="text-gray-600 text-sm mt-1">{edu.school || edu.institution}</p>
+                                  <h4 className="font-bold text-gray-900">{edu['Diplôme obtenu'] || edu.degree || edu.title || '-'}</h4>
+                                  <p className="text-gray-600 text-sm mt-1">{edu['Nom de l\'établissement'] || edu.school || edu.institution || '-'}</p>
                                   <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    {edu.start_date || edu.year} {edu.end_date && `- ${edu.end_date}`}
+                                    {edu['Année d\'obtention'] || edu.start_date || edu.year || '-'} {(edu['Année de fin'] || edu.end_date) && `- ${edu['Année de fin'] || edu.end_date}`}
                                   </p>
-                                  {edu.description && (
-                                    <p className="text-gray-700 text-sm mt-2">{edu.description}</p>
+                                  {(edu['Spécialisation/Domaine'] || edu.description) && (
+                                    <p className="text-gray-700 text-sm mt-2">{edu['Spécialisation/Domaine'] || edu.description}</p>
                                   )}
                                 </div>
                               ))}
@@ -857,41 +918,129 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         )}
 
                         {/* Liens */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                              <Share2 className="w-6 h-6 text-indigo-600" />
+                        {(candidateProfile.linkedin_url || candidateProfile.portfolio_url || candidateProfile.github_url || (candidateProfile.other_urls && candidateProfile.other_urls.length > 0)) && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                <Share2 className="w-6 h-6 text-indigo-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Liens et réseaux</h3>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900">Liens et réseaux</h3>
+                            <div className="space-y-2">
+                              {candidateProfile.linkedin_url && (
+                                <a
+                                  href={candidateProfile.linkedin_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                  LinkedIn
+                                </a>
+                              )}
+                              {candidateProfile.portfolio_url && (
+                                <a
+                                  href={candidateProfile.portfolio_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                  Portfolio
+                                </a>
+                              )}
+                              {candidateProfile.github_url && (
+                                <a
+                                  href={candidateProfile.github_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                  GitHub
+                                </a>
+                              )}
+                              {candidateProfile.other_urls && candidateProfile.other_urls.length > 0 && candidateProfile.other_urls.map((url: string, index: number) => (
+                                <a
+                                  key={index}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                  Autre lien {index + 1}
+                                </a>
+                              ))}
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            {candidateProfile.linkedin_url && (
-                              <a
-                                href={candidateProfile.linkedin_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                <Share2 className="w-4 h-4" />
-                                LinkedIn
-                              </a>
-                            )}
-                            {candidateProfile.portfolio_url && (
-                              <a
-                                href={candidateProfile.portfolio_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                <Share2 className="w-4 h-4" />
-                                Portfolio
-                              </a>
-                            )}
-                            {!candidateProfile.linkedin_url && !candidateProfile.portfolio_url && (
-                              <p className="text-gray-500 text-sm">Aucun lien ajouté</p>
-                            )}
+                        )}
+
+                        {/* Permis de conduire */}
+                        {candidateProfile.driving_license && candidateProfile.driving_license.length > 0 && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <Award className="w-6 h-6 text-yellow-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Permis de conduire</h3>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {candidateProfile.driving_license.map((license: string, index: number) => (
+                                <span key={index} className="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full text-sm font-medium border border-yellow-200">
+                                  Permis {license}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
+
+                        {/* Documents */}
+                        {(candidateProfile.cv_url || candidateProfile.cover_letter_url || candidateProfile.certificates_url) && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-gray-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Documents</h3>
+                            </div>
+                            <div className="space-y-2">
+                              {candidateProfile.cv_url && (
+                                <a
+                                  href={candidateProfile.cv_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  Curriculum Vitae (CV)
+                                </a>
+                              )}
+                              {candidateProfile.cover_letter_url && (
+                                <a
+                                  href={candidateProfile.cover_letter_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  Lettre de motivation
+                                </a>
+                              )}
+                              {candidateProfile.certificates_url && (
+                                <a
+                                  href={candidateProfile.certificates_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  Certificats
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
