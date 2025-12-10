@@ -53,8 +53,8 @@ export class UserProfileService {
       const { data, error } = await supabase
         .from('candidate_profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading candidate profile:', error);
@@ -79,7 +79,7 @@ export class UserProfileService {
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading candidate CV:', error);
@@ -217,7 +217,7 @@ export class UserProfileService {
     const inputData = this.assembleAutoInput(profile, cv);
 
     return {
-      success: true,
+      success: profile !== null,
       profile,
       cv,
       inputData
@@ -265,44 +265,34 @@ export class UserProfileService {
    */
   static buildMatchingInputFromProfile(
     profile: CandidateProfile | null,
-    jobData?: {
-      title: string;
-      required_skills?: string[];
-      min_experience?: number;
-      education_level?: string;
-    }
+    cv?: CandidateCV | null
   ): any {
-    if (!profile) {
+    if (!profile && !cv) {
       return {
-        profil_candidat: {
-          competences: [],
-          experience_annees: 0,
-          formations: []
-        },
-        offre_emploi: {
-          titre: jobData?.title || '',
-          competences_requises: jobData?.required_skills || [],
-          experience_requise: jobData?.min_experience || 0
-        }
+        competences: [],
+        experience: 0,
+        niveau_etude: '',
+        localisation_preferee: '',
+        type_contrat_prefere: 'CDI',
+        secteur_prefere: ''
       };
     }
 
-    const experienceYears = profile.experience?.length || 0;
-    const formations = (profile.education || []).map((edu: any) =>
-      edu.degree || edu.diploma || ''
-    );
+    const cvData = cv?.cv_data || {};
+    const workExperience = profile?.work_experience || [];
+    const experienceYears = profile?.experience_years || workExperience.length || 0;
+
+    const formations = (profile?.education || cvData.education || [])
+      .map((edu: any) => edu['Diplôme obtenu'] || edu.degree || edu.diploma || '')
+      .filter(Boolean);
 
     return {
-      profil_candidat: {
-        competences: profile.skills || [],
-        experience_annees: experienceYears,
-        formations
-      },
-      offre_emploi: {
-        titre: jobData?.title || '',
-        competences_requises: jobData?.required_skills || [],
-        experience_requise: jobData?.min_experience || 0
-      }
+      competences: profile?.skills || cvData.competences || [],
+      experience: experienceYears,
+      niveau_etude: profile?.education_level || '',
+      localisation_preferee: profile?.location || '',
+      type_contrat_prefere: 'CDI',
+      secteur_prefere: profile?.desired_sectors?.[0] || ''
     };
   }
 
