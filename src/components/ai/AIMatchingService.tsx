@@ -104,6 +104,47 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
     }
   };
 
+  const callAIMatchingService = async (selectedJob: any, completeProfile: any): Promise<any> => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/ai-matching-service`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          candidate_profile: completeProfile.candidate_profile,
+          job_offer: {
+            id: selectedJob.id,
+            title: selectedJob.title,
+            description: selectedJob.description || '',
+            sector: selectedJob.sector || selectedJob.category || '',
+            location: selectedJob.location || '',
+            contract_type: selectedJob.contract_type || 'CDI',
+            salary_min: selectedJob.salary_min,
+            salary_max: selectedJob.salary_max,
+            required_skills: selectedJob.required_skills || [],
+            preferred_skills: selectedJob.preferred_skills || [],
+            min_experience: selectedJob.min_experience || 0,
+            required_education_level: selectedJob.education_level || 'BAC',
+            required_languages: selectedJob.languages || ['Français'],
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'AI service error');
+    }
+
+    return response.json();
+  };
+
   const handleAnalyzeClick = () => {
     if (!user) {
       alert('Vous devez être connecté');
@@ -134,80 +175,55 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         return;
       }
 
-      const config = await IAConfigService.getConfig('ai_matching');
-      if (!config) {
-        throw new Error('Configuration IA non trouvée');
-      }
-
-      const validationResult = IAConfigService.validateInput(matchingData, config.input_schema);
-      if (!validationResult.valid) {
-        throw new Error('Données invalides: ' + validationResult.errors.join(', '));
-      }
-
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user!.id)
-        .maybeSingle();
-
-      if (!userProfile) {
+      // Load complete profile data
+      const result = await UserProfileService.loadUserData(user!.id);
+      if (!result.success || !result.profile) {
         alert('Profil utilisateur non trouvé');
         setAnalyzing(false);
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('candidate_profiles')
-        .select('*')
-        .eq('profile_id', userProfile.id)
-        .maybeSingle();
+      // Build complete matching input (profile + CV + job merged)
+      const completeProfile = UserProfileService.buildCompleteMatchingInput(
+        result.profile,
+        result.cv
+      );
 
-      if (!profile && inputMode === 'profile') {
-        alert('Veuillez compléter votre profil avant l\'analyse');
-        setAnalyzing(false);
-        return;
-      }
-
+      // Fetch published jobs
       const { data: jobs } = await supabase
         .from('jobs')
         .select('*, companies(name)')
         .eq('status', 'published')
         .limit(20);
 
-      if (!jobs) {
+      if (!jobs || jobs.length === 0) {
+        alert('Aucune offre d\'emploi disponible');
         setAnalyzing(false);
         return;
       }
 
-      const analyzedMatches: JobMatch[] = jobs.map(job => {
-        const skillsMatch = calculateSkillsMatch(matchingData.competences || [], job.required_skills || []);
-        const experienceMatch = calculateExperienceMatch(
-          matchingData.experience || 0,
-          job.min_experience || 0
-        );
-        const educationMatch = calculateEducationMatch(
-          matchingData.niveau_etude,
-          job.education_level
-        );
+      // Call AI matching service for each job
+      const analyzedMatches: JobMatch[] = [];
+      for (const job of jobs) {
+        try {
+          const aiResult = await callAIMatchingService(job, completeProfile);
 
-        const matchScore = Math.round(
-          (skillsMatch * 0.5 + experienceMatch * 0.3 + educationMatch * 0.2)
-        );
-
-        const reasons = generateMatchReasons(skillsMatch, experienceMatch, educationMatch);
-
-        return {
-          id: job.id,
-          title: job.title,
-          company: job.companies?.name || 'N/A',
-          location: job.location,
-          matchScore,
-          reasons,
-          skills_match: skillsMatch,
-          experience_match: experienceMatch,
-          education_match: educationMatch,
-        };
-      });
+          analyzedMatches.push({
+            id: job.id,
+            title: job.title,
+            company: job.companies?.name || 'N/A',
+            location: job.location,
+            matchScore: aiResult.score_global || 0,
+            reasons: aiResult.improvement_suggestions || [],
+            skills_match: aiResult.sub_scores?.skills || 0,
+            experience_match: aiResult.sub_scores?.experience || 0,
+            education_match: aiResult.sub_scores?.education || 0,
+          });
+        } catch (jobError) {
+          console.warn(`Skipping job ${job.id} due to analysis error:`, jobError);
+          // Continue with next job
+        }
+      }
 
       const sortedMatches = analyzedMatches
         .sort((a, b) => b.matchScore - a.matchScore)
@@ -228,22 +244,23 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
           reasons: m.reasons
         })),
         profile_score: avgScore,
-        total_analyzed: jobs.length
+        total_analyzed: jobs.length,
+        analysis_type: 'ai_enhanced'
       };
 
       await IAConfigService.logServiceUsage(
         user!.id,
         'ai_matching',
-        matchingData,
+        completeProfile,
         outputData,
         creditResult.cost || serviceCost
       );
 
-      alert('Analyse terminée!');
+      alert('Analyse IA terminée avec succès!');
 
     } catch (error) {
       console.error('Error analyzing profile:', error);
-      alert('Erreur lors de l\'analyse');
+      alert('Erreur lors de l\'analyse IA: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     } finally {
       setAnalyzing(false);
     }
