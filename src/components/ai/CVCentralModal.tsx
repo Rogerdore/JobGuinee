@@ -126,44 +126,49 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
     setShowJobSelector(true);
 
     try {
-      const { data, error } = await supabase
+      // Charger d'abord les jobs
+      const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
-        .select(`
-          id,
-          title,
-          location,
-          contract_type,
-          salary_min,
-          salary_max,
-          description,
-          requirements,
-          responsibilities,
-          companies!inner (
-            name,
-            logo_url
-          )
-        `)
+        .select('*')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (jobsError) throw jobsError;
 
-      const formattedJobs = data?.map(job => ({
-        id: job.id,
-        title: job.title,
-        location: job.location,
-        contract_type: job.contract_type,
-        salary_min: job.salary_min,
-        salary_max: job.salary_max,
-        description: job.description,
-        requirements: job.requirements,
-        responsibilities: job.responsibilities,
-        company: {
-          name: (job as any).companies?.name || 'Entreprise',
-          logo_url: (job as any).companies?.logo_url || ''
-        }
-      })) || [];
+      // Récupérer les IDs des entreprises
+      const companyIds = [...new Set(jobsData?.map(job => job.company_id).filter(Boolean))];
+
+      // Charger les entreprises
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select('id, name, logo_url')
+        .in('id', companyIds);
+
+      if (companiesError) throw companiesError;
+
+      // Créer un map des entreprises
+      const companiesMap = new Map(companiesData?.map(c => [c.id, c]));
+
+      // Formatter les jobs avec les données des entreprises
+      const formattedJobs = jobsData?.map(job => {
+        const company = companiesMap.get(job.company_id);
+        return {
+          id: job.id,
+          title: job.title,
+          location: job.location,
+          contract_type: job.contract_type,
+          salary_min: job.salary_min,
+          salary_max: job.salary_max,
+          description: job.description,
+          requirements: job.requirements,
+          responsibilities: job.responsibilities,
+          company: {
+            name: company?.name || 'Entreprise',
+            logo_url: company?.logo_url || ''
+          }
+        };
+      }) || [];
 
       setJobListings(formattedJobs);
     } catch (error) {
