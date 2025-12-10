@@ -118,13 +118,13 @@ export class UserProfileService {
     // Expériences : CV prioritaire (plus détaillé)
     const experiences = ((cvData.experience || cvData.experiences) || profile.work_experience || [])
       .map((exp: any) => ({
-        poste: exp.position || exp.title || exp.poste || '',
-        entreprise: exp.company || exp.entreprise || '',
-        periode: exp.period ||
-                 (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') ||
-                 exp.periode || '',
+        poste: exp.position || exp.title || exp.poste || exp['Poste occupé'] || '',
+        entreprise: exp.company || exp.entreprise || exp['Entreprise'] || '',
+        periode: exp.period || exp.periode || exp['Période'] ||
+                 (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || '',
         missions: Array.isArray(exp.missions)
           ? exp.missions
+          : Array.isArray(exp['Missions principales']) ? [exp['Missions principales']]
           : Array.isArray(exp.tasks) ? exp.tasks
           : (exp.description ? [exp.description] : [])
       }));
@@ -134,22 +134,22 @@ export class UserProfileService {
 
     // D'abord CV
     (cvData.education || cvData.formations || []).forEach((edu: any) => {
-      const key = `${edu.degree || edu.diploma || edu.diplome}`.toLowerCase();
+      const key = `${edu.degree || edu.diploma || edu.diplome || edu['Diplôme obtenu']}`.toLowerCase();
       formationsMap.set(key, {
-        diplome: edu.degree || edu.diploma || edu.diplome || '',
-        ecole: edu.institution || edu.school || edu.ecole || '',
-        annee: edu.year || edu.graduation_year || edu.annee || ''
+        diplome: edu.degree || edu.diploma || edu.diplome || edu['Diplôme obtenu'] || '',
+        ecole: edu.institution || edu.school || edu.ecole || edu['Établissement'] || '',
+        annee: edu.year || edu.graduation_year || edu.annee || edu['Année d\'obtention'] || ''
       });
     });
 
     // Puis profil (complément)
     (profile.education || []).forEach((edu: any) => {
-      const key = `${edu.degree || edu.diploma || edu.diplome}`.toLowerCase();
+      const key = `${edu.degree || edu.diploma || edu.diplome || edu['Diplôme obtenu']}`.toLowerCase();
       if (!formationsMap.has(key)) {
         formationsMap.set(key, {
-          diplome: edu.degree || edu.diploma || edu.diplome || '',
-          ecole: edu.institution || edu.school || edu.ecole || '',
-          annee: edu.year || edu.graduation_year || edu.annee || ''
+          diplome: edu.degree || edu.diploma || edu.diplome || edu['Diplôme obtenu'] || '',
+          ecole: edu.institution || edu.school || edu.ecole || edu['Établissement'] || '',
+          annee: edu.year || edu.graduation_year || edu.annee || edu['Année d\'obtention'] || ''
         });
       }
     });
@@ -317,13 +317,14 @@ export class UserProfileService {
 
     // Get relevant experiences from CV or profile
     const experiences = ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
-      .filter((exp: any) => exp && (exp.position || exp.title || exp.poste))
+      .filter((exp: any) => exp && (exp.position || exp.title || exp.poste || exp['Poste occupé']))
       .slice(0, 3)
       .map((exp: any) => ({
-        poste: exp.position || exp.title || exp.poste || '',
-        entreprise: exp.company || exp.entreprise || '',
-        periode: exp.period || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || exp.periode || '',
+        poste: exp.position || exp.title || exp.poste || exp['Poste occupé'] || '',
+        entreprise: exp.company || exp.entreprise || exp['Entreprise'] || '',
+        periode: exp.period || exp.periode || exp['Période'] || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || '',
         realisations: Array.isArray(exp.missions) ? exp.missions.slice(0, 2) :
+                      Array.isArray(exp['Missions principales']) ? [exp['Missions principales']] :
                       Array.isArray(exp.tasks) ? exp.tasks.slice(0, 2) :
                       (exp.description ? [exp.description] : [])
       }));
@@ -425,10 +426,13 @@ export class UserProfileService {
       // Experience details
       work_experience: ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
         .map((exp: any) => ({
-          position: exp.position || exp.title || exp.poste || '',
-          company: exp.company || exp.entreprise || '',
-          period: exp.period || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || exp.periode || '',
-          missions: Array.isArray(exp.missions) ? exp.missions : Array.isArray(exp.tasks) ? exp.tasks : (exp.description ? [exp.description] : []),
+          position: exp.position || exp.title || exp.poste || exp['Poste occupé'] || '',
+          company: exp.company || exp.entreprise || exp['Entreprise'] || '',
+          period: exp.period || exp.periode || exp['Période'] || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || '',
+          missions: Array.isArray(exp.missions) ? exp.missions :
+                    Array.isArray(exp['Missions principales']) ? [exp['Missions principales']] :
+                    Array.isArray(exp.tasks) ? exp.tasks :
+                    (exp.description ? [exp.description] : []),
           achievements: exp.achievements || exp.realisations || []
         })),
 
@@ -519,24 +523,24 @@ export class UserProfileService {
 
     // CV education first (priority)
     (cvData.education || cvData.formations || []).forEach((edu: any) => {
-      const key = `${edu.degree || edu.diploma || edu.diplome}${edu.institution || edu.school || edu.ecole}`.toLowerCase();
+      const key = `${edu.degree || edu.diploma || edu.diplome || edu['Diplôme obtenu']}${edu.institution || edu.school || edu.ecole || edu['Établissement']}`.toLowerCase();
       educationMap.set(key, {
-        degree: edu.degree || edu.diploma || edu.diplome || '',
-        school: edu.institution || edu.school || edu.ecole || '',
-        graduation_year: edu.year || edu.graduation_year || edu.annee || '',
-        field: edu.field || edu.domaine || ''
+        degree: edu.degree || edu.diploma || edu.diplome || edu['Diplôme obtenu'] || '',
+        school: edu.institution || edu.school || edu.ecole || edu['Établissement'] || '',
+        graduation_year: edu.year || edu.graduation_year || edu.annee || edu['Année d\'obtention'] || '',
+        field: edu.field || edu.domaine || edu['Domaine'] || ''
       });
     });
 
     // Profile education (complement)
     (profile?.education || []).forEach((edu: any) => {
-      const key = `${edu.degree || edu.diploma}${edu.institution || edu.school}`.toLowerCase();
+      const key = `${edu.degree || edu.diploma || edu['Diplôme obtenu']}${edu.institution || edu.school || edu['Établissement']}`.toLowerCase();
       if (!educationMap.has(key)) {
         educationMap.set(key, {
-          degree: edu.degree || edu.diploma || '',
-          school: edu.institution || edu.school || '',
-          graduation_year: edu.year || edu.graduation_year || '',
-          field: edu.field || edu.domaine || ''
+          degree: edu.degree || edu.diploma || edu['Diplôme obtenu'] || '',
+          school: edu.institution || edu.school || edu['Établissement'] || '',
+          graduation_year: edu.year || edu.graduation_year || edu['Année d\'obtention'] || '',
+          field: edu.field || edu.domaine || edu['Domaine'] || ''
         });
       }
     });
@@ -574,12 +578,13 @@ export class UserProfileService {
 
     // Get experiences with details
     const experiences = ((cvData.experience || cvData.experiences) || profile?.work_experience || [])
-      .filter((exp: any) => exp && (exp.position || exp.title || exp.poste))
+      .filter((exp: any) => exp && (exp.position || exp.title || exp.poste || exp['Poste occupé']))
       .map((exp: any) => ({
-        poste: exp.position || exp.title || exp.poste || '',
-        entreprise: exp.company || exp.entreprise || '',
-        periode: exp.period || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || exp.periode || '',
+        poste: exp.position || exp.title || exp.poste || exp['Poste occupé'] || '',
+        entreprise: exp.company || exp.entreprise || exp['Entreprise'] || '',
+        periode: exp.period || exp.periode || exp['Période'] || (exp.start_date ? `${exp.start_date} - ${exp.end_date || 'Présent'}` : '') || '',
         realisations: Array.isArray(exp.missions) ? exp.missions :
+                      Array.isArray(exp['Missions principales']) ? [exp['Missions principales']] :
                       Array.isArray(exp.tasks) ? exp.tasks :
                       (exp.description ? [exp.description] : [])
       }));
