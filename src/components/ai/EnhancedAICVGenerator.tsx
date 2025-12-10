@@ -270,7 +270,11 @@ export default function EnhancedAICVGenerator({ onNavigate }: EnhancedAICVGenera
               Retour
             </button>
           )}
-          <CreditBalance />
+          <CreditBalance
+            variant="prominent"
+            onBuyCredits={() => onNavigate?.('credit-store')}
+            className="mb-6"
+          />
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">

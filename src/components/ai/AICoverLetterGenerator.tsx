@@ -234,8 +234,12 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
               Retour
             </button>
           )}
-          <CreditBalance />
         </div>
+        <CreditBalance
+          variant="prominent"
+          onBuyCredits={() => onNavigate?.('credit-store')}
+          className="mb-6"
+        />
 
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
           <div className="flex items-center gap-3 mb-6">

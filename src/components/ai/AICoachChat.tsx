@@ -267,7 +267,7 @@ N'hésitez pas à me poser des questions plus spécifiques sur :
                 <span>100 crédits/message</span>
               </div>
               <div className="mt-1">
-                <CreditBalance />
+                <CreditBalance variant="compact" />
               </div>
             </div>
           </div>

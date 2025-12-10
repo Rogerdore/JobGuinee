@@ -302,11 +302,16 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
           </div>
         )}
 
+        <CreditBalance
+          variant="prominent"
+          onBuyCredits={() => onNavigate?.('credit-store')}
+          className="mb-6"
+        />
+
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">
             Coût: <span className="font-bold text-blue-600">50 crédits</span>
           </div>
-          <CreditBalance />
         </div>
 
         <button
