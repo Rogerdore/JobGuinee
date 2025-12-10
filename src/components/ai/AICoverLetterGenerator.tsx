@@ -26,7 +26,7 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const serviceCost = useServiceCost(SERVICES.AI_CV_GENERATION) || 30;
+  const serviceCost = useServiceCost(SERVICES.AI_COVER_LETTER) || 20;
 
   const [inputMode, setInputMode] = useState<InputMode>('profile');
   const [letterData, setLetterData] = useState<any>({
@@ -121,7 +121,7 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
     setGenerating(true);
 
     try {
-      const creditResult = await consumeCredits(SERVICES.AI_CV_GENERATION);
+      const creditResult = await consumeCredits(SERVICES.AI_COVER_LETTER);
       if (!creditResult.success) {
         alert(creditResult.message);
         return;

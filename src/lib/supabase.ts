@@ -22,6 +22,7 @@ export type Profile = {
   gender?: string;
   address?: string;
   region?: string;
+  credits_balance?: number;
   created_at: string;
   updated_at: string;
 };

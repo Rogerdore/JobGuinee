@@ -234,7 +234,7 @@ export class IAConfigService {
     };
   }
 
-  private static validateInput(input: any, schema: any): { valid: boolean; errors: string[] } {
+  public static validateInput(input: any, schema: any): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     if (!schema || typeof schema !== 'object') {

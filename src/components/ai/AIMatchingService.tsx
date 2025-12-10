@@ -144,10 +144,22 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
         throw new Error('Données invalides: ' + validationResult.errors.join(', '));
       }
 
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user!.id)
+        .maybeSingle();
+
+      if (!userProfile) {
+        alert('Profil utilisateur non trouvé');
+        setAnalyzing(false);
+        return;
+      }
+
       const { data: profile } = await supabase
         .from('candidate_profiles')
         .select('*')
-        .eq('user_id', user!.id)
+        .eq('profile_id', userProfile.id)
         .maybeSingle();
 
       if (!profile && inputMode === 'profile') {

@@ -266,14 +266,12 @@ export class CreditService {
 
 export const SERVICES = {
   AI_CV_GENERATION: 'ai_cv_generation',
-  AI_COVER_LETTER: 'ai_cover_letter_generation',
-  AI_JOB_MATCHING: 'job_matching',
-  AI_PROFILE_ANALYSIS: 'profile_analysis',
-  AI_INTERVIEW_COACHING: 'interview_coaching',
-  AI_CAREER_PATH: 'career_path_planning',
+  AI_COVER_LETTER: 'ai_cover_letter',
+  AI_JOB_MATCHING: 'ai_matching',
+  AI_INTERVIEW_COACHING: 'ai_coach',
+  AI_CAREER_PATH: 'ai_career_plan',
   PROFILE_VISIBILITY_BOOST: 'profile_visibility_boost',
-  FEATURED_APPLICATION: 'featured_application',
-  DIRECT_MESSAGE_RECRUITER: 'direct_message_recruiter'
+  FEATURED_APPLICATION: 'featured_application'
 } as const;
 
 export type ServiceCode = typeof SERVICES[keyof typeof SERVICES];

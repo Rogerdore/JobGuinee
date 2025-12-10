@@ -21,7 +21,7 @@ export default function AICareerPlanGenerator({ onNavigate }: AICareerPlanGenera
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const serviceCost = useServiceCost(SERVICES.AI_CV_GENERATION) || 40;
+  const serviceCost = useServiceCost(SERVICES.AI_CAREER_PATH) || 40;
 
   const [inputMode, setInputMode] = useState<InputMode>('profile');
   const [planData, setPlanData] = useState<any>({
@@ -111,7 +111,7 @@ export default function AICareerPlanGenerator({ onNavigate }: AICareerPlanGenera
     setGenerating(true);
 
     try {
-      const creditResult = await consumeCredits(SERVICES.AI_CV_GENERATION);
+      const creditResult = await consumeCredits(SERVICES.AI_CAREER_PATH);
       if (!creditResult.success) {
         alert(creditResult.message);
         return;

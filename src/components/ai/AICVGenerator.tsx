@@ -71,11 +71,16 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
         .eq('id', user!.id)
         .single();
 
+      if (!profile) {
+        console.error('Profile not found');
+        return;
+      }
+
       const { data: candidateProfile } = await supabase
         .from('candidate_profiles')
         .select('*')
-        .eq('user_id', user!.id)
-        .single();
+        .eq('profile_id', profile.id)
+        .maybeSingle();
 
       if (profile && candidateProfile) {
         setCVData({
