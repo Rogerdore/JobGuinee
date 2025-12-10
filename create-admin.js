@@ -29,15 +29,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 async function createAdminUser() {
-  const email = 'admin@jobguinee.com';
-  const password = 'Admin123!';
-  const fullName = 'Administrateur';
+  const email = 'doreroger07@yahoo.fr';
+  const password = 'Rogerdore1986@';
+  const fullName = 'Roger Dore';
 
   console.log('🚀 Création du compte administrateur...');
   console.log('📧 Email:', email);
+  console.log('👤 Nom:', fullName);
+  console.log('\n⏳ Veuillez patienter...\n');
 
   try {
-    // Créer l'utilisateur avec l'API Admin
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email,
       password: password,
@@ -49,40 +50,90 @@ async function createAdminUser() {
     });
 
     if (authError) {
-      console.error('❌ Erreur lors de la création de l\'utilisateur:', authError.message);
+      if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+        console.log('ℹ️  Un compte existe déjà avec cet email');
+        console.log('🔍 Recherche du compte existant...\n');
+
+        const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+
+        if (listError) {
+          console.error('❌ Erreur lors de la recherche:', listError.message);
+          process.exit(1);
+        }
+
+        const existingUser = users.users.find(u => u.email === email);
+
+        if (!existingUser) {
+          console.error('❌ Utilisateur introuvable dans la base de données');
+          process.exit(1);
+        }
+
+        console.log('✅ Compte trouvé (ID:', existingUser.id + ')');
+        console.log('📝 Mise à jour du profil en administrateur...\n');
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            user_type: 'admin',
+            full_name: fullName
+          })
+          .eq('id', existingUser.id);
+
+        if (updateError) {
+          console.error('❌ Erreur lors de la mise à jour:', updateError.message);
+          process.exit(1);
+        }
+
+        console.log('✅ Profil mis à jour avec succès!');
+        console.log('\n═══════════════════════════════════════════════════════');
+        console.log('✅ COMPTE ADMINISTRATEUR PRÊT');
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📧 Email:', email);
+        console.log('🔑 Mot de passe:', password);
+        console.log('👤 Rôle: Administrateur');
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('\n🌐 Connectez-vous sur http://localhost:5173\n');
+
+        return;
+      }
+
+      console.error('❌ Erreur lors de la création:', authError.message);
       process.exit(1);
     }
 
     console.log('✅ Utilisateur créé avec succès');
     console.log('📝 ID utilisateur:', authData.user.id);
 
-    // Attendre un peu pour que le trigger crée le profil
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Mettre à jour le profil pour être admin
-    const { data: profileData, error: profileError } = await supabase
+    console.log('📝 Mise à jour du profil en administrateur...');
+
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({
         user_type: 'admin',
         full_name: fullName
       })
-      .eq('id', authData.user.id)
-      .select();
+      .eq('id', authData.user.id);
 
     if (profileError) {
-      console.error('❌ Erreur lors de la mise à jour du profil:', profileError.message);
-      process.exit(1);
+      console.error('⚠️  Avertissement:', profileError.message);
+      console.log('Le compte a été créé mais le profil n\'a peut-être pas été mis à jour.');
+    } else {
+      console.log('✅ Profil configuré avec succès!');
     }
 
-    console.log('✅ Profil mis à jour en administrateur');
-    console.log('\n🎉 Compte administrateur créé avec succès!\n');
-    console.log('📋 Vos identifiants:');
-    console.log('   Email:', email);
-    console.log('   Mot de passe:', password);
-    console.log('\n🔐 N\'oubliez pas de changer le mot de passe après votre première connexion!\n');
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('✅ COMPTE ADMINISTRATEUR CRÉÉ AVEC SUCCÈS');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📧 Email:', email);
+    console.log('🔑 Mot de passe:', password);
+    console.log('👤 Rôle: Administrateur');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('\n🌐 Connectez-vous sur http://localhost:5173\n');
 
   } catch (error) {
-    console.error('❌ Erreur inattendue:', error);
+    console.error('\n❌ Erreur inattendue:', error.message);
     process.exit(1);
   }
 }
