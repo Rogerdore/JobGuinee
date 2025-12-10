@@ -55,14 +55,15 @@ export type CandidateProfile = {
 
 export type Company = {
   id: string;
-  user_id: string;
-  company_name: string;
+  profile_id: string;
+  name: string;
   logo_url?: string;
   description?: string;
-  sector?: string;
+  industry?: string;
   website?: string;
   location?: string;
   size?: string;
+  created_at?: string;
 };
 
 export type Job = {
