@@ -138,7 +138,7 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
           description,
           requirements,
           responsibilities,
-          company:companies!inner (
+          companies!inner (
             name,
             logo_url
           )
@@ -150,14 +150,25 @@ export default function CVCentralModal({ onClose }: CVCentralModalProps) {
       if (error) throw error;
 
       const formattedJobs = data?.map(job => ({
-        ...job,
-        company: Array.isArray(job.company) ? job.company[0] : job.company
+        id: job.id,
+        title: job.title,
+        location: job.location,
+        contract_type: job.contract_type,
+        salary_min: job.salary_min,
+        salary_max: job.salary_max,
+        description: job.description,
+        requirements: job.requirements,
+        responsibilities: job.responsibilities,
+        company: {
+          name: (job as any).companies?.name || 'Entreprise',
+          logo_url: (job as any).companies?.logo_url || ''
+        }
       })) || [];
 
       setJobListings(formattedJobs);
     } catch (error) {
       console.error('Error loading jobs:', error);
-      alert('Erreur lors du chargement des offres');
+      alert('Erreur lors du chargement des offres: ' + (error as Error).message);
     } finally {
       setLoadingJobs(false);
     }
