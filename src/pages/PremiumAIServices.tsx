@@ -293,26 +293,14 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                       className={`w-full py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                         isDisabled
                           ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer'
-                          : userHasAccess || !isPremium
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
-                          : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700'
+                          : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
                       }`}
                     >
                       {isDisabled ? (
                         'Acheter des crédits'
-                      ) : userHasAccess ? (
-                        <>
-                          Utiliser maintenant
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      ) : isPremium ? (
-                        <>
-                          <Crown className="w-5 h-5" />
-                          Passer à Premium
-                        </>
                       ) : (
                         <>
-                          Essayer gratuitement
+                          Utiliser le service
                           <ArrowRight className="w-5 h-5" />
                         </>
                       )}
