@@ -48,7 +48,11 @@ export function CMSProvider({ children }: { children: ReactNode }) {
       if (settingsData) {
         const settingsMap: Record<string, any> = {};
         settingsData.forEach((setting: SiteSetting) => {
-          settingsMap[setting.setting_key] = setting.setting_value.value || setting.setting_value;
+          if (setting.setting_value) {
+            settingsMap[setting.setting_key] = typeof setting.setting_value === 'object'
+              ? setting.setting_value.value || setting.setting_value
+              : setting.setting_value;
+          }
         });
         setSettings(settingsMap);
       }

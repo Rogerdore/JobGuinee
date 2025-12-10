@@ -235,6 +235,8 @@ export default function CandidateProfileForm() {
     try {
       const candidateData = {
         profile_id: profile.id,
+        user_id: user?.id,
+        full_name: formData.fullName,
         title: formData.desiredPosition || formData.currentPosition || '',
         bio: formData.professionalSummary,
         experience_years: formData.experiences.length,
