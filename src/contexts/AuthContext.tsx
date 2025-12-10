@@ -101,21 +101,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     if (!data.user) throw new Error('Inscription échouée. Veuillez réessayer.');
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    let profileData = null;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .maybeSingle();
+    while (!profileData && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (profileError) {
-      console.error('Error fetching profile:', profileError);
-      throw new Error('Erreur lors de la création du profil');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      if (profile) {
+        profileData = profile;
+        break;
+      }
+
+      attempts++;
     }
 
     if (!profileData) {
-      throw new Error('Le profil n\'a pas été créé. Veuillez contacter le support.');
+      throw new Error('Délai d\'attente dépassé. Veuillez vous reconnecter.');
     }
 
     if (role === 'trainer') {
