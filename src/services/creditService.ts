@@ -343,16 +343,28 @@ export class PricingEngine {
 
   static async getServiceCost(serviceCode: string): Promise<number | null> {
     try {
-      const { data, error } = await supabase.rpc('get_effective_cost', {
-        p_service_code: serviceCode
-      });
+      const { data, error } = await supabase
+        .from('service_credit_costs')
+        .select('credits_cost, promotion_active, discount_percent')
+        .eq('service_code', serviceCode)
+        .eq('is_active', true)
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching service cost:', error);
         return null;
       }
 
-      return data;
+      if (!data) {
+        return null;
+      }
+
+      let cost = data.credits_cost;
+      if (data.promotion_active && data.discount_percent > 0) {
+        cost = Math.round(cost * (1 - data.discount_percent / 100));
+      }
+
+      return cost;
     } catch (error) {
       console.error('Error in getServiceCost:', error);
       return null;

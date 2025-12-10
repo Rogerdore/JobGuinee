@@ -69,16 +69,14 @@ export class UserProfileService {
   }
 
   /**
-   * Récupère le CV candidat depuis candidate_cv
+   * Récupère le CV candidat depuis candidate_profiles.cv_parsed_data
    */
   static async getCandidateCV(userId: string): Promise<CandidateCV | null> {
     try {
       const { data, error } = await supabase
-        .from('candidate_cv')
-        .select('*')
+        .from('candidate_profiles')
+        .select('id, user_id, cv_parsed_data, created_at, cv_parsed_at')
         .eq('user_id', userId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -86,7 +84,17 @@ export class UserProfileService {
         return null;
       }
 
-      return data || null;
+      if (!data || !data.cv_parsed_data) {
+        return null;
+      }
+
+      return {
+        id: data.id,
+        user_id: data.user_id,
+        cv_data: data.cv_parsed_data,
+        created_at: data.created_at,
+        updated_at: data.cv_parsed_at || data.created_at
+      };
     } catch (error) {
       console.error('Error in getCandidateCV:', error);
       return null;

@@ -32,15 +32,20 @@ export default function TemplateSelector({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_accessible_templates', {
-        p_user_id: user.id,
-        p_service_code: serviceCode
-      });
+      const { data: templates, error } = await supabase
+        .from('ia_service_templates')
+        .select('*')
+        .eq('service_code', serviceCode)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
 
-      if (!error && data?.success) {
-        setTemplates(data.templates || []);
-        setUserCredits(data.user_credits || 0);
+      if (error) {
+        console.error('Error loading templates:', error);
+      } else {
+        setTemplates(templates || []);
       }
+
+      await loadUserCredits();
     } catch (error) {
       console.error('Error loading templates:', error);
     } finally {
