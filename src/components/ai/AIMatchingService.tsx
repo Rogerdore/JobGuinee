@@ -72,6 +72,12 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
     }
   }, [inputMode, user]);
 
+  useEffect(() => {
+    if (profileLoaded && !jobsLoaded && !loading) {
+      loadAvailableJobs();
+    }
+  }, [profileLoaded]);
+
   const loadProfileData = async () => {
     if (!user) return;
 
@@ -166,6 +172,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
       if (jobs) {
         setAvailableJobs(jobs);
         setJobsLoaded(true);
+        setShowJobSelector(true);
       }
     } catch (error) {
       console.error('Error loading jobs:', error);
@@ -516,108 +523,133 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
               </div>
             )}
 
-            <div className="mb-8">
-              <button
-                onClick={loadAvailableJobs}
-                className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2 mb-4"
-              >
-                <Target className="w-5 h-5" />
-                {jobsLoaded ? `Offres chargées (${availableJobs.length})` : 'Charger les offres d\'emploi'}
-              </button>
+            <div className="mb-8 bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+              <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Briefcase className="w-5 h-5" />
+                Offres d'emploi disponibles
+              </h4>
 
-              {jobsLoaded && availableJobs.length > 0 && showJobSelector && (
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-800">
-                      Sélectionnez les offres à analyser ({selectedJobIds.size} sélectionnée(s))
-                    </h3>
-                    <button
-                      onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      {showAdvancedOptions ? 'Masquer les options' : 'Options avancées'}
-                    </button>
-                  </div>
-
-                  {showAdvancedOptions && (
-                    <div className="mb-4 p-4 bg-white rounded-lg border border-gray-300">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Score minimum: {minScoreFilter}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={minScoreFilter}
-                        onChange={(e) => setMinScoreFilter(parseInt(e.target.value))}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-gray-600 mt-2">
-                        Filtre les offres par score minimum attendu
+              {loading && !jobsLoaded ? (
+                <div className="text-center py-8">
+                  <Loader className="w-8 h-8 animate-spin text-teal-600 mx-auto mb-3" />
+                  <p className="text-sm text-gray-600">Chargement automatique des offres...</p>
+                </div>
+              ) : jobsLoaded && availableJobs.length > 0 ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-green-800 mb-2">
+                        {availableJobs.length} offres chargées avec succès
                       </p>
+                      <button
+                        onClick={() => setShowJobSelector(!showJobSelector)}
+                        className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm"
+                      >
+                        <Briefcase className="w-4 h-4" />
+                        {showJobSelector ? 'Masquer les offres' : 'Sélectionner des offres'}
+                      </button>
                     </div>
-                  )}
-
-                  <div className="max-h-96 overflow-y-auto space-y-2">
-                    {availableJobs.map((job) => (
-                      <label key={job.id} className="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition">
-                        <input
-                          type="checkbox"
-                          checked={selectedJobIds.has(job.id)}
-                          onChange={() => toggleJobSelection(job.id)}
-                          className="w-4 h-4 text-blue-600 rounded"
-                        />
-                        <div className="ml-4 flex-1">
-                          <p className="font-medium text-gray-900">{job.title}</p>
-                          <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
-                            <span>{job.companies?.name}</span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {job.location}
-                            </span>
-                            <span>•</span>
-                            <span>{job.min_experience}+ ans</span>
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
-                    <p className="font-medium">Coût total: {selectedJobIds.size * serviceCost} crédits ({selectedJobIds.size} × {serviceCost})</p>
                   </div>
                 </div>
+              ) : (
+                <button
+                  onClick={loadAvailableJobs}
+                  className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium flex items-center justify-center gap-2"
+                >
+                  <Target className="w-5 h-5" />
+                  Charger les offres d'emploi
+                </button>
               )}
+
             </div>
+
+            {jobsLoaded && availableJobs.length > 0 && showJobSelector && (
+              <div className="mb-8 bg-white rounded-xl p-6 border-2 border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-800">
+                    Sélectionnez les offres à analyser ({selectedJobIds.size} sélectionnée(s))
+                  </h3>
+                  <button
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    {showAdvancedOptions ? 'Masquer les options' : 'Options avancées'}
+                  </button>
+                </div>
+
+                {showAdvancedOptions && (
+                  <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-300">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Score minimum: {minScoreFilter}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={minScoreFilter}
+                      onChange={(e) => setMinScoreFilter(parseInt(e.target.value))}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-600 mt-2">
+                      Filtre les offres par score minimum attendu
+                    </p>
+                  </div>
+                )}
+
+                <div className="max-h-96 overflow-y-auto space-y-2 mb-4">
+                  {availableJobs.map((job) => (
+                    <label key={job.id} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition">
+                      <input
+                        type="checkbox"
+                        checked={selectedJobIds.has(job.id)}
+                        onChange={() => toggleJobSelection(job.id)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <div className="ml-4 flex-1">
+                        <p className="font-medium text-gray-900">{job.title}</p>
+                        <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                          <span>{job.companies?.name}</span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {job.location}
+                          </span>
+                          <span>•</span>
+                          <span>{job.min_experience}+ ans</span>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {selectedJobIds.size > 0 && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                    <p className="font-medium">
+                      Coût total: {selectedJobIds.size * serviceCost} crédits ({selectedJobIds.size} offre{selectedJobIds.size > 1 ? 's' : ''} × {serviceCost} crédits)
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 
         <div className="space-y-4">
-          {jobsLoaded && (
+          {jobsLoaded && selectedJobIds.size > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <p className="text-sm text-amber-800">
                 <strong>Offres sélectionnées:</strong> {selectedJobIds.size}
-                {selectedJobIds.size > 0 && ` - Coût: ${selectedJobIds.size * serviceCost} crédits`}
+                {selectedJobIds.size > 0 && ` - Coût total: ${selectedJobIds.size * serviceCost} crédits`}
               </p>
             </div>
           )}
 
-          <div className="flex justify-center gap-4">
-            {jobsLoaded && (
-              <button
-                onClick={() => setShowJobSelector(!showJobSelector)}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 flex items-center gap-2"
-              >
-                <Briefcase className="w-5 h-5" />
-                {showJobSelector ? 'Masquer la liste' : 'Afficher la liste'}
-              </button>
-            )}
-
+          <div className="flex justify-center">
             <button
               onClick={handleAnalyzeClick}
               disabled={analyzing || validationErrors.length > 0 || loading || selectedJobIds.size === 0}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg"
             >
               {analyzing ? (
                 <>
