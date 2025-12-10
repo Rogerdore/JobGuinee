@@ -57,11 +57,13 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [showCVModal, setShowCVModal] = useState(false);
+  const [creditsBalance, setCreditsBalance] = useState<number>(0);
 
   useEffect(() => {
     loadServices();
     if (user) {
       loadUserServices();
+      loadCreditsBalance();
     }
   }, [user]);
 
@@ -97,8 +99,27 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
     }
   };
 
+  const loadCreditsBalance = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('credits_balance')
+        .eq('id', user!.id)
+        .single();
+
+      if (error) throw error;
+      setCreditsBalance(data?.credits_balance || 0);
+    } catch (error) {
+      console.error('Error loading credits balance:', error);
+    }
+  };
+
   const hasAccess = (serviceId: string) => {
     return userServices.some(us => us.service_id === serviceId);
+  };
+
+  const hasEnoughCredits = (creditsCost: number) => {
+    return creditsBalance >= creditsCost;
   };
 
   const handleServiceClick = (service: PremiumService) => {
@@ -183,6 +204,8 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
           {services.map((service) => {
             const userHasAccess = hasAccess(service.id);
             const isPremium = service.type === 'premium';
+            const enoughCredits = hasEnoughCredits(service.credits_cost);
+            const isDisabled = service.credits_cost > 0 && !enoughCredits;
 
             return (
               <div
@@ -250,15 +273,34 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                       )}
                     </div>
 
+                    {/* Insufficient Credits Warning */}
+                    {isDisabled && (
+                      <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-700 font-medium text-center">
+                          Crédits insuffisants
+                        </p>
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => handleServiceClick(service)}
+                      onClick={() => {
+                        if (isDisabled) {
+                          onNavigate?.('credit-store');
+                        } else {
+                          handleServiceClick(service);
+                        }
+                      }}
                       className={`w-full py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
-                        userHasAccess || !isPremium
+                        isDisabled
+                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer'
+                          : userHasAccess || !isPremium
                           ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
                           : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700'
                       }`}
                     >
-                      {userHasAccess ? (
+                      {isDisabled ? (
+                        'Acheter des crédits'
+                      ) : userHasAccess ? (
                         <>
                           Utiliser maintenant
                           <ArrowRight className="w-5 h-5" />
@@ -331,7 +373,14 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       </div>
 
       {showCVModal && (
-        <CVCentralModal onClose={() => setShowCVModal(false)} />
+        <CVCentralModal
+          onClose={() => {
+            setShowCVModal(false);
+            if (user) {
+              loadCreditsBalance();
+            }
+          }}
+        />
       )}
     </div>
   );
