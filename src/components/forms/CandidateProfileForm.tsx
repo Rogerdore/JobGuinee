@@ -596,11 +596,8 @@ export default function CandidateProfileForm() {
             title="7️⃣ Localisation & Mobilité"
             icon={<MapPin className="w-6 h-6" />}
             subtitle={
-              <span className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
-                  OBLIGATOIRE
-                </span>
-                <span className="text-gray-600">Ville ou zones de mobilité requises</span>
+              <span className="text-gray-600">
+                Ville ou zones de mobilité requises <span className="text-red-500">*</span>
               </span>
             }
           >
