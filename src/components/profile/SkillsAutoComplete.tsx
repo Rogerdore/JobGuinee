@@ -287,27 +287,46 @@ export default function SkillsAutoComplete({
 
       {helpText && <p className="mt-2 text-sm text-gray-600">{helpText}</p>}
 
-      {/* Suggestions rapides par catégorie (si aucune compétence ajoutée) */}
-      {value.length === 0 && !inputValue && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-semibold text-blue-900 mb-3">
+      {/* Suggestions rapides par catégorie */}
+      {!inputValue && (
+        <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
+          <h4 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-600" />
             Suggestions rapides par catégorie
           </h4>
-          <div className="space-y-2">
-            {Object.entries(COMMON_SKILLS_BY_CATEGORY).slice(0, 3).map(([category, skills]) => (
-              <div key={category}>
-                <p className="text-xs font-medium text-blue-800 mb-1">{category}</p>
+          <div className="space-y-3">
+            {Object.entries(COMMON_SKILLS_BY_CATEGORY).map(([category, skills]) => (
+              <div key={category} className="bg-white rounded-lg p-3 shadow-sm border border-blue-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">{category}</p>
+                  <span className="text-xs text-gray-500">{skills.length} compétences</span>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {skills.slice(0, 6).map((skill) => (
-                    <button
-                      key={skill}
-                      type="button"
-                      onClick={() => handleAddSkill(skill)}
-                      className="px-2.5 py-1 text-xs bg-white border border-blue-200 text-blue-700 rounded-full hover:bg-blue-100 hover:border-blue-300 transition-colors"
-                    >
-                      + {skill}
-                    </button>
-                  ))}
+                  {skills.map((skill) => {
+                    const isAdded = value.some((v) => v.toLowerCase() === skill.toLowerCase());
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => !isAdded && handleAddSkill(skill)}
+                        disabled={isAdded || value.length >= maxSkills}
+                        className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
+                          isAdded
+                            ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
+                            : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                        }`}
+                      >
+                        {isAdded ? (
+                          <span className="flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            {skill}
+                          </span>
+                        ) : (
+                          `+ ${skill}`
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
