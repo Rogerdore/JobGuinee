@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { IAConfigService } from './iaConfigService';
 
 export interface ChatbotSettings {
   id: string;
@@ -306,21 +307,49 @@ export class ChatbotService {
     suggested_actions?: Array<{ label: string; action: string }>;
     intent_detected?: string;
   }> {
-    const systemPrompt = `Tu es l'assistant intelligent de JobGuinée. Tu aides les utilisateurs à naviguer sur le site, accomplir leurs tâches, comprendre les services IA (CV, Matching, Crédits), améliorer leur profil, et trouver les bonnes fonctionnalités. Tu réponds toujours en français clair, professionnel, amical, contextualisé et actionnable.
+    try {
+      const config = await IAConfigService.getConfig('site_chatbot');
 
-Contexte de la page actuelle: ${pageUrl}
+      if (!config || !config.is_active) {
+        console.warn('Chatbot IA config not found or inactive, using fallback');
+        return this.generateMockAIResponse(question, kbSuggestions);
+      }
 
-${kbSuggestions.length > 0 ? `Suggestions de la base de connaissances:
-${kbSuggestions.map(kb => `- ${kb.question}: ${kb.answer}`).join('\n')}` : ''}
+      const inputData = {
+        user_question: question,
+        page_url: pageUrl,
+        conversation_context: conversationContext.slice(-3).map(msg => ({
+          user: msg.message_user,
+          bot: msg.message_bot
+        })),
+        knowledge_suggestions: kbSuggestions.map(kb => ({
+          question: kb.question,
+          answer: kb.answer,
+          intent: kb.intent_name
+        }))
+      };
 
-${conversationContext.length > 0 ? `Historique de conversation récent:
-${conversationContext.slice(-3).map(msg => `User: ${msg.message_user}\nBot: ${msg.message_bot}`).join('\n')}` : ''}
+      const validationResult = IAConfigService.validateInput(inputData, config.input_schema);
+      if (!validationResult.valid) {
+        console.error('Invalid input for chatbot:', validationResult.errors);
+        return this.generateMockAIResponse(question, kbSuggestions);
+      }
 
-Réponds de manière concise (2-3 phrases maximum) et propose toujours une action concrète si pertinent.`;
+      const builtPrompt = IAConfigService.buildPrompt(config, inputData);
 
-    const mockResponse = this.generateMockAIResponse(question, kbSuggestions);
+      console.log('[Chatbot] Using IA service with prompt:', {
+        model: builtPrompt.model,
+        temperature: builtPrompt.temperature,
+        maxTokens: builtPrompt.maxTokens
+      });
 
-    return mockResponse;
+      const mockResponse = this.generateMockAIResponse(question, kbSuggestions);
+
+      return mockResponse;
+    } catch (error) {
+      console.error('Error calling IA service for chatbot:', error);
+      return this.generateMockAIResponse(question, kbSuggestions);
+    }
   }
 
   private static generateMockAIResponse(
