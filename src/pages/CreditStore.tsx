@@ -1,401 +1,484 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Zap, TrendingUp, Gift, Check, ArrowRight, Star, Sparkles, AlertCircle } from 'lucide-react';
-import { CreditStoreService, CreditPackage, PaymentMethod } from '../services/creditStoreService';
+import { ShoppingCart, Zap, Star, Check, Copy, MessageCircle, AlertCircle, Sparkles, X } from 'lucide-react';
+import { CreditStoreService, CreditPackage, CreditStoreSettings } from '../services/creditStoreService';
 import { useAuth } from '../contexts/AuthContext';
 import CreditBalance from '../components/credits/CreditBalance';
-import { getPaymentModeLabel, isDemoMode } from '../config/payment.config';
 
-interface PurchaseModalProps {
+interface PaymentModalProps {
   pack: CreditPackage | null;
   isOpen: boolean;
   onClose: () => void;
-  onPurchase: (packageId: string, method: PaymentMethod) => Promise<void>;
+  settings: CreditStoreSettings | null;
+  userEmail: string;
 }
 
-function PurchaseModal({ pack, isOpen, onClose, onPurchase }: PurchaseModalProps) {
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentModalProps) {
+  const [purchaseId, setPurchaseId] = useState<string | null>(null);
+  const [reference, setReference] = useState<string | null>(null);
+  const [step, setStep] = useState<'info' | 'payment' | 'confirm'>('info');
   const [processing, setProcessing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  if (!isOpen || !pack) return null;
+  useEffect(() => {
+    if (isOpen && pack) {
+      setStep('info');
+      setPurchaseId(null);
+      setReference(null);
+    }
+  }, [isOpen, pack]);
 
-  const handlePurchase = async () => {
-    if (!selectedMethod) return;
+  if (!isOpen || !pack || !settings) return null;
 
+  const totalCredits = pack.credits_amount + pack.bonus_credits;
+
+  const handleCreatePurchase = async () => {
     setProcessing(true);
     try {
-      await onPurchase(pack.id, selectedMethod);
-      onClose();
+      const result = await CreditStoreService.createPurchase(pack.id);
+
+      if (result.success && result.data) {
+        setPurchaseId(result.data.purchase_id);
+        setReference(result.data.payment_reference);
+        setStep('payment');
+      } else {
+        alert(result.message);
+      }
     } catch (error) {
-      console.error('Purchase error:', error);
+      console.error('Error creating purchase:', error);
+      alert('Une erreur est survenue');
     } finally {
       setProcessing(false);
     }
   };
 
-  const totalCredits = pack.credits_amount + pack.bonus_credits;
+  const handleCopyNumber = () => {
+    navigator.clipboard.writeText(settings.admin_phone_number);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenWhatsApp = () => {
+    const whatsappLink = CreditStoreService.getWhatsAppLink(
+      settings.admin_whatsapp_number,
+      pack.package_name,
+      userEmail,
+      reference || ''
+    );
+    window.open(whatsappLink, '_blank');
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!purchaseId) return;
+
+    setProcessing(true);
+    try {
+      const success = await CreditStoreService.markAsWaitingProof(purchaseId);
+
+      if (success) {
+        setStep('confirm');
+      } else {
+        alert('Erreur lors de la mise à jour');
+      }
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      alert('Une erreur est survenue');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
-          <h2 className="text-2xl font-bold">Finaliser l'achat</h2>
-          <p className="text-blue-100 mt-1">Choisissez votre méthode de paiement</p>
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <h2 className="text-2xl font-bold">Paiement Orange Money</h2>
+          <p className="text-orange-100 mt-1">Suivez les étapes pour finaliser votre achat</p>
         </div>
 
-        <div className="p-6">
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border-2 border-blue-200">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">{pack.name}</h3>
-                <p className="text-gray-600">{pack.description}</p>
+        {step === 'info' && (
+          <div className="p-6">
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 mb-6 border-2 border-orange-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{pack.package_name}</h3>
+                  <p className="text-gray-600">{pack.description}</p>
+                </div>
+                {pack.is_popular && (
+                  <span className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-bold flex items-center gap-2">
+                    <Star className="w-4 h-4" /> Populaire
+                  </span>
+                )}
               </div>
-              {pack.is_popular && (
-                <span className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-bold">
-                  ⭐ Populaire
-                </span>
-              )}
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-white rounded-lg p-4 border-2 border-blue-300">
-                <div className="text-sm text-gray-600 mb-1">Crédits</div>
-                <div className="text-3xl font-bold text-blue-600">
-                  {CreditStoreService.formatCredits(pack.credits_amount)}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-300">
+                  <div className="text-sm text-gray-600 mb-1">Crédits</div>
+                  <div className="text-3xl font-bold text-orange-600">
+                    {CreditStoreService.formatCredits(pack.credits_amount)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border-2 border-green-300">
+                  <div className="text-sm text-gray-600 mb-1">Bonus</div>
+                  <div className="text-3xl font-bold text-green-600">
+                    +{CreditStoreService.formatCredits(pack.bonus_credits)}
+                  </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg p-4 border-2 border-green-300">
-                <div className="text-sm text-gray-600 mb-1">Bonus</div>
-                <div className="text-3xl font-bold text-green-600">
-                  +{CreditStoreService.formatCredits(pack.bonus_credits)}
+
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-4 mb-4">
+                <div className="text-sm mb-1">Total à recevoir</div>
+                <div className="text-4xl font-bold">
+                  {CreditStoreService.formatCredits(totalCredits)} crédits
+                </div>
+              </div>
+
+              <div className="pt-4 border-t-2 border-orange-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-gray-700">Prix:</span>
+                  <span className="text-3xl font-bold text-gray-900">
+                    {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-4">
-              <div className="text-sm mb-1">Total à recevoir</div>
-              <div className="text-4xl font-bold">
-                {CreditStoreService.formatCredits(totalCredits)} crédits
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-blue-900 mb-1">Mode de paiement</h4>
+                  <p className="text-sm text-blue-800">
+                    Le paiement s'effectue exclusivement par <strong>Orange Money</strong>.
+                    Après le transfert, vous devrez envoyer la preuve via WhatsApp pour validation rapide.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t-2 border-blue-200">
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold text-gray-700">Prix:</span>
-                <span className="text-3xl font-bold text-gray-900">
-                  {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Méthode de paiement</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex gap-3">
               <button
-                onClick={() => setSelectedMethod('orange_money')}
-                className={`p-4 rounded-xl border-2 transition ${
-                  selectedMethod === 'orange_money'
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 hover:border-orange-300'
-                }`}
+                onClick={onClose}
+                className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold">
-                    OM
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-gray-900">Orange Money</div>
-                    <div className="text-xs text-gray-600">Paiement mobile</div>
-                  </div>
-                </div>
+                Annuler
               </button>
-
               <button
-                onClick={() => setSelectedMethod('mtn_money')}
-                className={`p-4 rounded-xl border-2 transition ${
-                  selectedMethod === 'mtn_money'
-                    ? 'border-yellow-500 bg-yellow-50'
-                    : 'border-gray-200 hover:border-yellow-300'
-                }`}
+                onClick={handleCreatePurchase}
+                disabled={processing}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold">
-                    MTN
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-gray-900">MTN Money</div>
-                    <div className="text-xs text-gray-600">Paiement mobile</div>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setSelectedMethod('visa')}
-                className={`p-4 rounded-xl border-2 transition ${
-                  selectedMethod === 'visa'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    VISA
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-gray-900">Visa</div>
-                    <div className="text-xs text-gray-600">Carte bancaire</div>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setSelectedMethod('mastercard')}
-                className={`p-4 rounded-xl border-2 transition ${
-                  selectedMethod === 'mastercard'
-                    ? 'border-red-600 bg-red-50'
-                    : 'border-gray-200 hover:border-red-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    MC
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-gray-900">Mastercard</div>
-                    <div className="text-xs text-gray-600">Carte bancaire</div>
-                  </div>
-                </div>
+                {processing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Préparation...
+                  </>
+                ) : (
+                  <>
+                    Continuer
+                  </>
+                )}
               </button>
             </div>
           </div>
+        )}
 
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={processing}
-              className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handlePurchase}
-              disabled={!selectedMethod || processing}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {processing ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Traitement...
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5" />
-                  Procéder au paiement
-                </>
-              )}
-            </button>
+        {step === 'payment' && (
+          <div className="p-6">
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 mb-6 border-2 border-orange-300">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Instructions de paiement</h3>
+
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-400">
+                  <div className="text-sm text-gray-600 mb-2">Référence de paiement</div>
+                  <div className="text-2xl font-mono font-bold text-orange-600">
+                    {reference}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-400">
+                  <div className="text-sm text-gray-600 mb-2">Numéro Orange Money</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-3xl font-bold text-orange-600">
+                      {settings.admin_phone_number}
+                    </div>
+                    <button
+                      onClick={handleCopyNumber}
+                      className="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition flex items-center gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          Copié!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-5 h-5" />
+                          Copier
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-400">
+                  <div className="text-sm text-gray-600 mb-2">Montant à envoyer</div>
+                  <div className="text-3xl font-bold text-orange-600">
+                    {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">{settings.payment_instructions}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleOpenWhatsApp}
+                className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition flex items-center justify-center gap-3"
+              >
+                <MessageCircle className="w-6 h-6" />
+                Envoyer la preuve via WhatsApp
+              </button>
+
+              <button
+                onClick={handleMarkAsPaid}
+                disabled={processing}
+                className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-3"
+              >
+                {processing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Traitement...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-6 h-6" />
+                    J'ai effectué le paiement
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {step === 'confirm' && (
+          <div className="p-6">
+            <div className="text-center py-8">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-12 h-12 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Paiement enregistré!</h3>
+              <p className="text-gray-600 mb-6">
+                Votre paiement est en cours de validation par un administrateur.
+                Vous recevrez vos crédits sous peu.
+              </p>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 text-left mb-6">
+                <p className="text-sm text-blue-800">
+                  <strong>Référence:</strong> {reference}
+                </p>
+                <p className="text-sm text-blue-800 mt-1">
+                  Conservez cette référence pour le suivi de votre achat.
+                </p>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-lg transition"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export default function CreditStore() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
+  const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPack, setSelectedPack] = useState<CreditPackage | null>(null);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    loadPackages();
+    loadData();
   }, []);
 
-  const loadPackages = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const data = await CreditStoreService.getAllPackages();
-      setPackages(data);
+      const [packagesData, settingsData] = await Promise.all([
+        CreditStoreService.getAllPackages(),
+        CreditStoreService.getSettings()
+      ]);
+
+      setPackages(packagesData);
+      setSettings(settingsData);
     } catch (error) {
-      console.error('Error loading packages:', error);
-      showAlert('error', 'Erreur lors du chargement des packs');
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const showAlert = (type: 'success' | 'error', message: string) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 5000);
-  };
-
-  const handleBuyClick = (pack: CreditPackage) => {
+  const handleSelectPack = (pack: CreditPackage) => {
     if (!user) {
-      showAlert('error', 'Veuillez vous connecter pour acheter des crédits');
+      alert('Vous devez être connecté pour acheter des crédits');
       return;
     }
-    setSelectedPack(pack);
-    setShowPurchaseModal(true);
-  };
 
-  const handlePurchase = async (packageId: string, method: PaymentMethod) => {
-    try {
-      const result = await CreditStoreService.createPurchaseAndInitiatePayment(packageId, method);
-
-      if (result.success) {
-        if (result.data.requires_redirect && result.data.redirect_url) {
-          showAlert('success', 'Redirection vers le paiement...');
-          setTimeout(() => {
-            window.location.href = result.data.redirect_url;
-          }, 1000);
-        } else if (isDemoMode()) {
-          showAlert('success', 'Achat initié! Paiement simulé en cours...');
-
-          setTimeout(async () => {
-            const completeResult = await CreditStoreService.completePurchase(
-              result.data.purchase_id,
-              'DEMO-' + Date.now()
-            );
-
-            if (completeResult.success) {
-              showAlert('success', `${completeResult.data.credits_added} crédits ajoutés! Nouveau solde: ${completeResult.data.new_balance}`);
-            }
-          }, 2000);
-        } else {
-          showAlert('success', 'Achat créé! En attente de confirmation de paiement...');
-        }
-      } else {
-        showAlert('error', result.message);
-      }
-    } catch (error) {
-      showAlert('error', 'Erreur lors de l\'achat');
+    if (!settings?.is_enabled) {
+      alert('La boutique de crédits est temporairement désactivée');
+      return;
     }
+
+    setSelectedPack(pack);
+    setModalOpen(true);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Chargement de la boutique...</p>
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement de la boutique...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!settings?.is_enabled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-8 h-8 text-yellow-600 flex-shrink-0" />
+              <div>
+                <h3 className="text-xl font-bold text-yellow-900 mb-2">Boutique temporairement fermée</h3>
+                <p className="text-yellow-800">
+                  La boutique de crédits est actuellement indisponible. Veuillez réessayer plus tard.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        {alert && (
-          <div className={`mb-6 p-4 rounded-xl border-2 flex items-center gap-3 ${
-            alert.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-900'
-              : 'bg-red-50 border-red-200 text-red-900'
-          }`}>
-            {alert.type === 'success' ? <Check className="w-6 h-6" /> : <Star className="w-6 h-6" />}
-            <span className="font-semibold">{alert.message}</span>
+        <div className="text-center mb-12">
+          <div className="inline-block p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-lg mb-4">
+            <ShoppingCart className="w-12 h-12 text-white" />
           </div>
-        )}
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Boutique de Crédits IA</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Rechargez vos crédits pour profiter de tous nos services IA premium
+          </p>
+          <div className="mt-6">
+            <CreditBalance showDetails />
+          </div>
+        </div>
 
-        {isDemoMode() && (
-          <div className="mb-6 p-4 rounded-xl border-2 bg-yellow-50 border-yellow-300 flex items-center gap-3">
-            <AlertCircle className="w-6 h-6 text-yellow-700" />
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg mb-8">
+          <div className="flex items-start gap-4">
+            <MessageCircle className="w-8 h-8 text-blue-600 flex-shrink-0" />
             <div>
-              <span className="font-semibold text-yellow-900">{getPaymentModeLabel()}</span>
-              <p className="text-sm text-yellow-700 mt-1">
-                Les paiements sont simulés automatiquement. Aucune transaction réelle n'est effectuée.
+              <h3 className="text-lg font-bold text-blue-900 mb-2">Paiement Orange Money uniquement</h3>
+              <p className="text-blue-800">
+                Le paiement s'effectue par transfert Orange Money. Après votre transfert, envoyez la preuve
+                via WhatsApp pour une validation rapide par notre équipe.
               </p>
             </div>
           </div>
-        )}
-
-        <div className="text-center mb-12">
-          <div className="inline-block p-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4">
-            <Sparkles className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            Boutique Crédits IA
-          </h1>
-          <p className="text-xl text-gray-600 mb-6">
-            Rechargez vos crédits et accédez à tous nos services IA premium
-          </p>
-
-          <CreditBalance showDetails />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages.map((pack) => {
             const totalCredits = pack.credits_amount + pack.bonus_credits;
-            const savingsPercent = Math.round((pack.bonus_credits / pack.credits_amount) * 100);
+            const bonusPercentage = pack.bonus_credits > 0
+              ? Math.round((pack.bonus_credits / pack.credits_amount) * 100)
+              : 0;
 
             return (
               <div
                 key={pack.id}
-                className={`relative bg-white rounded-2xl shadow-xl overflow-hidden transition-all hover:scale-105 hover:shadow-2xl ${
-                  pack.is_popular ? 'border-4 border-orange-500' : 'border-2 border-gray-200'
+                className={`relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 ${
+                  pack.is_popular ? 'border-orange-500 scale-105' : 'border-gray-200'
                 }`}
               >
                 {pack.is_popular && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
-                      <Star className="w-4 h-4" />
-                      Populaire
-                    </div>
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-bl-xl flex items-center gap-2">
+                    <Star className="w-4 h-4" />
+                    <span className="text-sm font-bold">Populaire</span>
                   </div>
                 )}
 
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
-                  <h3 className="text-2xl font-bold mb-2">{pack.name}</h3>
-                  <p className="text-blue-100 text-sm">{pack.description}</p>
-                </div>
-
                 <div className="p-6">
-                  <div className="text-center mb-6">
-                    <div className="text-5xl font-bold text-gray-900 mb-2">
-                      {CreditStoreService.formatCredits(pack.credits_amount)}
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{pack.package_name}</h3>
+                  <p className="text-gray-600 mb-6 min-h-[48px]">{pack.description}</p>
+
+                  <div className="space-y-4 mb-6">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+                      <div className="text-sm text-blue-600 mb-1">Crédits de base</div>
+                      <div className="text-3xl font-bold text-blue-700">
+                        {CreditStoreService.formatCredits(pack.credits_amount)}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">crédits de base</div>
 
                     {pack.bonus_credits > 0 && (
-                      <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
-                        <div className="flex items-center justify-center gap-2 text-green-700 font-bold">
-                          <Gift className="w-5 h-5" />
-                          +{CreditStoreService.formatCredits(pack.bonus_credits)} BONUS
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg p-4">
+                        <div className="text-sm text-green-600 mb-1">
+                          Bonus +{bonusPercentage}%
                         </div>
-                        <div className="text-xs text-green-600 mt-1">
-                          Économisez {savingsPercent}%
+                        <div className="text-2xl font-bold text-green-700 flex items-center gap-2">
+                          <Sparkles className="w-6 h-6" />
+                          +{CreditStoreService.formatCredits(pack.bonus_credits)}
                         </div>
                       </div>
                     )}
-                  </div>
 
-                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 mb-6 border-2 border-purple-200">
-                    <div className="text-sm text-gray-600 mb-1">Total</div>
-                    <div className="text-3xl font-bold text-purple-600">
-                      {CreditStoreService.formatCredits(totalCredits)}
+                    <div className="bg-gradient-to-r from-orange-100 to-red-100 rounded-lg p-4 border-2 border-orange-300">
+                      <div className="text-sm text-orange-700 mb-1 font-semibold">Total</div>
+                      <div className="text-4xl font-bold text-orange-700">
+                        {CreditStoreService.formatCredits(totalCredits)}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-600">crédits IA</div>
                   </div>
 
-                  <div className="text-center mb-6">
-                    <div className="text-3xl font-bold text-gray-900">
-                      {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
+                  <div className="mb-6">
+                    <div className="text-center py-4 bg-gray-50 rounded-lg">
+                      <div className="text-4xl font-bold text-gray-900">
+                        {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
+                      </div>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => handleBuyClick(pack)}
-                    className={`w-full py-4 rounded-xl font-bold text-white transition flex items-center justify-center gap-2 ${
+                    onClick={() => handleSelectPack(pack)}
+                    className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center gap-2 ${
                       pack.is_popular
-                        ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
-                        : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                        ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg hover:shadow-xl'
+                        : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
                     }`}
                   >
                     <ShoppingCart className="w-5 h-5" />
                     Acheter maintenant
-                    <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -403,55 +486,61 @@ export default function CreditStore() {
           })}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Pourquoi acheter des crédits IA ?
-            </h2>
-            <p className="text-gray-600">
-              Débloquez tout le potentiel de nos services d'intelligence artificielle
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-white" />
+        <div className="mt-12 bg-white rounded-2xl shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+            <Zap className="w-8 h-8 text-orange-500" />
+            À quoi servent les crédits IA?
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Accès Instantané</h3>
-              <p className="text-gray-600">
-                Utilisez vos crédits immédiatement après l'achat
-              </p>
+              <div>
+                <h3 className="font-bold text-gray-900 mb-1">Génération de CV</h3>
+                <p className="text-sm text-gray-600">Créez des CV professionnels avec l'IA (50-100 crédits)</p>
+              </div>
             </div>
 
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Gift className="w-8 h-8 text-white" />
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-6 h-6 text-green-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Bonus Généreux</h3>
-              <p className="text-gray-600">
-                Recevez des crédits bonus sur chaque pack
-              </p>
+              <div>
+                <h3 className="font-bold text-gray-900 mb-1">Lettres de motivation</h3>
+                <p className="text-sm text-gray-600">Lettres personnalisées par IA (20-30 crédits)</p>
+              </div>
             </div>
 
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-white" />
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-6 h-6 text-orange-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Meilleur Prix</h3>
-              <p className="text-gray-600">
-                Plus vous achetez, plus vous économisez
-              </p>
+              <div>
+                <h3 className="font-bold text-gray-900 mb-1">Matching emploi</h3>
+                <p className="text-sm text-gray-600">Analyse de compatibilité avec offres (10 crédits)</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 mb-1">Coaching carrière</h3>
+                <p className="text-sm text-gray-600">Conseils personnalisés par IA (5 crédits/question)</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <PurchaseModal
+      <PaymentModal
         pack={selectedPack}
-        isOpen={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-        onPurchase={handlePurchase}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        settings={settings}
+        userEmail={profile?.email || user?.email || ''}
       />
     </div>
   );

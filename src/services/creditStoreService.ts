@@ -1,10 +1,8 @@
 import { supabase } from '../lib/supabase';
-import { PaymentProviderFactory, PaymentSessionInput } from './paymentProviders';
-import { isDemoMode, paymentConfig } from '../config/payment.config';
 
 export interface CreditPackage {
   id: string;
-  name: string;
+  package_name: string;
   description: string | null;
   credits_amount: number;
   price_amount: number;
@@ -26,20 +24,71 @@ export interface CreditPurchase {
   total_credits: number;
   price_amount: number;
   currency: string;
-  payment_method: string | null;
+  payment_method: string;
   payment_reference: string | null;
-  payment_provider_id: string | null;
-  payment_status: string;
-  purchase_status: string;
+  payment_status: 'pending' | 'waiting_proof' | 'completed' | 'failed' | 'cancelled';
+  purchase_status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  payment_proof_url: string | null;
+  admin_notes: string | null;
   completed_at: string | null;
   failed_reason: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export type PaymentMethod = 'orange_money' | 'mtn_money' | 'visa' | 'mastercard';
+export interface CreditStoreSettings {
+  id: string;
+  admin_phone_number: string;
+  admin_whatsapp_number: string;
+  payment_instructions: string;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export class CreditStoreService {
+  static async getSettings(): Promise<CreditStoreSettings | null> {
+    try {
+      const { data, error } = await supabase
+        .from('credit_store_settings')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching store settings:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getSettings:', error);
+      return null;
+    }
+  }
+
+  static async updateSettings(settings: Partial<CreditStoreSettings>): Promise<boolean> {
+    try {
+      const currentSettings = await this.getSettings();
+      if (!currentSettings) return false;
+
+      const { error } = await supabase
+        .from('credit_store_settings')
+        .update(settings)
+        .eq('id', currentSettings.id);
+
+      if (error) {
+        console.error('Error updating settings:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateSettings:', error);
+      return false;
+    }
+  }
+
   static async getAllPackages(): Promise<CreditPackage[]> {
     try {
       const { data, error } = await supabase
@@ -67,7 +116,7 @@ export class CreditStoreService {
         .select('*')
         .eq('id', packageId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching package:', error);
@@ -82,14 +131,12 @@ export class CreditStoreService {
   }
 
   static async createPurchase(
-    packageId: string,
-    paymentMethod?: PaymentMethod,
-    customerInfo?: { phone?: string; email?: string }
+    packageId: string
   ): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
     try {
       const { data, error } = await supabase.rpc('create_credit_purchase', {
         p_package_id: packageId,
-        p_payment_method: paymentMethod || null
+        p_payment_method: 'orange_money'
       });
 
       if (error) {
@@ -109,52 +156,16 @@ export class CreditStoreService {
         };
       }
 
-      const purchaseData = {
-        purchase_id: data.purchase_id,
-        payment_reference: data.payment_reference,
-        amount: data.amount,
-        currency: data.currency,
-        credits: data.credits
-      };
-
-      if (paymentMethod && !isDemoMode()) {
-        try {
-          const provider = PaymentProviderFactory.getProvider(paymentMethod);
-
-          const sessionInput: PaymentSessionInput = {
-            amount: data.amount,
-            currency: data.currency,
-            reference: data.payment_reference,
-            purchaseId: data.purchase_id,
-            customerPhone: customerInfo?.phone,
-            customerEmail: customerInfo?.email,
-            returnUrl: `${window.location.origin}/payment/success`,
-            cancelUrl: `${window.location.origin}/payment/cancel`
-          };
-
-          const sessionResult = await provider.createPaymentSession(sessionInput);
-
-          if (sessionResult.success && sessionResult.redirectUrl) {
-            return {
-              success: true,
-              message: sessionResult.message || data.message,
-              data: {
-                ...purchaseData,
-                redirect_url: sessionResult.redirectUrl,
-                provider_id: sessionResult.providerId,
-                requires_redirect: true
-              }
-            };
-          }
-        } catch (providerError) {
-          console.error('Provider error:', providerError);
-        }
-      }
-
       return {
         success: true,
         message: data.message,
-        data: purchaseData
+        data: {
+          purchase_id: data.purchase_id,
+          payment_reference: data.payment_reference,
+          amount: data.amount,
+          currency: data.currency,
+          credits: data.credits
+        }
       };
     } catch (error) {
       console.error('Error in createPurchase:', error);
@@ -166,37 +177,33 @@ export class CreditStoreService {
     }
   }
 
-  static async createPurchaseAndInitiatePayment(
-    packageId: string,
-    paymentMethod: PaymentMethod,
-    customerInfo?: { phone?: string; email?: string }
-  ): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
-    const purchaseResult = await this.createPurchase(packageId, paymentMethod, customerInfo);
+  static async markAsWaitingProof(purchaseId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('credit_purchases')
+        .update({ payment_status: 'waiting_proof' })
+        .eq('id', purchaseId);
 
-    if (!purchaseResult.success) {
-      return purchaseResult;
+      if (error) {
+        console.error('Error updating purchase status:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in markAsWaitingProof:', error);
+      return false;
     }
-
-    if (isDemoMode()) {
-      setTimeout(async () => {
-        await this.completePurchase(
-          purchaseResult.data.purchase_id,
-          `DEMO-${Date.now()}`
-        );
-      }, 2000);
-    }
-
-    return purchaseResult;
   }
 
   static async completePurchase(
     purchaseId: string,
-    paymentProviderId?: string
+    adminNotes?: string
   ): Promise<{ success: boolean; message: string; data?: any; error?: string }> {
     try {
       const { data, error } = await supabase.rpc('complete_credit_purchase', {
         p_purchase_id: purchaseId,
-        p_payment_provider_id: paymentProviderId || null
+        p_admin_notes: adminNotes || null
       });
 
       if (error) {
@@ -295,22 +302,51 @@ export class CreditStoreService {
     }
   }
 
-  static async getPurchaseStatus(purchaseId: string): Promise<CreditPurchase | null> {
+  static async getAllPurchases(
+    status?: string,
+    limit: number = 100
+  ): Promise<CreditPurchase[]> {
+    try {
+      let query = supabase
+        .from('credit_purchases')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (status) {
+        query = query.eq('payment_status', status);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching all purchases:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getAllPurchases:', error);
+      return [];
+    }
+  }
+
+  static async getPurchaseById(purchaseId: string): Promise<CreditPurchase | null> {
     try {
       const { data, error } = await supabase
         .from('credit_purchases')
         .select('*')
         .eq('id', purchaseId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error('Error fetching purchase status:', error);
+        console.error('Error fetching purchase:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Error in getPurchaseStatus:', error);
+      console.error('Error in getPurchaseById:', error);
       return null;
     }
   }
@@ -334,5 +370,18 @@ export class CreditStoreService {
 
   static formatCredits(amount: number): string {
     return new Intl.NumberFormat('fr-FR').format(amount);
+  }
+
+  static getWhatsAppLink(
+    phoneNumber: string,
+    packageName: string,
+    userEmail: string,
+    reference: string
+  ): string {
+    const message = encodeURIComponent(
+      `Preuve Paiement JobGuinée\n\nPack: ${packageName}\nUtilisateur: ${userEmail}\nRéférence: ${reference}\n\nVeuillez trouver ci-joint la capture d'écran de la confirmation Orange Money.`
+    );
+
+    return `https://wa.me/${phoneNumber.replace(/\D/g, '')}?text=${message}`;
   }
 }
