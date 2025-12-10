@@ -67,16 +67,34 @@ export default function EnhancedAICVGenerator({ onNavigate }: EnhancedAICVGenera
         setCVData(assembled);
         setProfileLoaded(true);
 
+        const competencesList = assembled.competences?.slice(0, 10).join(', ') || 'Aucune';
+        const moreCompetences = assembled.competences?.length > 10 ? ` (+${assembled.competences.length - 10} autres)` : '';
+
+        const experiencesList = assembled.experiences?.slice(0, 3).map((exp: any) =>
+          `\n   • ${exp.poste} - ${exp.entreprise} (${exp.periode})`
+        ).join('') || '\n   • Aucune expérience';
+
+        const formationsList = assembled.formations?.slice(0, 3).map((form: any) =>
+          `\n   • ${form.diplome} - ${form.ecole} ${form.annee ? `(${form.annee})` : ''}`
+        ).join('') || '\n   • Aucune formation';
+
         const summary = `
-          ✓ Profil: ${assembled.nom || 'Non défini'}
-          ✓ Titre: ${assembled.titre || 'Non défini'}
-          ${assembled.email ? `✓ Email: ${assembled.email}` : ''}
-          ${assembled.telephone ? `✓ Téléphone: ${assembled.telephone}` : ''}
-          ${assembled.lieu ? `✓ Lieu: ${assembled.lieu}` : ''}
-          ✓ ${assembled.competences.length} compétences
-          ✓ ${assembled.experiences.length} expériences
-          ✓ ${assembled.formations.length} formations
-          ${assembled.resume ? `✓ Résumé professionnel disponible` : ''}
+✓ Profil: ${assembled.nom || 'Non défini'}
+✓ Titre: ${assembled.titre || 'Non défini'}
+${assembled.email ? `✓ Email: ${assembled.email}` : ''}
+${assembled.telephone ? `✓ Téléphone: ${assembled.telephone}` : ''}
+${assembled.lieu ? `✓ Lieu: ${assembled.lieu}` : ''}
+
+COMPÉTENCES (${assembled.competences?.length || 0}):
+   ${competencesList}${moreCompetences}
+
+EXPÉRIENCES (${assembled.experiences?.length || 0}):${experiencesList}
+${assembled.experiences?.length > 3 ? `   ... et ${assembled.experiences.length - 3} autres` : ''}
+
+FORMATIONS (${assembled.formations?.length || 0}):${formationsList}
+${assembled.formations?.length > 3 ? `   ... et ${assembled.formations.length - 3} autres` : ''}
+
+${assembled.resume ? `RÉSUMÉ: ${assembled.resume.substring(0, 150)}${assembled.resume.length > 150 ? '...' : ''}` : ''}
         `;
         setProfileSummary(summary);
 

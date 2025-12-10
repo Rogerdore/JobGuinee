@@ -101,16 +101,42 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
           result.cv
         );
 
+        const cp = completeProfile?.candidate_profile;
+
+        const competencesList = cp?.skills?.slice(0, 10).join(', ') || 'Aucune';
+        const moreCompetences = cp?.skills?.length > 10 ? ` (+${cp.skills.length - 10} autres)` : '';
+
+        const experiencesList = cp?.work_experience?.slice(0, 3).map((exp: any) =>
+          `\n   • ${exp.position} - ${exp.company} (${exp.period})`
+        ).join('') || '\n   • Aucune expérience';
+
+        const formationsList = cp?.education?.slice(0, 3).map((edu: any) =>
+          `\n   • ${edu.degree} - ${edu.school} ${edu.graduation_year ? `(${edu.graduation_year})` : ''}`
+        ).join('') || '\n   • Aucune formation';
+
+        const languesList = cp?.languages?.join(', ') || 'Aucune';
+
         const summary = `
-          ✓ Profil: ${completeProfile?.candidate_profile?.full_name || 'Non défini'}
-          ✓ Titre: ${completeProfile?.candidate_profile?.title || 'Non défini'}
-          ✓ ${completeProfile?.candidate_profile?.skills?.length || 0} compétences
-          ✓ ${completeProfile?.candidate_profile?.years_of_experience || 0} années d'expérience
-          ✓ ${completeProfile?.candidate_profile?.work_experience?.length || 0} expériences détaillées
-          ✓ ${completeProfile?.candidate_profile?.education?.length || 0} formations
-          ✓ Niveau: ${completeProfile?.candidate_profile?.education_level || 'Non spécifié'}
-          ✓ Localisation: ${completeProfile?.candidate_profile?.location || 'Non spécifiée'}
-          ${completeProfile?.candidate_profile?.languages?.length ? `✓ ${completeProfile.candidate_profile.languages.length} langues` : ''}
+✓ Profil: ${cp?.full_name || 'Non défini'}
+✓ Titre: ${cp?.title || 'Non défini'}
+✓ Localisation: ${cp?.location || 'Non spécifiée'}
+✓ Niveau d'études: ${cp?.education_level || 'Non spécifié'}
+✓ Expérience: ${cp?.years_of_experience || 0} années
+
+COMPÉTENCES (${cp?.skills?.length || 0}):
+   ${competencesList}${moreCompetences}
+
+EXPÉRIENCES PROFESSIONNELLES (${cp?.work_experience?.length || 0}):${experiencesList}
+${cp?.work_experience?.length > 3 ? `   ... et ${cp.work_experience.length - 3} autres` : ''}
+
+FORMATIONS (${cp?.education?.length || 0}):${formationsList}
+${cp?.education?.length > 3 ? `   ... et ${cp.education.length - 3} autres` : ''}
+
+LANGUES: ${languesList}
+
+${cp?.bio ? `BIO: ${cp.bio.substring(0, 150)}${cp.bio.length > 150 ? '...' : ''}` : ''}
+${cp?.desired_salary_min ? `\n✓ Salaire souhaité: ${cp.desired_salary_min} - ${cp.desired_salary_max || '?'} FCFA` : ''}
+${cp?.availability ? `\n✓ Disponibilité: ${cp.availability}` : ''}
         `;
         setProfileSummary(summary);
 

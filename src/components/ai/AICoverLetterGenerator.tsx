@@ -78,15 +78,31 @@ export default function AICoverLetterGenerator({ onNavigate, jobData }: AICoverL
         setLetterData(input);
         setProfileLoaded(true);
 
+        const competencesList = input.competences_candidat?.slice(0, 10).join(', ') || 'Aucune';
+        const moreCompetences = input.competences_candidat?.length > 10 ? ` (+${input.competences_candidat.length - 10} autres)` : '';
+
+        const experiencesList = input.experiences_pertinentes?.map((exp: any) =>
+          `\n   • ${exp.poste} - ${exp.entreprise} (${exp.periode})`
+        ).join('') || '\n   • Aucune expérience';
+
+        const formationsList = input.formations_pertinentes?.join('\n   • ') || 'Aucune formation';
+
         const summary = `
-          ✓ Nom: ${input.nom}
-          ${input.poste_actuel ? `✓ Poste actuel: ${input.poste_actuel}` : ''}
-          ✓ Poste ciblé: ${input.poste_cible}
-          ✓ Entreprise: ${input.entreprise}
-          ✓ ${input.competences_candidat?.length || 0} compétences
-          ✓ ${input.experiences_pertinentes?.length || 0} expériences chargées
-          ✓ ${input.formations_pertinentes?.length || 0} formations chargées
-          ${input.bio ? `✓ Bio disponible` : ''}
+✓ Candidat: ${input.nom}
+${input.poste_actuel ? `✓ Poste actuel: ${input.poste_actuel}` : ''}
+✓ Poste ciblé: ${input.poste_cible || 'Non défini'}
+✓ Entreprise: ${input.entreprise || 'Non définie'}
+
+COMPÉTENCES (${input.competences_candidat?.length || 0}):
+   ${competencesList}${moreCompetences}
+
+EXPÉRIENCES PERTINENTES (${input.experiences_pertinentes?.length || 0}):${experiencesList}
+
+FORMATIONS PERTINENTES (${input.formations_pertinentes?.length || 0}):
+   • ${formationsList}
+
+${input.bio ? `BIO: ${input.bio.substring(0, 150)}${input.bio.length > 150 ? '...' : ''}` : ''}
+${input.extrait_offre ? `\n✓ Offre analysée (${input.extrait_offre.length} caractères)` : ''}
         `;
         setProfileSummary(summary);
 

@@ -73,15 +73,32 @@ export default function AICareerPlanGenerator({ onNavigate }: AICareerPlanGenera
         setPlanData(input);
         setProfileLoaded(true);
 
+        const competencesList = input.profil_actuel.competences?.slice(0, 10).join(', ') || 'Aucune';
+        const moreCompetences = input.profil_actuel.competences?.length > 10 ? ` (+${input.profil_actuel.competences.length - 10} autres)` : '';
+
+        const experiencesList = input.profil_actuel.experiences?.slice(0, 3).map((exp: any) =>
+          `\n   • ${exp.poste} chez ${exp.entreprise} (${exp.periode})`
+        ).join('') || '\n   • Aucune expérience';
+
+        const formationsList = input.profil_actuel.formations?.slice(0, 3).map((form: any) =>
+          `\n   • ${form.diplome} - ${form.ecole} ${form.annee ? `(${form.annee})` : ''}`
+        ).join('') || '\n   • Aucune formation';
+
         const summary = `
-          ${input.profil_actuel.nom ? `✓ Nom: ${input.profil_actuel.nom}` : ''}
-          ✓ Poste actuel: ${input.profil_actuel.poste}
-          ✓ ${input.profil_actuel.competences?.length || 0} compétences
-          ✓ ${input.profil_actuel.experience_annees} années d'expérience
-          ✓ ${input.profil_actuel.experiences?.length || 0} expériences détaillées
-          ✓ ${input.profil_actuel.formations?.length || 0} formations
-          ${input.profil_actuel.bio ? `✓ Bio disponible` : ''}
-          ${input.aspirations ? `✓ Aspirations définies` : ''}
+✓ Profil: ${input.profil_actuel.nom || 'Non défini'}
+✓ Poste actuel: ${input.profil_actuel.poste || 'Non défini'}
+✓ ${input.profil_actuel.experience_annees} années d'expérience
+
+COMPÉTENCES (${input.profil_actuel.competences?.length || 0}):
+   ${competencesList}${moreCompetences}
+
+EXPÉRIENCES (${input.profil_actuel.experiences?.length || 0}):${experiencesList}
+
+FORMATIONS (${input.profil_actuel.formations?.length || 0}):${formationsList}
+
+${input.profil_actuel.bio ? `BIO: ${input.profil_actuel.bio.substring(0, 150)}${input.profil_actuel.bio.length > 150 ? '...' : ''}` : ''}
+${input.aspirations ? `\n✓ Aspirations: ${input.aspirations}` : ''}
+${input.profil_actuel.secteurs_interets?.length ? `\n✓ Secteurs d'intérêt: ${input.profil_actuel.secteurs_interets.join(', ')}` : ''}
         `;
         setProfileSummary(summary);
       } else {
