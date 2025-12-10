@@ -494,11 +494,8 @@ export default function CandidateProfileForm() {
             title="4️⃣ Expériences Professionnelles"
             icon={<Briefcase className="w-6 h-6" />}
             subtitle={
-              <span className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
-                  OBLIGATOIRE
-                </span>
-                <span className="text-gray-600">Au moins une expérience requise</span>
+              <span className="text-gray-600">
+                Au moins une expérience requise <span className="text-red-500">*</span>
               </span>
             }
           >
@@ -536,11 +533,8 @@ export default function CandidateProfileForm() {
             title="5️⃣ Formations & Diplômes"
             icon={<GraduationCap className="w-6 h-6" />}
             subtitle={
-              <span className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
-                  OBLIGATOIRE
-                </span>
-                <span className="text-gray-600">Au moins une formation/diplôme requis</span>
+              <span className="text-gray-600">
+                Au moins une formation/diplôme requis <span className="text-red-500">*</span>
               </span>
             }
           >
