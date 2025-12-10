@@ -856,13 +856,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                               {candidateProfile.work_experience.map((exp: any, index: number) => (
                                 <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                                   <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
-                                  <p className="text-gray-600 text-sm mt-1">{exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
+                                  <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
                                   <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    {exp['Date de début'] || exp.start_date || '-'} - {exp['Date de fin'] || exp.end_date || 'Présent'}
+                                    {exp['Période'] || (exp['Date de début'] && `${exp['Date de début']} - ${exp['Date de fin'] || 'Présent'}`) || (exp.start_date && `${exp.start_date} - ${exp.end_date || 'Présent'}`) || '-'}
                                   </p>
-                                  {(exp['Description des responsabilités'] || exp.description) && (
-                                    <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Description des responsabilités'] || exp.description}</p>
+                                  {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description) && (
+                                    <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description}</p>
                                   )}
                                 </div>
                               ))}
@@ -883,13 +883,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                               {candidateProfile.education.map((edu: any, index: number) => (
                                 <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                                   <h4 className="font-bold text-gray-900">{edu['Diplôme obtenu'] || edu.degree || edu.title || '-'}</h4>
-                                  <p className="text-gray-600 text-sm mt-1">{edu['Nom de l\'établissement'] || edu.school || edu.institution || '-'}</p>
+                                  <p className="text-gray-600 text-sm mt-1">{edu['Établissement'] || edu['Nom de l\'établissement'] || edu.school || edu.institution || '-'}</p>
                                   <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
                                     {edu['Année d\'obtention'] || edu.start_date || edu.year || '-'} {(edu['Année de fin'] || edu.end_date) && `- ${edu['Année de fin'] || edu.end_date}`}
                                   </p>
-                                  {(edu['Spécialisation/Domaine'] || edu.description) && (
-                                    <p className="text-gray-700 text-sm mt-2">{edu['Spécialisation/Domaine'] || edu.description}</p>
+                                  {(edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description) && (
+                                    <p className="text-gray-700 text-sm mt-2">{edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description}</p>
                                   )}
                                 </div>
                               ))}
