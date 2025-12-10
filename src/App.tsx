@@ -25,6 +25,9 @@ import AICoachChat from './components/ai/AICoachChat';
 import GoldProfileService from './components/ai/GoldProfileService';
 import AICoverLetterGenerator from './components/ai/AICoverLetterGenerator';
 import AICareerPlanGenerator from './components/ai/AICareerPlanGenerator';
+import AIInterviewSimulator from './components/ai/AIInterviewSimulator';
+import AIAlertsCenter from './components/ai/AIAlertsCenter';
+import AIChat from './components/ai/AIChat';
 import CreditStore from './pages/CreditStore';
 import AdminIAConfig from './pages/AdminIAConfig';
 import AdminIATemplates from './pages/AdminIATemplates';
@@ -34,7 +37,7 @@ import AdminCreditStoreSettings from './pages/AdminCreditStoreSettings';
 import AdminCreditPurchases from './pages/AdminCreditPurchases';
 import AdminSecurityLogs from './pages/AdminSecurityLogs';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -97,6 +100,9 @@ function AppContent() {
       {currentPage === 'ai-cover-letter' && <AICoverLetterGenerator onNavigate={handleNavigate} />}
       {currentPage === 'ai-career-plan' && <AICareerPlanGenerator onNavigate={handleNavigate} />}
       {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
+      {currentPage === 'ai-interview-simulator' && <AIInterviewSimulator onNavigate={handleNavigate} />}
+      {currentPage === 'ai-alerts' && <AIAlertsCenter onNavigate={handleNavigate} />}
+      {currentPage === 'ai-chat' && <AIChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
       {currentPage === 'credit-store' && <CreditStore />}
     </Layout>
