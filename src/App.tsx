@@ -30,8 +30,11 @@ import AdminIAConfig from './pages/AdminIAConfig';
 import AdminIATemplates from './pages/AdminIATemplates';
 import AdminChatbot from './pages/AdminChatbot';
 import AdminIACenter from './pages/AdminIACenter';
+import AdminCreditStoreSettings from './pages/AdminCreditStoreSettings';
+import AdminCreditPurchases from './pages/AdminCreditPurchases';
+import AdminSecurityLogs from './pages/AdminSecurityLogs';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -84,6 +87,9 @@ function AppContent() {
       {currentPage === 'admin-ia-templates' && <AdminIATemplates />}
       {currentPage === 'admin-chatbot' && <AdminChatbot />}
       {currentPage === 'admin-ia-center' && <AdminIACenter />}
+      {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings />}
+      {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases />}
+      {currentPage === 'admin-security-logs' && <AdminSecurityLogs />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}

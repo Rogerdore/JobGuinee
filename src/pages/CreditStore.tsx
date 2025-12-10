@@ -235,6 +235,7 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
               </div>
 
               <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-bold text-blue-900 mb-2">Instructions importantes</h4>
                 <p className="text-sm text-blue-800">{settings.payment_instructions}</p>
               </div>
             </div>
@@ -277,16 +278,23 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Paiement enregistré!</h3>
               <p className="text-gray-600 mb-6">
-                Votre paiement est en cours de validation par un administrateur.
-                Vous recevrez vos crédits sous peu.
+                Merci ! Votre paiement est en cours de vérification par l'équipe JobGuinée.
+                Temps estimé : <strong>5 à 20 minutes</strong>.
               </p>
 
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 text-left mb-6">
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-blue-800 mb-2">
                   <strong>Référence:</strong> {reference}
                 </p>
-                <p className="text-sm text-blue-800 mt-1">
+                <p className="text-sm text-blue-800">
                   Conservez cette référence pour le suivi de votre achat.
+                  Vos crédits seront automatiquement ajoutés à votre compte après validation.
+                </p>
+              </div>
+
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 text-left mb-6">
+                <p className="text-sm text-yellow-800">
+                  <strong>Important:</strong> N'oubliez pas d'envoyer la preuve de paiement via WhatsApp pour accélérer la validation.
                 </p>
               </div>
 
