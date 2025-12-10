@@ -164,7 +164,7 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
       setLoading(true);
       const { data: jobs } = await supabase
         .from('jobs')
-        .select('id, title, location, sector, companies(name), min_experience, contract_type')
+        .select('id, title, location, sector, experience_level, contract_type, companies(name)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(100);
@@ -615,8 +615,12 @@ export default function AIMatchingService({ onNavigate }: AIMatchingServiceProps
                             <MapPin className="w-3 h-3" />
                             {job.location}
                           </span>
-                          <span>•</span>
-                          <span>{job.min_experience}+ ans</span>
+                          {job.experience_level && (
+                            <>
+                              <span>•</span>
+                              <span>{job.experience_level}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </label>
