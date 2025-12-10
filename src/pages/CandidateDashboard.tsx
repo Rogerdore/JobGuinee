@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
+import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -656,158 +657,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
 
             {activeTab === 'profile' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Mon Profil Professionnel</h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Poste recherché *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.desired_position}
-                      onChange={(e) => setFormData({ ...formData, desired_position: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                      placeholder="Ex: Superviseur RH"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Années d'expérience *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.experience_years}
-                      onChange={(e) => setFormData({ ...formData, experience_years: Number(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Niveau d'études *
-                    </label>
-                    <select
-                      value={formData.education_level}
-                      onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                    >
-                      <option value="">Sélectionner</option>
-                      <option value="Sans diplôme">Sans diplôme</option>
-                      <option value="Bac">Bac</option>
-                      <option value="Bac+2">Bac+2</option>
-                      <option value="Licence">Licence (Bac+3)</option>
-                      <option value="Master">Master (Bac+5)</option>
-                      <option value="Doctorat">Doctorat</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Localisation *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                      placeholder="Ex: Conakry, Boké, Kamsar..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Disponibilité
-                    </label>
-                    <select
-                      value={formData.availability}
-                      onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                    >
-                      <option value="immediate">Immédiate</option>
-                      <option value="1_month">Dans 1 mois</option>
-                      <option value="3_months">Dans 3 mois</option>
-                      <option value="negotiable">À négocier</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Salaire minimum souhaité (GNF)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.desired_salary_min}
-                      onChange={(e) => setFormData({ ...formData, desired_salary_min: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                      placeholder="Ex: 5000000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Salaire maximum souhaité (GNF)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.desired_salary_max}
-                      onChange={(e) => setFormData({ ...formData, desired_salary_max: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                      placeholder="Ex: 8000000"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Compétences *
-                  </label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      value={newSkill}
-                      onChange={(e) => setNewSkill(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-transparent"
-                      placeholder="Ajouter une compétence (Ex: Microsoft Excel)"
-                    />
-                    <button
-                      onClick={addSkill}
-                      className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Ajouter
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.skills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="px-4 py-2 bg-blue-100 text-[#0E2F56] rounded-full text-sm font-medium flex items-center space-x-2"
-                      >
-                        <span>{skill}</span>
-                        <button
-                          onClick={() => removeSkill(skill)}
-                          className="hover:text-blue-900"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-6 border-t border-gray-200">
-                  <button
-                    onClick={handleSaveProfile}
-                    className="px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition shadow-md"
-                  >
-                    Enregistrer les modifications
-                  </button>
-                </div>
+              <div className="-m-6">
+                <CandidateProfileForm />
               </div>
             )}
 
