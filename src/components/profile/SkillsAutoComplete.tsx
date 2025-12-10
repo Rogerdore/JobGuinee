@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Plus, Sparkles, Check } from 'lucide-react';
+import { X, Plus, Sparkles, Check, ChevronDown } from 'lucide-react';
 
 interface SkillsAutoCompleteProps {
   value: string[];
@@ -38,8 +38,23 @@ export default function SkillsAutoComplete({
   const [inputValue, setInputValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
 
   const allSuggestions = [...new Set([...aiSuggestions, ...suggestions])];
 
@@ -294,42 +309,70 @@ export default function SkillsAutoComplete({
             <Sparkles className="w-4 h-4 text-blue-600" />
             Suggestions rapides par catégorie
           </h4>
-          <div className="space-y-3">
-            {Object.entries(COMMON_SKILLS_BY_CATEGORY).map(([category, skills]) => (
-              <div key={category} className="bg-white rounded-lg p-3 shadow-sm border border-blue-100">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">{category}</p>
-                  <span className="text-xs text-gray-500">{skills.length} compétences</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {skills.map((skill) => {
-                    const isAdded = value.some((v) => v.toLowerCase() === skill.toLowerCase());
-                    return (
-                      <button
-                        key={skill}
-                        type="button"
-                        onClick={() => !isAdded && handleAddSkill(skill)}
-                        disabled={isAdded || value.length >= maxSkills}
-                        className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
-                          isAdded
-                            ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
-                            : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+          <div className="space-y-2">
+            {Object.entries(COMMON_SKILLS_BY_CATEGORY).map(([category, skills]) => {
+              const isExpanded = expandedCategories.has(category);
+              const addedSkillsCount = skills.filter((skill) =>
+                value.some((v) => v.toLowerCase() === skill.toLowerCase())
+              ).length;
+
+              return (
+                <div key={category} className="bg-white rounded-lg shadow-sm border border-blue-100 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(category)}
+                    className="w-full flex items-center justify-between p-3 hover:bg-blue-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronDown
+                        className={`w-4 h-4 text-blue-600 transition-transform ${
+                          isExpanded ? 'rotate-0' : '-rotate-90'
                         }`}
-                      >
-                        {isAdded ? (
-                          <span className="flex items-center gap-1">
-                            <Check className="w-3 h-3" />
-                            {skill}
-                          </span>
-                        ) : (
-                          `+ ${skill}`
-                        )}
-                      </button>
-                    );
-                  })}
+                      />
+                      <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">{category}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {addedSkillsCount > 0 && (
+                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                          {addedSkillsCount} ajoutée{addedSkillsCount > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-500">{skills.length} compétences</span>
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-3 pb-3 flex flex-wrap gap-1.5 border-t border-blue-100 pt-3">
+                      {skills.map((skill) => {
+                        const isAdded = value.some((v) => v.toLowerCase() === skill.toLowerCase());
+                        return (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => !isAdded && handleAddSkill(skill)}
+                            disabled={isAdded || value.length >= maxSkills}
+                            className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
+                              isAdded
+                                ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
+                                : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                            }`}
+                          >
+                            {isAdded ? (
+                              <span className="flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                {skill}
+                              </span>
+                            ) : (
+                              `+ ${skill}`
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
