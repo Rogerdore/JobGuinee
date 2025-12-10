@@ -124,6 +124,25 @@ export type Formation = {
   updated_at: string;
 };
 
+export type JobView = {
+  id: string;
+  user_id: string;
+  job_id: string;
+  viewed_at: string;
+};
+
+export type FormationEnrollment = {
+  id: string;
+  user_id: string;
+  formation_id: string;
+  status: 'enrolled' | 'in_progress' | 'completed' | 'cancelled';
+  progress: number;
+  enrolled_at: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type TrainerProfile = {
   id: string;
   profile_id: string;

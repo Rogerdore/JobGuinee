@@ -25,6 +25,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [isPremium, setIsPremium] = useState(false);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [jobViewsCount, setJobViewsCount] = useState(0);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -43,27 +44,37 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   }, [profile?.id]);
 
   const loadData = async () => {
-    if (!profile?.id) {
+    if (!profile?.id || !user?.id) {
       setLoading(false);
       return;
     }
     setLoading(true);
 
     try {
-      const [appsData, profileData] = await Promise.all([
+      const [appsData, profileData, jobViewsData, formationsData] = await Promise.all([
         supabase
           .from('applications')
           .select('*, jobs(*, companies(*))')
-          .eq('candidate_id', profile.id)
+          .eq('candidate_id', user.id)
           .order('applied_at', { ascending: false }),
         supabase
           .from('candidate_profiles')
           .select('*')
           .eq('profile_id', profile.id)
           .maybeSingle(),
+        supabase
+          .from('job_views')
+          .select('job_id', { count: 'exact', head: false })
+          .eq('user_id', user.id),
+        supabase
+          .from('formation_enrollments')
+          .select('id, formation_id, status, progress, formations(title)')
+          .eq('user_id', user.id)
+          .in('status', ['enrolled', 'in_progress', 'completed'])
       ]);
 
       if (appsData.data) setApplications(appsData.data as any);
+
       if (profileData.data) {
         setCandidateProfile(profileData.data);
         setFormData({
@@ -76,6 +87,22 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           desired_salary_min: profileData.data.desired_salary_min?.toString() || '',
           desired_salary_max: profileData.data.desired_salary_max?.toString() || '',
         });
+      }
+
+      // Compter les vues uniques (un job_id = une offre vue)
+      if (jobViewsData.data) {
+        const uniqueJobIds = new Set(jobViewsData.data.map((v: any) => v.job_id));
+        setJobViewsCount(uniqueJobIds.size);
+      }
+
+      // Charger les formations inscrites
+      if (formationsData.data) {
+        setFormations(formationsData.data.map((enrollment: any) => ({
+          id: enrollment.formation_id,
+          title: enrollment.formations?.title || 'Formation',
+          status: enrollment.status,
+          progress: enrollment.progress
+        })));
       }
     } catch (error) {
       console.error('Error loading candidate data:', error);
@@ -363,7 +390,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <span className="text-blue-100 text-sm">Offres consultées</span>
                 <Eye className="w-5 h-5 text-blue-200" />
               </div>
-              <div className="text-3xl font-bold">12</div>
+              <div className="text-3xl font-bold">{jobViewsCount}</div>
             </div>
 
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">

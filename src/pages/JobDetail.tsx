@@ -27,8 +27,10 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   useEffect(() => {
     loadJob();
-    incrementViews();
-    if (user) checkIfApplied();
+    if (user) {
+      trackJobView();
+      checkIfApplied();
+    }
   }, [jobId, user]);
 
   const loadJob = async () => {
@@ -58,8 +60,36 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     setLoading(false);
   };
 
-  const incrementViews = async () => {
-    await supabase.rpc('increment_job_views', { job_id: jobId }).catch(() => {});
+  const trackJobView = async () => {
+    if (!user || !jobId || jobId.startsWith('sample-')) return;
+
+    try {
+      // Enregistrer la vue dans job_views
+      await supabase
+        .from('job_views')
+        .insert({
+          user_id: user.id,
+          job_id: jobId,
+          viewed_at: new Date().toISOString()
+        });
+
+      // Incrémenter le compteur sur la table jobs
+      await supabase.rpc('increment', {
+        table_name: 'jobs',
+        row_id: jobId,
+        column_name: 'views_count'
+      }).catch(() => {
+        // Fallback si la fonction RPC n'existe pas
+        supabase
+          .from('jobs')
+          .update({ views_count: (job?.views_count || 0) + 1 })
+          .eq('id', jobId)
+          .then(() => {});
+      });
+    } catch (error) {
+      // Ignorer les erreurs (ex: contrainte unique si vue déjà enregistrée aujourd'hui)
+      console.debug('Job view tracking:', error);
+    }
   };
 
   const checkIfApplied = async () => {
