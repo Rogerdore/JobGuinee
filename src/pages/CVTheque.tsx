@@ -114,7 +114,14 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       .eq('user_id', profile.id);
 
     if (data) {
-      setCartItems(data);
+      const itemsWithPrice = data.map(item => ({
+        ...item,
+        candidate: {
+          ...item.candidate,
+          profile_price: item.candidate.profile_price || calculateProfilePrice(item.candidate.experience_years || 0)
+        }
+      }));
+      setCartItems(itemsWithPrice);
     }
   };
 
