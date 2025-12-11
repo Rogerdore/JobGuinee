@@ -36,8 +36,10 @@ import AdminIACenter from './pages/AdminIACenter';
 import AdminCreditStoreSettings from './pages/AdminCreditStoreSettings';
 import AdminCreditPurchases from './pages/AdminCreditPurchases';
 import AdminSecurityLogs from './pages/AdminSecurityLogs';
+import PremiumSubscribe from './pages/PremiumSubscribe';
+import AdminPremiumSubscriptions from './pages/AdminPremiumSubscriptions';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'candidate-profile-form' | 'premium-ai' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -93,7 +95,9 @@ function AppContent() {
       {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings />}
       {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases />}
       {currentPage === 'admin-security-logs' && <AdminSecurityLogs />}
+      {currentPage === 'admin-premium-subscriptions' && <AdminPremiumSubscriptions />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
+      {currentPage === 'premium-subscribe' && <PremiumSubscribe />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
       {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
