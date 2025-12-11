@@ -49,7 +49,7 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 interface PremiumAIServicesProps {
-  onNavigate?: (page: string) => void;
+  onNavigate?: (page: string, param?: string) => void;
 }
 
 export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps = {}) {
@@ -397,6 +397,84 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
               <p className="text-gray-600 text-sm">
                 Obtenez des résultats professionnels en quelques minutes
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Premium PRO+ Section */}
+        <div id="premium-pro-section" className="mt-12 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-xl border-3 border-yellow-300 overflow-hidden">
+          <div className="relative">
+            <div className="absolute -top-20 -right-20 w-64 h-64 bg-yellow-200 rounded-full opacity-20"></div>
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-orange-200 rounded-full opacity-20"></div>
+
+            <div className="relative z-10 p-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex items-center justify-center mb-6">
+                  <div className="p-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-lg">
+                    <Crown className="w-12 h-12 text-white" />
+                  </div>
+                </div>
+
+                <h2 className="text-4xl font-bold text-center text-gray-900 mb-3">
+                  Premium PRO+
+                </h2>
+                <p className="text-center text-gray-600 mb-8 text-lg">
+                  Accès illimité à tous les services IA sans consommer de crédits
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                  <div className="bg-white rounded-xl p-4 border-2 border-blue-200 flex items-center gap-3">
+                    <Sparkles className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-bold text-gray-900">Services IA</div>
+                      <div className="text-sm text-gray-600">Illimités</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-4 border-2 border-green-200 flex items-center gap-3">
+                    <FileText className="w-6 h-6 text-green-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-bold text-gray-900">Cloud 10 Go</div>
+                      <div className="text-sm text-gray-600">Sécurisé</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-4 border-2 border-purple-200 flex items-center gap-3">
+                    <MessageCircle className="w-6 h-6 text-purple-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-bold text-gray-900">Support 24/7</div>
+                      <div className="text-sm text-gray-600">Prioritaire</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-4 border-2 border-yellow-200 flex items-center gap-3">
+                    <Check className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-bold text-gray-900">Badge vérifié</div>
+                      <div className="text-sm text-gray-600">Profil premium</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 mb-8 text-center border-2 border-orange-300">
+                  <div className="text-5xl font-bold text-orange-600 mb-2">
+                    350 000 GNF
+                  </div>
+                  <div className="text-gray-600">par mois • Sans engagement</div>
+                </div>
+
+                <button
+                  onClick={() => onNavigate?.('credit-store', 'premium-pro')}
+                  className="w-full px-8 py-4 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-600 hover:via-orange-600 hover:to-red-600 text-white font-bold text-lg rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 mb-4"
+                >
+                  <Crown className="w-6 h-6" />
+                  S'abonner maintenant
+                </button>
+
+                <p className="text-center text-gray-600">
+                  Orange Money • LengoPay • DigitalPay SA
+                </p>
+              </div>
             </div>
           </div>
         </div>
