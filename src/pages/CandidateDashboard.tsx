@@ -557,30 +557,47 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 )}
 
                 {!(isPremium || creditsBalance > 0) && (
-                  <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-6 border-2 border-orange-200">
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-2 border-blue-300 shadow-md">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Lock className="w-6 h-6 text-white" />
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <Brain className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Débloquez l'Analyse IA</h3>
-                        <p className="text-gray-700 mb-4">
-                          Le score de compatibilité automatisé avec l'IA est réservé aux utilisateurs avec des crédits ou l'abonnement Premium PRO+
+                        <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                          <Lock className="w-5 h-5 text-blue-600" />
+                          Score de compatibilité IA
+                        </h3>
+                        <p className="text-gray-700 mb-4 leading-relaxed">
+                          Vous voulez connaître votre <span className="font-semibold text-blue-700">score moyen de compatibilité</span> avec les offres auxquelles vous avez candidaté ?
+                          Cette fonctionnalité nécessite un <span className="font-semibold text-blue-700">abonnement Premium PRO+</span> ou des <span className="font-semibold text-blue-700">crédits IA</span>.
                         </p>
-                        <div className="flex gap-3">
+                        <div className="bg-white rounded-lg p-4 mb-4 border border-blue-200">
+                          <div className="flex items-start gap-2">
+                            <Sparkles className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-gray-600">
+                              <p className="font-medium text-gray-900 mb-1">Avec l'analyse IA, vous obtenez :</p>
+                              <ul className="space-y-1 ml-4">
+                                <li>✓ Score de compatibilité précis pour chaque candidature</li>
+                                <li>✓ Suggestions personnalisées d'amélioration</li>
+                                <li>✓ Recommandations de formations adaptées</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
                           <button
                             onClick={() => onNavigate('credit-store')}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition shadow-md hover:shadow-lg text-sm font-medium"
                           >
                             <Zap className="w-4 h-4" />
-                            Acheter des crédits
+                            Boutique de crédits IA
                           </button>
                           <button
                             onClick={() => onNavigate('premium-ai', 'premium-pro-section')}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition shadow-md hover:shadow-lg text-sm font-medium"
                           >
                             <Crown className="w-4 h-4" />
-                            Premium PRO+
+                            Abonnement Premium PRO+
                           </button>
                         </div>
                       </div>
