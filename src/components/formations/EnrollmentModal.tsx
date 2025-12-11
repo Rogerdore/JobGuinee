@@ -219,9 +219,9 @@ export default function EnrollmentModal({ formation, onClose, onSuccess }: Enrol
                   <AlertCircle className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-blue-900 mb-2">Contact direct avec le formateur</h4>
+                  <h4 className="font-bold text-blue-900 mb-2">Contact direct avec le Formateur/Organisme formation</h4>
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    Le paiement s'effectue directement avec le formateur. Contactez-le par téléphone ou WhatsApp pour discuter des modalités d'inscription et de paiement.
+                    Le paiement s'effectue directement avec le formateur/organisme formation. Contactez-le par téléphone ou WhatsApp pour discuter des modalités d'inscription et de paiement.
                   </p>
                 </div>
               </div>
@@ -229,7 +229,7 @@ export default function EnrollmentModal({ formation, onClose, onSuccess }: Enrol
               {formation.trainer_phone && formation.trainer_contact_name && (
                 <div className="bg-white rounded-lg p-5 border border-blue-200 space-y-4">
                   <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-1">Formateur</div>
+                    <div className="text-sm text-gray-600 mb-1">Formateur/Organisme formation</div>
                     <div className="text-xl font-bold text-gray-900 mb-3">
                       {formation.trainer_contact_name}
                     </div>
@@ -299,7 +299,7 @@ export default function EnrollmentModal({ formation, onClose, onSuccess }: Enrol
               {(!formation.trainer_phone || !formation.trainer_contact_name) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-sm text-yellow-800">
-                    Les coordonnées du formateur ne sont pas disponibles pour le moment.
+                    Les coordonnées du formateur/organisme formation ne sont pas disponibles pour le moment.
                     Veuillez contacter l'administration pour plus d'informations.
                   </p>
                 </div>
@@ -308,9 +308,9 @@ export default function EnrollmentModal({ formation, onClose, onSuccess }: Enrol
               <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h5 className="font-semibold text-blue-900 mb-2">Instructions:</h5>
                 <ol className="text-sm text-blue-800 space-y-1.5 list-decimal list-inside">
-                  <li>Contactez le formateur par téléphone ou WhatsApp</li>
+                  <li>Contactez le formateur/organisme formation par téléphone ou WhatsApp</li>
                   <li>Discutez des modalités de paiement ({formData.payment_method === 'orange_money' ? 'Orange Money' : selectedMethod?.name})</li>
-                  <li>Effectuez le paiement selon les instructions du formateur</li>
+                  <li>Effectuez le paiement selon les instructions du formateur/organisme formation</li>
                   <li>Confirmez votre inscription après validation du paiement</li>
                 </ol>
               </div>

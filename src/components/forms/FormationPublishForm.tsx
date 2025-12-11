@@ -820,7 +820,7 @@ export default function FormationPublishForm({
 
           {selectedOrgType === 'individual' && (
             <div className="space-y-6 pt-6 border-t">
-              <h3 className="text-lg font-bold text-gray-900">Informations Formateur Indépendant</h3>
+              <h3 className="text-lg font-bold text-gray-900">Informations Formateur/Organisme Formation Indépendant</h3>
 
               {commonData.format !== 'online' && (
                 <div>
@@ -939,16 +939,16 @@ export default function FormationPublishForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Équipe de Formateurs
+                  Équipe de Formateurs/Organismes Formation
                 </label>
                 <textarea
                   value={companyData.company_trainer_team.join('\n')}
                   onChange={(e) => handleTrainerTeamChange(e.target.value)}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Un formateur par ligne..."
+                  placeholder="Un formateur/organisme par ligne..."
                 />
-                <p className="text-xs text-gray-500 mt-1">Un formateur par ligne</p>
+                <p className="text-xs text-gray-500 mt-1">Un formateur/organisme par ligne</p>
               </div>
             </div>
           )}

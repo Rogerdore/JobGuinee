@@ -719,7 +719,7 @@ export default function Home({ onNavigate }: HomeProps) {
               className="inline-flex items-center space-x-2 px-8 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg hover:shadow-xl border-2 border-[#0E2F56]"
             >
               <Award className="w-5 h-5" />
-              <span>Devenir formateur/coach</span>
+              <span>Devenir Formateur/Organisme formation</span>
             </button>
           </div>
         </div>
@@ -1072,12 +1072,12 @@ export default function Home({ onNavigate }: HomeProps) {
             </div>
 
             <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
-              Espace Formateur/Coach
+              Espace Formateur/Organisme formation
             </h3>
 
             <p className="text-gray-600 mb-6 text-center">
-              Pour publier vos formations et accéder à votre espace formateur,
-              vous devez d'abord créer un compte formateur ou vous connecter.
+              Pour publier vos formations et accéder à votre espace,
+              vous devez d'abord créer un compte ou vous connecter.
             </p>
 
             <div className="space-y-4 mb-6">
@@ -1108,7 +1108,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 className="w-full py-3 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg flex items-center justify-center space-x-2"
               >
                 <GraduationCap className="w-5 h-5" />
-                <span>Créer mon compte formateur</span>
+                <span>Créer mon compte</span>
               </button>
 
               <button
