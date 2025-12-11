@@ -329,7 +329,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     await loadCart();
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!profile?.id) {
       showInfo(
         'Connexion requise',
@@ -347,8 +347,102 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       return;
     }
 
-    setCartOpen(false);
-    setShowPacksModal(true);
+    // Filtrer les profils compatibles avec les packs actifs
+    const getExperienceLevel = (years: number): 'junior' | 'intermediate' | 'senior' => {
+      if (years >= 6) return 'senior';
+      if (years >= 3) return 'intermediate';
+      return 'junior';
+    };
+
+    const hasCompatiblePack = (experienceYears: number): boolean => {
+      if (activePacks.length === 0) return false;
+
+      const profileLevel = getExperienceLevel(experienceYears);
+
+      const specificPack = activePacks.find(
+        p => p.experience_level === profileLevel && p.profiles_remaining > 0
+      );
+
+      if (specificPack) return true;
+
+      const mixedPack = activePacks.find(
+        p => !p.experience_level && p.profiles_remaining > 0
+      );
+
+      return !!mixedPack;
+    };
+
+    const validCandidateIds = cartItems
+      .filter(item => hasCompatiblePack(item.candidate.experience_years || 0))
+      .map(item => item.candidate_id);
+
+    // Si des packs actifs existent et qu'il y a des profils valides
+    if (activePacks.length > 0 && validCandidateIds.length > 0) {
+      setCartOpen(false);
+
+      try {
+        showInfo('Validation en cours...', 'Veuillez patienter');
+
+        // Appeler la fonction automatique de consommation des packs
+        const { data, error } = await supabase.rpc('consume_pack_credits', {
+          p_recruiter_id: profile.id,
+          p_candidate_ids: validCandidateIds
+        });
+
+        if (error) {
+          console.error('Erreur lors de la consommation des packs:', error);
+          showError('Erreur', 'Impossible de valider les achats. Veuillez réessayer.');
+          return;
+        }
+
+        const result = data as {
+          success: boolean;
+          success_count: number;
+          failed_count: number;
+          failed_profiles: Array<{ candidate_id: string; reason: string }>;
+        };
+
+        if (result.success && result.success_count > 0) {
+          // Vider le panier après succès
+          const deletePromises = cartItems
+            .filter(item => validCandidateIds.includes(item.candidate_id))
+            .map(item =>
+              supabase.from('profile_cart').delete().eq('id', item.id)
+            );
+
+          await Promise.all(deletePromises);
+
+          await loadCart();
+          await loadPurchasedProfiles();
+          await loadActivePacks();
+
+          showSuccess(
+            `${result.success_count} profil${result.success_count > 1 ? 's' : ''} validé${result.success_count > 1 ? 's' : ''} automatiquement!`,
+            'Les profils sont maintenant accessibles dans votre CVThèque.'
+          );
+
+          if (result.failed_count > 0) {
+            showInfo(
+              `${result.failed_count} profil${result.failed_count > 1 ? 's' : ''} non validé${result.failed_count > 1 ? 's' : ''}`,
+              'Certains profils n\'ont pas pu être validés.'
+            );
+          }
+        } else {
+          showError(
+            'Échec de validation',
+            'Aucun profil n\'a pu être validé. Vérifiez vos packs actifs.'
+          );
+        }
+
+      } catch (err) {
+        console.error('Erreur lors du checkout:', err);
+        showError('Erreur', 'Une erreur est survenue lors de la validation.');
+      }
+    } else if (activePacks.length === 0 || validCandidateIds.length === 0) {
+      // Pas de packs actifs ou pas de profils valides → ouvrir le modal d'achat de packs
+      setCartOpen(false);
+      setShowPacksModal(true);
+    }
   };
 
   const handleViewDetails = async (candidateId: string) => {
