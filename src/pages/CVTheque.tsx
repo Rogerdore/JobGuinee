@@ -6,6 +6,7 @@ import SearchBar from '../components/cvtheque/SearchBar';
 import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFilters';
 import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
 import ProfileCart from '../components/cvtheque/ProfileCart';
+import CandidateProfileModal from '../components/cvtheque/CandidateProfileModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 
 interface CVThequeProps {
@@ -27,6 +28,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [sessionId] = useState(() => `guest_${Date.now()}_${Math.random().toString(36)}`);
   const [currentPage, setCurrentPage] = useState(1);
   const profilesPerPage = 12;
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadCandidates();
@@ -269,38 +272,29 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     alert('🚧 Paiement en cours de développement\n\nMoyens de paiement acceptés:\n- Orange Money\n- LengoPay\n- DigitalPay SA\n- Visa/Mastercard');
   };
 
-  const handleViewDetails = (candidateId: string) => {
+  const handleViewDetails = async (candidateId: string) => {
     console.log('👁️ Viewing details for:', candidateId);
-    const candidate = candidates.find(c => c.id === candidateId);
-    const isPurchased = purchasedProfiles.includes(candidateId);
 
-    console.log('Found candidate:', candidate);
-    console.log('Is purchased:', isPurchased);
-
-    if (!candidate) {
-      console.error('Candidate not found');
-      alert('❌ Erreur: Profil introuvable');
+    if (!profile?.id) {
+      alert('❌ Accès refusé\n\nVous devez être connecté pour voir les détails des profils.\n\nVeuillez vous connecter avec un compte recruteur.');
+      onNavigate('login');
       return;
     }
 
-    if (isPurchased) {
-      const fullInfo = `🎉 PROFIL COMPLET - ${candidate.profile?.full_name || 'Candidat'}
+    if (profile.user_type !== 'recruiter') {
+      alert('❌ Accès refusé\n\nSeuls les recruteurs peuvent accéder aux détails des profils.\n\nVeuillez créer un compte recruteur pour accéder à la CVThèque.');
+      return;
+    }
 
-📋 Poste: ${candidate.title || 'N/A'}
-📍 Localisation: ${candidate.location || 'N/A'}
-💼 Expérience: ${candidate.experience_years || 0} ans
-🎓 Formation: ${candidate.education_level || 'N/A'}
+    const isPurchased = purchasedProfiles.includes(candidateId);
 
-📧 Email: ${candidate.profile?.email || 'N/A'}
-📱 Téléphone: [Disponible après achat]
+    if (!isPurchased) {
+      const candidate = candidates.find(c => c.id === candidateId);
+      if (!candidate) {
+        alert('❌ Erreur: Profil introuvable');
+        return;
+      }
 
-🔧 Compétences principales:
-${candidate.skills?.slice(0, 5).map(s => `• ${s}`).join('\n') || 'N/A'}
-
-${candidate.bio ? `📝 Bio:\n${candidate.bio}\n` : ''}
-💾 Téléchargez le CV complet depuis votre espace recruteur.`;
-      alert(fullInfo);
-    } else {
       const preview = `👁️ APERÇU DU PROFIL
 
 📋 Poste: ${candidate.title || 'Professionnel qualifié'}
@@ -322,7 +316,59 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
 
 ➡️ Ajoutez ce profil au panier pour déverrouiller toutes les informations!`;
       alert(preview);
+      return;
     }
+
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('profile_purchases')
+      .select('payment_status, payment_verified_by_admin')
+      .eq('buyer_id', profile.id)
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (purchaseError) {
+      console.error('Error checking purchase:', purchaseError);
+      alert('❌ Erreur lors de la vérification de l\'achat');
+      return;
+    }
+
+    if (!purchase) {
+      alert('❌ Accès refusé\n\nVous n\'avez pas acheté ce profil.');
+      return;
+    }
+
+    if (purchase.payment_status !== 'completed') {
+      alert('⏳ Paiement en attente\n\nVotre paiement n\'a pas encore été confirmé.\n\nStatut: ' + (purchase.payment_status || 'En attente'));
+      return;
+    }
+
+    if (!purchase.payment_verified_by_admin) {
+      alert('⏳ Validation en attente\n\nVotre paiement a été reçu mais est en cours de validation par notre équipe.\n\nVous recevrez une notification dès que l\'accès sera activé.');
+      return;
+    }
+
+    const { data: fullCandidate, error: candidateError } = await supabase
+      .from('candidate_profiles')
+      .select(`
+        *,
+        profile:profiles!candidate_profiles_profile_id_fkey(
+          full_name,
+          email,
+          phone,
+          avatar_url
+        )
+      `)
+      .eq('id', candidateId)
+      .maybeSingle();
+
+    if (candidateError || !fullCandidate) {
+      console.error('Error loading candidate:', candidateError);
+      alert('❌ Erreur lors du chargement du profil complet');
+      return;
+    }
+
+    setSelectedCandidate(fullCandidate);
+    setIsModalOpen(true);
   };
 
   const cartItemIds = cartItems.map(item => item.candidate_id);
@@ -349,6 +395,17 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
       />
+
+      {selectedCandidate && (
+        <CandidateProfileModal
+          candidate={selectedCandidate}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedCandidate(null);
+          }}
+        />
+      )}
 
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-8">

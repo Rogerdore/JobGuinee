@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -97,6 +97,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <Crown className="w-4 h-4" />
                 <span>Quotas Premium</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-profile-purchases')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-teal-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span>Achats Profils</span>
               </button>
 
               <button
