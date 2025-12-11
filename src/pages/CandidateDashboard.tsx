@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
+import { isPremiumActive } from '../utils/premiumHelpers';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 
 interface CandidateDashboardProps {
@@ -23,6 +24,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [loading, setLoading] = useState(true);
   const [formations, setFormations] = useState<Formation[]>([]);
   const [isPremium, setIsPremium] = useState(false);
+  const [creditsBalance, setCreditsBalance] = useState<number>(0);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [jobViewsCount, setJobViewsCount] = useState(0);
@@ -51,7 +53,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     setLoading(true);
 
     try {
-      const [appsData, profileData, jobViewsData, formationsData] = await Promise.all([
+      const [appsData, profileData, jobViewsData, formationsData, profilesData] = await Promise.all([
         supabase
           .from('applications')
           .select('*, jobs(*, companies(*))')
@@ -70,7 +72,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .from('formation_enrollments')
           .select('id, formation_id, status, progress, formations(title)')
           .eq('user_id', user.id)
-          .in('status', ['enrolled', 'in_progress', 'completed'])
+          .in('status', ['enrolled', 'in_progress', 'completed']),
+        supabase
+          .from('profiles')
+          .select('credits_balance, is_premium, premium_expiration')
+          .eq('id', profile.id)
+          .maybeSingle()
       ]);
 
       if (appsData.data) setApplications(appsData.data as any);
@@ -103,6 +110,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           status: enrollment.status,
           progress: enrollment.progress
         })));
+      }
+
+      // Charger les crédits et statut premium
+      if (profilesData.data) {
+        setCreditsBalance(profilesData.data.credits_balance || 0);
+        setIsPremium(isPremiumActive(profilesData.data));
       }
     } catch (error) {
       console.error('Error loading candidate data:', error);
@@ -519,7 +532,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   </div>
                 </div>
 
-                {aiScore > 0 && (
+                {(isPremium || creditsBalance > 0) && aiScore > 0 && (
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 bg-[#0E2F56] rounded-full flex items-center justify-center flex-shrink-0">
@@ -538,6 +551,38 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           <BookOpen className="w-4 h-4" />
                           Découvrir les formations
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!(isPremium || creditsBalance > 0) && (
+                  <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-6 border-2 border-orange-200">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Lock className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">Débloquez l'Analyse IA</h3>
+                        <p className="text-gray-700 mb-4">
+                          Le score de compatibilité automatisé avec l'IA est réservé aux utilisateurs avec des crédits ou l'abonnement Premium PRO+
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => onNavigate('credit-store')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm font-medium"
+                          >
+                            <Zap className="w-4 h-4" />
+                            Acheter des crédits
+                          </button>
+                          <button
+                            onClick={() => onNavigate('premium-ai', 'premium-pro-section')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition text-sm font-medium"
+                          >
+                            <Crown className="w-4 h-4" />
+                            Premium PRO+
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
