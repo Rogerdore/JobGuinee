@@ -9,6 +9,7 @@ import { sampleJobs } from '../utils/sampleJobsData';
 import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
+import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -524,11 +525,12 @@ export default function Home({ onNavigate }: HomeProps) {
 
               <button
                 onClick={() => {
-                  if (user && profile?.user_type === 'recruiter') {
-                    onNavigate('recruiter-dashboard');
-                  } else {
-                    setShowRecruiterLoginModal(true);
-                  }
+                  handleRecruiterNavigation({
+                    user,
+                    profile,
+                    onNavigate,
+                    onShowModal: () => setShowRecruiterLoginModal(true),
+                  });
                 }}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
@@ -725,11 +727,21 @@ export default function Home({ onNavigate }: HomeProps) {
               <p className="text-gray-600 mb-4">
                 <span className="font-semibold text-[#0E2F56]">{partners.length}+</span> entreprises leaders font confiance à JobGuinée
               </p>
-              <div className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <button
+                onClick={() => {
+                  handleRecruiterNavigation({
+                    user,
+                    profile,
+                    onNavigate,
+                    onShowModal: () => setShowRecruiterLoginModal(true),
+                  });
+                }}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-[#1a4275] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+              >
                 <Building className="w-4 h-4" />
                 <span className="font-medium">Devenir partenaire</span>
                 <ArrowRight className="w-4 h-4" />
-              </div>
+              </button>
             </div>
           </div>
         </div>
