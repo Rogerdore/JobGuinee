@@ -686,17 +686,17 @@ export default function Home({ onNavigate }: HomeProps) {
               <p className="text-lg text-gray-600">Les entreprises leaders qui recrutent avec JobGuinée</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {partners.map((partner, index) => (
                 <div
                   key={partner.name}
-                  className="group relative bg-gradient-to-br from-blue-100/60 to-blue-200/60 backdrop-blur-xl rounded-2xl border-2 border-blue-300/40 p-6 hover:scale-105 transition-all duration-300 hover:shadow-blue-400/30 hover:shadow-2xl cursor-pointer overflow-hidden"
+                  className="group relative bg-gradient-to-br from-blue-100/60 to-blue-200/60 backdrop-blur-xl rounded-xl border-2 border-blue-300/40 p-4 hover:scale-105 transition-all duration-300 hover:shadow-blue-400/30 hover:shadow-2xl cursor-pointer overflow-hidden"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-20 h-20 mb-4 rounded-xl overflow-hidden shadow-lg ring-2 ring-blue-300/30 group-hover:ring-blue-400/50 transition-all duration-300 group-hover:scale-110">
+                    <div className="w-13 h-13 mb-3 rounded-lg overflow-hidden shadow-lg ring-2 ring-blue-300/30 group-hover:ring-blue-400/50 transition-all duration-300 group-hover:scale-110">
                       <img
                         src={partner.logo}
                         alt={partner.name}
@@ -704,14 +704,14 @@ export default function Home({ onNavigate }: HomeProps) {
                       />
                     </div>
 
-                    <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">
+                    <h4 className="text-center font-bold text-gray-900 text-xs group-hover:text-blue-700 transition-colors">
                       {partner.name}
                     </h4>
 
-                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="flex items-center space-x-1">
-                        <CheckCircle className="w-3 h-3 text-blue-600" />
-                        <span className="text-xs text-gray-600 font-medium">Partenaire actif</span>
+                        <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
+                        <span className="text-[10px] text-gray-600 font-medium">Partenaire actif</span>
                       </div>
                     </div>
                   </div>
