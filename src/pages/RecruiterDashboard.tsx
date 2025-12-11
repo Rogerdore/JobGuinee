@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Settings,
   Target,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -27,6 +28,7 @@ import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
+import PurchasedProfiles from './PurchasedProfiles';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 
 interface RecruiterDashboardProps {
@@ -70,7 +72,7 @@ interface WorkflowStage {
   stage_color: string;
 }
 
-type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'premium' | 'profile';
+type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'premium' | 'profile' | 'purchased-profiles';
 
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { profile } = useAuth();
@@ -343,6 +345,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
     { id: 'applications', label: 'Candidatures', icon: Users, count: applications.length },
+    { id: 'purchased-profiles', label: 'Profils Achetés', icon: Package },
     { id: 'ai-generator', label: 'Publier une offre', icon: Plus },
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
@@ -1044,6 +1047,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
           {activeTab === 'profile' && <RecruiterProfileForm />}
+
+          {activeTab === 'purchased-profiles' && <PurchasedProfiles profile={profile} />}
         </div>
       </div>
     </div>
