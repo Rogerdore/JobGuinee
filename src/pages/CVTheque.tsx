@@ -89,6 +89,11 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   const loadCart = async () => {
+    if (!profile?.id || profile.user_type !== 'recruiter') {
+      setCartItems([]);
+      return;
+    }
+
     const { data } = await supabase
       .from('profile_cart')
       .select(`
@@ -101,7 +106,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
           profile_price
         )
       `)
-      .or(profile?.id ? `user_id.eq.${profile.id}` : `session_id.eq.${sessionId}`);
+      .eq('user_id', profile.id);
 
     if (data) {
       setCartItems(data);
@@ -233,12 +238,17 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       willUseUserId: !!profile?.id
     });
 
+    if (!profile?.id || profile.user_type !== 'recruiter') {
+      setShowRecruiterAccessModal(true);
+      return;
+    }
+
     const candidate = candidates.find(c => c.id === candidateId);
     console.log('Found candidate:', candidate);
 
     const insertData = {
-      user_id: profile?.id || null,
-      session_id: profile?.id ? null : sessionId,
+      user_id: profile.id,
+      session_id: null,
       candidate_id: candidateId,
     };
 
@@ -417,18 +427,20 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
                 Parcourez les profils et sélectionnez ceux qui vous intéressent
               </p>
             </div>
-            <button
-              onClick={() => setCartOpen(true)}
-              className="relative px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg shadow-lg transition flex items-center gap-2"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span>Panier</span>
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
+            {profile?.user_type === 'recruiter' && (
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg shadow-lg transition flex items-center gap-2"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                <span>Panier</span>
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
