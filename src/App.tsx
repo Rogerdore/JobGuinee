@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CMSProvider } from './contexts/CMSContext';
+import { ToastProvider } from './components/notifications/ToastContainer';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
@@ -132,7 +133,9 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <CMSProvider>
-          <AppContent />
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
         </CMSProvider>
       </NotificationProvider>
     </AuthProvider>

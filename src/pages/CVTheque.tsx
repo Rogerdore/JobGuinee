@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon, ChevronLeft, ChevronRight, Circle, Hexagon, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../components/notifications/ToastContainer';
 import SearchBar from '../components/cvtheque/SearchBar';
 import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFilters';
 import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
@@ -17,6 +18,7 @@ interface CVThequeProps {
 
 export default function CVTheque({ onNavigate }: CVThequeProps) {
   const { profile } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
   const [candidates, setCandidates] = useState<any[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,10 +269,16 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     if (!error) {
       await loadCart();
       const profileName = candidate?.title || 'Profil';
-      alert(`✅ ${profileName} a été ajouté au panier avec succès!\n\nCliquez sur l'icône panier en haut à droite pour finaliser votre achat.`);
+      showSuccess(
+        `${profileName} ajouté au panier`,
+        'Cliquez sur l\'icône panier en haut à droite pour finaliser votre achat.'
+      );
     } else {
       console.error('Error adding to cart:', error);
-      alert(`❌ Erreur lors de l'ajout au panier: ${error.message}\n\nDétails: ${JSON.stringify(error)}`);
+      showError(
+        'Erreur lors de l\'ajout au panier',
+        error.message
+      );
     }
   };
 
@@ -281,12 +289,18 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
 
   const handleCheckout = () => {
     if (!profile?.id) {
-      alert('Veuillez vous connecter pour finaliser votre achat');
+      showInfo(
+        'Connexion requise',
+        'Veuillez vous connecter pour finaliser votre achat'
+      );
       onNavigate('login');
       return;
     }
 
-    alert('🚧 Paiement en cours de développement\n\nMoyens de paiement acceptés:\n- Orange Money\n- LengoPay\n- DigitalPay SA\n- Visa/Mastercard');
+    showInfo(
+      'Paiement en cours de développement',
+      'Moyens de paiement acceptés: Orange Money, LengoPay, DigitalPay SA, Visa/Mastercard'
+    );
   };
 
   const handleViewDetails = async (candidateId: string) => {
@@ -297,7 +311,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     if (!isPurchased) {
       const candidate = candidates.find(c => c.id === candidateId);
       if (!candidate) {
-        alert('❌ Erreur: Profil introuvable');
+        showError('Profil introuvable', 'Impossible de trouver ce profil.');
         return;
       }
 
@@ -320,22 +334,28 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
 
     if (purchaseError) {
       console.error('Error checking purchase:', purchaseError);
-      alert('❌ Erreur lors de la vérification de l\'achat');
+      showError('Erreur de vérification', 'Impossible de vérifier l\'achat du profil.');
       return;
     }
 
     if (!purchase) {
-      alert('❌ Accès refusé\n\nVous n\'avez pas acheté ce profil.');
+      showError('Accès refusé', 'Vous n\'avez pas acheté ce profil.');
       return;
     }
 
     if (purchase.payment_status !== 'completed') {
-      alert('⏳ Paiement en attente\n\nVotre paiement n\'a pas encore été confirmé.\n\nStatut: ' + (purchase.payment_status || 'En attente'));
+      showInfo(
+        'Paiement en attente',
+        `Votre paiement n'a pas encore été confirmé. Statut: ${purchase.payment_status || 'En attente'}`
+      );
       return;
     }
 
     if (!purchase.payment_verified_by_admin) {
-      alert('⏳ Validation en attente\n\nVotre paiement a été reçu mais est en cours de validation par notre équipe.\n\nVous recevrez une notification dès que l\'accès sera activé.');
+      showInfo(
+        'Validation en attente',
+        'Votre paiement a été reçu mais est en cours de validation par notre équipe. Vous recevrez une notification dès que l\'accès sera activé.'
+      );
       return;
     }
 
@@ -355,7 +375,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
 
     if (candidateError || !fullCandidate) {
       console.error('Error loading candidate:', candidateError);
-      alert('❌ Erreur lors du chargement du profil complet');
+      showError('Erreur de chargement', 'Impossible de charger le profil complet.');
       return;
     }
 
