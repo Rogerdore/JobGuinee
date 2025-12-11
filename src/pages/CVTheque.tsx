@@ -10,6 +10,7 @@ import ProfileCart from '../components/cvtheque/ProfileCart';
 import CandidateProfileModal from '../components/cvtheque/CandidateProfileModal';
 import CandidatePreviewModal from '../components/cvtheque/CandidatePreviewModal';
 import RecruiterAccessModal from '../components/cvtheque/RecruiterAccessModal';
+import CVThequePacksModal from '../components/cvtheque/CVThequePacksModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 
 interface CVThequeProps {
@@ -37,6 +38,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [previewCandidate, setPreviewCandidate] = useState<any>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showRecruiterAccessModal, setShowRecruiterAccessModal] = useState(false);
+  const [showPacksModal, setShowPacksModal] = useState(false);
 
   useEffect(() => {
     loadCandidates();
@@ -304,10 +306,16 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       return;
     }
 
-    showInfo(
-      'Paiement en cours de développement',
-      'Moyens de paiement acceptés: Orange Money, LengoPay, DigitalPay SA, Visa/Mastercard'
-    );
+    if (cartItems.length === 0) {
+      showInfo(
+        'Panier vide',
+        'Ajoutez des profils à votre panier avant de procéder au paiement'
+      );
+      return;
+    }
+
+    setCartOpen(false);
+    setShowPacksModal(true);
   };
 
   const handleViewDetails = async (candidateId: string) => {
@@ -695,6 +703,23 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
           onNavigate('login');
         }}
       />
+
+      {/* Modal des packs CVThèque */}
+      {showPacksModal && profile?.id && (
+        <CVThequePacksModal
+          userId={profile.id}
+          onClose={() => setShowPacksModal(false)}
+          onSuccess={() => {
+            setShowPacksModal(false);
+            loadCart();
+            loadPurchasedProfiles();
+            showSuccess(
+              'Pack acheté avec succès',
+              'Votre achat sera activé après validation du paiement'
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

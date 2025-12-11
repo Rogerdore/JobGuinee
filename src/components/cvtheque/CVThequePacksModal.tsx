@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Check, Building, Users, Sparkles, TrendingUp, Crown } from 'lucide-react';
 import { cvthequePricingService, CVThequePack } from '../../services/cvthequePricingService';
-import { OrangeMoneyPaymentInfo } from '../payments/OrangeMoneyPaymentInfo';
+import OrangeMoneyPaymentInfo from '../payments/OrangeMoneyPaymentInfo';
 
 interface CVThequePacksModalProps {
   userId: string;
@@ -41,12 +41,12 @@ export default function CVThequePacksModal({
     setShowPayment(true);
   };
 
-  const handlePaymentSuccess = async (paymentProofUrl: string) => {
+  const handlePurchaseConfirm = async () => {
     if (!selectedPack) return;
 
     setPurchasing(true);
     try {
-      await cvthequePricingService.purchasePack(userId, selectedPack.id, paymentProofUrl);
+      await cvthequePricingService.purchasePack(userId, selectedPack.id, '');
       alert('✅ Votre achat a été enregistré ! Il sera activé après validation du paiement.');
       onSuccess();
       onClose();
@@ -123,10 +123,29 @@ export default function CVThequePacksModal({
 
           <OrangeMoneyPaymentInfo
             amount={selectedPack.price_gnf}
-            packageName={selectedPack.pack_name}
-            onPaymentProofUploaded={handlePaymentSuccess}
-            loading={purchasing}
+            serviceName={selectedPack.pack_name}
+            userEmail=""
+            showWhatsApp={true}
           />
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => {
+                setShowPayment(false);
+                setSelectedPack(null);
+              }}
+              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handlePurchaseConfirm}
+              disabled={purchasing}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-bold rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {purchasing ? 'Traitement...' : 'J\'ai effectué le paiement'}
+            </button>
+          </div>
         </div>
       </div>
     );
