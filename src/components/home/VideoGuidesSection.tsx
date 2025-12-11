@@ -142,7 +142,7 @@ export default function VideoGuidesSection() {
           </p>
         </div>
 
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center ${videoSettings.layout === 'right' ? 'lg:grid-flow-dense' : ''}`}>
+        <div className={`grid grid-cols-1 ${videoUrl ? 'lg:grid-cols-2' : ''} gap-8 items-center ${videoSettings.layout === 'right' ? 'lg:grid-flow-dense' : ''}`}>
           {videoUrl && (
             <div className={`${videoSettings.layout === 'right' ? 'lg:col-start-2' : ''}`}>
               <div className="relative aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl group">
@@ -169,7 +169,7 @@ export default function VideoGuidesSection() {
             </div>
           )}
 
-          <div className={`${videoSettings.layout === 'right' ? 'lg:col-start-1 lg:row-start-1' : ''}`}>
+          <div className={`${videoUrl ? (videoSettings.layout === 'right' ? 'lg:col-start-1 lg:row-start-1' : '') : 'max-w-3xl mx-auto'}`}>
             {guides.length > 0 ? (
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
