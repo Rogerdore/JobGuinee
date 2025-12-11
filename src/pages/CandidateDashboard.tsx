@@ -665,12 +665,22 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             <div className="flex-1">
                               <h4 className="font-bold text-gray-900 mb-1">{app.jobs?.title}</h4>
                               <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.company_name}</p>
-                              {app.ai_match_score && (
+                              {!isPremium && creditsBalance === 0 ? (
+                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                  <Lock className="w-3 h-3" />
+                                  <span>Score IA: Premium requis</span>
+                                </div>
+                              ) : app.ai_match_score ? (
                                 <div className="flex items-center gap-2">
                                   <div className="flex items-center gap-1 text-xs text-gray-600">
                                     <Sparkles className="w-3 h-3 text-purple-600" />
                                     <span>Score IA: {app.ai_match_score}%</span>
                                   </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-xs text-blue-600">
+                                  <Sparkles className="w-3 h-3" />
+                                  <span>Score disponible</span>
                                 </div>
                               )}
                             </div>
@@ -739,23 +749,79 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           </span>
                         </div>
 
-                        {app.ai_match_score && (
-                          <div className="mb-4">
-                            <div className="flex items-center justify-between text-sm mb-2">
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-purple-600" />
-                                <span className="text-gray-600 font-medium">Score de compatibilité IA</span>
+                        <div className="mb-4 relative">
+                          {!isPremium && creditsBalance === 0 ? (
+                            <div className="relative">
+                              <div className="filter blur-sm pointer-events-none select-none">
+                                <div className="flex items-center justify-between text-sm mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-purple-600" />
+                                    <span className="text-gray-600 font-medium">Score de compatibilité IA</span>
+                                  </div>
+                                  <span className="font-bold text-[#0E2F56]">81%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                  <div
+                                    className="bg-gradient-to-r from-[#0E2F56] to-purple-600 h-2.5 rounded-full"
+                                    style={{ width: '81%' }}
+                                  ></div>
+                                </div>
                               </div>
-                              <span className="font-bold text-[#0E2F56]">{app.ai_match_score}%</span>
+                              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded-lg">
+                                <div className="text-center px-4">
+                                  <Lock className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                                  <p className="text-xs font-medium text-gray-700 mb-1">Score réservé Premium</p>
+                                  <div className="flex gap-2 justify-center">
+                                    <button
+                                      onClick={() => setActiveTab('premium')}
+                                      className="text-xs px-2 py-1 bg-gradient-to-r from-[#FF8C00] to-yellow-600 text-white rounded hover:from-[#e67e00] hover:to-yellow-700 transition"
+                                    >
+                                      Premium
+                                    </button>
+                                    <button
+                                      onClick={() => onNavigate('credit-store')}
+                                      className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                                    >
+                                      Crédits
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                              <div
-                                className="bg-gradient-to-r from-[#0E2F56] to-purple-600 h-2.5 rounded-full transition-all"
-                                style={{ width: `${app.ai_match_score}%` }}
-                              ></div>
+                          ) : app.ai_match_score ? (
+                            <div>
+                              <div className="flex items-center justify-between text-sm mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Sparkles className="w-4 h-4 text-purple-600" />
+                                  <span className="text-gray-600 font-medium">Score de compatibilité IA</span>
+                                </div>
+                                <span className="font-bold text-[#0E2F56]">{app.ai_match_score}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div
+                                  className="bg-gradient-to-r from-[#0E2F56] to-purple-600 h-2.5 rounded-full transition-all"
+                                  style={{ width: `${app.ai_match_score}%` }}
+                                ></div>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-200">
+                              <div className="flex items-start gap-2">
+                                <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-xs font-medium text-gray-700 mb-1">Score de compatibilité disponible</p>
+                                  <p className="text-xs text-gray-600 mb-2">Utilisez le service de matching IA pour connaître votre compatibilité avec cette offre</p>
+                                  <button
+                                    onClick={() => setSelectedService({ name: 'matching', requiresPremium: false, creditCost: 5 })}
+                                    className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                  >
+                                    Analyser (5 crédits)
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                           <div className="flex items-center gap-2 text-sm text-gray-500">
