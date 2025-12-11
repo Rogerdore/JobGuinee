@@ -3,7 +3,7 @@ import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
   Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn,
-  Mountain, Smartphone, Ship, Drill, Factory, Gem
+  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -29,9 +29,17 @@ export default function Home({ onNavigate }: HomeProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRecruiterLoginModal, setShowRecruiterLoginModal] = useState(false);
   const [showTrainerLoginModal, setShowTrainerLoginModal] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 2);
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -705,40 +713,81 @@ export default function Home({ onNavigate }: HomeProps) {
               <p className="text-lg text-gray-600">Les entreprises leaders qui recrutent avec JobGuinée</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {partners.map((partner, index) => {
-                const Icon = partner.icon;
-                return (
-                  <div
-                    key={partner.name}
-                    className="group relative bg-white backdrop-blur-xl rounded-xl border-2 border-gray-200 p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl cursor-pointer overflow-hidden"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-700 ease-in-out"
+                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                >
+                  {[0, 1].map((slideIndex) => (
+                    <div key={slideIndex} className="min-w-full grid grid-cols-2 md:grid-cols-4 gap-4 px-1">
+                      {partners.slice(slideIndex * 4, slideIndex * 4 + 4).map((partner, index) => {
+                        const Icon = partner.icon;
+                        return (
+                          <div
+                            key={partner.name}
+                            className="group relative bg-white backdrop-blur-xl rounded-xl border-2 border-gray-200 p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl cursor-pointer overflow-hidden"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                    <div className="relative z-10 flex flex-col items-center">
-                      <div className={`w-20 h-20 mb-4 rounded-xl ${partner.bgColor} flex items-center justify-center shadow-lg ring-2 ring-gray-200 group-hover:ring-4 transition-all duration-300 group-hover:scale-110`}>
-                        <div className={`bg-gradient-to-br ${partner.gradient} rounded-lg p-3`}>
-                          <Icon className="w-10 h-10 text-white" />
-                        </div>
-                      </div>
+                            <div className="relative z-10 flex flex-col items-center">
+                              <div className={`w-20 h-20 mb-4 rounded-xl ${partner.bgColor} flex items-center justify-center shadow-lg ring-2 ring-gray-200 group-hover:ring-4 transition-all duration-300 group-hover:scale-110`}>
+                                <div className={`bg-gradient-to-br ${partner.gradient} rounded-lg p-3`}>
+                                  <Icon className="w-10 h-10 text-white" />
+                                </div>
+                              </div>
 
-                      <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">
-                        {partner.name}
-                      </h4>
+                              <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">
+                                {partner.name}
+                              </h4>
 
-                      <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="flex items-center space-x-1">
-                          <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
-                          <span className="text-[10px] text-gray-600 font-medium">Partenaire actif</span>
-                        </div>
-                      </div>
+                              <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="flex items-center space-x-1">
+                                  <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
+                                  <span className="text-[10px] text-gray-600 font-medium">Partenaire actif</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-300/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                          </div>
+                        );
+                      })}
                     </div>
+                  ))}
+                </div>
+              </div>
 
-                    <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-300/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                  </div>
-                );
-              })}
+              <button
+                onClick={() => setCurrentSlide((prev) => (prev - 1 + 2) % 2)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white hover:bg-gray-50 text-gray-800 rounded-full p-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 border-2 border-gray-200 z-10"
+                aria-label="Précédent"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={() => setCurrentSlide((prev) => (prev + 1) % 2)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white hover:bg-gray-50 text-gray-800 rounded-full p-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 border-2 border-gray-200 z-10"
+                aria-label="Suivant"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+
+              <div className="flex justify-center mt-8 space-x-2">
+                {[0, 1].map((index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`transition-all duration-300 rounded-full ${
+                      currentSlide === index
+                        ? 'w-8 h-3 bg-[#FF8C00]'
+                        : 'w-3 h-3 bg-gray-300 hover:bg-gray-400'
+                    }`}
+                    aria-label={`Aller à la diapositive ${index + 1}`}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="mt-12 text-center">
