@@ -26,6 +26,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRecruiterLoginModal, setShowRecruiterLoginModal] = useState(false);
+  const [showTrainerLoginModal, setShowTrainerLoginModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -629,7 +630,13 @@ export default function Home({ onNavigate }: HomeProps) {
               <ArrowRight className="w-5 h-5" />
             </button>
             <button
-              onClick={() => onNavigate('formations')}
+              onClick={() => {
+                if (user && profile?.user_type === 'trainer') {
+                  onNavigate('trainer-dashboard');
+                } else {
+                  setShowTrainerLoginModal(true);
+                }
+              }}
               className="inline-flex items-center space-x-2 px-8 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg hover:shadow-xl border-2 border-[#0E2F56]"
             >
               <Award className="w-5 h-5" />
@@ -965,6 +972,77 @@ export default function Home({ onNavigate }: HomeProps) {
               <button
                 onClick={() => {
                   setShowRecruiterLoginModal(false);
+                  onNavigate('login');
+                }}
+                className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition border-2 border-gray-300 flex items-center justify-center space-x-2"
+              >
+                <LogIn className="w-5 h-5" />
+                <span>J'ai déjà un compte</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTrainerLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative">
+            <button
+              onClick={() => setShowTrainerLoginModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#FF8C00] to-[#e67e00] rounded-full flex items-center justify-center">
+                <GraduationCap className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+              Espace Formateur/Coach
+            </h3>
+
+            <p className="text-gray-600 mb-6 text-center">
+              Pour publier vos formations et accéder à votre espace formateur,
+              vous devez d'abord créer un compte formateur ou vous connecter.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Publiez vos formations et coachings</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Gérez vos inscriptions et participants</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Partagez votre expertise et développez votre activité</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Accédez aux outils de gestion avancés</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowTrainerLoginModal(false);
+                  onNavigate('signup');
+                }}
+                className="w-full py-3 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg flex items-center justify-center space-x-2"
+              >
+                <GraduationCap className="w-5 h-5" />
+                <span>Créer mon compte formateur</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowTrainerLoginModal(false);
                   onNavigate('login');
                 }}
                 className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition border-2 border-gray-300 flex items-center justify-center space-x-2"
