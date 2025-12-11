@@ -1343,48 +1343,84 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   })}
                 </div>
 
-                <div className="bg-gradient-to-br from-[#0E2F56] to-blue-800 rounded-2xl p-8 text-white">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    <div>
-                      <h3 className="text-2xl font-bold mb-4">Abonnement Premium PRO+</h3>
-                      <p className="text-blue-100 mb-6">
-                        Accédez à tous les services Premium IA + Cloud sécurisé + Support prioritaire
-                      </p>
-                      <ul className="space-y-3 mb-6">
-                        <li className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
-                          <span>Tous les services IA inclus</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
-                          <span>Cloud 10 Go pour documents</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
-                          <span>Support prioritaire 24/7</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-[#FF8C00]" />
-                          <span>Badge Profil vérifié</span>
-                        </li>
-                      </ul>
+                <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 rounded-2xl p-8 border border-orange-200">
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#FF8C00] to-yellow-600 rounded-2xl mb-4 shadow-lg">
+                      <Crown className="w-8 h-8 text-white" />
                     </div>
-                    <div className="text-center">
-                      <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-8 mb-6">
-                        <div className="text-5xl font-bold mb-2">350 000</div>
-                        <div className="text-xl">GNF / mois</div>
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">Premium PRO+</h3>
+                    <p className="text-gray-600">
+                      Accès illimité à tous les services IA sans consommer de crédits
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div className="bg-white rounded-xl p-4 border border-blue-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Sparkles className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Services IA</div>
+                          <div className="text-sm text-gray-600">Illimités</div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => alert('Paiement: Orange Money • LengoPay • DigitalPay SA')}
-                        className="w-full px-8 py-4 bg-white hover:bg-gray-50 text-[#0E2F56] font-semibold text-lg rounded-lg transition shadow-md border-2 border-white"
-                      >
-                        S'abonner maintenant
-                      </button>
-                      <p className="text-sm text-blue-200 mt-4">
-                        Orange Money • LengoPay • DigitalPay SA
-                      </p>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 border border-green-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Shield className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Cloud 10 Go</div>
+                          <div className="text-sm text-gray-600">Sécurisé</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 border border-purple-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <MessageCircle className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Support 24/7</div>
+                          <div className="text-sm text-gray-600">Prioritaire</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 border border-yellow-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Award className="w-5 h-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Badge vérifié</div>
+                          <div className="text-sm text-gray-600">Profil premium</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  <div className="bg-white rounded-xl p-6 mb-6 text-center border-2 border-orange-200">
+                    <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF8C00] to-red-600 mb-2">
+                      350 000 GNF
+                    </div>
+                    <p className="text-gray-600">par mois • Sans engagement</p>
+                  </div>
+
+                  <button
+                    onClick={() => alert('Paiement: Orange Money • Validation rapide par WhatsApp')}
+                    className="w-full px-8 py-4 bg-gradient-to-r from-[#FF8C00] via-orange-500 to-red-500 hover:from-[#e67e00] hover:via-orange-600 hover:to-red-600 text-white font-semibold text-lg rounded-xl transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  >
+                    <Crown className="w-5 h-5" />
+                    S'abonner maintenant
+                  </button>
+                  <p className="text-sm text-gray-600 text-center mt-4">
+                    Paiement par Orange Money • Validation rapide par WhatsApp
+                  </p>
                 </div>
               </div>
             )}
