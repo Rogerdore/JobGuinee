@@ -120,6 +120,10 @@ export type Formation = {
   category?: string;
   thumbnail_url?: string;
   status: string;
+  trainer_id?: string;
+  trainer_phone?: string;
+  trainer_contact_name?: string;
+  trainer_email?: string;
   created_at: string;
   updated_at: string;
 };
