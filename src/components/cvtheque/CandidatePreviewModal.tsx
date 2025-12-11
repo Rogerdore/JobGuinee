@@ -21,6 +21,7 @@ interface CandidatePreviewModalProps {
   onClose: () => void;
   onAddToCart: () => void;
   isInCart?: boolean;
+  viewerUserType?: string;
 }
 
 export default function CandidatePreviewModal({
@@ -28,7 +29,8 @@ export default function CandidatePreviewModal({
   isOpen,
   onClose,
   onAddToCart,
-  isInCart = false
+  isInCart = false,
+  viewerUserType
 }: CandidatePreviewModalProps) {
   if (!isOpen) return null;
 
@@ -57,7 +59,11 @@ export default function CandidatePreviewModal({
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Aperçu du Profil</h2>
-                <p className="text-blue-100 text-sm">Informations limitées - Achetez pour tout voir</p>
+                <p className="text-blue-100 text-sm">
+                  {viewerUserType === 'recruiter'
+                    ? 'Informations limitées - Achetez pour tout voir'
+                    : 'Informations limitées - Réservé aux recruteurs'}
+                </p>
               </div>
             </div>
             <button
@@ -209,10 +215,14 @@ export default function CandidatePreviewModal({
               </div>
               <div>
                 <h4 className="font-bold text-red-900 text-lg mb-2">
-                  Informations complètes disponibles après achat
+                  {viewerUserType === 'recruiter'
+                    ? 'Informations complètes disponibles après achat'
+                    : 'Informations complètes réservées aux recruteurs'}
                 </h4>
                 <p className="text-red-800 text-sm mb-3">
-                  Débloquez l'accès complet au profil pour voir:
+                  {viewerUserType === 'recruiter'
+                    ? 'Débloquez l\'accès complet au profil pour voir:'
+                    : 'Les recruteurs peuvent accéder à:'}
                 </p>
               </div>
             </div>
@@ -240,22 +250,24 @@ export default function CandidatePreviewModal({
             </ul>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl p-6 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-blue-200 text-sm mb-1">Prix d'accès au profil complet</p>
-                <p className="text-3xl font-bold">
-                  {formatPrice(candidate.profile_price)} GNF
-                </p>
+          {viewerUserType === 'recruiter' && (
+            <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl p-6 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-blue-200 text-sm mb-1">Prix d'accès au profil complet</p>
+                  <p className="text-3xl font-bold">
+                    {formatPrice(candidate.profile_price)} GNF
+                  </p>
+                </div>
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <ShoppingCart className="w-8 h-8" />
+                </div>
               </div>
-              <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <ShoppingCart className="w-8 h-8" />
-              </div>
+              <p className="text-blue-100 text-xs">
+                Accès immédiat après validation du paiement par l'administrateur
+              </p>
             </div>
-            <p className="text-blue-100 text-xs">
-              Accès immédiat après validation du paiement par l'administrateur
-            </p>
-          </div>
+          )}
 
           <div className="flex gap-3">
             <button
@@ -264,18 +276,20 @@ export default function CandidatePreviewModal({
             >
               Fermer
             </button>
-            <button
-              onClick={onAddToCart}
-              disabled={isInCart}
-              className={`flex-1 px-6 py-3 font-bold rounded-xl transition flex items-center justify-center gap-2 ${
-                isInCart
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white shadow-lg'
-              }`}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {isInCart ? 'Déjà dans le panier' : 'Ajouter au panier'}
-            </button>
+            {viewerUserType === 'recruiter' && (
+              <button
+                onClick={onAddToCart}
+                disabled={isInCart}
+                className={`flex-1 px-6 py-3 font-bold rounded-xl transition flex items-center justify-center gap-2 ${
+                  isInCart
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white shadow-lg'
+                }`}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {isInCart ? 'Déjà dans le panier' : 'Ajouter au panier'}
+              </button>
+            )}
           </div>
         </div>
       </div>

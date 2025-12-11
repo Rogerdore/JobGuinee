@@ -200,15 +200,15 @@ export default function AnonymizedCandidateCard({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className={`${viewerUserType === 'recruiter' ? 'grid grid-cols-2 gap-2' : ''} mb-2`}>
           <button
             onClick={() => onViewDetails(candidate.id)}
-            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-medium rounded-lg transition flex items-center justify-center gap-1"
+            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-medium rounded-lg transition flex items-center justify-center gap-1 w-full"
           >
             <Eye className="w-3.5 h-3.5" />
             Aperçu
           </button>
-          {!isPurchased && (
+          {viewerUserType === 'recruiter' && !isPurchased && (
             <button
               onClick={() => onAddToCart(candidate.id)}
               disabled={isInCart}
@@ -222,7 +222,7 @@ export default function AnonymizedCandidateCard({
               {isInCart ? 'Panier' : 'Ajouter'}
             </button>
           )}
-          {isPurchased && (
+          {viewerUserType === 'recruiter' && isPurchased && (
             <button
               onClick={() => onViewDetails(candidate.id)}
               className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1"
@@ -232,11 +232,20 @@ export default function AnonymizedCandidateCard({
           )}
         </div>
 
-        <div className="pt-2 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center leading-tight">
-            🔒 Coordonnées, CV et certifications après achat
-          </p>
-        </div>
+        {viewerUserType === 'recruiter' && (
+          <div className="pt-2 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center leading-tight">
+              🔒 Coordonnées, CV et certifications après achat
+            </p>
+          </div>
+        )}
+        {viewerUserType !== 'recruiter' && (
+          <div className="pt-2 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center leading-tight">
+              🔒 Informations complètes réservées aux recruteurs
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
