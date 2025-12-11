@@ -384,8 +384,6 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <VideoGuidesSection />
-
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -727,6 +725,8 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+
+      <VideoGuidesSection />
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
