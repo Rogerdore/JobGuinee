@@ -12,22 +12,18 @@ interface PaymentModalProps {
   userEmail: string;
 }
 
-type PaymentMethod = 'orange_money' | 'lengopay' | 'digitalpay';
-
 function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentModalProps) {
   const [purchaseId, setPurchaseId] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
-  const [step, setStep] = useState<'method' | 'info' | 'payment' | 'confirm'>('method');
+  const [step, setStep] = useState<'info' | 'payment' | 'confirm'>('info');
   const [processing, setProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('orange_money');
 
   useEffect(() => {
     if (isOpen && pack) {
-      setStep('method');
+      setStep('info');
       setPurchaseId(null);
       setReference(null);
-      setSelectedMethod('orange_money');
     }
   }, [isOpen, pack]);
 
@@ -91,150 +87,19 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
     }
   };
 
-  const paymentMethodLabels = {
-    orange_money: 'Orange Money',
-    lengopay: 'LengoPay',
-    digitalpay: 'DigitalPay SA'
-  };
-
-  const paymentMethodColors = {
-    orange_money: 'from-orange-500 to-orange-600',
-    lengopay: 'from-blue-500 to-blue-600',
-    digitalpay: 'from-green-500 to-green-600'
-  };
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className={`bg-gradient-to-r ${paymentMethodColors[selectedMethod]} text-white p-6 relative`}>
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition"
           >
             <X className="w-5 h-5" />
           </button>
-          <h2 className="text-2xl font-bold">
-            {step === 'method' ? 'Choisir votre mode de paiement' : `Paiement ${paymentMethodLabels[selectedMethod]}`}
-          </h2>
-          <p className="text-white/90 mt-1">Suivez les étapes pour finaliser votre achat</p>
+          <h2 className="text-2xl font-bold">Paiement Orange Money</h2>
+          <p className="text-orange-100 mt-1">Suivez les étapes pour finaliser votre achat</p>
         </div>
-
-        {step === 'method' && (
-          <div className="p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Sélectionnez votre méthode de paiement</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <button
-                  onClick={() => setSelectedMethod('orange_money')}
-                  className={`p-6 rounded-xl border-2 transition ${
-                    selectedMethod === 'orange_money'
-                      ? 'border-orange-500 bg-orange-50'
-                      : 'border-gray-200 hover:border-orange-300 bg-white'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600 mb-2">Orange Money</div>
-                    <div className={`text-sm ${selectedMethod === 'orange_money' ? 'text-orange-700' : 'text-gray-600'}`}>
-                      Paiement mobile
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setSelectedMethod('lengopay')}
-                  className={`p-6 rounded-xl border-2 transition ${
-                    selectedMethod === 'lengopay'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300 bg-white'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-2">LengoPay</div>
-                    <div className={`text-sm ${selectedMethod === 'lengopay' ? 'text-blue-700' : 'text-gray-600'}`}>
-                      Paiement sécurisé
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setSelectedMethod('digitalpay')}
-                  className={`p-6 rounded-xl border-2 transition ${
-                    selectedMethod === 'digitalpay'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 hover:border-green-300 bg-white'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 mb-2">DigitalPay SA</div>
-                    <div className={`text-sm ${selectedMethod === 'digitalpay' ? 'text-green-700' : 'text-gray-600'}`}>
-                      Paiement digital
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{pack.package_name}</h3>
-                  <p className="text-gray-600">{pack.description}</p>
-                </div>
-                {pack.is_popular && (
-                  <span className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-bold flex items-center gap-2">
-                    <Star className="w-4 h-4" /> Populaire
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-white rounded-lg p-4 border-2 border-orange-300">
-                  <div className="text-sm text-gray-600 mb-1">Crédits</div>
-                  <div className="text-3xl font-bold text-orange-600">
-                    {CreditStoreService.formatCredits(pack.credits_amount)}
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 border-2 border-green-300">
-                  <div className="text-sm text-gray-600 mb-1">Bonus</div>
-                  <div className="text-3xl font-bold text-green-600">
-                    +{CreditStoreService.formatCredits(pack.bonus_credits)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg p-4 mb-4">
-                <div className="text-sm mb-1">Total à recevoir</div>
-                <div className="text-4xl font-bold">
-                  {CreditStoreService.formatCredits(totalCredits)} crédits
-                </div>
-              </div>
-
-              <div className="pt-4 border-t-2 border-gray-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-700">Prix:</span>
-                  <span className="text-3xl font-bold text-gray-900">
-                    {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={() => setStep('info')}
-                className={`flex-1 px-6 py-3 bg-gradient-to-r ${paymentMethodColors[selectedMethod]} text-white font-bold rounded-lg transition hover:opacity-90`}
-              >
-                Continuer avec {paymentMethodLabels[selectedMethod]}
-              </button>
-            </div>
-          </div>
-        )}
 
         {step === 'info' && (
           <div className="p-6">
@@ -287,9 +152,9 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-bold text-blue-900 mb-1">Mode de paiement sélectionné</h4>
+                  <h4 className="font-bold text-blue-900 mb-1">Mode de paiement</h4>
                   <p className="text-sm text-blue-800">
-                    Vous avez choisi <strong>{paymentMethodLabels[selectedMethod]}</strong>.
+                    Le paiement s'effectue exclusivement par <strong>Orange Money</strong>.
                     Après le transfert, vous devrez envoyer la preuve via WhatsApp pour validation rapide.
                   </p>
                 </div>
@@ -298,15 +163,15 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
 
             <div className="flex gap-3">
               <button
-                onClick={() => setStep('method')}
+                onClick={onClose}
                 className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition"
               >
-                Retour
+                Annuler
               </button>
               <button
                 onClick={handleCreatePurchase}
                 disabled={processing}
-                className={`flex-1 px-6 py-3 bg-gradient-to-r ${paymentMethodColors[selectedMethod]} text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:opacity-90`}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>
@@ -325,50 +190,26 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
 
         {step === 'payment' && (
           <div className="p-6">
-            <div className={`bg-gradient-to-br ${
-              selectedMethod === 'orange_money' ? 'from-orange-50 to-red-50 border-orange-300' :
-              selectedMethod === 'lengopay' ? 'from-blue-50 to-indigo-50 border-blue-300' :
-              'from-green-50 to-emerald-50 border-green-300'
-            } rounded-xl p-6 mb-6 border-2`}>
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 mb-6 border-2 border-orange-300">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Instructions de paiement</h3>
 
               <div className="space-y-4">
-                <div className={`bg-white rounded-lg p-4 border-2 ${
-                  selectedMethod === 'orange_money' ? 'border-orange-400' :
-                  selectedMethod === 'lengopay' ? 'border-blue-400' :
-                  'border-green-400'
-                }`}>
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-400">
                   <div className="text-sm text-gray-600 mb-2">Référence de paiement</div>
-                  <div className={`text-2xl font-mono font-bold ${
-                    selectedMethod === 'orange_money' ? 'text-orange-600' :
-                    selectedMethod === 'lengopay' ? 'text-blue-600' :
-                    'text-green-600'
-                  }`}>
+                  <div className="text-2xl font-mono font-bold text-orange-600">
                     {reference}
                   </div>
                 </div>
 
-                <div className={`bg-white rounded-lg p-4 border-2 ${
-                  selectedMethod === 'orange_money' ? 'border-orange-400' :
-                  selectedMethod === 'lengopay' ? 'border-blue-400' :
-                  'border-green-400'
-                }`}>
-                  <div className="text-sm text-gray-600 mb-2">Numéro {paymentMethodLabels[selectedMethod]}</div>
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-400">
+                  <div className="text-sm text-gray-600 mb-2">Numéro Orange Money</div>
                   <div className="flex items-center justify-between">
-                    <div className={`text-3xl font-bold ${
-                      selectedMethod === 'orange_money' ? 'text-orange-600' :
-                      selectedMethod === 'lengopay' ? 'text-blue-600' :
-                      'text-green-600'
-                    }`}>
+                    <div className="text-3xl font-bold text-orange-600">
                       {settings.admin_phone_number}
                     </div>
                     <button
                       onClick={handleCopyNumber}
-                      className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
-                        selectedMethod === 'orange_money' ? 'bg-orange-100 hover:bg-orange-200 text-orange-700' :
-                        selectedMethod === 'lengopay' ? 'bg-blue-100 hover:bg-blue-200 text-blue-700' :
-                        'bg-green-100 hover:bg-green-200 text-green-700'
-                      }`}
+                      className="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition flex items-center gap-2"
                     >
                       {copied ? (
                         <>
@@ -385,17 +226,9 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
                   </div>
                 </div>
 
-                <div className={`bg-white rounded-lg p-4 border-2 ${
-                  selectedMethod === 'orange_money' ? 'border-orange-400' :
-                  selectedMethod === 'lengopay' ? 'border-blue-400' :
-                  'border-green-400'
-                }`}>
+                <div className="bg-white rounded-lg p-4 border-2 border-orange-400">
                   <div className="text-sm text-gray-600 mb-2">Montant à envoyer</div>
-                  <div className={`text-3xl font-bold ${
-                    selectedMethod === 'orange_money' ? 'text-orange-600' :
-                    selectedMethod === 'lengopay' ? 'text-blue-600' :
-                    'text-green-600'
-                  }`}>
+                  <div className="text-3xl font-bold text-orange-600">
                     {CreditStoreService.formatPrice(pack.price_amount, pack.currency)}
                   </div>
                 </div>
@@ -419,7 +252,7 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
               <button
                 onClick={handleMarkAsPaid}
                 disabled={processing}
-                className={`w-full px-6 py-4 bg-gradient-to-r ${paymentMethodColors[selectedMethod]} text-white font-bold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-3 hover:opacity-90`}
+                className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 {processing ? (
                   <>
