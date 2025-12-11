@@ -12,35 +12,71 @@ interface CartItem {
   };
 }
 
+interface ActivePack {
+  id: string;
+  pack_name: string;
+  experience_level: string | null;
+  profiles_remaining: number;
+  price_paid: number;
+  total_profiles: number;
+}
+
 interface ProfileCartProps {
   items: CartItem[];
   onRemoveItem: (itemId: string) => void;
   onCheckout: () => void;
   isOpen: boolean;
   onClose: () => void;
-  activePack?: {
-    pack_name: string;
-    profiles_remaining: number;
-    unit_price: number;
-  } | null;
+  activePacks: ActivePack[];
 }
 
-export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, onClose, activePack }: ProfileCartProps) {
-  const getExperienceLevel = (years: number) => {
-    if (years >= 6) return { label: 'Senior', color: 'text-blue-900' };
-    if (years >= 3) return { label: 'Intermédiaire', color: 'text-green-700' };
-    return { label: 'Junior', color: 'text-orange-600' };
+export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, onClose, activePacks }: ProfileCartProps) {
+  const getExperienceLevel = (years: number): 'junior' | 'intermediate' | 'senior' => {
+    if (years >= 6) return 'senior';
+    if (years >= 3) return 'intermediate';
+    return 'junior';
   };
 
-  // Calculer le prix à afficher selon le pack actif
+  const getExperienceLevelLabel = (level: string) => {
+    const labels: Record<string, { label: string; color: string }> = {
+      junior: { label: 'Junior (0-2 ans)', color: 'text-orange-600' },
+      intermediate: { label: 'Intermédiaire (3-5 ans)', color: 'text-green-700' },
+      senior: { label: 'Senior (6+ ans)', color: 'text-blue-900' }
+    };
+    return labels[level] || { label: 'Non défini', color: 'text-gray-600' };
+  };
+
+  // Vérifier si un profil a un pack compatible
+  const hasCompatiblePack = (experienceYears: number): boolean => {
+    if (activePacks.length === 0) return true; // Pas de packs = tous validés
+
+    const profileLevel = getExperienceLevel(experienceYears);
+
+    // Chercher un pack spécifique au niveau
+    const specificPack = activePacks.find(
+      p => p.experience_level === profileLevel && p.profiles_remaining > 0
+    );
+
+    if (specificPack) return true;
+
+    // Chercher un pack mixte/entreprise
+    const mixedPack = activePacks.find(
+      p => !p.experience_level && p.profiles_remaining > 0
+    );
+
+    return !!mixedPack;
+  };
+
+  // Calculer le prix à afficher
   const getItemPrice = (item: CartItem) => {
-    if (activePack) {
-      return activePack.unit_price;
-    }
     return item.candidate.profile_price;
   };
 
-  const totalAmount = items.reduce((sum, item) => sum + getItemPrice(item), 0);
+  // Séparer les profils actifs et désactivés
+  const activeItems = items.filter(item => hasCompatiblePack(item.candidate.experience_years || 0));
+  const disabledItems = items.filter(item => !hasCompatiblePack(item.candidate.experience_years || 0));
+
+  const totalAmount = activeItems.reduce((sum, item) => sum + getItemPrice(item), 0);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-GN').format(price);
@@ -84,6 +120,17 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
+          {disabledItems.length > 0 && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-sm font-medium text-red-800 mb-1">
+                ⚠️ {disabledItems.length} profil{disabledItems.length > 1 ? 's' : ''} désactivé{disabledItems.length > 1 ? 's' : ''}
+              </div>
+              <div className="text-xs text-red-700">
+                Ces profils nécessitent un pack approprié. Achetez le pack correspondant pour les activer.
+              </div>
+            </div>
+          )}
+
           {items.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -94,39 +141,78 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
             </div>
           ) : (
             <div className="space-y-3">
-              {items.map((item) => {
-                const level = getExperienceLevel(item.candidate.experience_years || 0);
+              {/* Profils actifs */}
+              {activeItems.map((item) => {
+                const profileLevel = getExperienceLevel(item.candidate.experience_years || 0);
+                const experienceInfo = getExperienceLevelLabel(profileLevel);
+
                 return (
-                  <div key={item.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="flex items-start justify-between mb-2">
+                  <div key={item.id} className="bg-white border-2 border-blue-100 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">
-                          {item.candidate.title || 'Profil'}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                          <span className={`font-medium ${level.color}`}>{level.label}</span>
-                          <span>•</span>
-                          <span>{item.candidate.experience_years || 0} ans</span>
+                        <div className="font-semibold text-gray-900 mb-1">
+                          {item.candidate.title || 'Profil Candidat'}
                         </div>
+                        {item.candidate.experience_years !== undefined && (
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${experienceInfo.color} bg-gray-100 mb-2`}>
+                            {item.candidate.experience_years} ans • {experienceInfo.label}
+                          </span>
+                        )}
                         {item.candidate.location && (
-                          <p className="text-xs text-gray-500">{item.candidate.location}</p>
+                          <div className="text-xs text-gray-500 mb-2">{item.candidate.location}</div>
                         )}
                       </div>
                       <button
                         onClick={() => onRemoveItem(item.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         title="Retirer du panier"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="text-right">
-                      {activePack && (
-                        <div className="text-xs text-green-600 mb-1 font-medium">
-                          Via Pack
-                        </div>
-                      )}
                       <span className="text-lg font-bold text-blue-900">
+                        {formatPrice(getItemPrice(item))} GNF
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Profils désactivés */}
+              {disabledItems.map((item) => {
+                const profileLevel = getExperienceLevel(item.candidate.experience_years || 0);
+                const experienceInfo = getExperienceLevelLabel(profileLevel);
+
+                return (
+                  <div key={item.id} className="bg-gray-100 border-2 border-gray-300 rounded-xl p-4 opacity-60 relative">
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                      DÉSACTIVÉ
+                    </div>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-600 mb-1">
+                          {item.candidate.title || 'Profil Candidat'}
+                        </div>
+                        {item.candidate.experience_years !== undefined && (
+                          <span className="inline-block px-3 py-1 rounded-full text-xs font-medium text-gray-600 bg-gray-200 mb-2">
+                            {item.candidate.experience_years} ans • {experienceInfo.label}
+                          </span>
+                        )}
+                        <div className="text-xs text-red-600 font-medium mt-2">
+                          ⚠️ Pack {experienceInfo.label} requis
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => onRemoveItem(item.id)}
+                        className="ml-3 p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                        title="Retirer du panier"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-bold text-gray-500 line-through">
                         {formatPrice(getItemPrice(item))} GNF
                       </span>
                     </div>
@@ -139,42 +225,23 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
 
         {items.length > 0 && (
           <div className="border-t border-gray-200 p-6 bg-gray-50">
-            {activePack && items.length <= activePack.profiles_remaining && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 text-green-800 text-sm">
-                  <Circle className="w-4 h-4 fill-current" />
-                  <span className="font-medium">
-                    Ces profils seront débités de votre pack ({items.length}/{activePack.profiles_remaining})
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {activePack && items.length > activePack.profiles_remaining && (
-              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="text-orange-800 text-sm">
-                  <div className="font-medium mb-1">Solde insuffisant</div>
-                  <div className="text-xs">
-                    Pack: {activePack.profiles_remaining} crédits • Panier: {items.length} profils
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-600">Sous-total</span>
                 <span className="font-semibold text-gray-900">
-                  {activePack && items.length <= activePack.profiles_remaining
-                    ? 'Payé via Pack'
-                    : `${formatPrice(totalAmount)} GNF`
-                  }
+                  {formatPrice(totalAmount)} GNF
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>Nombre de profils</span>
-                <span>{items.length}</span>
+                <span>Profils validés</span>
+                <span>{activeItems.length}</span>
               </div>
+              {disabledItems.length > 0 && (
+                <div className="flex items-center justify-between text-sm text-red-600">
+                  <span>Profils désactivés</span>
+                  <span>{disabledItems.length}</span>
+                </div>
+              )}
             </div>
 
             <div className="mb-4 pt-4 border-t border-gray-300">
@@ -188,11 +255,18 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
 
             <button
               onClick={onCheckout}
-              className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-lg flex items-center justify-center gap-2"
+              disabled={activeItems.length === 0}
+              className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-lg flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-5 h-5" />
-              Procéder au paiement
+              {activeItems.length > 0 ? 'Procéder au paiement' : 'Aucun profil valide'}
             </button>
+
+            {disabledItems.length > 0 && (
+              <div className="text-xs text-center text-red-600 mt-2 font-medium">
+                ⚠️ Les profils désactivés ne seront pas comptabilisés ni accessibles
+              </div>
+            )}
 
             <p className="text-xs text-center text-gray-500 mt-3">
               💳 Orange Money • LengoPay • DigitalPay • Visa/MC
