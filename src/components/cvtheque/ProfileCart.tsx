@@ -31,6 +31,10 @@ interface ProfileCartProps {
 }
 
 export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, onClose, activePacks }: ProfileCartProps) {
+  // Récupérer le pack actif le plus ancien (FIFO)
+  const activePack = activePacks.length > 0 ? activePacks[0] : null;
+  const unitPrice = activePack ? Math.round(activePack.price_paid / activePack.total_profiles) : null;
+
   const getExperienceLevel = (years: number): 'junior' | 'intermediate' | 'senior' => {
     if (years >= 6) return 'senior';
     if (years >= 3) return 'intermediate';
@@ -106,14 +110,14 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
             </button>
           </div>
 
-          {activePack && (
+          {activePack && unitPrice && (
             <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-blue-100">Pack actif: {activePack.pack_name}</span>
                 <span className="font-bold text-white">{activePack.profiles_remaining} crédits</span>
               </div>
               <div className="text-xs text-blue-200 mt-1">
-                Prix unitaire: {formatPrice(activePack.unit_price)} GNF
+                Prix unitaire: {formatPrice(unitPrice)} GNF
               </div>
             </div>
           )}
