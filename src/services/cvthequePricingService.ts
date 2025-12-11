@@ -353,6 +353,31 @@ class CVThequePricingService {
     if (error) throw error;
     return data;
   }
+
+  async markPackAsWaitingProof(purchaseId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('cvtheque_pack_purchases')
+      .update({
+        payment_status: 'waiting_proof',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', purchaseId);
+
+    return !error;
+  }
+
+  formatPrice(amount: number): string {
+    return new Intl.NumberFormat('fr-GN', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount) + ' GNF';
+  }
+
+  getWhatsAppLink(whatsappNumber: string, packName: string, userEmail: string, reference: string): string {
+    const message = `Bonjour JobGuinée,\n\nJe viens d'effectuer le paiement pour le pack CVThèque suivant:\n\nPack: ${packName}\nRéférence: ${reference}\nEmail: ${userEmail}\n\nMerci de valider mon achat.`;
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  }
 }
 
 export const cvthequePricingService = new CVThequePricingService();

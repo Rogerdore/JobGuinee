@@ -18,7 +18,7 @@ interface CVThequeProps {
 }
 
 export default function CVTheque({ onNavigate }: CVThequeProps) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
   const [candidates, setCandidates] = useState<any[]>([]);
   const [filteredCandidates, setFilteredCandidates] = useState<any[]>([]);
@@ -708,6 +708,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       {showPacksModal && profile?.id && (
         <CVThequePacksModal
           userId={profile.id}
+          userEmail={user?.email || ''}
           onClose={() => setShowPacksModal(false)}
           onSuccess={() => {
             setShowPacksModal(false);
