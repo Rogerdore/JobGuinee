@@ -187,14 +187,17 @@ export default function CandidatePreviewModal({
             <div className="mb-6">
               <h4 className="text-sm font-bold text-gray-700 mb-3">Langues parlées</h4>
               <div className="flex flex-wrap gap-2">
-                {candidate.languages.map((lang, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg border border-gray-200"
-                  >
-                    {lang}
-                  </span>
-                ))}
+                {candidate.languages.map((lang, idx) => {
+                  const langText = typeof lang === 'string' ? lang : lang?.language || 'N/A';
+                  return (
+                    <span
+                      key={idx}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg border border-gray-200"
+                    >
+                      {langText}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
