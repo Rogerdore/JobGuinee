@@ -175,9 +175,9 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     }
 
     // Sinon, utiliser les prix standards
-    if (experienceYears >= 6) return 15000;
-    if (experienceYears >= 3) return 8000;
-    return 4000;
+    if (experienceYears >= 6) return 20000;
+    if (experienceYears >= 3) return 10000;
+    return 7500;
   };
 
   const calculateAIScore = (candidate: any) => {
@@ -662,7 +662,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-xs text-orange-700 font-semibold mb-1">Profils Junior</div>
               {profile?.user_type === 'recruiter' && (
                 <div className="text-xs text-orange-600 font-medium bg-orange-200/50 px-2 py-0.5 rounded-full inline-block">
-                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '4.000 GNF'}
+                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '7.500 GNF'}
                 </div>
               )}
             </div>
@@ -676,7 +676,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-xs text-green-700 font-semibold mb-1">Profils Intermédiaires</div>
               {profile?.user_type === 'recruiter' && (
                 <div className="text-xs text-green-600 font-medium bg-green-200/50 px-2 py-0.5 rounded-full inline-block">
-                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '8.000 GNF'}
+                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '10.000 GNF'}
                 </div>
               )}
             </div>
@@ -690,7 +690,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-xs text-blue-700 font-semibold mb-1">Profils Senior</div>
               {profile?.user_type === 'recruiter' && (
                 <div className="text-xs text-blue-600 font-medium bg-blue-200/50 px-2 py-0.5 rounded-full inline-block">
-                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '15.000 GNF'}
+                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '20.000 GNF'}
                 </div>
               )}
             </div>
