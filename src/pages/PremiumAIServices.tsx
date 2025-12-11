@@ -13,10 +13,12 @@ import {
   Check,
   ArrowRight,
   Loader,
-  ArrowLeft
+  ArrowLeft,
+  Infinity
 } from 'lucide-react';
 import CVCentralModal from '../components/ai/CVCentralModal';
 import CreditBalance from '../components/credits/CreditBalance';
+import { isPremiumActive } from '../utils/premiumHelpers';
 
 interface PremiumService {
   id: string;
@@ -51,13 +53,15 @@ interface PremiumAIServicesProps {
 }
 
 export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps = {}) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [services, setServices] = useState<PremiumService[]>([]);
   const [userServices, setUserServices] = useState<UserService[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [showCVModal, setShowCVModal] = useState(false);
   const [creditsBalance, setCreditsBalance] = useState<number>(0);
+
+  const isPremium = isPremiumActive(profile);
 
   useEffect(() => {
     loadServices();
@@ -213,17 +217,27 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {services.map((service) => {
             const userHasAccess = hasAccess(service.id);
-            const isPremium = service.type === 'premium';
+            const isServicePremium = service.type === 'premium';
             const enoughCredits = hasEnoughCredits(service.credits_cost);
-            const isDisabled = service.credits_cost > 0 && !enoughCredits;
+            const isDisabled = !isPremium && service.credits_cost > 0 && !enoughCredits;
 
             return (
               <div
                 key={service.id}
                 className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-blue-200"
               >
-                {/* Premium Badge */}
+                {/* Premium User Badge */}
                 {isPremium && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full text-white text-xs font-bold shadow-lg">
+                      <Infinity className="w-3 h-3" />
+                      ACCÈS ILLIMITÉ
+                    </div>
+                  </div>
+                )}
+
+                {/* Service Type Badge */}
+                {!isPremium && isServicePremium && (
                   <div className="absolute top-4 right-4 z-10">
                     <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full text-white text-xs font-bold shadow-lg">
                       <Crown className="w-3 h-3" />
@@ -233,7 +247,7 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
                 )}
 
                 {/* Access Badge */}
-                {userHasAccess && (
+                {!isPremium && userHasAccess && (
                   <div className="absolute top-4 left-4 z-10">
                     <div className="flex items-center gap-1 px-3 py-1 bg-green-500 rounded-full text-white text-xs font-bold">
                       <Check className="w-3 h-3" />
@@ -269,44 +283,62 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
 
                   {/* Credits Cost & CTA */}
                   <div className="pt-6 border-t border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className={`text-3xl font-bold ${isPremium ? 'text-orange-600' : 'text-green-600'}`}>
-                          {service.credits_cost}
-                        </span>
-                        <span className="text-gray-600">crédits</span>
+                    {isPremium ? (
+                      <div className="mb-4">
+                        <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                          <Infinity className="w-5 h-5 text-green-600" />
+                          <span className="text-sm font-bold text-green-900">Accès illimité inclus</span>
+                        </div>
                       </div>
-                      {!isPremium && service.credits_cost === 0 && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-                          GRATUIT
-                        </span>
-                      )}
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-3xl font-bold ${isServicePremium ? 'text-orange-600' : 'text-green-600'}`}>
+                              {service.credits_cost}
+                            </span>
+                            <span className="text-gray-600">crédits</span>
+                          </div>
+                          {!isServicePremium && service.credits_cost === 0 && (
+                            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                              GRATUIT
+                            </span>
+                          )}
+                        </div>
 
-                    {/* Insufficient Credits Warning */}
-                    {isDisabled && (
-                      <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-700 font-medium text-center">
-                          Crédits insuffisants
-                        </p>
-                      </div>
+                        {/* Insufficient Credits Warning */}
+                        {isDisabled && (
+                          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-700 font-medium text-center">
+                              Crédits insuffisants
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     <button
                       onClick={() => {
-                        if (isDisabled) {
+                        if (!isPremium && isDisabled) {
                           onNavigate?.('credit-store');
                         } else {
                           handleServiceClick(service);
                         }
                       }}
                       className={`w-full py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
-                        isDisabled
+                        isPremium
+                          ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white hover:from-green-700 hover:to-emerald-800'
+                          : isDisabled
                           ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer'
                           : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
                       }`}
                     >
-                      {isDisabled ? (
+                      {isPremium ? (
+                        <>
+                          Utiliser le service
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      ) : isDisabled ? (
                         'Acheter des crédits'
                       ) : (
                         <>
