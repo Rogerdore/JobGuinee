@@ -760,7 +760,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Calendar className="w-4 h-4" />
-                            <span>Postulé le {new Date(app.created_at).toLocaleDateString('fr-FR')}</span>
+                            <span>Postulé le {new Date(app.applied_at).toLocaleDateString('fr-FR')}</span>
                           </div>
                           <button
                             onClick={() => onNavigate('job-detail', app.job_id)}
