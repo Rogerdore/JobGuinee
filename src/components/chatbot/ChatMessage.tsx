@@ -1,6 +1,7 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Check, X, MapPin } from 'lucide-react';
 import { ChatbotStyle } from '../../services/chatbotService';
+import { NavigationIntent } from '../../services/navigationMap';
 
 interface Message {
   id: string;
@@ -8,6 +9,9 @@ interface Message {
   content: string;
   timestamp: Date;
   suggested_links?: Array<{ label: string; page: string }>;
+  navigationIntent?: NavigationIntent;
+  showNavigationConfirmation?: boolean;
+  navigationAlternatives?: NavigationIntent[];
 }
 
 interface ChatMessageProps {
@@ -15,14 +19,36 @@ interface ChatMessageProps {
   style: ChatbotStyle | null;
   onNavigate?: (page: string) => void;
   onClose?: () => void;
+  onNavigationConfirm?: (intent: NavigationIntent) => void;
+  onNavigationCancel?: () => void;
 }
 
-export default function ChatMessage({ message, style, onNavigate, onClose }: ChatMessageProps) {
+export default function ChatMessage({ message, style, onNavigate, onClose, onNavigationConfirm, onNavigationCancel }: ChatMessageProps) {
   const isUser = message.type === 'user';
 
   const handleLinkClick = (page: string) => {
     if (onNavigate) {
       onNavigate(page);
+      if (onClose) onClose();
+    }
+  };
+
+  const handleNavigationConfirm = () => {
+    if (message.navigationIntent && onNavigationConfirm) {
+      onNavigationConfirm(message.navigationIntent);
+      if (onClose) onClose();
+    }
+  };
+
+  const handleNavigationCancel = () => {
+    if (onNavigationCancel) {
+      onNavigationCancel();
+    }
+  };
+
+  const handleAlternativeNavigation = (intent: NavigationIntent) => {
+    if (onNavigationConfirm) {
+      onNavigationConfirm(intent);
       if (onClose) onClose();
     }
   };
@@ -41,6 +67,49 @@ export default function ChatMessage({ message, style, onNavigate, onClose }: Cha
         >
           <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         </div>
+
+        {!isUser && message.showNavigationConfirmation && message.navigationIntent && (
+          <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-900">Navigation</span>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">Voulez-vous ouvrir cette page ?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleNavigationConfirm}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <Check className="w-4 h-4" />
+                Oui, ouvrir
+              </button>
+              <button
+                onClick={handleNavigationCancel}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                <X className="w-4 h-4" />
+                Non
+              </button>
+            </div>
+
+            {message.navigationAlternatives && message.navigationAlternatives.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-blue-200">
+                <p className="text-xs text-gray-600 mb-2">Ou peut-être :</p>
+                <div className="space-y-1">
+                  {message.navigationAlternatives.map((alt, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAlternativeNavigation(alt)}
+                      className="w-full text-left px-2 py-1.5 text-xs text-blue-700 hover:bg-blue-100 rounded transition-colors"
+                    >
+                      → {alt.displayName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {!isUser && message.suggested_links && message.suggested_links.length > 0 && (
           <div className="mt-2 space-y-2">

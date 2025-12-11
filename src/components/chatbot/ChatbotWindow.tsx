@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Minimize2, Crown, Zap } from 'lucide-react';
+import { X, Minimize2, Crown, Zap, MapPin } from 'lucide-react';
 import { ChatbotService, ChatbotSettings, ChatbotStyle, QuickAction, UserContext } from '../../services/chatbotService';
+import { ChatbotNavigationService, UserNavigationContext } from '../../services/chatbotNavigationService';
+import { NavigationIntent } from '../../services/navigationMap';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -12,6 +14,9 @@ interface Message {
   content: string;
   timestamp: Date;
   suggested_links?: Array<{ label: string; page: string }>;
+  navigationIntent?: NavigationIntent;
+  showNavigationConfirmation?: boolean;
+  navigationAlternatives?: NavigationIntent[];
 }
 
 interface ChatbotWindowProps {
@@ -74,15 +79,33 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const addBotMessage = (content: string, suggested_links?: Array<{ label: string; page: string }>) => {
+  const addBotMessage = (
+    content: string,
+    suggested_links?: Array<{ label: string; page: string }>,
+    navigationIntent?: NavigationIntent,
+    showNavigationConfirmation?: boolean,
+    navigationAlternatives?: NavigationIntent[]
+  ) => {
     const botMessage: Message = {
       id: `bot-${Date.now()}`,
       type: 'bot',
       content,
       timestamp: new Date(),
-      suggested_links
+      suggested_links,
+      navigationIntent,
+      showNavigationConfirmation,
+      navigationAlternatives
     };
     setMessages(prev => [...prev, botMessage]);
+  };
+
+  const getUserNavigationContext = (): UserNavigationContext => {
+    return {
+      isAuthenticated: !!user,
+      isPremium: userContext?.is_premium || false,
+      isAdmin: user?.user_metadata?.user_type === 'admin' || false,
+      userType: user?.user_metadata?.user_type || null
+    };
   };
 
   const addUserMessage = (content: string) => {
@@ -102,6 +125,32 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     setLoading(true);
 
     try {
+      const hasNavigationKeywords = ChatbotNavigationService.hasNavigationIntent(message);
+
+      if (hasNavigationKeywords) {
+        const navContext = getUserNavigationContext();
+        const detectionResult = ChatbotNavigationService.detectNavigationIntent(message, navContext);
+
+        if (detectionResult.intent && detectionResult.confidence >= 0.3) {
+          const navigationResponse = ChatbotNavigationService.generateNavigationResponse(
+            detectionResult,
+            navContext
+          );
+
+          setTimeout(() => {
+            addBotMessage(
+              navigationResponse.message,
+              undefined,
+              navigationResponse.intent || undefined,
+              navigationResponse.showConfirmation,
+              navigationResponse.alternatives
+            );
+            setLoading(false);
+          }, 500);
+          return;
+        }
+      }
+
       const response = await ChatbotService.askChatbot(
         message,
         user?.id || null,
@@ -127,6 +176,17 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
         setLoading(false);
       }, 500);
     }
+  };
+
+  const handleNavigationConfirm = (intent: NavigationIntent) => {
+    if (onNavigate) {
+      onNavigate(intent.route);
+      addBotMessage(`✓ Je vous ai dirigé vers ${intent.displayName}.`);
+    }
+  };
+
+  const handleNavigationCancel = () => {
+    addBotMessage('D\'accord, je reste à votre disposition pour d\'autres questions.');
   };
 
   const handleQuickAction = (action: QuickAction) => {
@@ -210,6 +270,8 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
             style={style}
             onNavigate={onNavigate}
             onClose={onClose}
+            onNavigationConfirm={handleNavigationConfirm}
+            onNavigationCancel={handleNavigationCancel}
           />
         ))}
 
