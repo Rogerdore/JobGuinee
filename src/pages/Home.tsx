@@ -734,7 +734,7 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('credit-store', 'premium-pro')}
+                onClick={() => onNavigate('premium-ai', 'premium-pro-section')}
                 className="px-8 py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-bold rounded-xl transition shadow-lg text-lg"
               >
                 S'abonner maintenant

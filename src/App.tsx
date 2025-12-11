@@ -56,7 +56,7 @@ function AppContent() {
     if (page === 'jobs' && param) {
       setJobSearchParams(param);
     }
-    if (page === 'credit-store' && param) {
+    if ((page === 'credit-store' || page === 'premium-ai') && param) {
       setScrollTarget(param);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -102,7 +102,7 @@ function AppContent() {
       {currentPage === 'admin-premium-subscriptions' && <AdminPremiumSubscriptions onNavigate={handleNavigate} />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
       {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
-      {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
+      {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} scrollTarget={scrollTarget} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
       {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
       {currentPage === 'ai-cover-letter' && <AICoverLetterGenerator onNavigate={handleNavigate} />}

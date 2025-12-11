@@ -50,9 +50,10 @@ const iconMap: Record<string, React.ReactNode> = {
 
 interface PremiumAIServicesProps {
   onNavigate?: (page: string, param?: string) => void;
+  scrollTarget?: string;
 }
 
-export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps = {}) {
+export default function PremiumAIServices({ onNavigate, scrollTarget }: PremiumAIServicesProps = {}) {
   const { user, profile } = useAuth();
   const [services, setServices] = useState<PremiumService[]>([]);
   const [userServices, setUserServices] = useState<UserService[]>([]);
@@ -70,6 +71,17 @@ export default function PremiumAIServices({ onNavigate }: PremiumAIServicesProps
       loadCreditsBalance();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (scrollTarget) {
+      const element = document.getElementById(scrollTarget);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [scrollTarget]);
 
   const loadServices = async () => {
     try {
