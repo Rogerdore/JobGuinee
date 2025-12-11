@@ -292,11 +292,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const handleViewDetails = async (candidateId: string) => {
     console.log('👁️ Viewing details for:', candidateId);
 
-    if (!profile?.id || profile.user_type !== 'recruiter') {
-      setShowRecruiterAccessModal(true);
-      return;
-    }
-
     const isPurchased = purchasedProfiles.includes(candidateId);
 
     if (!isPurchased) {
@@ -308,6 +303,11 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
 
       setPreviewCandidate(candidate);
       setShowPreviewModal(true);
+      return;
+    }
+
+    if (!profile?.id || profile.user_type !== 'recruiter') {
+      setShowRecruiterAccessModal(true);
       return;
     }
 
