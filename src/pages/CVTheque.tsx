@@ -39,12 +39,15 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showRecruiterAccessModal, setShowRecruiterAccessModal] = useState(false);
   const [showPacksModal, setShowPacksModal] = useState(false);
+  const [activePacks, setActivePacks] = useState<any[]>([]);
+  const [unitPrice, setUnitPrice] = useState<number | null>(null);
 
   useEffect(() => {
     loadCandidates();
     loadCart();
     if (profile?.id) {
       loadPurchasedProfiles();
+      loadActivePacks();
     }
   }, [profile]);
 
@@ -141,7 +144,37 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     }
   };
 
+  const loadActivePacks = async () => {
+    if (!profile?.id) return;
+
+    const { data, error } = await supabase
+      .from('cvtheque_pack_purchases')
+      .select('*')
+      .eq('buyer_id', profile.id)
+      .eq('purchase_status', 'active')
+      .gt('profiles_remaining', 0)
+      .order('created_at', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      setActivePacks(data);
+
+      // Calculer le prix unitaire du pack le plus ancien (FIFO)
+      const oldestPack = data[0];
+      const calculatedUnitPrice = Math.round(oldestPack.price_paid / oldestPack.total_profiles);
+      setUnitPrice(calculatedUnitPrice);
+    } else {
+      setActivePacks([]);
+      setUnitPrice(null);
+    }
+  };
+
   const calculateProfilePrice = (experienceYears: number) => {
+    // Si le recruteur a un pack actif, utiliser le prix unitaire du pack
+    if (unitPrice !== null) {
+      return unitPrice;
+    }
+
+    // Sinon, utiliser les prix standards
     if (experienceYears >= 6) return 15000;
     if (experienceYears >= 3) return 8000;
     return 4000;
@@ -421,6 +454,15 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         onCheckout={handleCheckout}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
+        activePack={
+          activePacks.length > 0
+            ? {
+                pack_name: activePacks[0].pack_name,
+                profiles_remaining: activePacks[0].profiles_remaining,
+                unit_price: unitPrice || 0,
+              }
+            : null
+        }
       />
 
       {selectedCandidate && (
@@ -462,6 +504,26 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
             )}
           </div>
 
+          {activePacks.length > 0 && profile?.user_type === 'recruiter' && (
+            <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-md">
+                    <ShoppingCart className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-green-900 text-lg">{activePacks[0].pack_name}</div>
+                    <div className="text-sm text-green-700">Pack actif • Prix unitaire: {unitPrice?.toLocaleString('fr-GN')} GNF</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-green-900">{activePacks[0].profiles_remaining}</div>
+                  <div className="text-xs text-green-600 font-medium">Crédits restants</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl border border-gray-200 p-2 text-center">
               <div className="text-lg font-bold text-gray-900">{candidates.length}</div>
@@ -476,7 +538,9 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-lg font-bold text-orange-900">{stats.junior}</div>
               <div className="text-xs text-orange-700 font-semibold mb-1">Profils Junior</div>
               {profile?.user_type === 'recruiter' && (
-                <div className="text-xs text-orange-600 font-medium bg-orange-200/50 px-2 py-0.5 rounded-full inline-block">4.000 GNF</div>
+                <div className="text-xs text-orange-600 font-medium bg-orange-200/50 px-2 py-0.5 rounded-full inline-block">
+                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '4.000 GNF'}
+                </div>
               )}
             </div>
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200 p-3 text-center hover:shadow-lg transition-all">
@@ -488,7 +552,9 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-lg font-bold text-green-900">{stats.intermediate}</div>
               <div className="text-xs text-green-700 font-semibold mb-1">Profils Intermédiaires</div>
               {profile?.user_type === 'recruiter' && (
-                <div className="text-xs text-green-600 font-medium bg-green-200/50 px-2 py-0.5 rounded-full inline-block">8.000 GNF</div>
+                <div className="text-xs text-green-600 font-medium bg-green-200/50 px-2 py-0.5 rounded-full inline-block">
+                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '8.000 GNF'}
+                </div>
               )}
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200 p-3 text-center hover:shadow-lg transition-all">
@@ -500,7 +566,9 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
               <div className="text-lg font-bold text-blue-900">{stats.senior}</div>
               <div className="text-xs text-blue-700 font-semibold mb-1">Profils Senior</div>
               {profile?.user_type === 'recruiter' && (
-                <div className="text-xs text-blue-600 font-medium bg-blue-200/50 px-2 py-0.5 rounded-full inline-block">15.000 GNF</div>
+                <div className="text-xs text-blue-600 font-medium bg-blue-200/50 px-2 py-0.5 rounded-full inline-block">
+                  {unitPrice ? `${unitPrice.toLocaleString('fr-GN')} GNF` : '15.000 GNF'}
+                </div>
               )}
             </div>
           </div>

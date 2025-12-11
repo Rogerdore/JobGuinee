@@ -18,16 +18,29 @@ interface ProfileCartProps {
   onCheckout: () => void;
   isOpen: boolean;
   onClose: () => void;
+  activePack?: {
+    pack_name: string;
+    profiles_remaining: number;
+    unit_price: number;
+  } | null;
 }
 
-export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, onClose }: ProfileCartProps) {
+export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, onClose, activePack }: ProfileCartProps) {
   const getExperienceLevel = (years: number) => {
     if (years >= 6) return { label: 'Senior', color: 'text-blue-900' };
     if (years >= 3) return { label: 'Intermédiaire', color: 'text-green-700' };
     return { label: 'Junior', color: 'text-orange-600' };
   };
 
-  const totalAmount = items.reduce((sum, item) => sum + item.candidate.profile_price, 0);
+  // Calculer le prix à afficher selon le pack actif
+  const getItemPrice = (item: CartItem) => {
+    if (activePack) {
+      return activePack.unit_price;
+    }
+    return item.candidate.profile_price;
+  };
+
+  const totalAmount = items.reduce((sum, item) => sum + getItemPrice(item), 0);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('fr-GN').format(price);
@@ -40,20 +53,34 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
       <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose}></div>
 
       <div className="fixed right-0 top-0 h-full w-full md:w-96 bg-white shadow-2xl z-50 flex flex-col">
-        <div className="bg-blue-900 text-white p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <ShoppingCart className="w-6 h-6" />
-            <div>
-              <h2 className="text-xl font-bold">Mon Panier</h2>
-              <p className="text-sm text-blue-100">{items.length} profil(s) sélectionné(s)</p>
+        <div className="bg-blue-900 text-white p-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <ShoppingCart className="w-6 h-6" />
+              <div>
+                <h2 className="text-xl font-bold">Mon Panier</h2>
+                <p className="text-sm text-blue-100">{items.length} profil(s) sélectionné(s)</p>
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition"
-          >
-            <X className="w-6 h-6" />
-          </button>
+
+          {activePack && (
+            <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-blue-100">Pack actif: {activePack.pack_name}</span>
+                <span className="font-bold text-white">{activePack.profiles_remaining} crédits</span>
+              </div>
+              <div className="text-xs text-blue-200 mt-1">
+                Prix unitaire: {formatPrice(activePack.unit_price)} GNF
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -94,8 +121,13 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
                       </button>
                     </div>
                     <div className="text-right">
+                      {activePack && (
+                        <div className="text-xs text-green-600 mb-1 font-medium">
+                          Via Pack
+                        </div>
+                      )}
                       <span className="text-lg font-bold text-blue-900">
-                        {formatPrice(item.candidate.profile_price)} GNF
+                        {formatPrice(getItemPrice(item))} GNF
                       </span>
                     </div>
                   </div>
@@ -107,11 +139,36 @@ export default function ProfileCart({ items, onRemoveItem, onCheckout, isOpen, o
 
         {items.length > 0 && (
           <div className="border-t border-gray-200 p-6 bg-gray-50">
+            {activePack && items.length <= activePack.profiles_remaining && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 text-green-800 text-sm">
+                  <Circle className="w-4 h-4 fill-current" />
+                  <span className="font-medium">
+                    Ces profils seront débités de votre pack ({items.length}/{activePack.profiles_remaining})
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {activePack && items.length > activePack.profiles_remaining && (
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="text-orange-800 text-sm">
+                  <div className="font-medium mb-1">Solde insuffisant</div>
+                  <div className="text-xs">
+                    Pack: {activePack.profiles_remaining} crédits • Panier: {items.length} profils
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-600">Sous-total</span>
                 <span className="font-semibold text-gray-900">
-                  {formatPrice(totalAmount)} GNF
+                  {activePack && items.length <= activePack.profiles_remaining
+                    ? 'Payé via Pack'
+                    : `${formatPrice(totalAmount)} GNF`
+                  }
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm text-gray-500">
