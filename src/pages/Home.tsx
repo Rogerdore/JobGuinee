@@ -25,6 +25,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [stats, setStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRecruiterLoginModal, setShowRecruiterLoginModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -521,7 +522,13 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('recruiter-dashboard')}
+                onClick={() => {
+                  if (user && profile?.user_type === 'recruiter') {
+                    onNavigate('recruiter-dashboard');
+                  } else {
+                    setShowRecruiterLoginModal(true);
+                  }
+                }}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
                 Publier une annonce maintenant
@@ -887,6 +894,77 @@ export default function Home({ onNavigate }: HomeProps) {
               <button
                 onClick={() => {
                   setShowLoginModal(false);
+                  onNavigate('login');
+                }}
+                className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition border-2 border-gray-300 flex items-center justify-center space-x-2"
+              >
+                <LogIn className="w-5 h-5" />
+                <span>J'ai déjà un compte</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRecruiterLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative">
+            <button
+              onClick={() => setShowRecruiterLoginModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-blue-600 rounded-full flex items-center justify-center">
+                <Briefcase className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+              Espace Recruteur
+            </h3>
+
+            <p className="text-gray-600 mb-6 text-center">
+              Pour publier des annonces et accéder à votre espace recruteur,
+              vous devez d'abord créer un compte recruteur ou vous connecter.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Publiez vos offres d'emploi en illimité</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Accédez à la CVthèque de talents</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Gérez vos candidatures avec notre ATS</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Bénéficiez du matching IA automatique</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowRecruiterLoginModal(false);
+                  onNavigate('signup');
+                }}
+                className="w-full py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-semibold rounded-xl transition shadow-lg flex items-center justify-center space-x-2"
+              >
+                <Briefcase className="w-5 h-5" />
+                <span>Créer mon compte recruteur</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowRecruiterLoginModal(false);
                   onNavigate('login');
                 }}
                 className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition border-2 border-gray-300 flex items-center justify-center space-x-2"
