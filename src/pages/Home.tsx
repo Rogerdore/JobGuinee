@@ -30,6 +30,8 @@ export default function Home({ onNavigate }: HomeProps) {
   const [showRecruiterLoginModal, setShowRecruiterLoginModal] = useState(false);
   const [showTrainerLoginModal, setShowTrainerLoginModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -125,6 +127,53 @@ export default function Home({ onNavigate }: HomeProps) {
       onNavigate('candidate-dashboard');
     } else {
       setShowLoginModal(true);
+    }
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleNewsletterSubscribe = async () => {
+    if (!newsletterEmail.trim()) {
+      alert('Veuillez entrer votre adresse email');
+      return;
+    }
+
+    if (!validateEmail(newsletterEmail)) {
+      alert('Veuillez entrer une adresse email valide');
+      return;
+    }
+
+    setIsSubscribing(true);
+
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({
+          email: newsletterEmail.trim().toLowerCase(),
+          domain: 'all',
+          is_active: true,
+          subscribed_at: new Date().toISOString()
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          alert('✅ Cet email est déjà inscrit à notre newsletter !');
+        } else {
+          console.error('Newsletter subscription error:', error);
+          alert('❌ Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');
+        }
+      } else {
+        alert('🎉 Merci de vous être inscrit à notre newsletter !\n\nVous recevrez bientôt les dernières offres d\'emploi directement par email.');
+        setNewsletterEmail('');
+      }
+    } catch (err) {
+      console.error('Newsletter subscription error:', err);
+      alert('❌ Une erreur est survenue. Veuillez réessayer.');
+    } finally {
+      setIsSubscribing(false);
     }
   };
 
@@ -824,36 +873,36 @@ export default function Home({ onNavigate }: HomeProps) {
           </p>
 
           <div className="max-w-md mx-auto">
-            <div className="flex gap-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleNewsletterSubscribe();
+              }}
+              className="flex gap-3"
+            >
               <input
                 type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Votre adresse email"
-                className="flex-1 px-6 py-4 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+                disabled={isSubscribing}
+                className="flex-1 px-6 py-4 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
-                onClick={async () => {
-                  const email = (document.querySelector('input[type="email"]') as HTMLInputElement)?.value;
-                  if (!email) {
-                    alert('Veuillez entrer votre adresse email');
-                    return;
-                  }
-                  const { error } = await supabase.from('newsletter_subscribers').insert({ email });
-                  if (error) {
-                    if (error.code === '23505') {
-                      alert('Cet email est déjà inscrit à la newsletter');
-                    } else {
-                      alert('Erreur lors de l\'inscription');
-                    }
-                  } else {
-                    alert('Merci de vous être inscrit à notre newsletter !');
-                    (document.querySelector('input[type="email"]') as HTMLInputElement).value = '';
-                  }
-                }}
-                className="px-8 py-4 bg-white hover:bg-gray-100 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg whitespace-nowrap"
+                type="submit"
+                disabled={isSubscribing}
+                className="px-8 py-4 bg-white hover:bg-gray-100 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                S'abonner
+                {isSubscribing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-[#FF8C00] border-t-transparent rounded-full animate-spin"></div>
+                    <span>En cours...</span>
+                  </>
+                ) : (
+                  "S'abonner"
+                )}
               </button>
-            </div>
+            </form>
             <p className="text-sm mt-4 text-white text-opacity-90">
               Pas de spam. Désabonnez-vous à tout moment.
             </p>
