@@ -608,9 +608,10 @@ function PremiumPaymentModal({ isOpen, onClose, settings, userEmail }: PremiumPa
 
 interface CreditStoreProps {
   onNavigate: (page: string) => void;
+  scrollTarget?: string;
 }
 
-export default function CreditStore({ onNavigate }: CreditStoreProps) {
+export default function CreditStore({ onNavigate, scrollTarget }: CreditStoreProps) {
   const { user, profile } = useAuth();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
@@ -622,6 +623,17 @@ export default function CreditStore({ onNavigate }: CreditStoreProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (scrollTarget === 'premium-pro') {
+      const element = document.getElementById('premium-pro-section');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [scrollTarget]);
 
   const loadData = async () => {
     setLoading(true);
@@ -810,7 +822,7 @@ export default function CreditStore({ onNavigate }: CreditStoreProps) {
           })}
         </div>
 
-        <div className="mt-12 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-xl border-3 border-yellow-300 overflow-hidden">
+        <div id="premium-pro-section" className="mt-12 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-xl border-3 border-yellow-300 overflow-hidden">
           <div className="relative">
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-yellow-200 rounded-full opacity-20"></div>
             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-orange-200 rounded-full opacity-20"></div>

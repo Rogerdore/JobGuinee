@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
-  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar
+  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -703,6 +703,66 @@ export default function Home({ onNavigate }: HomeProps) {
                 <span className="font-medium">Devenir partenaire</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                Abonnement Premium PRO+
+              </h2>
+              <p className="text-xl text-blue-100 mb-8">
+                Accédez à tous les services Premium IA + Cloud sécurisé + Support prioritaire
+              </p>
+
+              <ul className="space-y-4 mb-8">
+                {[
+                  'Tous les services IA inclus',
+                  'Cloud 10 Go pour documents',
+                  'Support prioritaire 24/7',
+                  'Badge Profil vérifié',
+                ].map((item) => (
+                  <li key={item} className="flex items-center space-x-3">
+                    <CheckCircle className="w-6 h-6 text-[#FF8C00] flex-shrink-0" />
+                    <span className="text-lg">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => onNavigate('credit-store', 'premium-pro')}
+                className="px-8 py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-bold rounded-xl transition shadow-lg text-lg"
+              >
+                S'abonner maintenant
+              </button>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl p-8 text-center">
+              <div className="text-7xl font-bold mb-2">350 000</div>
+              <div className="text-xl mb-8">GNF / mois</div>
+
+              <div className="bg-white text-gray-900 rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-bold mb-4">Inclus dans votre abonnement</h3>
+                <ul className="space-y-3 text-left">
+                  {[
+                    'Services IA illimités sans crédits',
+                    'Cloud sécurisé 10 Go',
+                    'Support réactif 24/7',
+                    'Badge premium vérifié',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center space-x-2">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <p className="text-sm text-blue-100">Orange Money • LengoPay • DigitalPay SA</p>
             </div>
           </div>
         </div>

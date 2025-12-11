@@ -45,6 +45,7 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [jobSearchParams, setJobSearchParams] = useState<string>('');
+  const [scrollTarget, setScrollTarget] = useState<string>('');
   const { loading } = useAuth();
 
   const handleNavigate = (page: string, param?: string) => {
@@ -54,6 +55,9 @@ function AppContent() {
     }
     if (page === 'jobs' && param) {
       setJobSearchParams(param);
+    }
+    if (page === 'credit-store' && param) {
+      setScrollTarget(param);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -108,7 +112,7 @@ function AppContent() {
       {currentPage === 'ai-alerts' && <AIAlertsCenter onNavigate={handleNavigate} />}
       {currentPage === 'ai-chat' && <AIChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
-      {currentPage === 'credit-store' && <CreditStore onNavigate={handleNavigate} />}
+      {currentPage === 'credit-store' && <CreditStore onNavigate={handleNavigate} scrollTarget={scrollTarget} />}
     </Layout>
   );
 }
