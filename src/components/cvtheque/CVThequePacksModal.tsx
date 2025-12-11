@@ -246,9 +246,8 @@ export default function CVThequePacksModal({
                         <Icon className="w-8 h-8 text-white" />
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{pack.pack_name}</h3>
-                      <div className="text-3xl font-bold text-gray-900">
-                        {(pack.price_gnf / 1000000).toFixed(1)}M
-                        <span className="text-sm text-gray-500 font-normal ml-1">GNF</span>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {cvthequePricingService.formatPrice(pack.price_gnf)}
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
                         {isGold ? 'Accès illimité' : `${pack.total_profiles} profils`}
