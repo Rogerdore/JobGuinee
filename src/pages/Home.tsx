@@ -11,6 +11,7 @@ import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
+import VideoGuidesSection from '../components/home/VideoGuidesSection';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -382,6 +383,8 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+
+      <VideoGuidesSection />
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -81,6 +81,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Chatbot IA</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-homepage-content')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-orange-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Video className="w-4 h-4" />
+                <span>Contenu Accueil</span>
               </button>
 
               <button

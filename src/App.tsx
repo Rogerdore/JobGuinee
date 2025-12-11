@@ -33,6 +33,7 @@ import AdminIAConfig from './pages/AdminIAConfig';
 import AdminIATemplates from './pages/AdminIATemplates';
 import AdminChatbot from './pages/AdminChatbot';
 import AdminIACenter from './pages/AdminIACenter';
+import AdminHomepageContent from './pages/AdminHomepageContent';
 import AdminCreditStoreSettings from './pages/AdminCreditStoreSettings';
 import AdminCreditPurchases from './pages/AdminCreditPurchases';
 import AdminSecurityLogs from './pages/AdminSecurityLogs';
@@ -40,7 +41,7 @@ import PremiumSubscribe from './pages/PremiumSubscribe';
 import AdminPremiumSubscriptions from './pages/AdminPremiumSubscriptions';
 import AdminIAPremiumQuota from './pages/AdminIAPremiumQuota';
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-homepage-content' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -101,6 +102,7 @@ function AppContent() {
       {currentPage === 'admin-ia-templates' && <AdminIATemplates onNavigate={handleNavigate} />}
       {currentPage === 'admin-chatbot' && <AdminChatbot onNavigate={handleNavigate} />}
       {currentPage === 'admin-ia-premium-quota' && <AdminIAPremiumQuota />}
+      {currentPage === 'admin-homepage-content' && <AdminHomepageContent />}
       {currentPage === 'admin-ia-center' && <AdminIACenter onNavigate={handleNavigate} />}
       {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings onNavigate={handleNavigate} />}
       {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases onNavigate={handleNavigate} />}
