@@ -25,6 +25,7 @@ interface AnonymizedCandidateCardProps {
   onViewDetails: (candidateId: string) => void;
   isInCart?: boolean;
   isPurchased?: boolean;
+  viewerUserType?: string;
 }
 
 export default function AnonymizedCandidateCard({
@@ -34,6 +35,7 @@ export default function AnonymizedCandidateCard({
   onViewDetails,
   isInCart = false,
   isPurchased = false,
+  viewerUserType,
 }: AnonymizedCandidateCardProps) {
   const getExperienceLevel = (years: number) => {
     if (years >= 6) return {
@@ -88,6 +90,8 @@ export default function AnonymizedCandidateCard({
     if (!candidate.is_gold || !candidate.gold_expiration) return false;
     return new Date(candidate.gold_expiration) > new Date();
   };
+
+  const shouldShowPrice = viewerUserType !== 'candidate' && !isPurchased;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -174,21 +178,27 @@ export default function AnonymizedCandidateCard({
           </div>
         )}
 
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-2 mb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600">Prix d'accès</p>
-              <p className="text-base font-bold text-blue-900">
-                {formatPrice(candidate.profile_price)} GNF
-              </p>
-            </div>
-            {isPurchased && (
-              <div className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
-                ✓ Acheté
+        {shouldShowPrice && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-2 mb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Prix d'accès</p>
+                <p className="text-base font-bold text-blue-900">
+                  {formatPrice(candidate.profile_price)} GNF
+                </p>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {isPurchased && (
+          <div className="bg-green-50 rounded-lg p-2 mb-2">
+            <div className="flex items-center justify-center gap-1">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <p className="text-sm font-bold text-green-900">Profil acheté</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2 mb-2">
           <button

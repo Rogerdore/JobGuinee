@@ -550,6 +550,7 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
                     isPurchased={purchasedProfiles.includes(candidate.id)}
                     onAddToCart={handleAddToCart}
                     onViewDetails={handleViewDetails}
+                    viewerUserType={profile?.user_type}
                   />
                 ))}
             </div>
