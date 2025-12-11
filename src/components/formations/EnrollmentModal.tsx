@@ -3,6 +3,7 @@ import { X, CreditCard, Smartphone, CheckCircle, Loader } from 'lucide-react';
 import { Formation } from '../../lib/supabase';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import OrangeMoneyPaymentInfo from '../payments/OrangeMoneyPaymentInfo';
 
 interface EnrollmentModalProps {
   formation: Formation;
@@ -190,7 +191,14 @@ export default function EnrollmentModal({ formation, onClose, onSuccess }: Enrol
               </div>
             </div>
 
-            {selectedMethod && (
+            {formData.payment_method === 'orange_money' ? (
+              <OrangeMoneyPaymentInfo
+                amount={formation.price}
+                serviceName={`Formation: ${formation.title}`}
+                userEmail={formData.email}
+                showWhatsApp={true}
+              />
+            ) : selectedMethod && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2">Instructions de paiement:</h4>
                 <p className="text-sm text-gray-700">{selectedMethod.instructions}</p>

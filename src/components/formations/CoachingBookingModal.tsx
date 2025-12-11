@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Calendar, Clock, CheckCircle, Loader, MessageSquare, Video, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import OrangeMoneyPaymentInfo from '../payments/OrangeMoneyPaymentInfo';
 
 interface CoachingBookingModalProps {
   onClose: () => void;
@@ -318,6 +319,15 @@ export default function CoachingBookingModal({ onClose, onSuccess }: CoachingBoo
                 ))}
               </div>
             </div>
+
+            {formData.payment_method === 'orange_money' && (
+              <OrangeMoneyPaymentInfo
+                amount={calculatedPrice}
+                serviceName={`Coaching: ${selectedCoaching?.name}`}
+                userEmail={formData.email}
+                showWhatsApp={true}
+              />
+            )}
 
             <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-blue-200">
               <div className="flex items-center justify-between">

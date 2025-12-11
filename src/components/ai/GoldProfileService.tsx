@@ -17,8 +17,10 @@ import {
   MessageCircle,
   BarChart3,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from 'lucide-react';
+import OrangeMoneyPaymentInfo from '../payments/OrangeMoneyPaymentInfo';
 
 interface CoachingSession {
   id: string;
@@ -66,6 +68,7 @@ export default function GoldProfileService({ onNavigate }: GoldProfileServicePro
     contact_reveals: 0,
   });
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedSessionType, setSelectedSessionType] = useState('cv_review');
 
   useEffect(() => {
@@ -260,7 +263,7 @@ export default function GoldProfileService({ onNavigate }: GoldProfileServicePro
                 </div>
 
                 <button
-                  onClick={() => alert('Paiement: Orange Money • LengoPay • DigitalPay SA\n\nVous serez contacté par notre équipe pour finaliser votre inscription Gold.')}
+                  onClick={() => setShowPaymentModal(true)}
                   className="w-full py-4 px-6 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-bold text-lg hover:from-yellow-600 hover:to-orange-700 transition-all shadow-lg"
                 >
                   <Crown className="w-6 h-6 inline-block mr-2" />
@@ -515,6 +518,69 @@ export default function GoldProfileService({ onNavigate }: GoldProfileServicePro
               >
                 Annuler
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)}></div>
+
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-8">
+              <div className="bg-gradient-to-r from-yellow-500 to-orange-600 px-6 py-4 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Profil Gold</h2>
+                      <p className="text-yellow-100 text-sm">Paiement Orange Money</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 transition text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border-2 border-yellow-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">Montant à payer</h3>
+                    <div className="text-4xl font-bold text-orange-600">500 000 GNF</div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Abonnement Profil Gold valable 3 mois (soit 166 667 GNF/mois)
+                  </p>
+                </div>
+
+                <OrangeMoneyPaymentInfo
+                  amount={500000}
+                  serviceName="Profil Gold - 3 mois"
+                  userEmail={user?.email || ''}
+                  showWhatsApp={true}
+                />
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Inclus dans votre abonnement Gold
+                  </h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Profil en première page</li>
+                    <li>• Badge Gold visible</li>
+                    <li>• 3 séances de coaching personnalisé</li>
+                    <li>• Création d'un CV vidéo professionnel</li>
+                    <li>• Statistiques détaillées</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
