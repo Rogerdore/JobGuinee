@@ -12,6 +12,13 @@ export interface ChatbotSettings {
   max_context_messages: number;
   proactive_mode: boolean;
   proactive_delay: number;
+  enable_premium_detection?: boolean;
+  premium_welcome_message?: string;
+  premium_badge_text?: string;
+  show_premium_benefits?: boolean;
+  premium_upsell_message?: string;
+  show_credits_balance?: boolean;
+  show_premium_expiration?: boolean;
 }
 
 export interface ChatbotStyle {
@@ -77,7 +84,52 @@ export interface ChatbotResponse {
   error?: string;
 }
 
+export interface UserContext {
+  is_premium: boolean;
+  premium_expiration: string | null;
+  credits_balance: number;
+  remaining_days?: number;
+  user_type: string;
+  email: string;
+}
+
 export class ChatbotService {
+  static async getUserContext(userId: string): Promise<UserContext | null> {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_premium, premium_expiration, credits_balance, user_type, email')
+        .eq('id', userId)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('Error fetching user profile:', profileError);
+        return null;
+      }
+
+      let remaining_days = 0;
+      if (profile.is_premium && profile.premium_expiration) {
+        const now = new Date();
+        const expiration = new Date(profile.premium_expiration);
+        const diffTime = expiration.getTime() - now.getTime();
+        remaining_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        remaining_days = Math.max(0, remaining_days);
+      }
+
+      return {
+        is_premium: profile.is_premium || false,
+        premium_expiration: profile.premium_expiration,
+        credits_balance: profile.credits_balance || 0,
+        remaining_days,
+        user_type: profile.user_type,
+        email: profile.email
+      };
+    } catch (error) {
+      console.error('Error in getUserContext:', error);
+      return null;
+    }
+  }
+
   static async getSettings(): Promise<ChatbotSettings | null> {
     try {
       const { data, error } = await supabase
@@ -224,6 +276,11 @@ export class ChatbotService {
         };
       }
 
+      let userContext: UserContext | null = null;
+      if (userId && settings.enable_premium_detection) {
+        userContext = await this.getUserContext(userId);
+      }
+
       const kbSuggestions = await this.searchKnowledgeBase(message);
 
       if (kbSuggestions.length > 0 && kbSuggestions[0].score >= 15) {
@@ -260,7 +317,8 @@ export class ChatbotService {
         message,
         kbSuggestions,
         conversationContext,
-        pageUrl
+        pageUrl,
+        userContext
       );
 
       const responseTime = Date.now() - startTime;
@@ -299,7 +357,8 @@ export class ChatbotService {
     question: string,
     kbSuggestions: KnowledgeBaseEntry[],
     conversationContext: ChatMessage[],
-    pageUrl: string
+    pageUrl: string,
+    userContext: UserContext | null
   ): Promise<{
     answer: string;
     tokens_used?: number;
@@ -312,12 +371,18 @@ export class ChatbotService {
 
       if (!config || !config.is_active) {
         console.warn('Chatbot IA config not found or inactive, using fallback');
-        return this.generateMockAIResponse(question, kbSuggestions);
+        return this.generateMockAIResponse(question, kbSuggestions, userContext);
       }
 
       const inputData = {
         user_question: question,
         page_url: pageUrl,
+        user_context: userContext ? {
+          is_premium: userContext.is_premium,
+          credits_balance: userContext.credits_balance,
+          remaining_days: userContext.remaining_days,
+          user_type: userContext.user_type
+        } : null,
         conversation_context: conversationContext.slice(-3).map(msg => ({
           user: msg.message_user,
           bot: msg.message_bot
@@ -332,7 +397,7 @@ export class ChatbotService {
       const validationResult = IAConfigService.validateInput(inputData, config.input_schema);
       if (!validationResult.valid) {
         console.error('Invalid input for chatbot:', validationResult.errors);
-        return this.generateMockAIResponse(question, kbSuggestions);
+        return this.generateMockAIResponse(question, kbSuggestions, userContext);
       }
 
       const builtPrompt = IAConfigService.buildPrompt(config, inputData);
@@ -340,21 +405,23 @@ export class ChatbotService {
       console.log('[Chatbot] Using IA service with prompt:', {
         model: builtPrompt.model,
         temperature: builtPrompt.temperature,
-        maxTokens: builtPrompt.maxTokens
+        maxTokens: builtPrompt.maxTokens,
+        isPremium: userContext?.is_premium
       });
 
-      const mockResponse = this.generateMockAIResponse(question, kbSuggestions);
+      const mockResponse = this.generateMockAIResponse(question, kbSuggestions, userContext);
 
       return mockResponse;
     } catch (error) {
       console.error('Error calling IA service for chatbot:', error);
-      return this.generateMockAIResponse(question, kbSuggestions);
+      return this.generateMockAIResponse(question, kbSuggestions, userContext);
     }
   }
 
   private static generateMockAIResponse(
     question: string,
-    kbSuggestions: KnowledgeBaseEntry[]
+    kbSuggestions: KnowledgeBaseEntry[],
+    userContext: UserContext | null
   ): {
     answer: string;
     tokens_used: number;
@@ -362,10 +429,18 @@ export class ChatbotService {
     intent_detected?: string;
   } {
     const questionLower = question.toLowerCase();
+    const isPremium = userContext?.is_premium || false;
 
     if (kbSuggestions.length > 0) {
+      let answer = kbSuggestions[0].answer;
+      if (isPremium) {
+        answer += ' En tant que membre Premium PRO+, vous bénéficiez d\'un accès illimité à tous nos services IA!';
+      } else {
+        answer += ' N\'hésitez pas si vous avez d\'autres questions!';
+      }
+
       return {
-        answer: kbSuggestions[0].answer + ' N\'hésitez pas si vous avez d\'autres questions!',
+        answer,
         tokens_used: 50,
         intent_detected: kbSuggestions[0].intent_name,
         suggested_links: this.getSuggestedLinks(kbSuggestions[0].intent_name)
@@ -373,17 +448,27 @@ export class ChatbotService {
     }
 
     if (questionLower.includes('cv')) {
+      if (isPremium) {
+        return {
+          answer: 'En tant que membre Premium PRO+, vous avez accès illimité à nos services de création et amélioration de CV! Vous pouvez créer autant de CV que vous le souhaitez sans consommer de crédits. Voulez-vous commencer maintenant?',
+          tokens_used: 60,
+          intent_detected: 'cv_help',
+          suggested_links: [{ label: 'Services Premium IA', page: 'premium-ai' }]
+        };
+      }
       return {
-        answer: 'Je peux vous aider avec votre CV! JobGuinée propose des services IA pour créer, améliorer ou adapter votre CV à une offre spécifique. Voulez-vous en savoir plus?',
+        answer: 'Je peux vous aider avec votre CV! JobGuinée propose des services IA pour créer, améliorer ou adapter votre CV à une offre spécifique. Passez Premium PRO+ pour un accès illimité!',
         tokens_used: 60,
         intent_detected: 'cv_help',
-        suggested_links: [{ label: 'Services Premium IA', page: 'premium-ai' }]
+        suggested_links: [{ label: 'Services Premium IA', page: 'premium-ai' }, { label: 'Passer Premium', page: 'premium-subscribe' }]
       };
     }
 
     if (questionLower.includes('emploi') || questionLower.includes('offre') || questionLower.includes('job')) {
       return {
-        answer: 'Vous cherchez un emploi? Consultez nos offres d\'emploi actuelles ou créez des alertes personnalisées pour être notifié des nouvelles opportunités correspondant à votre profil.',
+        answer: isPremium
+          ? 'En tant que membre Premium PRO+, vous recevez des alertes prioritaires pour les nouvelles offres! Consultez nos offres d\'emploi actuelles ou gérez vos alertes personnalisées.'
+          : 'Vous cherchez un emploi? Consultez nos offres d\'emploi actuelles ou créez des alertes personnalisées pour être notifié des nouvelles opportunités correspondant à votre profil.',
         tokens_used: 55,
         intent_detected: 'job_search',
         suggested_links: [{ label: 'Voir les offres', page: 'jobs' }]
@@ -391,25 +476,56 @@ export class ChatbotService {
     }
 
     if (questionLower.includes('crédit') || questionLower.includes('paiement') || questionLower.includes('acheter')) {
+      if (isPremium) {
+        return {
+          answer: `Vous avez actuellement ${userContext?.credits_balance || 0} crédits disponibles. En tant que membre Premium PRO+, vous ne consommez aucun crédit pour les services IA! Vos crédits restent disponibles pour d'autres services.`,
+          tokens_used: 58,
+          intent_detected: 'credits',
+          suggested_links: [{ label: 'Voir mes crédits', page: 'candidate-dashboard' }]
+        };
+      }
       return {
-        answer: 'Les crédits IA vous permettent d\'utiliser nos services premium. Vous pouvez acheter des crédits dans la boutique avec différents packs adaptés à vos besoins.',
+        answer: 'Les crédits IA vous permettent d\'utiliser nos services premium. Vous pouvez acheter des crédits dans la boutique ou passer Premium PRO+ pour un accès illimité!',
         tokens_used: 58,
         intent_detected: 'credits',
-        suggested_links: [{ label: 'Boutique de crédits', page: 'credit-store' }]
+        suggested_links: [{ label: 'Boutique de crédits', page: 'credit-store' }, { label: 'Passer Premium', page: 'premium-subscribe' }]
       };
     }
 
     if (questionLower.includes('profil') || questionLower.includes('compte')) {
       return {
-        answer: 'Un profil complet augmente vos chances d\'être remarqué par les recruteurs! Complétez vos expériences, compétences et formations dans votre dashboard.',
+        answer: isPremium
+          ? 'En tant que membre Premium PRO+, votre profil bénéficie d\'une visibilité accrue auprès des recruteurs! Complétez vos expériences, compétences et formations pour maximiser vos chances.'
+          : 'Un profil complet augmente vos chances d\'être remarqué par les recruteurs! Complétez vos expériences, compétences et formations dans votre dashboard.',
         tokens_used: 52,
         intent_detected: 'profile',
         suggested_links: [{ label: 'Mon dashboard', page: 'candidate-dashboard' }]
       };
     }
 
+    if (questionLower.includes('premium')) {
+      if (isPremium) {
+        return {
+          answer: `Vous êtes déjà membre Premium PRO+! ${userContext?.remaining_days ? `Il vous reste ${userContext.remaining_days} jours d'accès.` : ''} Profitez de tous nos services IA sans limite et de votre visibilité accrue auprès des recruteurs.`,
+          tokens_used: 55,
+          intent_detected: 'premium_status',
+          suggested_links: [{ label: 'Mes avantages Premium', page: 'premium-subscribe' }]
+        };
+      }
+      return {
+        answer: 'Premium PRO+ vous donne un accès illimité à tous les services IA (CV, lettres, simulations, coaching), 100 crédits bonus à l\'inscription, 10GB de stockage cloud, et un support prioritaire 24/7 pour seulement 350,000 GNF/mois!',
+        tokens_used: 70,
+        intent_detected: 'premium_info',
+        suggested_links: [{ label: 'Découvrir Premium', page: 'premium-subscribe' }]
+      };
+    }
+
+    const greeting = isPremium
+      ? `Bonjour membre Premium PRO+! ${userContext?.remaining_days ? `(${userContext.remaining_days}j restants)` : ''} Je suis là pour vous aider!`
+      : 'Je suis là pour vous aider!';
+
     return {
-      answer: 'Je suis là pour vous aider! Vous pouvez me poser des questions sur la création de CV, la recherche d\'emploi, les services IA, ou la navigation sur JobGuinée. Comment puis-je vous assister?',
+      answer: `${greeting} Vous pouvez me poser des questions sur la création de CV, la recherche d\'emploi, les services IA, ou la navigation sur JobGuinée. Comment puis-je vous assister?`,
       tokens_used: 45,
       intent_detected: 'general'
     };

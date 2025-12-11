@@ -221,7 +221,104 @@ function GeneralTab({ settings, setSettings, onSave, saving }: any) {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white text-sm">PRO</span>
+          Paramètres Premium
+        </h3>
+
+        <div className="space-y-6">
+          <div>
+            <label className="flex items-center gap-2 mb-2">
+              <input
+                type="checkbox"
+                checked={settings.enable_premium_detection || false}
+                onChange={(e) => setSettings({ ...settings, enable_premium_detection: e.target.checked })}
+                className="w-4 h-4 text-yellow-600 rounded"
+              />
+              <span className="font-medium text-gray-700">Activer la détection Premium</span>
+            </label>
+            <p className="text-sm text-gray-500 ml-6">Affiche le statut Premium et adapte les réponses</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Message de bienvenue Premium</label>
+            <textarea
+              value={settings.premium_welcome_message || ''}
+              onChange={(e) => setSettings({ ...settings, premium_welcome_message: e.target.value })}
+              rows={2}
+              placeholder="Bienvenue membre Premium PRO+! Je suis là pour vous aider..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Message affiché aux utilisateurs Premium</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Texte du badge Premium</label>
+              <input
+                type="text"
+                value={settings.premium_badge_text || 'PRO+'}
+                onChange={(e) => setSettings({ ...settings, premium_badge_text: e.target.value })}
+                placeholder="PRO+"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={settings.show_credits_balance || false}
+                  onChange={(e) => setSettings({ ...settings, show_credits_balance: e.target.checked })}
+                  className="w-4 h-4 text-yellow-600 rounded"
+                />
+                <span className="font-medium text-gray-700">Afficher le solde de crédits</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={settings.show_premium_expiration || false}
+                  onChange={(e) => setSettings({ ...settings, show_premium_expiration: e.target.checked })}
+                  className="w-4 h-4 text-yellow-600 rounded"
+                />
+                <span className="font-medium text-gray-700">Afficher les jours restants</span>
+              </label>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={settings.show_premium_benefits || false}
+                  onChange={(e) => setSettings({ ...settings, show_premium_benefits: e.target.checked })}
+                  className="w-4 h-4 text-yellow-600 rounded"
+                />
+                <span className="font-medium text-gray-700">Afficher le CTA Premium</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Message d'upsell Premium</label>
+            <textarea
+              value={settings.premium_upsell_message || ''}
+              onChange={(e) => setSettings({ ...settings, premium_upsell_message: e.target.value })}
+              rows={2}
+              placeholder="Accédez à tous nos services IA sans limite pour seulement 350,000 GNF/mois!"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Message affiché aux non-Premium pour les encourager à s'abonner</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-6">
         <button
           onClick={onSave}
           disabled={saving}

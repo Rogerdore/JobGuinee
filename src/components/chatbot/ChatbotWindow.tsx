@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Minimize2 } from 'lucide-react';
-import { ChatbotService, ChatbotSettings, ChatbotStyle, QuickAction } from '../../services/chatbotService';
+import { X, Minimize2, Crown, Zap } from 'lucide-react';
+import { ChatbotService, ChatbotSettings, ChatbotStyle, QuickAction, UserContext } from '../../services/chatbotService';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -27,16 +27,41 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random()}`);
+  const [userContext, setUserContext] = useState<UserContext | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadQuickActions();
-    addBotMessage(settings.welcome_message);
+    const init = async () => {
+      await loadQuickActions();
+      await loadUserContext();
+    };
+    init();
   }, []);
+
+  useEffect(() => {
+    if (userContext !== null || !user || !settings.enable_premium_detection) {
+      displayWelcomeMessage();
+    }
+  }, [userContext]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const loadUserContext = async () => {
+    if (user && settings.enable_premium_detection) {
+      const context = await ChatbotService.getUserContext(user.id);
+      setUserContext(context);
+    }
+  };
+
+  const displayWelcomeMessage = () => {
+    if (userContext?.is_premium && settings.premium_welcome_message) {
+      addBotMessage(settings.premium_welcome_message);
+    } else {
+      addBotMessage(settings.welcome_message);
+    }
+  };
 
   const loadQuickActions = async () => {
     if (settings.show_quick_actions) {
@@ -130,13 +155,36 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
           color: '#FFFFFF'
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1">
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
             <span className="text-xl">🤖</span>
           </div>
-          <div>
-            <h3 className="font-bold text-white">Assistant JobGuinée</h3>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-white">Assistant JobGuinée</h3>
+              {userContext?.is_premium && settings.enable_premium_detection && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500 text-yellow-900 text-xs font-bold rounded-full">
+                  <Crown className="w-3 h-3" />
+                  {settings.premium_badge_text || 'PRO+'}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-white/80">En ligne</p>
+            {userContext && settings.enable_premium_detection && (
+              <div className="flex items-center gap-3 mt-1 text-xs text-white/70">
+                {settings.show_credits_balance && (
+                  <span className="flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    {userContext.credits_balance} crédits
+                  </span>
+                )}
+                {settings.show_premium_expiration && userContext.is_premium && userContext.remaining_days !== undefined && (
+                  <span>
+                    {userContext.remaining_days}j restants
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <button
@@ -178,6 +226,31 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!userContext?.is_premium && settings.show_premium_benefits && messages.length > 2 && settings.premium_upsell_message && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
+                <Crown className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-900 mb-1">Passez Premium PRO+</h4>
+                <p className="text-sm text-gray-700 mb-3">{settings.premium_upsell_message}</p>
+                <button
+                  onClick={() => {
+                    if (onNavigate) {
+                      onNavigate('premium-subscribe');
+                      onClose();
+                    }
+                  }}
+                  className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium"
+                >
+                  Découvrir Premium PRO+
+                </button>
               </div>
             </div>
           </div>
