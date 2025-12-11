@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Edit, History, Trash2, Eye, Save, X, Code, Sparkles, Crown } from 'lucide-react';
+import { FileText, Plus, Edit, History, Trash2, Eye, Save, X, Code, Sparkles, Crown, ArrowLeft } from 'lucide-react';
 import { IAConfigService, IAServiceTemplate } from '../services/iaConfigService';
 
 interface TemplateEditorProps {
@@ -412,7 +412,11 @@ function HistoryModal({ templateId, onClose }: HistoryModalProps) {
   );
 }
 
-export default function AdminIATemplates() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminIATemplates({ onNavigate }: PageProps) {
   const [templates, setTemplates] = useState<IAServiceTemplate[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<IAServiceTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -508,6 +512,14 @@ export default function AdminIATemplates() {
 
   return (
     <div className="p-6">
+      <button
+        onClick={() => onNavigate('home')}
+        className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        Retour à l'accueil
+      </button>
+
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>

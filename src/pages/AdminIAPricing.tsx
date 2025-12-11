@@ -17,7 +17,8 @@ import {
   CheckCircle,
   Percent,
   History,
-  Clock
+  Clock,
+  ArrowLeft
 } from 'lucide-react';
 import {
   PricingEngine,
@@ -452,7 +453,11 @@ function AddServiceModal({ isOpen, onClose, onAdd }: AddServiceModalProps) {
   );
 }
 
-export default function AdminIAPricing() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminIAPricing({ onNavigate }: PageProps) {
   const [services, setServices] = useState<CreditServiceConfig[]>([]);
   const [statistics, setStatistics] = useState<ServiceStatistics[]>([]);
   const [loading, setLoading] = useState(true);
@@ -538,6 +543,14 @@ export default function AdminIAPricing() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      <button
+        onClick={() => onNavigate('home')}
+        className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        Retour à l'accueil
+      </button>
+
       {alert && (
         <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
           alert.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'

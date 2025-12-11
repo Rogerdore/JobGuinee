@@ -82,22 +82,22 @@ function AppContent() {
       {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
       {currentPage === 'trainer-dashboard' && <TrainerDashboard onNavigate={handleNavigate} />}
       {currentPage === 'formations' && <Formations onNavigate={handleNavigate} />}
-      {currentPage === 'blog' && <Blog />}
+      {currentPage === 'blog' && <Blog onNavigate={handleNavigate} />}
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
       {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
       {currentPage === 'admin-credits-ia' && <AdminCreditsIA onNavigate={handleNavigate} />}
-      {currentPage === 'admin-ia-pricing' && <AdminIAPricing />}
-      {currentPage === 'admin-ia-config' && <AdminIAConfig />}
-      {currentPage === 'admin-ia-templates' && <AdminIATemplates />}
-      {currentPage === 'admin-chatbot' && <AdminChatbot />}
-      {currentPage === 'admin-ia-center' && <AdminIACenter />}
-      {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings />}
-      {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases />}
-      {currentPage === 'admin-security-logs' && <AdminSecurityLogs />}
-      {currentPage === 'admin-premium-subscriptions' && <AdminPremiumSubscriptions />}
+      {currentPage === 'admin-ia-pricing' && <AdminIAPricing onNavigate={handleNavigate} />}
+      {currentPage === 'admin-ia-config' && <AdminIAConfig onNavigate={handleNavigate} />}
+      {currentPage === 'admin-ia-templates' && <AdminIATemplates onNavigate={handleNavigate} />}
+      {currentPage === 'admin-chatbot' && <AdminChatbot onNavigate={handleNavigate} />}
+      {currentPage === 'admin-ia-center' && <AdminIACenter onNavigate={handleNavigate} />}
+      {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings onNavigate={handleNavigate} />}
+      {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases onNavigate={handleNavigate} />}
+      {currentPage === 'admin-security-logs' && <AdminSecurityLogs onNavigate={handleNavigate} />}
+      {currentPage === 'admin-premium-subscriptions' && <AdminPremiumSubscriptions onNavigate={handleNavigate} />}
       {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
-      {currentPage === 'premium-subscribe' && <PremiumSubscribe />}
+      {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
       {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} />}
       {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
       {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
@@ -108,7 +108,7 @@ function AppContent() {
       {currentPage === 'ai-alerts' && <AIAlertsCenter onNavigate={handleNavigate} />}
       {currentPage === 'ai-chat' && <AIChat onNavigate={handleNavigate} />}
       {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
-      {currentPage === 'credit-store' && <CreditStore />}
+      {currentPage === 'credit-store' && <CreditStore onNavigate={handleNavigate} />}
     </Layout>
   );
 }

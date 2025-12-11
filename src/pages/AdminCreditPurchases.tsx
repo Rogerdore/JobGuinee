@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Check, X, Clock, AlertCircle, Filter, RefreshCw, Eye } from 'lucide-react';
+import { ShoppingCart, Check, X, Clock, AlertCircle, Filter, RefreshCw, Eye, ArrowLeft } from 'lucide-react';
 import { CreditStoreService, CreditPurchase, CreditStoreSettings } from '../services/creditStoreService';
 
 type StatusFilter = 'all' | 'pending' | 'waiting_proof' | 'completed' | 'cancelled';
 
-export default function AdminCreditPurchases() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminCreditPurchases({ onNavigate }: PageProps) {
   const [purchases, setPurchases] = useState<CreditPurchase[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,6 +113,14 @@ export default function AdminCreditPurchases() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('home')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour à l'accueil
+        </button>
+
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6">
             <div className="flex items-center justify-between">

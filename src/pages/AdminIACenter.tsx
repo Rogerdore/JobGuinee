@@ -15,7 +15,8 @@ import {
   Eye,
   Edit,
   Power,
-  Plus
+  Plus,
+  ArrowLeft
 } from 'lucide-react';
 import { IAConfigService, IAServiceConfig, IAServiceTemplate } from '../services/iaConfigService';
 import { CreditService, PricingEngine, CreditServiceConfig } from '../services/creditService';
@@ -51,7 +52,11 @@ interface RecentLog {
   created_at: string;
 }
 
-export default function AdminIACenter() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminIACenter({ onNavigate }: PageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [loading, setLoading] = useState(false);
 
@@ -634,6 +639,13 @@ export default function AdminIACenter() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <button
+            onClick={() => onNavigate('home')}
+            className="mb-4 flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            Retour à l'accueil
+          </button>
           <div className="flex items-center gap-3 mb-2">
             <Sparkles className="w-8 h-8" />
             <h1 className="text-3xl font-bold">Centre d'Administration IA</h1>

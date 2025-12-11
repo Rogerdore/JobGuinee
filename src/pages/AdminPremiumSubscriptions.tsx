@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Crown, Check, X, Calendar, FileText, Filter, Eye, Edit2, Ban } from 'lucide-react';
+import { Crown, Check, X, Calendar, FileText, Filter, Eye, Edit2, Ban, ArrowLeft } from 'lucide-react';
 import { PremiumSubscriptionService, PremiumSubscription } from '../services/premiumSubscriptionService';
 import { supabase } from '../lib/supabase';
 
@@ -299,7 +299,11 @@ function DetailsModal({ subscription, isOpen, onClose, onUpdate }: DetailsModalP
   );
 }
 
-export default function AdminPremiumSubscriptions() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminPremiumSubscriptions({ onNavigate }: PageProps) {
   const [subscriptions, setSubscriptions] = useState<SubscriptionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithUser | null>(null);
@@ -376,6 +380,14 @@ export default function AdminPremiumSubscriptions() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('home')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour à l'accueil
+        </button>
+
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
             <div className="flex items-center gap-3">

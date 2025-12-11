@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Crown, Check, Sparkles, X, Copy, MessageCircle, Zap, Shield, Clock, Award } from 'lucide-react';
+import { Crown, Check, Sparkles, X, Copy, MessageCircle, Zap, Shield, Clock, Award, ArrowLeft } from 'lucide-react';
 import { PremiumSubscriptionService, PremiumSubscription } from '../services/premiumSubscriptionService';
 import { CreditStoreService, CreditStoreSettings } from '../services/creditStoreService';
 import { useAuth } from '../contexts/AuthContext';
@@ -286,7 +286,11 @@ function PaymentModal({ isOpen, onClose, settings, userEmail }: PaymentModalProp
   );
 }
 
-export default function PremiumSubscribe() {
+interface PremiumSubscribeProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
@@ -335,6 +339,13 @@ export default function PremiumSubscribe() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 py-8">
         <div className="max-w-4xl mx-auto px-4">
+          <button
+            onClick={() => onNavigate('candidate-dashboard')}
+            className="mb-8 flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            Retour au tableau de bord
+          </button>
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-8 text-center">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
@@ -408,6 +419,13 @@ export default function PremiumSubscribe() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0E2F56] to-blue-800 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('candidate-dashboard')}
+          className="mb-8 flex items-center gap-2 text-white hover:text-blue-100 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour au tableau de bord
+        </button>
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="bg-gradient-to-br from-[#0E2F56] to-blue-800 rounded-2xl p-8 text-white">
             <div className="text-center mb-6">

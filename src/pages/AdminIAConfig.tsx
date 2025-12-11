@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Edit, History, Eye, EyeOff, Save, X, Code, FileText, Sparkles } from 'lucide-react';
+import { Settings, Plus, Edit, History, Eye, EyeOff, Save, X, Code, FileText, Sparkles, ArrowLeft } from 'lucide-react';
 import { IAConfigService, IAServiceConfig, IAConfigHistory } from '../services/iaConfigService';
 
 interface ConfigEditorProps {
@@ -415,7 +415,11 @@ function HistoryModal({ config, onClose }: HistoryModalProps) {
   );
 }
 
-export default function AdminIAConfig() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminIAConfig({ onNavigate }: PageProps) {
   const [configs, setConfigs] = useState<IAServiceConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConfig, setSelectedConfig] = useState<IAServiceConfig | null>(null);
@@ -476,6 +480,14 @@ export default function AdminIAConfig() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('home')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour à l'accueil
+        </button>
+
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Settings, Palette, Book, Zap, MessageSquare, Save, Plus, Trash2, Edit2, Eye } from 'lucide-react';
+import { MessageCircle, Settings, Palette, Book, Zap, MessageSquare, Save, Plus, Trash2, Edit2, Eye, ArrowLeft } from 'lucide-react';
 import {
   ChatbotService,
   ChatbotSettings,
@@ -10,7 +10,11 @@ import {
 
 type Tab = 'general' | 'styles' | 'knowledge' | 'actions' | 'logs';
 
-export default function AdminChatbot() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminChatbot({ onNavigate }: PageProps) {
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
   const [styles, setStyles] = useState<ChatbotStyle[]>([]);
@@ -80,6 +84,14 @@ export default function AdminChatbot() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('home')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour à l'accueil
+        </button>
+
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6">
             <div className="flex items-center gap-3">

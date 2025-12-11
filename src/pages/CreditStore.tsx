@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Zap, Star, Check, Copy, MessageCircle, AlertCircle, Sparkles, X, Crown, Shield, Clock, Award } from 'lucide-react';
+import { ShoppingCart, Zap, Star, Check, Copy, MessageCircle, AlertCircle, Sparkles, X, Crown, Shield, Clock, Award, ArrowLeft } from 'lucide-react';
 import { CreditStoreService, CreditPackage, CreditStoreSettings } from '../services/creditStoreService';
 import { PremiumSubscriptionService } from '../services/premiumSubscriptionService';
 import { useAuth } from '../contexts/AuthContext';
@@ -606,7 +606,11 @@ function PremiumPaymentModal({ isOpen, onClose, settings, userEmail }: PremiumPa
   );
 }
 
-export default function CreditStore() {
+interface CreditStoreProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function CreditStore({ onNavigate }: CreditStoreProps) {
   const { user, profile } = useAuth();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
@@ -694,6 +698,14 @@ export default function CreditStore() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('candidate-dashboard')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour au tableau de bord
+        </button>
+
         <div className="text-center mb-12">
           <div className="inline-block p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-lg mb-4">
             <ShoppingCart className="w-12 h-12 text-white" />

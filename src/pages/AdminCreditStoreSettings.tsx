@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, Phone, MessageCircle, FileText, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings, Save, Phone, MessageCircle, FileText, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react';
 import { CreditStoreService, CreditStoreSettings } from '../services/creditStoreService';
 
-export default function AdminCreditStoreSettings() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminCreditStoreSettings({ onNavigate }: PageProps) {
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,6 +75,14 @@ export default function AdminCreditStoreSettings() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('home')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour à l'accueil
+        </button>
+
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6">
             <div className="flex items-center gap-3">

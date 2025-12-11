@@ -27,7 +27,8 @@ import {
   Facebook,
   Linkedin,
   Send,
-  Download
+  Download,
+  ArrowLeft
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sampleBlogPosts, blogCategories } from '../utils/sampleBlogData';
@@ -58,7 +59,11 @@ const categories = [
   { name: 'Ressources Humaines', icon: Heart, color: 'bg-red-100 text-red-700', description: 'Gestion des talents' },
 ];
 
-export default function Blog() {
+interface BlogProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function Blog({ onNavigate }: BlogProps) {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,6 +157,17 @@ export default function Blog() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <button
+            onClick={() => onNavigate('home')}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            Retour à l'accueil
+          </button>
+        </div>
+      </div>
       <div
         className="relative bg-gradient-to-br from-[#0E2F56] via-blue-900 to-blue-800 text-white py-20"
         style={{

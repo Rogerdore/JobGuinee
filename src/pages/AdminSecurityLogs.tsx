@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle, Eye, Filter, RefreshCw, Ban, UserX } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Eye, Filter, RefreshCw, Ban, UserX, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SecurityLog {
@@ -33,7 +33,11 @@ interface UserRestriction {
 
 type EventFilter = 'all' | 'allowed' | 'blocked' | 'warning' | 'suspicious';
 
-export default function AdminSecurityLogs() {
+interface PageProps {
+  onNavigate: (page: string) => void;
+}
+
+export default function AdminSecurityLogs({ onNavigate }: PageProps) {
   const [logs, setLogs] = useState<SecurityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventFilter, setEventFilter] = useState<EventFilter>('all');
@@ -171,6 +175,14 @@ export default function AdminSecurityLogs() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
+        <button
+          onClick={() => onNavigate('home')}
+          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Retour à l'accueil
+        </button>
+
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
             <div className="flex items-center justify-between">
