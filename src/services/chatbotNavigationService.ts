@@ -1,4 +1,5 @@
 import { NAVIGATION_MAP, NavigationIntent } from './navigationMap';
+import { ChatbotIAAccessControl } from './chatbotIAAccessControl';
 
 export interface NavigationDetectionResult {
   intent: NavigationIntent | null;
@@ -277,5 +278,14 @@ export class ChatbotNavigationService {
     );
 
     return hasKeyword || hasPageReference;
+  }
+
+  static isIAServiceIntent(intent: NavigationIntent | null): boolean {
+    if (!intent) return false;
+    return ChatbotIAAccessControl.isIAService(intent.route);
+  }
+
+  static getIAServiceCode(intent: NavigationIntent): string | null {
+    return ChatbotIAAccessControl.getServiceCode(intent.route);
   }
 }

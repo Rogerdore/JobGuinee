@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { IAConfigService } from './iaConfigService';
+import { isPremiumActive } from '../utils/premiumHelpers';
 
 export interface ChatbotSettings {
   id: string;
@@ -86,11 +87,14 @@ export interface ChatbotResponse {
 
 export interface UserContext {
   is_premium: boolean;
+  is_premium_active: boolean;
   premium_expiration: string | null;
   credits_balance: number;
   remaining_days?: number;
   user_type: string;
   email: string;
+  daily_actions_used?: number;
+  daily_limit?: number;
 }
 
 export class ChatbotService {
@@ -116,8 +120,14 @@ export class ChatbotService {
         remaining_days = Math.max(0, remaining_days);
       }
 
+      const premiumActive = isPremiumActive({
+        is_premium: profile.is_premium,
+        premium_expiration: profile.premium_expiration
+      });
+
       return {
         is_premium: profile.is_premium || false,
+        is_premium_active: premiumActive,
         premium_expiration: profile.premium_expiration,
         credits_balance: profile.credits_balance || 0,
         remaining_days,

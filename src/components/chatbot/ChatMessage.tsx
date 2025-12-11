@@ -12,6 +12,11 @@ interface Message {
   navigationIntent?: NavigationIntent;
   showNavigationConfirmation?: boolean;
   navigationAlternatives?: NavigationIntent[];
+  actionButtons?: Array<{
+    label: string;
+    action: string;
+    variant: 'primary' | 'secondary';
+  }>;
 }
 
 interface ChatMessageProps {
@@ -126,6 +131,29 @@ export default function ChatMessage({ message, style, onNavigate, onClose, onNav
                 <span className="font-medium" style={{ color: style?.primary_color || '#3B82F6' }}>
                   {link.label}
                 </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!isUser && message.actionButtons && message.actionButtons.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {message.actionButtons.map((button, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  const [actionType, actionValue] = button.action.split(':');
+                  if (actionType === 'navigate' && onNavigate) {
+                    handleLinkClick(actionValue);
+                  }
+                }}
+                className={`flex-1 min-w-fit px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                  button.variant === 'primary'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {button.label}
               </button>
             ))}
           </div>

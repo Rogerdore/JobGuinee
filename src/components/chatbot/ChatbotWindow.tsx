@@ -3,6 +3,7 @@ import { X, Minimize2, Crown, Zap, MapPin } from 'lucide-react';
 import { ChatbotService, ChatbotSettings, ChatbotStyle, QuickAction, UserContext } from '../../services/chatbotService';
 import { ChatbotNavigationService, UserNavigationContext } from '../../services/chatbotNavigationService';
 import { NavigationIntent } from '../../services/navigationMap';
+import { ChatbotIAAccessControl, EnhancedUserContext, ServiceCode } from '../../services/chatbotIAAccessControl';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -17,6 +18,11 @@ interface Message {
   navigationIntent?: NavigationIntent;
   showNavigationConfirmation?: boolean;
   navigationAlternatives?: NavigationIntent[];
+  actionButtons?: Array<{
+    label: string;
+    action: string;
+    variant: 'primary' | 'secondary';
+  }>;
 }
 
 interface ChatbotWindowProps {
@@ -27,12 +33,13 @@ interface ChatbotWindowProps {
 }
 
 export default function ChatbotWindow({ settings, style, onClose, onNavigate }: ChatbotWindowProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random()}`);
   const [userContext, setUserContext] = useState<UserContext | null>(null);
+  const [enhancedUserContext, setEnhancedUserContext] = useState<EnhancedUserContext | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +48,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       await loadUserContext();
     };
     init();
-  }, []);
+  }, [user, profile]);
 
   useEffect(() => {
     if (userContext !== null || !user || !settings.enable_premium_detection) {
@@ -57,6 +64,18 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     if (user && settings.enable_premium_detection) {
       const context = await ChatbotService.getUserContext(user.id);
       setUserContext(context);
+
+      const enhanced = await ChatbotIAAccessControl.buildEnhancedUserContext(
+        user.id,
+        profile
+      );
+      setEnhancedUserContext(enhanced);
+    } else if (user) {
+      const enhanced = await ChatbotIAAccessControl.buildEnhancedUserContext(
+        user.id,
+        profile
+      );
+      setEnhancedUserContext(enhanced);
     }
   };
 
@@ -84,7 +103,12 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     suggested_links?: Array<{ label: string; page: string }>,
     navigationIntent?: NavigationIntent,
     showNavigationConfirmation?: boolean,
-    navigationAlternatives?: NavigationIntent[]
+    navigationAlternatives?: NavigationIntent[],
+    actionButtons?: Array<{
+      label: string;
+      action: string;
+      variant: 'primary' | 'secondary';
+    }>
   ) => {
     const botMessage: Message = {
       id: `bot-${Date.now()}`,
@@ -94,7 +118,8 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       suggested_links,
       navigationIntent,
       showNavigationConfirmation,
-      navigationAlternatives
+      navigationAlternatives,
+      actionButtons
     };
     setMessages(prev => [...prev, botMessage]);
   };
@@ -178,7 +203,35 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     }
   };
 
-  const handleNavigationConfirm = (intent: NavigationIntent) => {
+  const handleNavigationConfirm = async (intent: NavigationIntent) => {
+    const isIAService = ChatbotNavigationService.isIAServiceIntent(intent);
+
+    if (isIAService && enhancedUserContext) {
+      const serviceCode = ChatbotNavigationService.getIAServiceCode(intent);
+
+      if (serviceCode) {
+        const accessResult = await ChatbotIAAccessControl.checkIAAccess(
+          serviceCode as ServiceCode,
+          enhancedUserContext
+        );
+
+        if (!accessResult.allowed) {
+          const formattedMessage = ChatbotIAAccessControl.formatAccessMessage(accessResult);
+          const actionButtons = ChatbotIAAccessControl.getActionButtons(accessResult);
+
+          addBotMessage(
+            formattedMessage,
+            undefined,
+            undefined,
+            false,
+            undefined,
+            actionButtons.length > 0 ? actionButtons : undefined
+          );
+          return;
+        }
+      }
+    }
+
     if (onNavigate) {
       onNavigate(intent.route);
       addBotMessage(`✓ Je vous ai dirigé vers ${intent.displayName}.`);
