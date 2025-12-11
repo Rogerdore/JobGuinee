@@ -7,6 +7,7 @@ import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFi
 import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
 import ProfileCart from '../components/cvtheque/ProfileCart';
 import CandidateProfileModal from '../components/cvtheque/CandidateProfileModal';
+import CandidatePreviewModal from '../components/cvtheque/CandidatePreviewModal';
 import RecruiterAccessModal from '../components/cvtheque/RecruiterAccessModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 
@@ -31,6 +32,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const profilesPerPage = 12;
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [previewCandidate, setPreviewCandidate] = useState<any>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showRecruiterAccessModal, setShowRecruiterAccessModal] = useState(false);
 
   useEffect(() => {
@@ -303,27 +306,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         return;
       }
 
-      const preview = `👁️ APERÇU DU PROFIL
-
-📋 Poste: ${candidate.title || 'Professionnel qualifié'}
-📍 Région: ${candidate.location?.split(',')[0] || 'Confidentielle'}
-💼 Expérience: ${candidate.experience_years || 0} ans
-🎓 Niveau: ${candidate.education_level || 'N/A'}
-
-🔧 Compétences (aperçu):
-${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
-
-🔒 INFORMATIONS COMPLÈTES DISPONIBLES APRÈS ACHAT:
-• Nom complet et coordonnées
-• CV téléchargeable
-• Certifications
-• Portfolio / références
-• Historique complet
-
-💰 Prix: ${new Intl.NumberFormat('fr-GN').format(candidate.profile_price || 0)} GNF
-
-➡️ Ajoutez ce profil au panier pour déverrouiller toutes les informations!`;
-      alert(preview);
+      setPreviewCandidate(candidate);
+      setShowPreviewModal(true);
       return;
     }
 
@@ -649,6 +633,24 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
           </div>
         </div>
       </div>
+
+      {/* Modal de prévisualisation du profil */}
+      {previewCandidate && (
+        <CandidatePreviewModal
+          candidate={previewCandidate}
+          isOpen={showPreviewModal}
+          onClose={() => {
+            setShowPreviewModal(false);
+            setPreviewCandidate(null);
+          }}
+          onAddToCart={() => {
+            handleAddToCart(previewCandidate.id);
+            setShowPreviewModal(false);
+            setPreviewCandidate(null);
+          }}
+          isInCart={cartItems.some(item => item.candidate_id === previewCandidate.id)}
+        />
+      )}
 
       {/* Modal d'accès refusé */}
       <RecruiterAccessModal
