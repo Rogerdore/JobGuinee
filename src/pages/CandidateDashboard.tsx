@@ -1412,7 +1412,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   </div>
 
                   <button
-                    onClick={() => alert('Paiement: Orange Money • Validation rapide par WhatsApp')}
+                    onClick={() => onNavigate('premium-subscribe')}
                     className="w-full px-8 py-4 bg-gradient-to-r from-[#FF8C00] via-orange-500 to-red-500 hover:from-[#e67e00] hover:via-orange-600 hover:to-red-600 text-white font-semibold text-lg rounded-xl transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                   >
                     <Crown className="w-5 h-5" />
