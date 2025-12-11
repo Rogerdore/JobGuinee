@@ -46,6 +46,7 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [jobSearchParams, setJobSearchParams] = useState<string>('');
+  const [formationSearchParams, setFormationSearchParams] = useState<string>('');
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const { loading } = useAuth();
 
@@ -54,8 +55,11 @@ function AppContent() {
     if (page === 'job-detail' && param) {
       setSelectedJobId(param);
     }
-    if (page === 'jobs' && param) {
-      setJobSearchParams(param);
+    if (page === 'jobs') {
+      setJobSearchParams(param || '');
+    }
+    if (page === 'formations') {
+      setFormationSearchParams(param || '');
     }
     if ((page === 'credit-store' || page === 'premium-ai') && param) {
       setScrollTarget(param);
@@ -86,7 +90,7 @@ function AppContent() {
       {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}
       {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
       {currentPage === 'trainer-dashboard' && <TrainerDashboard onNavigate={handleNavigate} />}
-      {currentPage === 'formations' && <Formations onNavigate={handleNavigate} />}
+      {currentPage === 'formations' && <Formations onNavigate={handleNavigate} searchParams={formationSearchParams} />}
       {currentPage === 'blog' && <Blog onNavigate={handleNavigate} />}
       {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
       {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}

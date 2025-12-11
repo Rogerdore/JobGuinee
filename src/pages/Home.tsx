@@ -632,8 +632,7 @@ export default function Home({ onNavigate }: HomeProps) {
             {featuredFormations.slice(0, 3).map((formation: any) => (
               <div
                 key={formation.id}
-                className="neo-clay-card rounded-2xl transition overflow-hidden group cursor-pointer hover:shadow-2xl"
-                onClick={() => onNavigate('formations')}
+                className="neo-clay-card rounded-2xl transition overflow-hidden group hover:shadow-2xl"
               >
                 <div className="h-48 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
@@ -685,7 +684,11 @@ export default function Home({ onNavigate }: HomeProps) {
                         {formation.price.toLocaleString()} GNF
                       </div>
                       <button
-                        onClick={() => onNavigate('formations')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const params = new URLSearchParams({ formationId: formation.id });
+                          onNavigate('formations', params.toString());
+                        }}
                         className="px-4 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition group-hover:shadow-lg"
                       >
                         Voir détails

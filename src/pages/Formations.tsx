@@ -48,6 +48,7 @@ interface Formation {
 
 interface FormationsProps {
   onNavigate: (page: string) => void;
+  searchParams?: string;
 }
 
 const categories = [
@@ -90,7 +91,7 @@ const coachingServices = [
   },
 ];
 
-export default function Formations({ onNavigate }: FormationsProps) {
+export default function Formations({ onNavigate, searchParams }: FormationsProps) {
   const { user, profile } = useAuth();
   const [formations, setFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +117,20 @@ export default function Formations({ onNavigate }: FormationsProps) {
       loadTrainerProfile();
     }
   }, [user, profile]);
+
+  useEffect(() => {
+    if (searchParams && formations.length > 0) {
+      const params = new URLSearchParams(searchParams);
+      const formationId = params.get('formationId');
+      if (formationId) {
+        const formation = formations.find(f => f.id === formationId);
+        if (formation) {
+          setSelectedFormation(formation);
+          setShowDetailsModal(true);
+        }
+      }
+    }
+  }, [searchParams, formations]);
 
   const loadTrainerProfile = async () => {
     if (!user) return;
