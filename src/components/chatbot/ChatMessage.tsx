@@ -141,16 +141,24 @@ export default function ChatMessage({ message, style, onNavigate, onClose, onNav
             {message.actionButtons.map((button, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => {
-                  const [actionType, actionValue] = button.action.split(':');
-                  if (actionType === 'navigate' && onNavigate) {
-                    handleLinkClick(actionValue);
+                  const parts = button.action.split(':');
+                  const actionType = parts[0];
+                  const actionValue = parts[1];
+
+                  if (actionType === 'navigate') {
+                    if (onNavigate) {
+                      handleLinkClick(actionValue);
+                    } else {
+                      console.warn('onNavigate not provided to ChatMessage', { actionValue });
+                    }
                   }
                 }}
-                className={`flex-1 min-w-fit px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
                   button.variant === 'primary'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400'
                 }`}
               >
                 {button.label}
