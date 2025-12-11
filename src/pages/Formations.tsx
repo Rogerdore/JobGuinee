@@ -29,6 +29,7 @@ import FormationDetailsModal from '../components/formations/FormationDetailsModa
 import EnrollmentModal from '../components/formations/EnrollmentModal';
 import CoachingBookingModal from '../components/formations/CoachingBookingModal';
 import TrainerApplicationModal from '../components/formations/TrainerApplicationModal';
+import { handleTrainerNavigation } from '../utils/trainerNavigationHelper';
 import FormationPublishForm from '../components/forms/FormationPublishForm';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -259,26 +260,14 @@ export default function Formations({ onNavigate }: FormationsProps) {
             </div>
             <button
               onClick={() => {
-                // Seuls les utilisateurs connectés avec un compte formateur peuvent publier
-                if (!user) {
-                  alert('Vous devez être connecté pour publier une formation.');
-                  return;
-                }
-
-                if (profile?.user_type !== 'trainer') {
-                  alert('Seuls les formateurs peuvent publier des formations. Veuillez créer un profil formateur.');
-                  setShowTrainerModal(true);
-                  return;
-                }
-
-                if (!trainerProfile) {
-                  alert('Votre profil formateur est incomplet. Veuillez compléter votre profil.');
-                  setShowTrainerModal(true);
-                  return;
-                }
-
-                // Si tout est OK, ouvrir le formulaire
-                setShowFormationPublishForm(true);
+                handleTrainerNavigation({
+                  user,
+                  profile,
+                  trainerProfile,
+                  onNavigate,
+                  onShowModal: () => setShowTrainerModal(true),
+                  onShowPublishForm: () => setShowFormationPublishForm(true),
+                });
               }}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg hover:shadow-xl inline-flex items-center gap-2 whitespace-nowrap"
             >

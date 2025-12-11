@@ -217,6 +217,28 @@ export default function TrainerDashboard({ onNavigate }: TrainerDashboardProps) 
           <div className="p-6">
             {activeTab === 'overview' && (
               <div className="space-y-6">
+                {formations.length === 0 && (
+                  <div className="bg-gradient-to-r from-[#FF8C00] to-[#e67e00] rounded-2xl p-8 text-white mb-6">
+                    <div className="text-center">
+                      <GraduationCap className="w-16 h-16 mx-auto mb-4" />
+                      <h3 className="text-2xl font-bold mb-3">Publiez votre première formation</h3>
+                      <p className="text-white text-opacity-90 mb-6 max-w-2xl mx-auto">
+                        Partagez votre expertise avec des milliers de professionnels et développez votre activité de formation
+                      </p>
+                      <button
+                        onClick={() => {
+                          setSelectedFormationId(undefined);
+                          setShowFormationForm(true);
+                        }}
+                        className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-gray-50 text-[#FF8C00] font-semibold rounded-xl transition shadow-lg hover:shadow-xl"
+                      >
+                        <Plus className="w-5 h-5" />
+                        Créer ma première formation
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Activité Récente</h3>
                   {enrollments.length === 0 ? (
