@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
-  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check
+  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
 import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -15,6 +16,7 @@ interface HomeProps {
 
 export default function Home({ onNavigate }: HomeProps) {
   const { getSetting, getSection } = useCMS();
+  const { user, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [contractType, setContractType] = useState('');
@@ -22,6 +24,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [featuredFormations, setFeaturedFormations] = useState<Formation[]>([]);
   const [stats, setStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, candidates: 0, formations: 0 });
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -101,6 +104,16 @@ export default function Home({ onNavigate }: HomeProps) {
     if (location) params.set('location', location);
     if (contractType) params.set('contract', contractType);
     onNavigate('jobs', params.toString());
+  };
+
+  const handleCreateProfile = () => {
+    if (user && profile?.user_type === 'candidate') {
+      onNavigate('candidate-dashboard');
+    } else if (user) {
+      onNavigate('candidate-dashboard');
+    } else {
+      setShowLoginModal(true);
+    }
   };
 
   const categories = [
@@ -474,10 +487,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </ul>
 
               <button
-                onClick={() => onNavigate('signup')}
+                onClick={handleCreateProfile}
                 className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
               >
-                Créer mon profil gratuitement
+                {user && profile?.user_type === 'candidate' ? 'Accéder à mon espace' : 'Créer mon profil gratuitement'}
               </button>
             </div>
 
@@ -814,6 +827,77 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative">
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#FF8C00] to-[#e67e00] rounded-full flex items-center justify-center">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+              Créez votre compte candidat
+            </h3>
+
+            <p className="text-gray-600 mb-6 text-center">
+              Pour créer votre profil et accéder à toutes les fonctionnalités de JobGuinée,
+              vous devez d'abord créer un compte ou vous connecter.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Créez votre profil professionnel complet</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Déposez votre CV et postulez aux offres</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Recevez des offres personnalisées par IA</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">Suivez vos candidatures en temps réel</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  onNavigate('signup');
+                }}
+                className="w-full py-3 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg flex items-center justify-center space-x-2"
+              >
+                <Users className="w-5 h-5" />
+                <span>Créer mon compte gratuitement</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  onNavigate('login');
+                }}
+                className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl transition border-2 border-gray-300 flex items-center justify-center space-x-2"
+              >
+                <LogIn className="w-5 h-5" />
+                <span>J'ai déjà un compte</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
