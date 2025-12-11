@@ -53,6 +53,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         )
       `)
       .eq('visibility', 'public')
+      .order('is_gold', { ascending: false })
+      .order('is_verified', { ascending: false })
       .order('last_active_at', { ascending: false });
 
     let candidatesList = [];

@@ -1,4 +1,4 @@
-import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User, Languages } from 'lucide-react';
+import { ShoppingCart, MapPin, Briefcase, GraduationCap, CheckCircle, Eye, Circle, Hexagon, Star, User, Languages, Shield, Crown } from 'lucide-react';
 import { useState } from 'react';
 
 interface Candidate {
@@ -12,6 +12,9 @@ interface Candidate {
   location?: string;
   languages?: string[];
   is_verified?: boolean;
+  is_gold?: boolean;
+  gold_expiration?: string;
+  experience_level?: string;
   profile_price: number;
 }
 
@@ -81,19 +84,35 @@ export default function AnonymizedCandidateCard({
     return parts[0];
   };
 
+  const isGoldActive = () => {
+    if (!candidate.is_gold || !candidate.gold_expiration) return false;
+    return new Date(candidate.gold_expiration) > new Date();
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       {/* Photo en haut */}
       <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 py-4 flex items-center justify-center">
+        {/* Badges en haut à gauche */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {candidate.is_verified && (
+            <div className="bg-blue-600 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-lg">
+              <Shield className="w-3 h-3" />
+              <span>Vérifié</span>
+            </div>
+          )}
+          {isGoldActive() && (
+            <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-lg">
+              <Crown className="w-3 h-3" />
+              <span>GOLD</span>
+            </div>
+          )}
+        </div>
+
         <div className="relative">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center shadow-lg">
             <User className="w-8 h-8 text-white" strokeWidth={2} />
           </div>
-          {candidate.is_verified && (
-            <div className="absolute -bottom-0.5 -right-0.5 bg-blue-900 rounded-full p-0.5">
-              <CheckCircle className="w-3.5 h-3.5 text-white" />
-            </div>
-          )}
         </div>
       </div>
 
