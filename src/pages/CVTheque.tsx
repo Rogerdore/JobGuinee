@@ -7,6 +7,7 @@ import AdvancedFilters, { FilterValues } from '../components/cvtheque/AdvancedFi
 import AnonymizedCandidateCard from '../components/cvtheque/AnonymizedCandidateCard';
 import ProfileCart from '../components/cvtheque/ProfileCart';
 import CandidateProfileModal from '../components/cvtheque/CandidateProfileModal';
+import RecruiterAccessModal from '../components/cvtheque/RecruiterAccessModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 
 interface CVThequeProps {
@@ -30,6 +31,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const profilesPerPage = 12;
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showRecruiterAccessModal, setShowRecruiterAccessModal] = useState(false);
 
   useEffect(() => {
     loadCandidates();
@@ -277,14 +279,8 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const handleViewDetails = async (candidateId: string) => {
     console.log('👁️ Viewing details for:', candidateId);
 
-    if (!profile?.id) {
-      alert('❌ Accès refusé\n\nVous devez être connecté pour voir les détails des profils.\n\nVeuillez vous connecter avec un compte recruteur.');
-      onNavigate('login');
-      return;
-    }
-
-    if (profile.user_type !== 'recruiter') {
-      alert('❌ Accès refusé\n\nSeuls les recruteurs peuvent accéder aux détails des profils.\n\nVeuillez créer un compte recruteur pour accéder à la CVThèque.');
+    if (!profile?.id || profile.user_type !== 'recruiter') {
+      setShowRecruiterAccessModal(true);
       return;
     }
 
@@ -641,6 +637,16 @@ ${candidate.skills?.slice(0, 3).map(s => `• ${s}`).join('\n') || 'N/A'}
           </div>
         </div>
       </div>
+
+      {/* Modal d'accès refusé */}
+      <RecruiterAccessModal
+        isOpen={showRecruiterAccessModal}
+        onClose={() => setShowRecruiterAccessModal(false)}
+        onRedirect={() => {
+          setShowRecruiterAccessModal(false);
+          onNavigate('login');
+        }}
+      />
     </div>
   );
 }
