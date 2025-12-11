@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
-  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn
+  Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn,
+  Mountain, Smartphone, Ship, Drill, Factory, Gem
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -155,35 +156,51 @@ export default function Home({ onNavigate }: HomeProps) {
   const partners = [
     {
       name: 'SMB-Winning',
-      logo: 'https://ui-avatars.com/api/?name=SMB&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Mountain,
+      gradient: 'from-amber-500 to-amber-700',
+      bgColor: 'bg-amber-50',
     },
     {
       name: 'Orange Guinée',
-      logo: 'https://ui-avatars.com/api/?name=Orange&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Smartphone,
+      gradient: 'from-orange-500 to-orange-600',
+      bgColor: 'bg-orange-50',
     },
     {
       name: 'Bolloré',
-      logo: 'https://ui-avatars.com/api/?name=Bollore&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Ship,
+      gradient: 'from-blue-600 to-blue-800',
+      bgColor: 'bg-blue-50',
     },
     {
       name: 'WCS Mining',
-      logo: 'https://ui-avatars.com/api/?name=WCS&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Drill,
+      gradient: 'from-slate-600 to-slate-800',
+      bgColor: 'bg-slate-50',
     },
     {
       name: 'UMS',
-      logo: 'https://ui-avatars.com/api/?name=UMS&background=3B82F6&color=fff&size=120&bold=true',
+      icon: GraduationCap,
+      gradient: 'from-purple-500 to-purple-700',
+      bgColor: 'bg-purple-50',
     },
     {
       name: 'CBG',
-      logo: 'https://ui-avatars.com/api/?name=CBG&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Factory,
+      gradient: 'from-red-600 to-red-800',
+      bgColor: 'bg-red-50',
     },
     {
       name: 'Rio Tinto',
-      logo: 'https://ui-avatars.com/api/?name=Rio+Tinto&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Gem,
+      gradient: 'from-rose-600 to-rose-800',
+      bgColor: 'bg-rose-50',
     },
     {
       name: 'Total Energies',
-      logo: 'https://ui-avatars.com/api/?name=Total&background=3B82F6&color=fff&size=120&bold=true',
+      icon: Zap,
+      gradient: 'from-yellow-500 to-red-600',
+      bgColor: 'bg-yellow-50',
     },
   ];
 
@@ -689,38 +706,39 @@ export default function Home({ onNavigate }: HomeProps) {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {partners.map((partner, index) => (
-                <div
-                  key={partner.name}
-                  className="group relative bg-gradient-to-br from-blue-100/60 to-blue-200/60 backdrop-blur-xl rounded-xl border-2 border-blue-300/40 p-4 hover:scale-105 transition-all duration-300 hover:shadow-blue-400/30 hover:shadow-2xl cursor-pointer overflow-hidden"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {partners.map((partner, index) => {
+                const Icon = partner.icon;
+                return (
+                  <div
+                    key={partner.name}
+                    className="group relative bg-white backdrop-blur-xl rounded-xl border-2 border-gray-200 p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl cursor-pointer overflow-hidden"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-13 h-13 mb-3 rounded-lg overflow-hidden shadow-lg ring-2 ring-blue-300/30 group-hover:ring-blue-400/50 transition-all duration-300 group-hover:scale-110">
-                      <img
-                        src={partner.logo}
-                        alt={partner.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className={`w-20 h-20 mb-4 rounded-xl ${partner.bgColor} flex items-center justify-center shadow-lg ring-2 ring-gray-200 group-hover:ring-4 transition-all duration-300 group-hover:scale-110`}>
+                        <div className={`bg-gradient-to-br ${partner.gradient} rounded-lg p-3`}>
+                          <Icon className="w-10 h-10 text-white" />
+                        </div>
+                      </div>
 
-                    <h4 className="text-center font-bold text-gray-900 text-xs group-hover:text-blue-700 transition-colors">
-                      {partner.name}
-                    </h4>
+                      <h4 className="text-center font-bold text-gray-900 text-sm group-hover:text-blue-700 transition-colors">
+                        {partner.name}
+                      </h4>
 
-                    <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="flex items-center space-x-1">
-                        <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
-                        <span className="text-[10px] text-gray-600 font-medium">Partenaire actif</span>
+                      <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="flex items-center space-x-1">
+                          <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
+                          <span className="text-[10px] text-gray-600 font-medium">Partenaire actif</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-300/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                </div>
-              ))}
+                    <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-300/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-12 text-center">
