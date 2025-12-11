@@ -91,7 +91,7 @@ export default function AnonymizedCandidateCard({
     return new Date(candidate.gold_expiration) > new Date();
   };
 
-  const shouldShowPrice = viewerUserType !== 'candidate' && !isPurchased;
+  const shouldShowPrice = viewerUserType === 'recruiter' && !isPurchased;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
