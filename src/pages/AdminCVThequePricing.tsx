@@ -171,7 +171,7 @@ export default function AdminCVThequePricing({ onNavigate }: AdminCVThequePricin
                     <div>
                       <div className="text-sm text-gray-600">Prix</div>
                       <div className="text-lg font-bold text-gray-900">
-                        {(pack.price_gnf / 1000000).toFixed(1)}M GNF
+                        {cvthequePricingService.formatPrice(pack.price_gnf)}
                       </div>
                     </div>
                     <div>
