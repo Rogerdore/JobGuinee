@@ -31,6 +31,8 @@ import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
 import PurchasedProfiles from './PurchasedProfiles';
 import RecentJobsCard from '../components/recruiter/RecentJobsCard';
 import RecentApplicationsCard from '../components/recruiter/RecentApplicationsCard';
+import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
+import ExportModal from '../components/recruiter/ExportModal';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 import { recruiterDashboardService, DashboardMetrics, RecentJob, RecentApplication } from '../services/recruiterDashboardService';
 
@@ -96,6 +98,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([]);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -788,7 +793,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                   </div>
 
                   <button
-                    onClick={() => alert('Fonctionnalité d\'export disponible prochainement')}
+                    onClick={() => setShowExportModal(true)}
                     className="px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-700 font-medium rounded-xl transition flex items-center gap-2 shadow-sm"
                   >
                     <Download className="w-5 h-5" />
@@ -834,7 +839,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     color: stage.stage_color,
                   }))}
                   onMoveApplication={handleMoveApplication}
-                  onViewProfile={(id) => console.log('View profile', id)}
+                  onViewProfile={(id) => {
+                    setSelectedApplicationId(id);
+                    setShowProfileModal(true);
+                  }}
                   onMessage={(id) => console.log('Message', id)}
                 />
               ) : (
@@ -864,7 +872,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         },
                       }}
                       onMessage={(appId) => console.log('Message', appId)}
-                      onViewProfile={(appId) => console.log('View profile', appId)}
+                      onViewProfile={(appId) => {
+                        setSelectedApplicationId(appId);
+                        setShowProfileModal(true);
+                      }}
                     />
                   ))}
                 </div>
@@ -997,6 +1008,25 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           {activeTab === 'purchased-profiles' && <PurchasedProfiles profile={profile} />}
         </div>
       </div>
+
+      {showProfileModal && selectedApplicationId && (
+        <CandidateProfileModal
+          applicationId={selectedApplicationId}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedApplicationId(null);
+          }}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportModal
+          jobs={jobs}
+          selectedJobId={selectedJobFilter}
+          companyId={company?.id}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </div>
   );
 }
