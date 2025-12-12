@@ -181,18 +181,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           .from('applications')
           .select(`
             *,
-            candidate:profiles!applications_candidate_id_fkey(
+            profiles!applications_candidate_id_fkey(
               id,
               full_name,
               email,
               phone,
-              avatar_url
-            ),
-            candidate_profile:candidate_profiles!candidate_profiles_profile_id_fkey(
-              title,
-              experience_years,
-              education_level,
-              skills
+              avatar_url,
+              candidate_profiles!candidate_profiles_profile_id_fkey(
+                title,
+                experience_years,
+                education_level,
+                skills
+              )
             )
           `)
           .in('job_id', jobIds)
@@ -202,12 +202,25 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           console.error('Error loading applications:', appsError);
         }
 
-        const normalizedApps = (appsData || []).map(app => ({
-          ...app,
-          candidate_profile: Array.isArray(app.candidate_profile)
-            ? app.candidate_profile[0]
-            : app.candidate_profile
-        }));
+        const normalizedApps = (appsData || []).map(app => {
+          const profile = Array.isArray(app.profiles) ? app.profiles[0] : app.profiles;
+          const candidateProfile = profile?.candidate_profiles;
+          const normalizedCandidateProfile = Array.isArray(candidateProfile)
+            ? candidateProfile[0]
+            : candidateProfile;
+
+          return {
+            ...app,
+            candidate: profile ? {
+              id: profile.id,
+              full_name: profile.full_name,
+              email: profile.email,
+              phone: profile.phone,
+              avatar_url: profile.avatar_url
+            } : null,
+            candidate_profile: normalizedCandidateProfile
+          };
+        });
 
         setApplications(normalizedApps);
       } else {
