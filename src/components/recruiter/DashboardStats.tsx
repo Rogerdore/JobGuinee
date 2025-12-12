@@ -6,6 +6,8 @@ interface DashboardStatsProps {
     activeJobs: number;
     totalApplications: number;
     avgTimeToHire: number;
+    avgMatchingScore?: number;
+    thisWeekApplications?: number;
   };
 }
 
@@ -33,7 +35,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
     {
       icon: TrendingUp,
       label: 'Taux de matching',
-      value: '78%',
+      value: stats.avgMatchingScore ? `${stats.avgMatchingScore}%` : 'N/A',
       color: 'bg-teal-50 text-teal-900',
     },
   ];
