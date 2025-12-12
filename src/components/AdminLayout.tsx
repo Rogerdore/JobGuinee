@@ -116,6 +116,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               </button>
 
               <button
+                onClick={() => onNavigate('admin-credit-packages')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <DollarSign className="w-4 h-4" />
+                <span>Packs de Crédits</span>
+              </button>
+
+              <button
                 onClick={() => onNavigate('home')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
               >
