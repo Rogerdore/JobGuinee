@@ -42,8 +42,51 @@ export const recruiterDashboardService = {
       });
 
       if (error) {
-        console.error('Error fetching dashboard metrics:', error);
-        return null;
+        console.warn('RPC function not available, using fallback query for metrics:', error);
+
+        const { data: jobsData } = await supabase
+          .from('jobs')
+          .select('id, status')
+          .eq('company_id', companyId);
+
+        const { count: totalApplications } = await supabase
+          .from('applications')
+          .select('*', { count: 'exact', head: true })
+          .in('job_id', (jobsData || []).map(j => j.id));
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { count: weekApplications } = await supabase
+          .from('applications')
+          .select('*', { count: 'exact', head: true })
+          .in('job_id', (jobsData || []).map(j => j.id))
+          .gte('applied_at', sevenDaysAgo.toISOString());
+
+        const { data: matchingData } = await supabase
+          .from('ai_matching_results')
+          .select('ai_match_score')
+          .in('application_id',
+            await supabase
+              .from('applications')
+              .select('id')
+              .in('job_id', (jobsData || []).map(j => j.id))
+              .then(res => (res.data || []).map(a => a.id))
+          );
+
+        const avgScore = matchingData && matchingData.length > 0
+          ? matchingData.reduce((sum, m) => sum + (m.ai_match_score || 0), 0) / matchingData.length
+          : 0;
+
+        return {
+          total_jobs: jobsData?.length || 0,
+          active_jobs: jobsData?.filter(j => j.status === 'published').length || 0,
+          total_applications: totalApplications || 0,
+          avg_time_to_hire_days: 0,
+          avg_matching_score: Math.round(avgScore),
+          this_week_applications: weekApplications || 0,
+          scheduled_interviews: 0
+        };
       }
 
       return data as DashboardMetrics;
@@ -61,8 +104,43 @@ export const recruiterDashboardService = {
       });
 
       if (error) {
-        console.error('Error fetching recent jobs:', error);
-        return [];
+        console.warn('RPC function not available, using fallback query:', error);
+
+        const { data: jobsData, error: jobsError } = await supabase
+          .from('jobs')
+          .select(`
+            id,
+            title,
+            location,
+            status,
+            views_count,
+            created_at,
+            expires_at
+          `)
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (jobsError) {
+          console.error('Error fetching jobs with fallback:', jobsError);
+          return [];
+        }
+
+        const jobsWithCounts = await Promise.all(
+          (jobsData || []).map(async (job) => {
+            const { count } = await supabase
+              .from('applications')
+              .select('*', { count: 'exact', head: true })
+              .eq('job_id', job.id);
+
+            return {
+              ...job,
+              applications_count: count || 0
+            };
+          })
+        );
+
+        return jobsWithCounts;
       }
 
       return (data || []) as RecentJob[];
@@ -80,8 +158,78 @@ export const recruiterDashboardService = {
       });
 
       if (error) {
-        console.error('Error fetching recent applications:', error);
-        return [];
+        console.warn('RPC function not available, using fallback query:', error);
+
+        const { data: jobsData } = await supabase
+          .from('jobs')
+          .select('id')
+          .eq('company_id', companyId);
+
+        if (!jobsData || jobsData.length === 0) {
+          return [];
+        }
+
+        const jobIds = jobsData.map(j => j.id);
+
+        const { data: applicationsData, error: appsError } = await supabase
+          .from('applications')
+          .select(`
+            id,
+            candidate_id,
+            job_id,
+            workflow_stage,
+            applied_at,
+            candidate:candidate_profiles!applications_candidate_id_fkey(
+              id,
+              experience_years,
+              profile:profiles!candidate_profiles_profile_id_fkey(
+                full_name,
+                email
+              )
+            ),
+            job:jobs!applications_job_id_fkey(
+              title
+            )
+          `)
+          .in('job_id', jobIds)
+          .order('applied_at', { ascending: false })
+          .limit(limit);
+
+        if (appsError) {
+          console.error('Error fetching applications with fallback:', appsError);
+          return [];
+        }
+
+        const applicationsWithScores = await Promise.all(
+          (applicationsData || []).map(async (app: any) => {
+            const { data: matchData } = await supabase
+              .from('ai_matching_results')
+              .select('ai_match_score')
+              .eq('application_id', app.id)
+              .maybeSingle();
+
+            const experienceYears = app.candidate?.experience_years || 0;
+            const experienceLevel = experienceYears >= 5 ? 'Senior' :
+                                    experienceYears >= 2 ? 'Intermédiaire' : 'Junior';
+
+            const aiScore = matchData?.ai_match_score || 0;
+
+            return {
+              application_id: app.id,
+              candidate_name: app.candidate?.profile?.full_name || 'Candidat',
+              candidate_email: app.candidate?.profile?.email || '',
+              job_title: app.job?.title || 'Poste',
+              experience_level: experienceLevel,
+              ai_match_score: aiScore,
+              is_strong_profile: aiScore >= 80,
+              workflow_stage: app.workflow_stage || 'Candidature reçue',
+              applied_at: app.applied_at,
+              candidate_id: app.candidate_id
+            };
+          })
+        );
+
+        return applicationsWithScores;
       }
 
       return (data || []) as RecentApplication[];
