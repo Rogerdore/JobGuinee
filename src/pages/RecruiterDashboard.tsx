@@ -135,11 +135,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   useEffect(() => {
     if (profile && !loading && profile.user_type === 'recruiter') {
-      if (!profile.profile_completed && activeTab !== 'profile') {
+      if (!company && activeTab !== 'profile') {
         setActiveTab('profile');
       }
     }
-  }, [profile, loading]);
+  }, [profile, loading, company]);
 
   const loadData = async () => {
     if (!profile?.id) return;
