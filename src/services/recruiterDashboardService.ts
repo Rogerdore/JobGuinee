@@ -42,17 +42,21 @@ export const recruiterDashboardService = {
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback query for metrics:', error);
+        console.warn('RPC function not available, using fallback query for metrics:', error.message);
 
         const { data: jobsData } = await supabase
           .from('jobs')
           .select('id, status')
           .eq('company_id', companyId);
 
+        console.log(`✓ Fallback loaded ${jobsData?.length || 0} jobs for metrics (${jobsData?.filter(j => j.status === 'published').length || 0} active)`);
+
+        const jobIds = (jobsData || []).map(j => j.id);
+
         const { count: totalApplications } = await supabase
           .from('applications')
           .select('*', { count: 'exact', head: true })
-          .in('job_id', (jobsData || []).map(j => j.id));
+          .in('job_id', jobIds.length > 0 ? jobIds : ['00000000-0000-0000-0000-000000000000']);
 
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -60,7 +64,7 @@ export const recruiterDashboardService = {
         const { count: weekApplications } = await supabase
           .from('applications')
           .select('*', { count: 'exact', head: true })
-          .in('job_id', (jobsData || []).map(j => j.id))
+          .in('job_id', jobIds.length > 0 ? jobIds : ['00000000-0000-0000-0000-000000000000'])
           .gte('applied_at', sevenDaysAgo.toISOString());
 
         const { data: matchingData } = await supabase
@@ -70,7 +74,7 @@ export const recruiterDashboardService = {
             await supabase
               .from('applications')
               .select('id')
-              .in('job_id', (jobsData || []).map(j => j.id))
+              .in('job_id', jobIds.length > 0 ? jobIds : ['00000000-0000-0000-0000-000000000000'])
               .then(res => (res.data || []).map(a => a.id))
           );
 
@@ -78,7 +82,7 @@ export const recruiterDashboardService = {
           ? matchingData.reduce((sum, m) => sum + (m.ai_match_score || 0), 0) / matchingData.length
           : 0;
 
-        return {
+        const metrics = {
           total_jobs: jobsData?.length || 0,
           active_jobs: jobsData?.filter(j => j.status === 'published').length || 0,
           total_applications: totalApplications || 0,
@@ -87,8 +91,13 @@ export const recruiterDashboardService = {
           this_week_applications: weekApplications || 0,
           scheduled_interviews: 0
         };
+
+        console.log('✓ Fallback metrics calculated:', metrics);
+
+        return metrics;
       }
 
+      console.log('✓ RPC metrics loaded:', data);
       return data as DashboardMetrics;
     } catch (error) {
       console.error('Error in getMetrics:', error);
@@ -104,7 +113,7 @@ export const recruiterDashboardService = {
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback query:', error);
+        console.warn('RPC function not available, using fallback query for recent jobs:', error.message);
 
         const { data: jobsData, error: jobsError } = await supabase
           .from('jobs')
@@ -126,6 +135,8 @@ export const recruiterDashboardService = {
           return [];
         }
 
+        console.log(`✓ Fallback loaded ${jobsData?.length || 0} jobs for company ${companyId}`);
+
         const jobsWithCounts = await Promise.all(
           (jobsData || []).map(async (job) => {
             const { count } = await supabase
@@ -143,6 +154,7 @@ export const recruiterDashboardService = {
         return jobsWithCounts;
       }
 
+      console.log(`✓ RPC loaded ${data?.length || 0} recent jobs`);
       return (data || []) as RecentJob[];
     } catch (error) {
       console.error('Error in getRecentJobs:', error);
@@ -158,7 +170,7 @@ export const recruiterDashboardService = {
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback query:', error);
+        console.warn('RPC function not available, using fallback query for recent applications:', error.message);
 
         const { data: jobsData } = await supabase
           .from('jobs')
@@ -166,6 +178,7 @@ export const recruiterDashboardService = {
           .eq('company_id', companyId);
 
         if (!jobsData || jobsData.length === 0) {
+          console.log('✓ No jobs found for company, returning empty applications');
           return [];
         }
 
@@ -200,6 +213,8 @@ export const recruiterDashboardService = {
           return [];
         }
 
+        console.log(`✓ Fallback loaded ${applicationsData?.length || 0} applications`);
+
         const applicationsWithScores = await Promise.all(
           (applicationsData || []).map(async (app: any) => {
             const { data: matchData } = await supabase
@@ -232,6 +247,7 @@ export const recruiterDashboardService = {
         return applicationsWithScores;
       }
 
+      console.log(`✓ RPC loaded ${data?.length || 0} recent applications`);
       return (data || []) as RecentApplication[];
     } catch (error) {
       console.error('Error in getRecentApplications:', error);
