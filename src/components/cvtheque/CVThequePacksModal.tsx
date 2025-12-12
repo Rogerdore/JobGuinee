@@ -356,6 +356,69 @@ export default function CVThequePacksModal({
               </div>
             </div>
 
+            {settings && (
+              <div className="bg-white border-2 border-orange-300 rounded-xl p-5 mb-6">
+                <h4 className="font-bold text-gray-900 mb-4 text-lg">Coordonnées de Paiement</h4>
+
+                <div className="space-y-4">
+                  {/* Numéro Orange Money */}
+                  <div>
+                    <div className="text-sm font-medium text-gray-600 mb-2">
+                      Numéro Orange Money
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-orange-50 border-2 border-orange-300 rounded-lg px-4 py-3">
+                        <div className="text-2xl font-bold text-orange-600 font-mono">
+                          {settings.admin_phone_number}
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleCopyNumber}
+                        className="px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition flex items-center gap-2"
+                        title="Copier le numéro"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-5 h-5" />
+                            <span className="hidden sm:inline">Copié</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-5 h-5" />
+                            <span className="hidden sm:inline">Copier</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Numéro WhatsApp */}
+                  <div>
+                    <div className="text-sm font-medium text-gray-600 mb-2">
+                      Support WhatsApp
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-green-50 border-2 border-green-300 rounded-lg px-4 py-3">
+                        <div className="text-2xl font-bold text-green-600 font-mono">
+                          {settings.admin_whatsapp_number}
+                        </div>
+                      </div>
+                      <a
+                        href={`https://wa.me/${settings.admin_whatsapp_number.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center gap-2"
+                        title="Ouvrir WhatsApp"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="hidden sm:inline">Contacter</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button
                 onClick={handleBack}

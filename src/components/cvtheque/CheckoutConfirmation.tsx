@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShoppingCart, AlertTriangle, CreditCard, Package, History, X, Clock, Copy, Check, AlertCircle, MessageCircle } from 'lucide-react';
 import { CartHistoryItem } from '../../services/cartHistoryService';
+import { CreditStoreService, CreditStoreSettings } from '../../services/creditStoreService';
 
 interface CheckoutConfirmationProps {
   cartItems: CartHistoryItem[];
@@ -21,6 +22,20 @@ export default function CheckoutConfirmation({
 }: CheckoutConfirmationProps) {
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const data = await CreditStoreService.getSettings();
+      setSettings(data);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   // Calculer les statistiques du panier
   const stats = {
@@ -45,9 +60,11 @@ export default function CheckoutConfirmation({
   };
 
   const handleCopyNumber = () => {
-    navigator.clipboard.writeText('620000000');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (settings) {
+      navigator.clipboard.writeText(settings.admin_phone_number.replace(/\D/g, ''));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleConfirmPayment = () => {
@@ -91,7 +108,7 @@ export default function CheckoutConfirmation({
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg px-4 py-3 font-mono text-lg font-bold text-orange-900">
-                      +224 620 00 00 00
+                      {settings?.admin_phone_number || '+224 620 00 00 00'}
                     </div>
                     <button
                       onClick={handleCopyNumber}
@@ -100,6 +117,26 @@ export default function CheckoutConfirmation({
                     >
                       {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                     </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-orange-800 mb-2">
+                    Support WhatsApp
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-white border-2 border-green-300 rounded-lg px-4 py-3 font-mono text-lg font-bold text-green-700">
+                      {settings?.admin_whatsapp_number || '+224 620 00 00 00'}
+                    </div>
+                    <a
+                      href={`https://wa.me/${settings?.admin_whatsapp_number.replace(/\D/g, '') || '224620000000'}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                      title="Contacter sur WhatsApp"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                    </a>
                   </div>
                 </div>
 
@@ -160,7 +197,7 @@ export default function CheckoutConfirmation({
             {/* Contact WhatsApp */}
             <div className="text-center">
               <a
-                href={`https://wa.me/224620000000?text=${encodeURIComponent(`Bonjour, j'ai effectué le paiement pour la référence ${paymentReference}`)}`}
+                href={`https://wa.me/${settings?.admin_whatsapp_number.replace(/\D/g, '') || '224620000000'}?text=${encodeURIComponent(`Bonjour, j'ai effectué le paiement pour la référence ${paymentReference}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"
@@ -384,7 +421,7 @@ export default function CheckoutConfirmation({
             <div className="text-right">
               <div className="text-sm text-gray-600">Besoin d'aide ?</div>
               <a
-                href="https://wa.me/224620000000"
+                href={`https://wa.me/${settings?.admin_whatsapp_number.replace(/\D/g, '') || '224620000000'}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-green-600 hover:text-green-700 font-medium text-sm"
