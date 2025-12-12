@@ -179,26 +179,24 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         setJobs(jobsData);
 
         const jobIds = jobsData.map(j => j.id);
-        const { data: appsData } = await supabase
+        const { data: appsData, error: appsError } = await supabase
           .from('applications')
           .select(`
             *,
-            candidate:candidate_profiles!applications_candidate_id_fkey(
+            candidate:profiles!applications_candidate_id_fkey(
               id,
-              title,
-              experience_years,
-              education_level,
-              skills,
-              profile:profiles!candidate_profiles_profile_id_fkey(
-                full_name,
-                email,
-                phone,
-                avatar_url
-              )
+              full_name,
+              email,
+              phone,
+              avatar_url
             )
           `)
           .in('job_id', jobIds)
           .order('applied_at', { ascending: false });
+
+        if (appsError) {
+          console.error('Error loading applications:', appsError);
+        }
 
         if (appsData && appsData.length > 0) {
           console.log('✅ Loaded applications from DB:', appsData.length);
