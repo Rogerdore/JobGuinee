@@ -1,4 +1,4 @@
-import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown, Coins, Package, Users as UsersIcon, Target, ShoppingCart } from 'lucide-react';
+import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown, Coins, Package, Users as UsersIcon, Target, ShoppingCart, GitBranch } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
@@ -8,6 +8,8 @@ import CreditBalance from '../credits/CreditBalance';
 import { RecruiterAIMatchingService } from '../../services/recruiterAIMatchingService';
 import { RecruiterMatchingPricingService, CostEstimate } from '../../services/recruiterMatchingPricingService';
 import { useAuth } from '../../contexts/AuthContext';
+import MatchingInjectionModal from './MatchingInjectionModal';
+import { MatchingResultForInjection } from '../../services/pipelineInjectionService';
 
 interface AIMatchingModalProps {
   job: {
@@ -59,6 +61,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
+  const [showInjectionModal, setShowInjectionModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
@@ -846,12 +849,30 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
 
         {!analyzing && (
           <div className="border-t-2 border-gray-200 p-6 bg-gray-50">
-            <button
-              onClick={onClose}
-              className="w-full py-4 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-blue-700 hover:to-[#0E2F56] text-white font-bold text-lg rounded-xl transition shadow-lg"
-            >
-              {showResults ? 'Fermer et appliquer les scores' : 'Annuler'}
-            </button>
+            {showResults ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-lg rounded-xl transition"
+                >
+                  Fermer sans injection
+                </button>
+                <button
+                  onClick={() => setShowInjectionModal(true)}
+                  className="flex-1 py-4 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-blue-700 hover:to-[#0E2F56] text-white font-bold text-lg rounded-xl transition shadow-lg flex items-center justify-center gap-2"
+                >
+                  <GitBranch className="w-5 h-5" />
+                  Injecter dans le pipeline
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onClose}
+                className="w-full py-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-lg rounded-xl transition"
+              >
+                Annuler
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -866,6 +887,23 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
         description={`Analysez ${selectedCandidates.size} candidature${selectedCandidates.size > 1 ? 's' : ''} avec le moteur IA de matching : scoring détaillé, analyse des compétences, recommandations personnalisées`}
         inputPayload={{ jobId: job.id, jobTitle: job.title, candidatesCount: selectedCandidates.size }}
       />
+
+      {showInjectionModal && (
+        <MatchingInjectionModal
+          results={results.map(r => ({
+            applicationId: r.applicationId,
+            candidateName: r.candidateName,
+            score: r.newScore,
+            category: r.category as 'strong' | 'medium' | 'weak',
+            summary: r.recommendations[0] || ''
+          }))}
+          onClose={() => setShowInjectionModal(false)}
+          onConfirm={() => {
+            setShowInjectionModal(false);
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }
