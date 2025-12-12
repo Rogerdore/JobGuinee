@@ -104,6 +104,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [showExportModal, setShowExportModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -153,6 +154,28 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     if (companyData) {
       setCompany(companyData);
+
+      const { data: subscriptionData } = await supabase
+        .from('enterprise_subscriptions')
+        .select('*')
+        .eq('company_id', companyData.id)
+        .eq('status', 'active')
+        .gte('end_date', new Date().toISOString())
+        .maybeSingle();
+
+      if (subscriptionData) {
+        setSubscription(subscriptionData);
+      } else {
+        const { data: premiumData } = await supabase
+          .from('premium_subscriptions')
+          .select('*')
+          .eq('user_id', profile.id)
+          .eq('subscription_status', 'active')
+          .gte('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        setSubscription(premiumData);
+      }
 
       const { data: stagesData } = await supabase
         .from('workflow_stages')
@@ -326,7 +349,21 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     setShowMatchingModal(true);
   };
 
-  const isPremium = Boolean(company?.subscription_tier === 'premium' || company?.subscription_tier === 'enterprise');
+  const isPremium = Boolean(
+    subscription &&
+    (
+      (subscription.status === 'active' && new Date(subscription.end_date) > new Date()) ||
+      (subscription.subscription_status === 'active' && new Date(subscription.expires_at) > new Date())
+    ) &&
+    (
+      !subscription.max_monthly_matching ||
+      (subscription.matching_consumed || 0) < subscription.max_monthly_matching
+    ) &&
+    (
+      !subscription.daily_matching_limit ||
+      (subscription.matching_consumed_today || 0) < subscription.daily_matching_limit
+    )
+  );
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
