@@ -205,7 +205,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         }
 
         console.log('✅ Loaded applications from DB:', appsData?.length || 0);
-        setApplications(appsData || []);
+        console.log('📊 Sample application data:', appsData?.[0]);
+
+        const normalizedApps = (appsData || []).map(app => ({
+          ...app,
+          candidate_profile: Array.isArray(app.candidate_profile)
+            ? app.candidate_profile[0]
+            : app.candidate_profile
+        }));
+
+        console.log('✅ Normalized applications:', normalizedApps.length);
+        setApplications(normalizedApps);
       } else {
         console.log('ℹ️ No jobs found');
         setJobs([]);
@@ -825,16 +835,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     workflow_stage: app.workflow_stage || 'received',
                     applied_at: app.applied_at,
                     candidate: {
-                      full_name: app.candidate?.profile?.full_name || 'Candidat',
-                      email: app.candidate?.profile?.email || '',
-                      phone: app.candidate?.profile?.phone,
-                      avatar_url: app.candidate?.profile?.avatar_url,
+                      full_name: app.candidate?.full_name || 'Candidat',
+                      email: app.candidate?.email || '',
+                      phone: app.candidate?.phone,
+                      avatar_url: app.candidate?.avatar_url,
                     },
                     candidate_profile: {
-                      title: app.candidate?.title,
-                      experience_years: app.candidate?.experience_years,
-                      education_level: app.candidate?.education_level,
-                      skills: app.candidate?.skills,
+                      title: app.candidate_profile?.title,
+                      experience_years: app.candidate_profile?.experience_years,
+                      education_level: app.candidate_profile?.education_level,
+                      skills: app.candidate_profile?.skills,
                     },
                   }))}
                   stages={workflowStages.map(stage => ({
@@ -866,16 +876,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         cover_letter: app.cover_letter,
                         cv_url: app.cv_url,
                         candidate: {
-                          full_name: app.candidate?.profile?.full_name || 'Candidat',
-                          email: app.candidate?.profile?.email || '',
-                          phone: app.candidate?.profile?.phone,
-                          avatar_url: app.candidate?.profile?.avatar_url,
+                          full_name: app.candidate?.full_name || 'Candidat',
+                          email: app.candidate?.email || '',
+                          phone: app.candidate?.phone,
+                          avatar_url: app.candidate?.avatar_url,
                         },
                         candidate_profile: {
-                          title: app.candidate?.title,
-                          experience_years: app.candidate?.experience_years,
-                          education_level: app.candidate?.education_level,
-                          skills: app.candidate?.skills,
+                          title: app.candidate_profile?.title,
+                          experience_years: app.candidate_profile?.experience_years,
+                          education_level: app.candidate_profile?.education_level,
+                          skills: app.candidate_profile?.skills,
                         },
                       }}
                       onMessage={(appId) => {
