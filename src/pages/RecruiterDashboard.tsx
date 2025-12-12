@@ -358,9 +358,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     avgMatchingScore: dashboardMetrics.avg_matching_score,
     thisWeekApplications: dashboardMetrics.this_week_applications,
   } : {
-    totalJobs: jobs.length,
-    activeJobs: jobs.filter(j => j.status === 'published').length,
-    totalApplications: applications.length,
+    totalJobs: company ? jobs.length : 0,
+    activeJobs: company ? jobs.filter(j => j.status === 'published').length : 0,
+    totalApplications: company ? applications.length : 0,
     avgTimeToHire: 0,
     avgMatchingScore: 0,
   };
