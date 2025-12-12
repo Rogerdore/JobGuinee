@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -105,6 +105,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span>Achats Profils</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-credit-store-settings')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-orange-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>Orange Money</span>
               </button>
 
               <button
