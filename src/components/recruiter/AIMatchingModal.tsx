@@ -5,6 +5,8 @@ import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';
 import CreditConfirmModal from '../credits/CreditConfirmModal';
 import CreditBalance from '../credits/CreditBalance';
+import { RecruiterAIMatchingService } from '../../services/recruiterAIMatchingService';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AIMatchingModalProps {
   job: {
@@ -56,8 +58,10 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { consumeCredits } = useConsumeCredits();
-  const costPerCandidate = useServiceCost(SERVICES.AI_JOB_MATCHING) || 30;
+  const { user } = useAuth();
+  const costPerCandidate = useServiceCost('ai_recruiter_matching') || 10;
 
   console.log('AIMatchingModal - isPremium:', isPremium);
   console.log('AIMatchingModal - applications count:', applications.length);
@@ -204,7 +208,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     await startAnalysis();
   };
 
-  const startAnalysis = () => {
+  const startAnalysis = async () => {
     console.log('startAnalysis called');
     console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
 
@@ -213,6 +217,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     setResults([]);
     setCurrentIndex(0);
     setShowResults(false);
+    setError(null);
 
     const selectedApps = applications.filter(app => selectedCandidates.has(app.id));
     console.log('Selected apps for analysis:', selectedApps.length);
@@ -228,11 +233,32 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
       }
     }, 800);
 
-    const analysisResults = selectedApps.map(analyzeProfile);
-    console.log('Analysis results:', analysisResults);
+    try {
+      const applicationIds = Array.from(selectedCandidates);
+      const matchingResults = await RecruiterAIMatchingService.batchAnalyzeApplications(
+        job.id,
+        applicationIds,
+        user?.id || ''
+      );
 
-    setTimeout(() => {
-      console.log('Showing results...');
+      const analysisResults: MatchingResult[] = matchingResults.results.map(result => {
+        const app = selectedApps.find(a => a.candidate.id === result.candidate_id || a.id === result.candidate_id);
+        return {
+          applicationId: app?.id || result.candidate_id,
+          candidateName: result.candidate_name,
+          candidateTitle: app?.candidate_profile?.title || 'Profil',
+          oldScore: app?.ai_score || 0,
+          newScore: result.score,
+          category: result.category === 'excellent' ? 'strong' : result.category === 'potential' ? 'medium' : 'weak',
+          strengths: result.analysis.strengths,
+          weaknesses: result.analysis.weaknesses,
+          recommendations: result.analysis.recommendations,
+        };
+      });
+
+      clearInterval(interval);
+      console.log('Analysis results:', analysisResults);
+
       setResults(analysisResults);
       setShowResults(true);
       setAnalyzing(false);
@@ -245,7 +271,23 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
 
       console.log('Updating scores:', scores);
       onUpdateScores(scores);
-    }, selectedApps.length * 800 + 500);
+    } catch (error: any) {
+      console.error('Error in AI analysis:', error);
+      clearInterval(interval);
+      setError(error.message || 'Une erreur est survenue lors de l\'analyse');
+      setAnalyzing(false);
+
+      const fallbackResults = selectedApps.map(analyzeProfile);
+      setResults(fallbackResults);
+      setShowResults(true);
+
+      const scores = fallbackResults.map(r => ({
+        id: r.applicationId,
+        score: r.newScore,
+        category: r.category,
+      }));
+      onUpdateScores(scores);
+    }
   };
 
   const progress = selectedCandidates.size > 0 ? ((currentIndex + 1) / selectedCandidates.size) * 100 : 0;
@@ -479,7 +521,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                 <div className="flex items-center gap-3">
                   <div className="animate-spin rounded-full h-8 w-8 border-4 border-[#0E2F56]/20 border-t-[#0E2F56]"></div>
                   <span className="text-lg font-semibold text-gray-900">
-                    Analyse en cours... {currentIndex + 1}/{selectedCandidates.size}
+                    Analyse IA en cours... {currentIndex + 1}/{selectedCandidates.size}
                   </span>
                 </div>
                 <span className="text-2xl font-bold text-[#0E2F56]">{Math.round(progress)}%</span>
@@ -491,8 +533,22 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                 ></div>
               </div>
               <p className="text-sm text-gray-600 mt-3 text-center">
-                Analyse des compétences, expérience et adéquation au poste...
+                Analyse IA des compétences, expérience, formation et adéquation culturelle...
               </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-yellow-900 mb-1">Analyse de secours utilisée</h4>
+                  <p className="text-sm text-yellow-700">
+                    {error}. Nous avons appliqué une analyse de secours pour vous fournir des résultats.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -670,10 +726,10 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
         isOpen={showCreditModal}
         onClose={() => setShowCreditModal(false)}
         onConfirm={handleCreditConfirm}
-        serviceCode={SERVICES.AI_JOB_MATCHING}
-        serviceName="Matching Candidatures IA"
+        serviceCode="ai_recruiter_matching"
+        serviceName="Matching IA Recruteur"
         serviceCost={costPerCandidate * selectedCandidates.size}
-        description={`Analysez ${selectedCandidates.size} candidature${selectedCandidates.size > 1 ? 's' : ''} avec scoring automatique et recommandations`}
+        description={`Analysez ${selectedCandidates.size} candidature${selectedCandidates.size > 1 ? 's' : ''} avec le moteur IA de matching : scoring détaillé, analyse des compétences, recommandations personnalisées`}
         inputPayload={{ jobId: job.id, jobTitle: job.title, candidatesCount: selectedCandidates.size }}
       />
     </div>
