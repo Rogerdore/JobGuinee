@@ -193,6 +193,14 @@ export default function KanbanBoard({
                         </div>
                       )}
 
+                      <div className="text-xs text-gray-500 mb-2">
+                        Candidature du {new Date(app.applied_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </div>
+
                       <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                         <button
                           onClick={() => onViewProfile(app.id)}

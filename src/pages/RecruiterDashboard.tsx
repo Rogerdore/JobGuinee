@@ -33,6 +33,7 @@ import RecentJobsCard from '../components/recruiter/RecentJobsCard';
 import RecentApplicationsCard from '../components/recruiter/RecentApplicationsCard';
 import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
 import ExportModal from '../components/recruiter/ExportModal';
+import SendMessageModal from '../components/recruiter/SendMessageModal';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 import { recruiterDashboardService, DashboardMetrics, RecentJob, RecentApplication } from '../services/recruiterDashboardService';
 
@@ -101,6 +102,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -843,7 +846,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     setSelectedApplicationId(id);
                     setShowProfileModal(true);
                   }}
-                  onMessage={(id) => console.log('Message', id)}
+                  onMessage={(id) => {
+                    setSelectedApplicationForMessage(id);
+                    setShowMessageModal(true);
+                  }}
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-6">
@@ -871,7 +877,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           skills: app.candidate?.skills,
                         },
                       }}
-                      onMessage={(appId) => console.log('Message', appId)}
+                      onMessage={(appId) => {
+                        setSelectedApplicationForMessage(appId);
+                        setShowMessageModal(true);
+                      }}
                       onViewProfile={(appId) => {
                         setSelectedApplicationId(appId);
                         setShowProfileModal(true);
@@ -1025,6 +1034,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           selectedJobId={selectedJobFilter}
           companyId={company?.id}
           onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {showMessageModal && selectedApplicationForMessage && (
+        <SendMessageModal
+          applicationId={selectedApplicationForMessage}
+          onClose={() => {
+            setShowMessageModal(false);
+            setSelectedApplicationForMessage(null);
+          }}
         />
       )}
     </div>
