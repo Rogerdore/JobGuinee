@@ -21,9 +21,9 @@ export default function RecentJobsCard({ jobs, onJobClick, loading }: RecentJobs
     }
   };
 
-  const isExpired = (expiresAt: string | null) => {
-    if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
+  const isExpired = (deadline: string | null) => {
+    if (!deadline) return false;
+    return new Date(deadline) < new Date();
   };
 
   if (loading) {
@@ -78,7 +78,7 @@ export default function RecentJobsCard({ jobs, onJobClick, loading }: RecentJobs
               </div>
               <div className="flex flex-col items-end gap-2">
                 {getStatusBadge(job.status)}
-                {isExpired(job.expires_at) && (
+                {isExpired(job.deadline) && (
                   <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full">
                     Expirée
                   </span>

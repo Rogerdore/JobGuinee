@@ -18,7 +18,7 @@ export interface RecentJob {
   views_count: number;
   applications_count: number;
   created_at: string;
-  expires_at: string | null;
+  deadline: string | null;
 }
 
 export interface RecentApplication {
