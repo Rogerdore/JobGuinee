@@ -189,6 +189,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               email,
               phone,
               avatar_url
+            ),
+            candidate_profile:candidate_profiles!candidate_profiles_profile_id_fkey(
+              title,
+              experience_years,
+              education_level,
+              skills
             )
           `)
           .in('job_id', jobIds)
@@ -443,15 +449,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               ai_score: app.ai_score || 0,
               ai_category: app.ai_category || 'medium',
               candidate: {
-                full_name: app.candidate?.profile?.full_name || 'Candidat',
-                email: app.candidate?.profile?.email || '',
-                avatar_url: app.candidate?.profile?.avatar_url,
+                id: app.candidate?.id,
+                full_name: app.candidate?.full_name || 'Candidat',
+                email: app.candidate?.email || '',
+                avatar_url: app.candidate?.avatar_url,
               },
               candidate_profile: {
-                title: app.candidate?.title,
-                experience_years: app.candidate?.experience_years,
-                education_level: app.candidate?.education_level,
-                skills: app.candidate?.skills,
+                title: app.candidate_profile?.title,
+                experience_years: app.candidate_profile?.experience_years,
+                education_level: app.candidate_profile?.education_level,
+                skills: app.candidate_profile?.skills,
               },
             }))}
           onClose={() => setShowMatchingModal(false)}
