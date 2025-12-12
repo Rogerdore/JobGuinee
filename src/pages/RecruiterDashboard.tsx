@@ -126,7 +126,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       if (stagesData && stagesData.length > 0) {
         setWorkflowStages(stagesData);
       } else {
-        setWorkflowStages(sampleWorkflowStages);
+        console.warn('⚠️ No workflow stages found for company, should have been created automatically');
+        setWorkflowStages([]);
       }
 
       const { data: jobsData } = await supabase
@@ -172,9 +173,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         setApplications(sampleApplications);
       }
     } else {
-      setWorkflowStages(sampleWorkflowStages);
-      setJobs(sampleJobs);
-      setApplications(sampleApplications);
+      console.log('ℹ️ No company profile found, please complete your profile');
+      setWorkflowStages([]);
+      setJobs([]);
+      setApplications([]);
     }
 
     setLoading(false);
