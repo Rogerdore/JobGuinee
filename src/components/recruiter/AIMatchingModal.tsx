@@ -1,11 +1,12 @@
-import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown, Coins } from 'lucide-react';
-import { useState } from 'react';
+import { X, Sparkles, TrendingUp, TrendingDown, Award, AlertCircle, CheckCircle, User, Briefcase, Check, Lock, Crown, Coins, Package, Users as UsersIcon, Target, ShoppingCart } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
 import { SERVICES } from '../../services/creditService';
 import { useServiceCost } from '../../hooks/usePricing';
 import CreditConfirmModal from '../credits/CreditConfirmModal';
 import CreditBalance from '../credits/CreditBalance';
 import { RecruiterAIMatchingService } from '../../services/recruiterAIMatchingService';
+import { RecruiterMatchingPricingService, CostEstimate } from '../../services/recruiterMatchingPricingService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AIMatchingModalProps {
@@ -59,9 +60,35 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [showResults, setShowResults] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
+  const [loadingEstimate, setLoadingEstimate] = useState(false);
   const { consumeCredits } = useConsumeCredits();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const costPerCandidate = useServiceCost('ai_recruiter_matching') || 10;
+
+  // Charger l'estimation des coûts quand la sélection change
+  useEffect(() => {
+    if (selectedCandidates.size > 0 && user?.id) {
+      loadCostEstimate();
+    }
+  }, [selectedCandidates.size, user?.id]);
+
+  const loadCostEstimate = async () => {
+    if (!user?.id || selectedCandidates.size === 0) return;
+
+    setLoadingEstimate(true);
+    try {
+      const estimate = await RecruiterMatchingPricingService.estimateCost(
+        user.id,
+        selectedCandidates.size
+      );
+      setCostEstimate(estimate);
+    } catch (error) {
+      console.error('Error loading cost estimate:', error);
+    } finally {
+      setLoadingEstimate(false);
+    }
+  };
 
   console.log('AIMatchingModal - isPremium:', isPremium);
   console.log('AIMatchingModal - applications count:', applications.length);
@@ -211,6 +238,24 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const startAnalysis = async () => {
     console.log('startAnalysis called');
     console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
+
+    // Vérifier et consommer les crédits avec le nouveau système
+    if (!user?.id || !costEstimate) {
+      alert('Erreur: Impossible d\'estimer le coût');
+      return;
+    }
+
+    // Consommer les crédits ou le quota
+    const consumeResult = await RecruiterMatchingPricingService.consumeMatchingCredits(
+      user.id,
+      selectedCandidates.size,
+      costEstimate
+    );
+
+    if (!consumeResult.success) {
+      alert(`Erreur: ${consumeResult.error}`);
+      return;
+    }
 
     console.log('Starting analysis...');
     setAnalyzing(true);
@@ -473,6 +518,93 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                     </div>
                   )}
 
+                  {/* Cost Estimate */}
+                  {selectedCandidates.size > 0 && costEstimate && (
+                    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 mb-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Target className="w-6 h-6 text-cyan-600" />
+                        <h4 className="font-bold text-gray-900 text-lg">Estimation du Coût</h4>
+                      </div>
+
+                      {costEstimate.useSubscription ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-green-600">
+                            <Crown className="w-5 h-5" />
+                            <span className="font-semibold">Abonnement IA actif</span>
+                          </div>
+                          <p className="text-sm text-gray-700">
+                            {costEstimate.subscriptionQuotaRemaining === null
+                              ? 'Matchings illimités (Plan Gold)'
+                              : `${costEstimate.subscriptionQuotaRemaining} matchings restants ce mois`}
+                          </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <span className="font-medium">Coût:</span>
+                            <span className="px-3 py-1 bg-green-100 text-green-900 rounded-full font-bold">
+                              0 crédits (inclus dans l'abonnement)
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Mode optimal</p>
+                              <div className="flex items-center gap-2">
+                                {costEstimate.mode === 'batch' ? (
+                                  <Package className="w-4 h-4 text-blue-600" />
+                                ) : (
+                                  <UsersIcon className="w-4 h-4 text-blue-600" />
+                                )}
+                                <span className="font-medium text-gray-900">
+                                  {costEstimate.mode === 'batch' ? 'Batch' : 'Par candidat'}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Candidats</p>
+                              <span className="font-bold text-gray-900 text-lg">
+                                {costEstimate.candidateCount}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-cyan-200">
+                            <div>
+                              <p className="text-sm text-gray-600 mb-1">Coût total</p>
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl font-bold text-blue-900 flex items-center gap-1">
+                                  <Coins className="w-6 h-6" />
+                                  {costEstimate.creditsRequired}
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  ≈ {costEstimate.gnfEquivalent.toLocaleString()} GNF
+                                </span>
+                              </div>
+                            </div>
+                            {!costEstimate.canAfford && (
+                              <div className="text-right">
+                                <p className="text-sm text-red-600 mb-1">Insuffisant</p>
+                                <p className="text-xs text-gray-600">
+                                  Il vous manque {costEstimate.insufficientBy} crédits
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {!costEstimate.canAfford && (
+                            <button
+                              onClick={() => alert('Redirection vers la boutique de crédits...')}
+                              className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 flex items-center justify-center gap-2"
+                            >
+                              <ShoppingCart className="w-5 h-5" />
+                              Acheter {costEstimate.insufficientBy} crédits IA
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 mb-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -483,15 +615,17 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
                           {selectedCandidates.size === 0
                             ? 'Cochez les candidats que vous souhaitez analyser'
                             : isPremium
-                            ? `Prêt à analyser ${selectedCandidates.size} profil${selectedCandidates.size > 1 ? 's' : ''}`
+                            ? costEstimate?.canAfford || costEstimate?.useSubscription
+                              ? `Prêt à analyser ${selectedCandidates.size} profil${selectedCandidates.size > 1 ? 's' : ''}`
+                              : 'Crédits insuffisants'
                             : 'Passez à Premium pour lancer l\'analyse'}
                         </p>
                       </div>
                       <button
                         onClick={handleStartAnalysisClick}
-                        disabled={selectedCandidates.size === 0}
+                        disabled={selectedCandidates.size === 0 || (costEstimate && !costEstimate.canAfford && !costEstimate.useSubscription)}
                         className={`px-8 py-4 rounded-xl font-semibold text-lg flex items-center gap-3 transition-all ${
-                          selectedCandidates.size === 0
+                          selectedCandidates.size === 0 || (costEstimate && !costEstimate.canAfford && !costEstimate.useSubscription)
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-[#0E2F56] hover:bg-[#1a4275] text-white shadow-md hover:shadow-lg'
                         }`}

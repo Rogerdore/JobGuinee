@@ -21,8 +21,9 @@ import {
 import { IAConfigService, IAServiceConfig, IAServiceTemplate } from '../services/iaConfigService';
 import { CreditService, PricingEngine, CreditServiceConfig } from '../services/creditService';
 import { supabase } from '../lib/supabase';
+import RecruiterMatchingPricingAdmin from '../components/admin/RecruiterMatchingPricingAdmin';
 
-type TabType = 'dashboard' | 'services' | 'templates' | 'pricing' | 'stats' | 'logs';
+type TabType = 'dashboard' | 'services' | 'templates' | 'pricing' | 'stats' | 'logs' | 'matching-pricing';
 
 interface IAStats {
   totalCalls: number;
@@ -723,6 +724,17 @@ export default function AdminIACenter({ onNavigate }: PageProps) {
               <Activity className="w-5 h-5" />
               Logs
             </button>
+            <button
+              onClick={() => setActiveTab('matching-pricing')}
+              className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition ${
+                activeTab === 'matching-pricing'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              Matching IA
+            </button>
           </nav>
         </div>
       </div>
@@ -743,6 +755,7 @@ export default function AdminIACenter({ onNavigate }: PageProps) {
             {activeTab === 'pricing' && renderPricing()}
             {activeTab === 'stats' && renderStats()}
             {activeTab === 'logs' && renderLogs()}
+            {activeTab === 'matching-pricing' && <RecruiterMatchingPricingAdmin />}
           </>
         )}
       </div>
