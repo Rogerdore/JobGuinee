@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -121,6 +121,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Packs de Crédits</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-automation-rules')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-purple-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Zap className="w-4 h-4" />
+                <span>Automations</span>
               </button>
 
               <button
