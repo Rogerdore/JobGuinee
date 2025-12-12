@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { EnterpriseSubscriptionService } from './enterpriseSubscriptionService';
 
 export interface ApplicationExportData {
   id: string;
@@ -23,6 +24,7 @@ export interface ExportOptions {
   jobId?: string;
   stage?: string;
   applicationIds?: string[];
+  companyId?: string;
 }
 
 export const recruiterExportService = {
@@ -94,6 +96,18 @@ export const recruiterExportService = {
 
   async exportToCSV(options: ExportOptions, filename: string = 'candidatures.csv'): Promise<void> {
     try {
+      if (options.companyId) {
+        const access = await EnterpriseSubscriptionService.checkFeatureAccess(
+          options.companyId,
+          'export' as any,
+          1
+        );
+        if (!access.allowed) {
+          alert(access.message || 'Accès aux exports limité. Veuillez upgrader votre pack.');
+          return;
+        }
+      }
+
       const data = await this.getApplicationsForExport(options);
 
       if (data.length === 0) {
@@ -137,6 +151,14 @@ export const recruiterExportService = {
       const BOM = '\uFEFF';
       const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
       saveAs(blob, filename);
+
+      if (options.companyId) {
+        await EnterpriseSubscriptionService.trackUsage(
+          options.companyId,
+          'export',
+          { format: 'csv', rows: data.length }
+        );
+      }
     } catch (error) {
       console.error('Error in exportToCSV:', error);
       alert('Erreur lors de l\'export CSV');
@@ -145,6 +167,18 @@ export const recruiterExportService = {
 
   async exportToExcel(options: ExportOptions, filename: string = 'candidatures.xlsx'): Promise<void> {
     try {
+      if (options.companyId) {
+        const access = await EnterpriseSubscriptionService.checkFeatureAccess(
+          options.companyId,
+          'export' as any,
+          1
+        );
+        if (!access.allowed) {
+          alert(access.message || 'Accès aux exports limité. Veuillez upgrader votre pack.');
+          return;
+        }
+      }
+
       const data = await this.getApplicationsForExport(options);
 
       if (data.length === 0) {
@@ -187,6 +221,14 @@ export const recruiterExportService = {
 
       const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
       saveAs(blob, filename);
+
+      if (options.companyId) {
+        await EnterpriseSubscriptionService.trackUsage(
+          options.companyId,
+          'export',
+          { format: 'excel', rows: data.length }
+        );
+      }
     } catch (error) {
       console.error('Error in exportToExcel:', error);
       alert('Erreur lors de l\'export Excel');
@@ -195,6 +237,18 @@ export const recruiterExportService = {
 
   async exportToPDF(options: ExportOptions, jobTitle: string, filename: string = 'rapport-candidatures.pdf'): Promise<void> {
     try {
+      if (options.companyId) {
+        const access = await EnterpriseSubscriptionService.checkFeatureAccess(
+          options.companyId,
+          'export' as any,
+          1
+        );
+        if (!access.allowed) {
+          alert(access.message || 'Accès aux exports limité. Veuillez upgrader votre pack.');
+          return;
+        }
+      }
+
       const data = await this.getApplicationsForExport(options);
 
       if (data.length === 0) {
@@ -287,6 +341,13 @@ export const recruiterExportService = {
         printWindow.focus();
         setTimeout(() => {
           printWindow.print();
+          if (options.companyId) {
+            EnterpriseSubscriptionService.trackUsage(
+              options.companyId,
+              'export',
+              { format: 'pdf', rows: data.length }
+            );
+          }
         }, 250);
       }
     } catch (error) {
@@ -297,6 +358,18 @@ export const recruiterExportService = {
 
   async exportDocumentsToZIP(options: ExportOptions, filename: string = 'documents-candidatures.zip'): Promise<void> {
     try {
+      if (options.companyId) {
+        const access = await EnterpriseSubscriptionService.checkFeatureAccess(
+          options.companyId,
+          'export' as any,
+          1
+        );
+        if (!access.allowed) {
+          alert(access.message || 'Accès aux exports limité. Veuillez upgrader votre pack.');
+          return;
+        }
+      }
+
       const data = await this.getApplicationsForExport(options);
 
       if (data.length === 0) {
@@ -337,6 +410,14 @@ export const recruiterExportService = {
 
       const content = await zip.generateAsync({ type: 'blob' });
       saveAs(content, filename);
+
+      if (options.companyId) {
+        await EnterpriseSubscriptionService.trackUsage(
+          options.companyId,
+          'export',
+          { format: 'zip', files: fileCount }
+        );
+      }
     } catch (error) {
       console.error('Error in exportDocumentsToZIP:', error);
       alert('Erreur lors de la création du fichier ZIP');
