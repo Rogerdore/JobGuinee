@@ -177,52 +177,39 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         setJobs(jobsData);
 
         const jobIds = jobsData.map(j => j.id);
-        const { data: appsData, error: appsError } = await supabase
+
+        const { data: appsData } = await supabase
           .from('applications')
-          .select(`
-            *,
-            profiles!applications_candidate_id_fkey(
-              id,
-              full_name,
-              email,
-              phone,
-              avatar_url,
-              candidate_profiles!candidate_profiles_profile_id_fkey(
-                title,
-                experience_years,
-                education_level,
-                skills
-              )
-            )
-          `)
+          .select('*')
           .in('job_id', jobIds)
           .order('applied_at', { ascending: false });
 
-        if (appsError) {
-          console.error('Error loading applications:', appsError);
-        }
+        if (appsData && appsData.length > 0) {
+          const candidateIds = [...new Set(appsData.map(app => app.candidate_id))];
 
-        const normalizedApps = (appsData || []).map(app => {
-          const profile = Array.isArray(app.profiles) ? app.profiles[0] : app.profiles;
-          const candidateProfile = profile?.candidate_profiles;
-          const normalizedCandidateProfile = Array.isArray(candidateProfile)
-            ? candidateProfile[0]
-            : candidateProfile;
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, phone, avatar_url')
+            .in('id', candidateIds);
 
-          return {
+          const { data: candidateProfilesData } = await supabase
+            .from('candidate_profiles')
+            .select('profile_id, title, experience_years, education_level, skills')
+            .in('profile_id', candidateIds);
+
+          const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+          const candidateProfilesMap = new Map(candidateProfilesData?.map(cp => [cp.profile_id, cp]) || []);
+
+          const normalizedApps = appsData.map(app => ({
             ...app,
-            candidate: profile ? {
-              id: profile.id,
-              full_name: profile.full_name,
-              email: profile.email,
-              phone: profile.phone,
-              avatar_url: profile.avatar_url
-            } : null,
-            candidate_profile: normalizedCandidateProfile
-          };
-        });
+            candidate: profilesMap.get(app.candidate_id) || null,
+            candidate_profile: candidateProfilesMap.get(app.candidate_id) || null
+          }));
 
-        setApplications(normalizedApps);
+          setApplications(normalizedApps);
+        } else {
+          setApplications([]);
+        }
       } else {
         setJobs([]);
         setApplications([]);
