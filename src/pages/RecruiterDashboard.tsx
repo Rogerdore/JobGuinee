@@ -152,8 +152,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       .maybeSingle();
 
     if (companyData) {
-      console.log('Company loaded:', companyData);
-      console.log('Subscription tier:', companyData.subscription_tier);
       setCompany(companyData);
 
       const { data: stagesData } = await supabase
@@ -204,9 +202,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           console.error('Error loading applications:', appsError);
         }
 
-        console.log('✅ Loaded applications from DB:', appsData?.length || 0);
-        console.log('📊 Sample application data:', appsData?.[0]);
-
         const normalizedApps = (appsData || []).map(app => ({
           ...app,
           candidate_profile: Array.isArray(app.candidate_profile)
@@ -214,15 +209,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             : app.candidate_profile
         }));
 
-        console.log('✅ Normalized applications:', normalizedApps.length);
         setApplications(normalizedApps);
       } else {
-        console.log('ℹ️ No jobs found');
         setJobs([]);
         setApplications([]);
       }
     } else {
-      console.log('ℹ️ No company profile found, please complete your profile');
       setWorkflowStages([]);
       setJobs([]);
       setApplications([]);
@@ -325,27 +317,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handleStartMatching = (job: Job) => {
-    console.log('🚀 handleStartMatching called');
-    console.log('Job:', job);
-    console.log('Company:', company);
-
     if (!company) {
-      console.error('❌ Company not found');
       alert('Erreur: Profil entreprise non trouvé');
       return;
     }
 
-    console.log('✅ Opening matching modal');
     setSelectedJobForMatching(job);
     setShowMatchingModal(true);
   };
 
   const isPremium = Boolean(company?.subscription_tier === 'premium' || company?.subscription_tier === 'enterprise');
-
-  console.log('RecruiterDashboard - company:', company);
-  console.log('RecruiterDashboard - isPremium:', isPremium);
-  console.log('RecruiterDashboard - showMatchingModal:', showMatchingModal);
-  console.log('RecruiterDashboard - selectedJobForMatching:', selectedJobForMatching);
 
   const handleUpdateScores = async (scores: Array<{ id: string; score: number; category: string }>) => {
     for (const score of scores) {
@@ -441,9 +422,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       )}
 
       {showMatchingModal && selectedJobForMatching ? (
-        <>
-          {console.log('🎨 Rendering AIMatchingModal')}
-          <AIMatchingModal
+        <AIMatchingModal
             job={{
               id: selectedJobForMatching.id,
               title: selectedJobForMatching.title,
@@ -478,8 +457,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             setShowMatchingModal(false);
             setActiveTab('premium');
           }}
-          />
-        </>
+        />
       ) : null}
 
       <div className="bg-gradient-to-r from-[#0E2F56] via-blue-800 to-[#1a4275] text-white py-12 shadow-xl relative overflow-hidden">
@@ -584,9 +562,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
                 <RecentApplicationsCard
                   applications={recentApplications}
-                  onApplicationClick={(applicationId, candidateId) => {
-                    console.log('Application clicked:', applicationId, candidateId);
-                  }}
+                  onApplicationClick={(applicationId, candidateId) => {}}
                   loading={loadingDashboard}
                 />
               </div>
@@ -715,7 +691,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         <button
                           className="w-full px-4 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-[#0E2F56]"
                           onClick={(e) => {
-                            console.log('🔘 Matching IA button clicked!');
                             e.stopPropagation();
                             handleStartMatching(job);
                           }}

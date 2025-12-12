@@ -93,10 +93,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     }
   };
 
-  console.log('AIMatchingModal - isPremium:', isPremium);
-  console.log('AIMatchingModal - applications count:', applications.length);
-  console.log('AIMatchingModal - job:', job);
-
   const toggleCandidate = (id: string) => {
     const newSelected = new Set(selectedCandidates);
     if (newSelected.has(id)) {
@@ -211,16 +207,12 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   };
 
   const handleStartAnalysisClick = () => {
-    console.log('handleStartAnalysisClick called - isPremium:', isPremium);
-    console.log('handleStartAnalysisClick - selectedCandidates:', selectedCandidates.size);
-
     if (selectedCandidates.size === 0) {
       alert('Veuillez sélectionner au moins un candidat à analyser');
       return;
     }
 
     if (!isPremium) {
-      console.log('Not premium - showing upgrade prompt');
       alert('⭐ Fonctionnalité Premium\n\nL\'analyse IA et le matching automatique des candidatures sont réservés aux membres Premium.\n\nPassez à Premium pour :\n• Scoring automatique des candidatures\n• Analyse approfondie des profils\n• Recommandations personnalisées\n• Statistiques avancées');
       onUpgrade();
       return;
@@ -239,16 +231,11 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   };
 
   const startAnalysis = async () => {
-    console.log('startAnalysis called');
-    console.log('startAnalysis - selectedCandidates:', selectedCandidates.size);
-
-    // Vérifier et consommer les crédits avec le nouveau système
     if (!user?.id || !costEstimate) {
       alert('Erreur: Impossible d\'estimer le coût');
       return;
     }
 
-    // Consommer les crédits ou le quota
     const consumeResult = await RecruiterMatchingPricingService.consumeMatchingCredits(
       user.id,
       selectedCandidates.size,
@@ -260,7 +247,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
       return;
     }
 
-    console.log('Starting analysis...');
     setAnalyzing(true);
     setResults([]);
     setCurrentIndex(0);
@@ -268,7 +254,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     setError(null);
 
     const selectedApps = applications.filter(app => selectedCandidates.has(app.id));
-    console.log('Selected apps for analysis:', selectedApps.length);
 
     let currentIdx = 0;
     const interval = setInterval(() => {
@@ -277,7 +262,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
 
       if (currentIdx >= selectedApps.length) {
         clearInterval(interval);
-        console.log('Progress animation complete');
       }
     }, 800);
 
@@ -305,7 +289,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
       });
 
       clearInterval(interval);
-      console.log('Analysis results:', analysisResults);
 
       setResults(analysisResults);
       setShowResults(true);
@@ -317,7 +300,6 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
         category: r.category,
       }));
 
-      console.log('Updating scores:', scores);
       onUpdateScores(scores);
     } catch (error: any) {
       console.error('Error in AI analysis:', error);
