@@ -198,16 +198,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           console.error('Error loading applications:', appsError);
         }
 
-        if (appsData && appsData.length > 0) {
-          console.log('✅ Loaded applications from DB:', appsData.length);
-          setApplications(appsData);
-        } else {
-          console.log('⚠️ No applications in DB, using sample data');
-          setApplications(sampleApplications);
-        }
+        console.log('✅ Loaded applications from DB:', appsData?.length || 0);
+        setApplications(appsData || []);
       } else {
-        setJobs(sampleJobs);
-        setApplications(sampleApplications);
+        console.log('ℹ️ No jobs found');
+        setJobs([]);
+        setApplications([]);
       }
     } else {
       console.log('ℹ️ No company profile found, please complete your profile');
@@ -391,7 +387,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
-    { id: 'applications', label: 'Candidatures', icon: Users, count: applications.length },
+    { id: 'applications', label: 'Candidatures', icon: Users, count: dashboardMetrics?.total_applications || applications.length },
     { id: 'purchased-profiles', label: 'Profils Achetés', icon: Package },
     { id: 'ai-generator', label: 'Publier une offre', icon: Plus },
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
