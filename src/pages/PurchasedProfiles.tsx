@@ -16,7 +16,10 @@ import {
   Mail,
   Phone,
   GraduationCap,
-  Clock
+  Clock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -59,6 +62,9 @@ interface PurchasedProfilesProps {
   profile: any;
 }
 
+type SortField = 'name' | 'date' | 'experience' | 'score' | 'salary' | 'city';
+type SortDirection = 'asc' | 'desc';
+
 export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
   const [purchases, setPurchases] = useState<PurchasedProfile[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<PurchasedProfile[]>([]);
@@ -67,14 +73,17 @@ export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
   const [selectedProfile, setSelectedProfile] = useState<PurchasedProfile | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   useEffect(() => {
     loadPurchasedProfiles();
   }, [profile?.id]);
 
   useEffect(() => {
-    filterProfiles();
-  }, [searchTerm, purchases]);
+    filterAndSortProfiles();
+  }, [searchTerm, purchases, sortField, sortDirection]);
 
   const loadPurchasedProfiles = async () => {
     if (!profile?.id) return;
@@ -139,21 +148,91 @@ export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
     }
   };
 
-  const filterProfiles = () => {
-    if (!searchTerm.trim()) {
-      setFilteredPurchases(purchases);
-      return;
+  const filterAndSortProfiles = () => {
+    let filtered = purchases;
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = purchases.filter(p =>
+        p.candidate?.full_name?.toLowerCase().includes(term) ||
+        p.candidate?.title?.toLowerCase().includes(term) ||
+        p.candidate?.city?.toLowerCase().includes(term) ||
+        p.candidate?.skills?.some(skill => skill.toLowerCase().includes(term))
+      );
     }
 
-    const term = searchTerm.toLowerCase();
-    const filtered = purchases.filter(p =>
-      p.candidate?.full_name?.toLowerCase().includes(term) ||
-      p.candidate?.title?.toLowerCase().includes(term) ||
-      p.candidate?.city?.toLowerCase().includes(term) ||
-      p.candidate?.skills?.some(skill => skill.toLowerCase().includes(term))
-    );
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
 
-    setFilteredPurchases(filtered);
+      switch (sortField) {
+        case 'name':
+          aValue = a.candidate?.full_name || '';
+          bValue = b.candidate?.full_name || '';
+          break;
+        case 'date':
+          aValue = new Date(a.purchased_at).getTime();
+          bValue = new Date(b.purchased_at).getTime();
+          break;
+        case 'experience':
+          aValue = a.candidate?.experience_years || 0;
+          bValue = b.candidate?.experience_years || 0;
+          break;
+        case 'score':
+          aValue = a.candidate?.ai_score || 0;
+          bValue = b.candidate?.ai_score || 0;
+          break;
+        case 'salary':
+          aValue = a.candidate?.desired_salary || 0;
+          bValue = b.candidate?.desired_salary || 0;
+          break;
+        case 'city':
+          aValue = a.candidate?.city || '';
+          bValue = b.candidate?.city || '';
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      } else {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+    });
+
+    setFilteredPurchases(sorted);
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+    setShowSortMenu(false);
+  };
+
+  const getSortIcon = () => {
+    if (sortDirection === 'asc') {
+      return <ArrowUp className="w-4 h-4" />;
+    } else {
+      return <ArrowDown className="w-4 h-4" />;
+    }
+  };
+
+  const getSortLabel = (field: SortField) => {
+    const labels: Record<SortField, string> = {
+      name: 'Nom',
+      date: 'Date d\'achat',
+      experience: 'Expérience',
+      score: 'Score IA',
+      salary: 'Salaire souhaité',
+      city: 'Ville'
+    };
+    return labels[field];
   };
 
   const exportToCSV = () => {
@@ -401,6 +480,98 @@ export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
               />
             </div>
             <div className="flex gap-2">
+              <div className="relative">
+                <button
+                  onClick={() => setShowSortMenu(!showSortMenu)}
+                  className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap"
+                >
+                  <ArrowUpDown className="w-5 h-5" />
+                  Trier: {getSortLabel(sortField)}
+                  {getSortIcon()}
+                </button>
+
+                {showSortMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                    <div className="p-2">
+                      <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase">
+                        Trier par
+                      </div>
+                      <button
+                        onClick={() => handleSort('date')}
+                        className={`w-full px-3 py-2 text-left rounded hover:bg-gray-50 transition flex items-center justify-between ${
+                          sortField === 'date' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Date d'achat
+                        </span>
+                        {sortField === 'date' && getSortIcon()}
+                      </button>
+                      <button
+                        onClick={() => handleSort('name')}
+                        className={`w-full px-3 py-2 text-left rounded hover:bg-gray-50 transition flex items-center justify-between ${
+                          sortField === 'name' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Filter className="w-4 h-4" />
+                          Nom
+                        </span>
+                        {sortField === 'name' && getSortIcon()}
+                      </button>
+                      <button
+                        onClick={() => handleSort('score')}
+                        className={`w-full px-3 py-2 text-left rounded hover:bg-gray-50 transition flex items-center justify-between ${
+                          sortField === 'score' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Score IA
+                        </span>
+                        {sortField === 'score' && getSortIcon()}
+                      </button>
+                      <button
+                        onClick={() => handleSort('experience')}
+                        className={`w-full px-3 py-2 text-left rounded hover:bg-gray-50 transition flex items-center justify-between ${
+                          sortField === 'experience' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4" />
+                          Expérience
+                        </span>
+                        {sortField === 'experience' && getSortIcon()}
+                      </button>
+                      <button
+                        onClick={() => handleSort('salary')}
+                        className={`w-full px-3 py-2 text-left rounded hover:bg-gray-50 transition flex items-center justify-between ${
+                          sortField === 'salary' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Salaire souhaité
+                        </span>
+                        {sortField === 'salary' && getSortIcon()}
+                      </button>
+                      <button
+                        onClick={() => handleSort('city')}
+                        className={`w-full px-3 py-2 text-left rounded hover:bg-gray-50 transition flex items-center justify-between ${
+                          sortField === 'city' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          Ville
+                        </span>
+                        {sortField === 'city' && getSortIcon()}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={exportToCSV}
                 className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition flex items-center gap-2"
