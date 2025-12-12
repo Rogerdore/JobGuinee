@@ -11,7 +11,10 @@ import CandidateProfileModal from '../components/cvtheque/CandidateProfileModal'
 import CandidatePreviewModal from '../components/cvtheque/CandidatePreviewModal';
 import RecruiterAccessModal from '../components/cvtheque/RecruiterAccessModal';
 import CVThequePacksModal from '../components/cvtheque/CVThequePacksModal';
+import CheckoutConfirmation from '../components/cvtheque/CheckoutConfirmation';
+import CartHistoryModal from '../components/cvtheque/CartHistoryModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
+import { cartHistoryService, CartHistoryItem } from '../services/cartHistoryService';
 
 interface CVThequeProps {
   onNavigate: (page: string) => void;
@@ -41,6 +44,10 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [showPacksModal, setShowPacksModal] = useState(false);
   const [activePacks, setActivePacks] = useState<any[]>([]);
   const [unitPrice, setUnitPrice] = useState<number | null>(null);
+  const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
+  const [showCartHistory, setShowCartHistory] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [activeCartHistory, setActiveCartHistory] = useState<CartHistoryItem[]>([]);
 
   useEffect(() => {
     loadCandidates();
@@ -439,10 +446,118 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         showError('Erreur', 'Une erreur est survenue lors de la validation.');
       }
     } else if (activePacks.length === 0 || validCandidateIds.length === 0) {
-      // Pas de packs actifs ou pas de profils valides → ouvrir le modal d'achat de packs
+      // Pas de packs actifs ou pas de profils valides → afficher la confirmation de checkout
       setCartOpen(false);
-      setShowPacksModal(true);
+
+      // Sauvegarder le panier dans l'historique
+      try {
+        await saveCartToHistory();
+        setShowCheckoutConfirmation(true);
+      } catch (error) {
+        console.error('Error saving cart to history:', error);
+        setShowCheckoutConfirmation(true); // Afficher quand même
+      }
     }
+  };
+
+  // Sauvegarder le panier actuel dans l'historique
+  const saveCartToHistory = async () => {
+    if (!profile?.id || cartItems.length === 0) return;
+
+    const historyItems: CartHistoryItem[] = [];
+
+    for (const item of cartItems) {
+      const getExperienceLevel = (years: number): 'junior' | 'intermediate' | 'senior' => {
+        if (years >= 6) return 'senior';
+        if (years >= 3) return 'intermediate';
+        return 'junior';
+      };
+
+      try {
+        const historyItem = await cartHistoryService.addToCartHistory(
+          profile.id,
+          item.candidate_id,
+          item.candidate,
+          item.profile_price || item.candidate.profile_price,
+          getExperienceLevel(item.candidate.experience_years || 0)
+        );
+        historyItems.push(historyItem);
+      } catch (error) {
+        console.error('Error adding to history:', error);
+      }
+    }
+
+    setActiveCartHistory(historyItems);
+  };
+
+  // Gérer l'achat direct
+  const handleDirectPurchase = async () => {
+    if (!profile?.id || activeCartHistory.length === 0) {
+      showError('Erreur', 'Impossible de créer l\'achat');
+      return;
+    }
+
+    try {
+      setCheckoutLoading(true);
+
+      // Créer l'achat direct
+      const purchase = await cartHistoryService.createDirectPurchase(
+        profile.id,
+        activeCartHistory
+      );
+
+      // Vider le panier de la base de données
+      const deletePromises = cartItems.map(item =>
+        supabase.from('profile_cart').delete().eq('id', item.id)
+      );
+      await Promise.all(deletePromises);
+
+      // Recharger le panier
+      await loadCart();
+
+      // Fermer la confirmation
+      setShowCheckoutConfirmation(false);
+
+      // Afficher le message de succès avec info paiement
+      showSuccess(
+        'Commande créée !',
+        `Référence: ${purchase.payment_reference}. Veuillez effectuer le paiement via Orange Money et soumettre votre preuve.`
+      );
+
+      // Ouvrir le modal des packs pour afficher les instructions de paiement
+      setShowPacksModal(true);
+
+    } catch (error) {
+      console.error('Error creating direct purchase:', error);
+      showError('Erreur', 'Impossible de créer la commande');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  // Gérer l'achat de pack (annule la commande en cours)
+  const handleBuyPack = async () => {
+    // Archiver le panier actuel
+    if (profile?.id && activeCartHistory.length > 0) {
+      await cartHistoryService.archiveCurrentCart(profile.id);
+    }
+
+    // Fermer la confirmation
+    setShowCheckoutConfirmation(false);
+
+    // Afficher le modal des packs
+    setShowPacksModal(true);
+
+    showInfo(
+      'Sélection archivée',
+      'Votre sélection a été sauvegardée dans l\'historique. Vous pourrez la retrouver après l\'achat de votre pack.'
+    );
+  };
+
+  // Afficher l'historique
+  const handleViewHistory = () => {
+    setShowCheckoutConfirmation(false);
+    setShowCartHistory(true);
   };
 
   const handleViewDetails = async (candidateId: string) => {
@@ -550,6 +665,34 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         onClose={() => setCartOpen(false)}
         activePacks={activePacks}
       />
+
+      {showCheckoutConfirmation && activeCartHistory.length > 0 && (
+        <CheckoutConfirmation
+          cartItems={activeCartHistory}
+          onValidateDirectPurchase={handleDirectPurchase}
+          onBuyPack={handleBuyPack}
+          onViewHistory={handleViewHistory}
+          onClose={() => setShowCheckoutConfirmation(false)}
+          loading={checkoutLoading}
+        />
+      )}
+
+      {showCartHistory && profile?.id && (
+        <CartHistoryModal
+          isOpen={showCartHistory}
+          onClose={() => setShowCartHistory(false)}
+          recruiterId={profile.id}
+          onAddToCart={(candidateId) => {
+            // Fermer l'historique et ajouter au panier
+            setShowCartHistory(false);
+            // La logique d'ajout au panier est déjà gérée par handleAddToCart
+            const candidate = candidates.find(c => c.id === candidateId);
+            if (candidate) {
+              handleAddToCart(candidateId);
+            }
+          }}
+        />
+      )}
 
       {selectedCandidate && (
         <CandidateProfileModal
