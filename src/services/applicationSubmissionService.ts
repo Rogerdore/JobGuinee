@@ -100,7 +100,6 @@ ${data.jobTitle}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📅 Date : ${data.appliedDate}
 🔖 Référence : ${data.applicationReference}
-🎯 Score IA : ${data.aiScore}/100
 
 🔗 ACTION REQUISE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -204,8 +203,6 @@ export const applicationSubmissionService = {
         };
       }
 
-      const aiScore = Math.floor(Math.random() * 30) + 70;
-
       const { data: application, error: insertError } = await supabase
         .from('applications')
         .insert({
@@ -214,7 +211,6 @@ export const applicationSubmissionService = {
           cover_letter: coverLetter,
           cv_url: cvUrl,
           status: 'pending',
-          ai_match_score: aiScore,
           workflow_stage: 'Candidature reçue'
         })
         .select('id, application_reference')
@@ -253,7 +249,7 @@ export const applicationSubmissionService = {
         jobId: job.id,
         applicationId: application.id,
         applicationReference: application.application_reference,
-        aiScore,
+        aiScore: 0,
         appliedDate
       });
 
@@ -373,13 +369,12 @@ export const applicationSubmissionService = {
       recipientId: data.recruiterId,
       type: 'application_status_update',
       title: `Nouvelle candidature : ${data.jobTitle}`,
-      message: `${data.candidateName} a postulé. Score IA : ${data.aiScore}/100`,
+      message: `${data.candidateName} a postulé pour ${data.jobTitle}`,
       channels: ['notification'],
       metadata: {
         application_id: data.applicationId,
         job_id: data.jobId,
-        candidate_name: data.candidateName,
-        ai_score: data.aiScore
+        candidate_name: data.candidateName
       },
       applicationId: data.applicationId
     });

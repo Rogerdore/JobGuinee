@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
-import { applicationSubmissionService } from '../services/applicationSubmissionService';
+import JobApplicationModal from '../components/candidate/JobApplicationModal';
 
 interface JobDetailProps {
   jobId: string;
@@ -18,10 +18,8 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const { user, profile } = useAuth();
   const [job, setJob] = useState<(Job & { companies: Company }) | null>(null);
   const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
-  const [coverLetter, setCoverLetter] = useState('');
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [applicationReference, setApplicationReference] = useState('');
   const [nextSteps, setNextSteps] = useState<string[]>([]);
@@ -109,7 +107,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     setHasApplied(!!data);
   };
 
-  const handleApply = async () => {
+  const handleApplyClick = () => {
     if (!user) {
       onNavigate('login');
       return;
@@ -120,25 +118,15 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
       return;
     }
 
-    setApplying(true);
+    setShowApplicationModal(true);
+  };
 
-    const result = await applicationSubmissionService.submitApplication({
-      jobId,
-      candidateId: user.id,
-      coverLetter
-    });
-
-    setApplying(false);
-
-    if (result.success) {
-      setHasApplied(true);
-      setShowApplicationForm(false);
-      setApplicationReference(result.applicationReference || '');
-      setNextSteps(result.nextSteps || []);
-      setShowSuccessModal(true);
-    } else {
-      alert(result.error || 'Une erreur est survenue lors de l\'envoi de votre candidature');
-    }
+  const handleApplicationSuccess = (appRef: string, steps: string[]) => {
+    setHasApplied(true);
+    setShowApplicationModal(false);
+    setApplicationReference(appRef);
+    setNextSteps(steps);
+    setShowSuccessModal(true);
   };
 
   const parseJobDescription = (description: string) => {
@@ -452,75 +440,34 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             </div>
 
             {!isRecruiter && (
-              <>
-                {showApplicationForm ? (
-                  <div className="border-t-2 border-gray-200 pt-8 mt-8">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <Mail className="w-5 h-5 text-[#FF8C00]" />
-                      Lettre de motivation
-                    </h3>
-                    <textarea
-                      value={coverLetter}
-                      onChange={(e) => setCoverLetter(e.target.value)}
-                      rows={6}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] mb-4"
-                      placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste..."
-                    ></textarea>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleApply}
-                        disabled={applying}
-                        className="flex-1 py-4 bg-[#0E2F56] hover:bg-[#1a4275] disabled:bg-gray-400 text-white font-bold rounded-xl transition shadow-lg text-lg"
-                      >
-                        {applying ? 'Envoi en cours...' : 'Confirmer ma candidature'}
-                      </button>
-                      <button
-                        onClick={() => setShowApplicationForm(false)}
-                        className="px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition"
-                      >
-                        Annuler
-                      </button>
+              <div className="border-t-2 border-gray-200 pt-8 mt-8">
+                {hasApplied ? (
+                  <div className="text-center p-8 bg-green-50 rounded-xl border-2 border-green-200">
+                    <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
+                      <CheckCircle2 className="w-12 h-12 text-green-600" />
                     </div>
+                    <div className="text-green-800 font-bold text-xl mb-2">
+                      Vous avez déjà postulé à cette offre
+                    </div>
+                    <p className="text-green-700 mb-4">
+                      Suivez l'évolution de votre candidature dans votre espace candidat
+                    </p>
+                    <button
+                      onClick={() => onNavigate('candidate-dashboard')}
+                      className="px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white font-medium rounded-lg transition"
+                    >
+                      Voir mes candidatures
+                    </button>
                   </div>
                 ) : (
-                  <div className="border-t-2 border-gray-200 pt-8 mt-8">
-                    {hasApplied ? (
-                      <div className="text-center p-8 bg-green-50 rounded-xl border-2 border-green-200">
-                        <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
-                          <CheckCircle2 className="w-12 h-12 text-green-600" />
-                        </div>
-                        <div className="text-green-800 font-bold text-xl mb-2">
-                          Vous avez déjà postulé à cette offre
-                        </div>
-                        <p className="text-green-700 mb-4">
-                          Suivez l'évolution de votre candidature dans votre espace candidat
-                        </p>
-                        <button
-                          onClick={() => onNavigate('candidate-dashboard')}
-                          className="px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white font-medium rounded-lg transition"
-                        >
-                          Voir mes candidatures
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (!user) {
-                            onNavigate('login');
-                          } else if (profile?.user_type !== 'candidate') {
-                            alert('Seuls les candidats peuvent postuler aux offres');
-                          } else {
-                            setShowApplicationForm(true);
-                          }
-                        }}
-                        className="w-full py-5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg text-lg"
-                      >
-                        Postuler maintenant
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    onClick={handleApplyClick}
+                    className="w-full py-5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg text-lg"
+                  >
+                    Postuler maintenant
+                  </button>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -610,6 +557,17 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {showApplicationModal && user && job && (
+        <JobApplicationModal
+          jobId={jobId}
+          jobTitle={job.title}
+          companyName={job.companies?.name || job.department}
+          candidateId={user.id}
+          onClose={() => setShowApplicationModal(false)}
+          onSuccess={handleApplicationSuccess}
+        />
       )}
     </div>
   );
