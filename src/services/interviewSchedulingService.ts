@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { notificationService } from './notificationService';
 import { applicationActionsService } from './applicationActionsService';
 
 export interface Interview {
@@ -94,15 +95,12 @@ export const interviewSchedulingService = {
           }
         });
 
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: params.candidateId,
-          type: 'application',
-          title: 'Entretien planifié',
-          message: `Un entretien a été planifié pour votre candidature. Date: ${new Date(params.scheduledAt).toLocaleString('fr-FR')}`,
-          link: `/candidate-dashboard`
-        });
+      await notificationService.sendInterviewNotification(
+        interview.id,
+        'interview_scheduled'
+      );
+
+      await notificationService.scheduleInterviewReminders(interview.id);
 
       return { success: true, interview };
     } catch (error: any) {
@@ -117,6 +115,12 @@ export const interviewSchedulingService = {
       if (!user) {
         return { success: false, error: 'Non authentifié' };
       }
+
+      const { data: oldInterview } = await supabase
+        .from('interviews')
+        .select('scheduled_at, status')
+        .eq('id', interviewId)
+        .single();
 
       const updateData: any = { ...params };
 
@@ -154,15 +158,16 @@ export const interviewSchedulingService = {
           });
 
         if (params.status === 'cancelled') {
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: interview.candidate_id,
-              type: 'warning',
-              title: 'Entretien annulé',
-              message: 'Votre entretien a été annulé. Le recruteur vous contactera pour reprogrammer.',
-              link: `/candidate-dashboard`
-            });
+          await notificationService.sendInterviewNotification(
+            interviewId,
+            'interview_cancelled'
+          );
+        } else if (params.scheduledAt && oldInterview?.scheduled_at !== params.scheduledAt) {
+          await notificationService.sendInterviewNotification(
+            interviewId,
+            'interview_rescheduled'
+          );
+          await notificationService.scheduleInterviewReminders(interviewId);
         }
 
         if (params.status === 'completed') {
