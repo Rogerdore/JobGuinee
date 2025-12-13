@@ -137,7 +137,7 @@ export const communicationService = {
     applications: Array<{ id: string; candidate_id: string }>,
     subject: string,
     message: string,
-    channel: 'notification' | 'email' = 'notification'
+    channel: 'notification' | 'email' | 'sms' | 'whatsapp' = 'notification'
   ): Promise<{ success: boolean; sent: number; failed: number }> {
     let sent = 0;
     let failed = 0;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Send, Mail, MessageSquare, Search, Filter, CheckSquare, Square, Users } from 'lucide-react';
+import { X, Send, Mail, MessageSquare, Search, Filter, CheckSquare, Square, Users, MessageCircle, Smartphone } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
@@ -55,9 +55,21 @@ export default function ImprovedCommunicationModal({
   const [subject, setSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [channel, setChannel] = useState<'notification' | 'email'>('email');
+  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set(['email']));
 
   const [sending, setSending] = useState(false);
+
+  const toggleChannel = (channel: string) => {
+    const newChannels = new Set(selectedChannels);
+    if (newChannels.has(channel)) {
+      if (newChannels.size > 1) {
+        newChannels.delete(channel);
+      }
+    } else {
+      newChannels.add(channel);
+    }
+    setSelectedChannels(newChannels);
+  };
 
   useEffect(() => {
     if (user) {
@@ -213,6 +225,11 @@ export default function ImprovedCommunicationModal({
       return;
     }
 
+    if (selectedChannels.size === 0) {
+      alert('Veuillez sélectionner au moins un canal');
+      return;
+    }
+
     setSending(true);
 
     const selectedCandidatesList = candidates.filter(c => selectedCandidates.has(c.id));
@@ -226,12 +243,15 @@ export default function ImprovedCommunicationModal({
     }));
 
     try {
-      await communicationService.sendBulkCommunication(
-        applicationsToSend,
-        finalSubject,
-        message,
-        channel
-      );
+      // Envoyer sur chaque canal sélectionné
+      for (const channel of Array.from(selectedChannels)) {
+        await communicationService.sendBulkCommunication(
+          applicationsToSend,
+          finalSubject,
+          message,
+          channel as any
+        );
+      }
 
       setSending(false);
 
@@ -451,28 +471,69 @@ export default function ImprovedCommunicationModal({
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Canal de communication
                   </label>
+                  <div className="mb-3 text-xs text-gray-500">
+                    Vous pouvez sélectionner plusieurs canaux
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setChannel('email')}
-                      className={`p-4 rounded-xl border-2 transition ${
-                        channel === 'email'
+                      type="button"
+                      onClick={() => toggleChannel('email')}
+                      className={`p-4 rounded-xl border-2 transition relative ${
+                        selectedChannels.has('email')
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <Mail className={`w-6 h-6 mx-auto mb-2 ${channel === 'email' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      {selectedChannels.has('email') && (
+                        <CheckSquare className="w-4 h-4 absolute top-2 right-2 text-blue-600" />
+                      )}
+                      <Mail className={`w-6 h-6 mx-auto mb-2 ${selectedChannels.has('email') ? 'text-blue-600' : 'text-gray-400'}`} />
                       <div className="text-sm font-medium">Email</div>
                     </button>
                     <button
-                      onClick={() => setChannel('notification')}
-                      className={`p-4 rounded-xl border-2 transition ${
-                        channel === 'notification'
-                          ? 'border-blue-600 bg-blue-50'
+                      type="button"
+                      onClick={() => toggleChannel('notification')}
+                      className={`p-4 rounded-xl border-2 transition relative ${
+                        selectedChannels.has('notification')
+                          ? 'border-purple-600 bg-purple-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <MessageSquare className={`w-6 h-6 mx-auto mb-2 ${channel === 'notification' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      {selectedChannels.has('notification') && (
+                        <CheckSquare className="w-4 h-4 absolute top-2 right-2 text-purple-600" />
+                      )}
+                      <MessageSquare className={`w-6 h-6 mx-auto mb-2 ${selectedChannels.has('notification') ? 'text-purple-600' : 'text-gray-400'}`} />
                       <div className="text-sm font-medium">Notification</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleChannel('whatsapp')}
+                      className={`p-4 rounded-xl border-2 transition relative ${
+                        selectedChannels.has('whatsapp')
+                          ? 'border-green-600 bg-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {selectedChannels.has('whatsapp') && (
+                        <CheckSquare className="w-4 h-4 absolute top-2 right-2 text-green-600" />
+                      )}
+                      <MessageCircle className={`w-6 h-6 mx-auto mb-2 ${selectedChannels.has('whatsapp') ? 'text-green-600' : 'text-gray-400'}`} />
+                      <div className="text-sm font-medium">WhatsApp</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleChannel('sms')}
+                      className={`p-4 rounded-xl border-2 transition relative ${
+                        selectedChannels.has('sms')
+                          ? 'border-orange-600 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {selectedChannels.has('sms') && (
+                        <CheckSquare className="w-4 h-4 absolute top-2 right-2 text-orange-600" />
+                      )}
+                      <Smartphone className={`w-6 h-6 mx-auto mb-2 ${selectedChannels.has('sms') ? 'text-orange-600' : 'text-gray-400'}`} />
+                      <div className="text-sm font-medium">SMS</div>
                     </button>
                   </div>
                 </div>
