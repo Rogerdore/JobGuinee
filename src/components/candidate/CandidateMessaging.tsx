@@ -56,6 +56,7 @@ export default function CandidateMessaging() {
   const [replyMessage, setReplyMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -70,7 +71,9 @@ export default function CandidateMessaging() {
   }, [selectedConversation?.messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   const subscribeToMessages = () => {
@@ -604,7 +607,7 @@ export default function CandidateMessaging() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
               {selectedConversation.messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
