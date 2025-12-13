@@ -12,6 +12,7 @@ import {
   DocumentType,
   DocumentStats
 } from '../../services/candidateDocumentService';
+import SuccessModal from '../notifications/SuccessModal';
 
 export default function DocumentsHub() {
   const { profile } = useAuth();
@@ -28,6 +29,17 @@ export default function DocumentsHub() {
   const [availableToImport, setAvailableToImport] = useState(0);
   const [autoImportDone, setAutoImportDone] = useState(false);
   const [showImportSuggestion, setShowImportSuggestion] = useState(false);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: 'success' | 'info' | 'error';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
   useEffect(() => {
     if (profile?.id) {
@@ -89,14 +101,29 @@ export default function DocumentsHub() {
       const count = await candidateDocumentService.aggregateFromExistingSources(profile.id);
       setAutoImportDone(true);
       if (count > 0) {
-        alert(`✅ ${count} document(s) importé(s) avec succès !`);
+        setNotification({
+          show: true,
+          type: 'success',
+          title: 'Import réussi !',
+          message: `${count} document${count > 1 ? 's ont' : ' a'} été importé${count > 1 ? 's' : ''} avec succès dans votre centre de documentation.`
+        });
       } else {
-        alert('ℹ️ Aucun nouveau document à importer (tous déjà importés)');
+        setNotification({
+          show: true,
+          type: 'info',
+          title: 'Aucun nouveau document',
+          message: 'Tous vos documents disponibles ont déjà été importés dans votre centre de documentation.'
+        });
       }
       loadData();
     } catch (error) {
       console.error('Error importing documents:', error);
-      alert('❌ Erreur lors de l\'importation');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Erreur d\'importation',
+        message: 'Une erreur est survenue lors de l\'importation de vos documents. Veuillez réessayer.'
+      });
     } finally {
       setLoading(false);
     }
@@ -117,10 +144,20 @@ export default function DocumentsHub() {
 
       setShowUploadModal(false);
       loadData();
-      alert('Document téléversé avec succès !');
+      setNotification({
+        show: true,
+        type: 'success',
+        title: 'Document téléversé !',
+        message: `Votre document "${file.name}" a été ajouté avec succès à votre centre de documentation.`
+      });
     } catch (error) {
       console.error('Error uploading document:', error);
-      alert('Erreur lors du téléversement');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Erreur de téléversement',
+        message: 'Une erreur est survenue lors du téléversement de votre document. Veuillez réessayer.'
+      });
     } finally {
       setUploadProgress(false);
     }
@@ -556,6 +593,16 @@ export default function DocumentsHub() {
           onClose={() => setSelectedDocument(null)}
         />
       )}
+
+      <SuccessModal
+        isOpen={notification.show}
+        onClose={() => setNotification({ ...notification, show: false })}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+        autoClose={true}
+        autoCloseDelay={3000}
+      />
     </div>
   );
 }
