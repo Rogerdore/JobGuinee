@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
   Crown, Check, Sparkles, X, Copy, MessageCircle, Zap, Shield, Clock, Award,
-  ArrowLeft, Lock, BarChart3, Users, FileText, TrendingUp, Search, Target,
-  Calendar, Briefcase, Mail, CheckCircle, Bot, ShoppingCart, Gift, Settings,
-  Database, Globe, Cpu
+  ArrowLeft, Lock, BarChart3, FileText, TrendingUp, Search, Target,
+  Calendar, Mail, Bot, ShoppingCart, Gift, AlertCircle, Briefcase
 } from 'lucide-react';
 import { PremiumSubscriptionService, PremiumSubscription } from '../services/premiumSubscriptionService';
 import { CreditStoreService, CreditStoreSettings, CreditPackage } from '../services/creditStoreService';
+import { EnterpriseSubscriptionService, ENTERPRISE_PACKS, PREMIUM_SERVICES } from '../services/enterpriseSubscriptionService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { calculateRecruiterCompletion, getCompletionStatus } from '../utils/profileCompletion';
+import { calculateRecruiterCompletion } from '../utils/profileCompletion';
 import OrangeMoneyPaymentInfo from '../components/payments/OrangeMoneyPaymentInfo';
 
 interface PaymentModalProps {
@@ -383,125 +383,9 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
     alert('Achat initié avec succès! Veuillez suivre les instructions de paiement.');
   };
 
-  const premiumFeatures = [
-    {
-      icon: Target,
-      title: 'IA Matching Automatique',
-      description: 'Scoring intelligent des candidatures avec recommandations personnalisées',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      icon: FileText,
-      title: 'Génération d\'Offres IA',
-      description: 'Créez des offres d\'emploi professionnelles en quelques clics',
-      color: 'from-orange-500 to-red-500'
-    },
-    {
-      icon: Search,
-      title: 'CVThèque Premium',
-      description: 'Accès illimité à la base de talents avec filtres avancés',
-      color: 'from-green-500 to-emerald-500'
-    },
-    {
-      icon: BarChart3,
-      title: 'Analytics Avancés',
-      description: 'Tableaux de bord et KPIs de recrutement en temps réel',
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      icon: FileText,
-      title: 'Export PDF/Excel',
-      description: 'Exportez vos données de recrutement dans tous les formats',
-      color: 'from-yellow-500 to-orange-500'
-    },
-    {
-      icon: Settings,
-      title: 'Workflow Personnalisable',
-      description: 'Créez votre pipeline de recrutement sur mesure',
-      color: 'from-indigo-500 to-blue-500'
-    },
-    {
-      icon: Mail,
-      title: 'Messagerie Intégrée',
-      description: 'Communiquez directement avec les candidats',
-      color: 'from-teal-500 to-cyan-500'
-    },
-    {
-      icon: Calendar,
-      title: 'Gestion d\'Entretiens',
-      description: 'Planifiez et évaluez vos entretiens efficacement',
-      color: 'from-red-500 to-pink-500'
-    },
-    {
-      icon: Bot,
-      title: 'Chatbot RH',
-      description: 'Assistant virtuel pour répondre aux candidats 24/7',
-      color: 'from-cyan-500 to-blue-500'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Automatisation',
-      description: 'Automatisez vos processus de recrutement',
-      color: 'from-green-500 to-teal-500'
-    },
-    {
-      icon: Database,
-      title: 'Multi-utilisateurs',
-      description: 'Collaborez avec toute votre équipe RH',
-      color: 'from-blue-500 to-indigo-500'
-    },
-    {
-      icon: Globe,
-      title: 'API Complète',
-      description: 'Intégrez avec vos outils existants',
-      color: 'from-purple-500 to-indigo-500'
-    }
-  ];
-
-  const recruiterPlans = [
-    {
-      name: 'Smart Recruiter',
-      price: '1.000.000',
-      period: 'GNF / mois',
-      features: [
-        'Workflow personnalisable',
-        'IA Matching automatique',
-        'Chat RH intégré',
-        'Export PDF/Excel',
-        'Jusqu\'à 10 offres actives',
-        'Support prioritaire',
-      ],
-    },
-    {
-      name: 'Enterprise Recruiter',
-      price: '1.800.000',
-      period: 'GNF / mois',
-      popular: true,
-      features: [
-        'Tout Smart Recruiter +',
-        'Multi-utilisateurs illimités',
-        'Campagnes de recrutement',
-        'Rapports IA avancés',
-        'Offres illimitées',
-        'CVThèque premium',
-        'Chatbot RH personnalisé',
-      ],
-    },
-    {
-      name: 'Corporate 360°',
-      price: '2.800.000',
-      period: 'GNF / mois',
-      features: [
-        'Tout Enterprise +',
-        'API complète',
-        'Intégration SIRH',
-        'IA prédictive',
-        'Archivage sécurisé',
-        'Formation équipe RH',
-        'Account manager dédié',
-      ],
-    },
-  ];
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('fr-GN').format(price) + ' GNF';
+  };
 
   if (loading) {
     return (
@@ -617,7 +501,7 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 text-lg mb-2">
-                    Complétez votre profil pour accéder au Premium
+                    Complétez votre profil pour accéder aux packs Enterprise
                   </h3>
                   <p className="text-gray-700 mb-3">
                     Votre profil doit être complété à 80% minimum. Actuellement: <span className="font-bold">{completionPercentage}%</span>
@@ -643,10 +527,10 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
                 <span className="font-semibold">Boutique Crédits IA</span>
               </div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Rechargez vos crédits IA
+                Crédits IA à la demande
               </h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
-                Utilisez nos services IA à la demande : CV Builder, Matching, Lettres de motivation et plus encore
+                Crédits utilisés pour les services IA uniquement : Matching candidats, Génération de CVs, Analyse de profils, etc.
               </p>
             </div>
 
@@ -654,7 +538,7 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
                 {creditPackages.map((pkg) => {
                   const totalCredits = pkg.credits_amount + pkg.bonus_credits;
-                  const bonusPercentage = Math.round((pkg.bonus_credits / pkg.credits_amount) * 100);
+                  const bonusPercentage = pkg.bonus_credits > 0 ? Math.round((pkg.bonus_credits / pkg.credits_amount) * 100) : 0;
 
                   return (
                     <div
@@ -672,7 +556,7 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
                         </div>
                       )}
 
-                      {pkg.bonus_credits > 0 && (
+                      {bonusPercentage > 0 && (
                         <div className="absolute -top-3 -right-3">
                           <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
                             <Gift className="w-3 h-3" />
@@ -703,7 +587,7 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
                           {CreditStoreService.formatPrice(pkg.price_amount, pkg.currency)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {Math.round(pkg.price_amount / totalCredits)} GNF / crédit
+                          {totalCredits > 0 ? Math.round(pkg.price_amount / totalCredits) : 0} GNF / crédit
                         </div>
                       </div>
 
@@ -731,117 +615,91 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
             <div className="mt-6 p-4 bg-white rounded-xl border border-orange-200">
               <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-orange-600" />
-                Que peut-on faire avec les crédits IA ?
+                Services IA disponibles avec vos crédits
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-gray-700">
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Générer des CVs professionnels</span>
-                </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                   <span>Matching IA candidats/offres</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Lettres de motivation personnalisées</span>
+                  <span>Génération de CVs professionnels</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Simulations d'entretien</span>
+                  <span>Lettres de motivation IA</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="mt-4 p-4 bg-orange-50 rounded-xl border border-orange-200">
-              <h3 className="font-bold text-gray-900 mb-2">Paiement sécurisé</h3>
-              <div className="flex flex-wrap gap-3 text-sm text-gray-700">
-                <span className="px-3 py-1 bg-white rounded-full font-medium border border-orange-200 flex items-center gap-2">
-                  🟠 Orange Money
-                </span>
-                <span className="px-3 py-1 bg-white rounded-full font-medium border border-orange-200">
-                  💳 Cartes bancaires
-                </span>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span>Analyse de profils candidats</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="bg-gradient-to-br from-[#0E2F56] via-blue-900 to-blue-800 rounded-2xl p-8 mb-8 text-white">
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-4">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-semibold">Fonctionnalités Premium</span>
+                <Briefcase className="w-5 h-5" />
+                <span className="font-semibold">Packs Enterprise & Cabinets RH</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-3">
-                Tous les outils pour recruter efficacement
+                Solutions professionnelles de recrutement
               </h2>
               <p className="text-blue-200 max-w-2xl mx-auto">
-                Découvrez notre suite complète d'outils professionnels pour optimiser votre processus de recrutement de A à Z
+                Abonnements mensuels incluant ATS complet, CVthèque, Matching IA et outils professionnels
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {premiumFeatures.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <div
-                    key={index}
-                    className="bg-white/10 backdrop-blur-sm rounded-xl p-5 hover:bg-white/20 transition-all hover:scale-105"
-                  >
-                    <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-lg flex items-center justify-center mb-3`}>
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="font-bold text-white mb-2">{feature.title}</h3>
-                    <p className="text-sm text-blue-200">{feature.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-8 mb-8">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-full mb-4">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-semibold">Abonnements Premium RH</span>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Optimisez votre recrutement avec l'IA
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Des outils professionnels pour gérer tout le cycle de recrutement, de la rédaction à l'embauche
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {recruiterPlans.map((plan, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+              {Object.values(ENTERPRISE_PACKS).map((pack) => (
                 <div
-                  key={index}
-                  className={`relative bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition ${
-                    plan.popular ? 'ring-2 ring-blue-900 scale-105' : ''
-                  }`}
+                  key={pack.code}
+                  className="bg-white rounded-xl p-6 text-gray-900 shadow-lg hover:shadow-2xl transition-all"
                 >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-blue-900 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                        Le plus populaire
-                      </span>
+                  {pack.requiresValidation && (
+                    <div className="mb-4 px-3 py-1 bg-yellow-100 border border-yellow-300 text-yellow-800 text-xs font-semibold rounded-full inline-flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Validation requise
                     </div>
                   )}
 
-                  <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                    <div className="flex items-end justify-center gap-1 mb-1">
-                      <span className="text-4xl font-bold text-blue-900">{plan.price}</span>
+                  <h3 className="text-xl font-bold mb-2">{pack.name}</h3>
+
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold text-[#0E2F56] mb-1">
+                      {formatPrice(pack.price)}
                     </div>
-                    <p className="text-gray-600 text-sm">{plan.period}</p>
+                    <div className="text-sm text-gray-600">par mois</div>
                   </div>
 
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-700">{feature}</span>
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <div className="text-gray-600">Offres actives</div>
+                        <div className="font-bold text-blue-900">{pack.maxActiveJobs === 999 ? 'Illimité' : pack.maxActiveJobs}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-600">CV consultés</div>
+                        <div className="font-bold text-blue-900">{pack.monthlyCVQuota ? `${pack.monthlyCVQuota}/mois` : 'Illimité'}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-600">Matching IA</div>
+                        <div className="font-bold text-blue-900">{pack.maxMonthlyMatching ? `${pack.maxMonthlyMatching}` : 'Illimité'}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-600">Support</div>
+                        <div className="font-bold text-blue-900">{pack.code === 'enterprise_basic' ? 'Email' : pack.code === 'enterprise_pro' ? 'WhatsApp' : 'Dédié'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-2 mb-6 text-sm">
+                    {pack.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -851,33 +709,153 @@ export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) 
                     className={`w-full py-3 rounded-lg font-semibold transition ${
                       !canSubscribe
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : plan.popular
-                        ? 'bg-blue-900 hover:bg-blue-800 text-white shadow-lg'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                        : pack.requiresValidation
+                        ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg'
+                        : 'bg-[#0E2F56] hover:bg-blue-900 text-white shadow-lg'
                     }`}
                   >
-                    {!canSubscribe ? `Profil requis: ${completionPercentage}%/80%` : 'Choisir ce plan'}
+                    {!canSubscribe
+                      ? `Profil requis: ${completionPercentage}%/80%`
+                      : pack.requiresValidation
+                      ? 'Demander validation'
+                      : 'Souscrire'}
                   </button>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 p-6 bg-white rounded-xl border border-blue-200">
-              <h3 className="font-bold text-gray-900 mb-3">Moyens de paiement acceptés</h3>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-700">
-                <span className="px-3 py-1 bg-orange-50 text-orange-900 rounded-full font-medium">
-                  🟠 Orange Money
-                </span>
-                <span className="px-3 py-1 bg-blue-50 text-blue-900 rounded-full font-medium">
-                  💳 LengoPay
-                </span>
-                <span className="px-3 py-1 bg-teal-50 text-teal-900 rounded-full font-medium">
-                  💎 DigitalPay SA
-                </span>
-                <span className="px-3 py-1 bg-gray-50 text-gray-900 rounded-full font-medium">
-                  💳 Visa / Mastercard
-                </span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-center">Tableau comparatif des fonctionnalités</h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/20">
+                      <th className="text-left py-3 px-4 font-semibold">Fonctionnalité</th>
+                      <th className="text-center py-3 px-4 font-semibold">BASIC</th>
+                      <th className="text-center py-3 px-4 font-semibold">PRO</th>
+                      <th className="text-center py-3 px-4 font-semibold">GOLD</th>
+                      <th className="text-center py-3 px-4 font-semibold">CABINET</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: 'ATS Complet', basic: true, pro: true, gold: true, cabinet: true },
+                      { name: 'Matching IA avancé', basic: '⚠️', pro: true, gold: true, cabinet: true },
+                      { name: 'Planification entretiens', basic: false, pro: true, gold: true, cabinet: true },
+                      { name: 'Analytics RH', basic: false, pro: true, gold: true, cabinet: true },
+                      { name: 'Multi-filiales', basic: false, pro: false, gold: true, cabinet: false },
+                      { name: 'Reporting institutionnel', basic: false, pro: false, gold: true, cabinet: false },
+                      { name: 'Gestion multi-clients', basic: false, pro: false, gold: false, cabinet: true },
+                    ].map((row, idx) => (
+                      <tr key={idx} className="border-b border-white/10">
+                        <td className="py-3 px-4">{row.name}</td>
+                        <td className="text-center py-3 px-4">
+                          {row.basic === true ? <Check className="w-5 h-5 text-green-400 mx-auto" /> :
+                           row.basic === '⚠️' ? <span className="text-yellow-400">⚠️</span> :
+                           <X className="w-5 h-5 text-red-400 mx-auto" />}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          {row.pro === true ? <Check className="w-5 h-5 text-green-400 mx-auto" /> :
+                           <X className="w-5 h-5 text-red-400 mx-auto" />}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          {row.gold === true ? <Check className="w-5 h-5 text-green-400 mx-auto" /> :
+                           <X className="w-5 h-5 text-red-400 mx-auto" />}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          {row.cabinet === true ? <Check className="w-5 h-5 text-green-400 mx-auto" /> :
+                           <X className="w-5 h-5 text-red-400 mx-auto" />}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-8 mb-8 border-2 border-blue-200">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-full mb-4">
+                <Target className="w-5 h-5" />
+                <span className="font-semibold">Services Premium NON IA</span>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Boostez votre visibilité
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Services à l'unité, activables même sans abonnement Enterprise. Ne consomment PAS de crédits IA.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.values(PREMIUM_SERVICES).map((service) => (
+                <div
+                  key={service.code}
+                  className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 mb-1">{service.name}</h3>
+                      <div className="text-sm text-gray-600">Durée : {service.duration_days} jours</div>
+                    </div>
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      {service.code.includes('job') && <FileText className="w-6 h-6 text-blue-600" />}
+                      {service.code.includes('profile') && <BarChart3 className="w-6 h-6 text-blue-600" />}
+                      {service.code.includes('campaign') && <Target className="w-6 h-6 text-blue-600" />}
+                    </div>
+                  </div>
+
+                  <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-900">
+                      {formatPrice(service.price)}
+                    </div>
+                  </div>
+
+                  <button
+                    disabled={!canSubscribe}
+                    className={`w-full py-3 rounded-lg font-semibold transition ${
+                      !canSubscribe
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-900 hover:bg-blue-800 text-white shadow-lg'
+                    }`}
+                  >
+                    {!canSubscribe ? 'Profil requis' : 'Activer'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-yellow-900 mb-1">Important</h4>
+                  <p className="text-sm text-yellow-800">
+                    Ces services sont activables à l'unité et ne consomment pas de crédits IA.
+                    Vous pouvez les utiliser même sans abonnement Enterprise.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+            <h3 className="font-bold text-gray-900 mb-3">Moyens de paiement acceptés</h3>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+              <span className="px-3 py-1 bg-orange-50 text-orange-900 rounded-full font-medium">
+                🟠 Orange Money
+              </span>
+              <span className="px-3 py-1 bg-blue-50 text-blue-900 rounded-full font-medium">
+                💳 LengoPay
+              </span>
+              <span className="px-3 py-1 bg-teal-50 text-teal-900 rounded-full font-medium">
+                💎 DigitalPay SA
+              </span>
+              <span className="px-3 py-1 bg-gray-50 text-gray-900 rounded-full font-medium">
+                💳 Visa / Mastercard
+              </span>
             </div>
           </div>
 
