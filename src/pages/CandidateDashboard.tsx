@@ -45,8 +45,16 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
-    loadData();
-  }, [profile?.id]);
+    if (profile?.id && user?.id) {
+      console.log('🔍 Loading data for user:', {
+        userId: user.id,
+        profileId: profile.id,
+        email: user.email,
+        userType: profile.user_type
+      });
+      loadData();
+    }
+  }, [profile?.id, user?.id]);
 
   const loadData = async () => {
     if (!profile?.id || !user?.id) {
@@ -84,6 +92,17 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         candidateMessagingService.getUnreadCount()
       ]);
 
+      console.log('📊 Data loaded:', {
+        applications: appsData.data?.length || 0,
+        jobViews: jobViewsData.data?.length || 0,
+        formations: formationsData.data?.length || 0,
+        errors: {
+          apps: appsData.error,
+          jobViews: jobViewsData.error,
+          formations: formationsData.error
+        }
+      });
+
       if (appsData.data) setApplications(appsData.data as any);
 
       if (profileData.data) {
@@ -103,7 +122,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       // Compter les vues uniques (un job_id = une offre vue)
       if (jobViewsData.data) {
         const uniqueJobIds = new Set(jobViewsData.data.map((v: any) => v.job_id));
-        setJobViewsCount(uniqueJobIds.size);
+        const count = uniqueJobIds.size;
+        console.log('👁️ Job views:', count, 'offres uniques consultées');
+        setJobViewsCount(count);
+      } else {
+        console.log('⚠️ No job views data');
       }
 
       // Charger les formations inscrites
@@ -454,7 +477,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <span className="text-blue-100 text-sm">Offres consultées</span>
                 <Eye className="w-5 h-5 text-blue-200" />
               </div>
-              <div className="text-3xl font-bold">{jobViewsCount}</div>
+              <div className="text-3xl font-bold">
+                {loading ? '...' : jobViewsCount}
+              </div>
+              {!loading && jobViewsCount === 0 && (
+                <p className="text-xs text-blue-200 mt-1">Consultez des offres pour voir vos statistiques</p>
+              )}
             </div>
 
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
@@ -462,7 +490,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <span className="text-blue-100 text-sm">Candidatures</span>
                 <Briefcase className="w-5 h-5 text-blue-200" />
               </div>
-              <div className="text-3xl font-bold">{applications.length}</div>
+              <div className="text-3xl font-bold">
+                {loading ? '...' : applications.length}
+              </div>
+              {!loading && applications.length === 0 && (
+                <p className="text-xs text-blue-200 mt-1">Postulez à des offres pour commencer</p>
+              )}
             </div>
 
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
