@@ -5,6 +5,7 @@ import { supabase, Application, Job, Company, CandidateProfile } from '../lib/su
 import { isPremiumActive } from '../utils/premiumHelpers';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import CandidateMessaging from '../components/candidate/CandidateMessaging';
+import DocumentsHub from '../components/candidate/DocumentsHub';
 import { candidateMessagingService } from '../services/candidateMessagingService';
 
 interface CandidateDashboardProps {
@@ -1323,18 +1324,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
 
             {activeTab === 'documents' && (
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Mes Documents</h3>
-                <p className="text-gray-600 mb-6">Gérez vos CV, lettres de motivation et autres documents</p>
-                <button
-                  onClick={() => alert('Fonctionnalité de téléchargement de documents disponible prochainement')}
-                  className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white font-medium rounded-lg transition flex items-center gap-2 mx-auto"
-                >
-                  <Upload className="w-5 h-5" />
-                  Télécharger un document
-                </button>
-              </div>
+              <DocumentsHub />
             )}
 
             {activeTab === 'premium' && (
