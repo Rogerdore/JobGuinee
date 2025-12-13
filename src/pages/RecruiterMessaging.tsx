@@ -14,7 +14,7 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import { communicationService, CommunicationTemplate } from '../services/communicationService';
+import ImprovedCommunicationModal from '../components/recruiter/ImprovedCommunicationModal';
 
 interface Message {
   id: string;
@@ -48,14 +48,7 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-
-  const [composing, setComposing] = useState(false);
-  const [templates, setTemplates] = useState<CommunicationTemplate[]>([]);
-  const [newSubject, setNewSubject] = useState('');
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [recipientSearch, setRecipientSearch] = useState('');
-  const [sending, setSending] = useState(false);
+  const [showImprovedModal, setShowImprovedModal] = useState(false);
 
   useEffect(() => {
     loadCompany();
@@ -64,7 +57,6 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
   useEffect(() => {
     if (company) {
       loadMessages();
-      loadTemplates();
     }
   }, [company]);
 
@@ -115,11 +107,6 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
     }
   };
 
-  const loadTemplates = async () => {
-    const data = await communicationService.getTemplates(company?.id);
-    setTemplates(data);
-  };
-
   const filterMessages = () => {
     let filtered = [...messages];
 
@@ -141,69 +128,6 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
     }
 
     setFilteredMessages(filtered);
-  };
-
-  const handleTemplateChange = async (templateId: string) => {
-    setSelectedTemplate(templateId);
-
-    if (!templateId) {
-      setNewSubject('');
-      setNewMessage('');
-      return;
-    }
-
-    const template = await communicationService.getTemplate(templateId);
-    if (template) {
-      setNewSubject(template.subject);
-      setNewMessage(template.body);
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!newSubject || !newMessage || !recipientSearch) {
-      alert('Veuillez remplir tous les champs');
-      return;
-    }
-
-    setSending(true);
-    try {
-      const { data: applications } = await supabase
-        .from('applications')
-        .select('id, candidate_id, candidate:candidate_profiles!applications_candidate_id_fkey(profile:profiles!candidate_profiles_profile_id_fkey(full_name, email))')
-        .eq('job_id', company.id)
-        .ilike('candidate.profile.full_name', `%${recipientSearch}%`)
-        .limit(1);
-
-      if (!applications || applications.length === 0) {
-        alert('Candidat non trouvé');
-        return;
-      }
-
-      const app = applications[0];
-      const result = await communicationService.sendCommunication({
-        applicationId: app.id,
-        recipientId: app.candidate_id,
-        subject: newSubject,
-        message: newMessage,
-        channel: 'notification'
-      });
-
-      if (result.success) {
-        alert('Message envoyé avec succès!');
-        setComposing(false);
-        setNewSubject('');
-        setNewMessage('');
-        setRecipientSearch('');
-        loadMessages();
-      } else {
-        alert('Erreur: ' + result.error);
-      }
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      alert('Erreur lors de l\'envoi');
-    } finally {
-      setSending(false);
-    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -304,8 +228,8 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
 
           <div className="bg-white rounded-lg shadow p-6">
             <button
-              onClick={() => setComposing(true)}
-              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 flex items-center justify-center"
+              onClick={() => setShowImprovedModal(true)}
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl hover:shadow-lg flex items-center justify-center transition font-semibold"
             >
               <Send className="w-5 h-5 mr-2" />
               Nouveau message
@@ -407,104 +331,15 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
           </div>
         </div>
 
-        {composing && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                  <Send className="w-6 h-6 mr-2 text-green-600" />
-                  Nouveau message
-                </h3>
-                <button
-                  onClick={() => setComposing(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <AlertCircle className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Template (optionnel)
-                  </label>
-                  <select
-                    value={selectedTemplate}
-                    onChange={(e) => handleTemplateChange(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Sans template</option>
-                    {templates.map(t => (
-                      <option key={t.id} value={t.id}>{t.template_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Destinataire
-                  </label>
-                  <input
-                    type="text"
-                    value={recipientSearch}
-                    onChange={(e) => setRecipientSearch(e.target.value)}
-                    placeholder="Nom du candidat..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sujet
-                  </label>
-                  <input
-                    type="text"
-                    value={newSubject}
-                    onChange={(e) => setNewSubject(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    rows={8}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={sending}
-                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 flex items-center justify-center"
-                  >
-                    {sending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                        Envoi...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5 mr-2" />
-                        Envoyer
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setComposing(false)}
-                    className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        {showImprovedModal && company && (
+          <ImprovedCommunicationModal
+            companyId={company.id}
+            onClose={() => setShowImprovedModal(false)}
+            onSuccess={() => {
+              setShowImprovedModal(false);
+              loadMessages();
+            }}
+          />
         )}
 
         {selectedMessage && (
