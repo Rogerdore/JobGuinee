@@ -29,6 +29,8 @@ import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
 import PurchasedProfiles from './PurchasedProfiles';
+import RecruiterMessaging from './RecruiterMessaging';
+import DirectionDashboard from '../components/recruiter/DirectionDashboard';
 import RecentJobsCard from '../components/recruiter/RecentJobsCard';
 import RecentApplicationsCard from '../components/recruiter/RecentApplicationsCard';
 import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
@@ -78,7 +80,7 @@ interface WorkflowStage {
   stage_color: string;
 }
 
-type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'premium' | 'profile' | 'purchased-profiles';
+type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'pilotage' | 'premium' | 'profile' | 'purchased-profiles';
 
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { profile } = useAuth();
@@ -426,6 +428,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     { id: 'ai-generator', label: 'Publier une offre', icon: Plus },
     { id: 'messages', label: 'Messagerie', icon: MessageSquare },
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
+    { id: 'pilotage', label: 'Pilotage RH', icon: TrendingUp },
     { id: 'premium', label: 'Premium', icon: Sparkles },
     { id: 'profile', label: 'Mon Profil', icon: Settings },
   ];
@@ -972,16 +975,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           )}
 
           {activeTab === 'messages' && (
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-16 text-center">
-              <MessageSquare className="w-20 h-20 text-gray-300 mx-auto mb-6" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Messagerie RH</h3>
-              <p className="text-gray-600 text-lg mb-2">
-                Communiquez directement avec les candidats
-              </p>
-              <p className="text-sm text-gray-500 mt-4 px-4 py-2 bg-gray-50 rounded-lg inline-block">
-                Fonctionnalité disponible prochainement
-              </p>
-            </div>
+            <RecruiterMessaging onNavigate={onNavigate} />
           )}
 
           {activeTab === 'analytics' && (
@@ -1032,6 +1026,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               <AnalyticsDashboard data={analyticsData} />
             </div>
           )}
+
+          {activeTab === 'pilotage' && company && <DirectionDashboard companyId={company.id} />}
 
           {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
