@@ -58,9 +58,11 @@ export default function CandidateMessaging() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log('CandidateMessaging mounted, user:', user?.id);
     if (user?.id) {
       loadConversations();
-      subscribeToMessages();
+      const unsubscribe = subscribeToMessages();
+      return unsubscribe;
     }
   }, [user?.id]);
 
@@ -104,8 +106,12 @@ export default function CandidateMessaging() {
   };
 
   const loadConversations = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('No user ID, skipping load');
+      return;
+    }
 
+    console.log('Loading conversations for user:', user.id);
     setLoading(true);
     try {
       const [notificationsData, communicationsData, applicationsData] = await Promise.all([
@@ -265,6 +271,11 @@ export default function CandidateMessaging() {
           new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
         );
 
+      console.log('Loaded conversations:', conversationsArray.length);
+      conversationsArray.forEach(conv => {
+        console.log(`- ${conv.company_name}: ${conv.messages.length} messages`);
+      });
+
       setConversations(conversationsArray);
 
       if (selectedConversation) {
@@ -308,6 +319,8 @@ export default function CandidateMessaging() {
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
+    console.log('Selecting conversation:', conversation.id, conversation);
+    console.log('Messages in conversation:', conversation.messages.length);
     setSelectedConversation(conversation);
     markAsRead(conversation);
   };
@@ -574,7 +587,15 @@ export default function CandidateMessaging() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {selectedConversation.messages.map((message, index) => {
+              {selectedConversation.messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">Aucun message dans cette conversation</p>
+                  </div>
+                </div>
+              ) : (
+                selectedConversation.messages.map((message, index) => {
                 const isSystem = message.sender.id === 'system' || message.sender.id === user?.id;
                 const showDate = index === 0 ||
                   new Date(message.timestamp).toDateString() !==
@@ -658,7 +679,7 @@ export default function CandidateMessaging() {
                     </div>
                   </div>
                 );
-              })}
+              }))}
               <div ref={messagesEndRef} />
             </div>
 
