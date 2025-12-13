@@ -36,7 +36,7 @@ export interface DirectionKPIs {
     avgMatchingScore: number;
     timeSavedHours: number;
   };
-  recruitment ROI: {
+  recruitmentROI: {
     totalHired: number;
     avgCostPerHire: number;
     aiCostSavings: number;
