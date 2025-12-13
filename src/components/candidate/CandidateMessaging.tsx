@@ -271,10 +271,13 @@ export default function CandidateMessaging() {
           new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
         );
 
-      console.log('Loaded conversations:', conversationsArray.length);
-      conversationsArray.forEach(conv => {
-        console.log(`- ${conv.company_name}: ${conv.messages.length} messages`);
-      });
+      console.log('✅ Loaded conversations:', conversationsArray.length);
+      if (conversationsArray.length > 0) {
+        console.log('📋 Conversations:');
+        conversationsArray.forEach(conv => {
+          console.log(`  - ${conv.company_name}: ${conv.messages.length} messages, unread: ${conv.unread_count}`);
+        });
+      }
 
       setConversations(conversationsArray);
 
@@ -315,12 +318,15 @@ export default function CandidateMessaging() {
         .in('id', unreadCommunications);
     }
 
-    loadConversations();
+    // Ne pas recharger immédiatement, le WebSocket va s'en charger
+    // loadConversations();
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
-    console.log('Selecting conversation:', conversation.id, conversation);
-    console.log('Messages in conversation:', conversation.messages.length);
+    console.log('🔵 Selecting conversation:', conversation.company_name);
+    console.log('   ID:', conversation.id);
+    console.log('   Messages:', conversation.messages.length);
+    console.log('   First message:', conversation.messages[0]?.message.substring(0, 50));
     setSelectedConversation(conversation);
     markAsRead(conversation);
   };
@@ -345,7 +351,8 @@ export default function CandidateMessaging() {
       }
 
       setReplyMessage('');
-      loadConversations();
+      // Le WebSocket rechargera automatiquement
+      // loadConversations();
     } catch (error) {
       console.error('Error sending reply:', error);
     } finally {
@@ -418,7 +425,7 @@ export default function CandidateMessaging() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-200px)] bg-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden">
+    <div className="flex h-[600px] bg-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden">
       {/* Sidebar - Liste des conversations */}
       <div className="w-96 bg-white border-r-2 border-gray-200 flex flex-col">
         {/* Header */}
