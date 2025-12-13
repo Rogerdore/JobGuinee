@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 import { isPremiumActive } from '../utils/premiumHelpers';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
+import CandidateMessaging from '../components/candidate/CandidateMessaging';
+import { candidateMessagingService } from '../services/candidateMessagingService';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -28,6 +30,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [selectedService, setSelectedService] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [jobViewsCount, setJobViewsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -53,7 +56,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     setLoading(true);
 
     try {
-      const [appsData, profileData, jobViewsData, formationsData, profilesData] = await Promise.all([
+      const [appsData, profileData, jobViewsData, formationsData, profilesData, unreadCount] = await Promise.all([
         supabase
           .from('applications')
           .select('*, jobs(*, companies(*))')
@@ -77,7 +80,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .from('profiles')
           .select('credits_balance, is_premium, premium_expiration')
           .eq('id', profile.id)
-          .maybeSingle()
+          .maybeSingle(),
+        candidateMessagingService.getUnreadCount()
       ]);
 
       if (appsData.data) setApplications(appsData.data as any);
@@ -117,6 +121,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         setCreditsBalance(profilesData.data.credits_balance || 0);
         setIsPremium(isPremiumActive(profilesData.data));
       }
+
+      // Charger le nombre de messages non lus
+      setUnreadMessagesCount(unreadCount);
     } catch (error) {
       console.error('Error loading candidate data:', error);
     } finally {
@@ -486,16 +493,17 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               { id: 'profile', label: 'Mon profil', icon: Settings },
               { id: 'formations', label: 'Formations', icon: BookOpen },
               { id: 'alerts', label: 'Alertes emploi', icon: Bell },
-              { id: 'messages', label: 'Messages', icon: MessageCircle },
+              { id: 'messages', label: `Messages${unreadMessagesCount > 0 ? ` (${unreadMessagesCount})` : ''}`, icon: MessageCircle, badge: unreadMessagesCount },
               { id: 'documents', label: 'Documents', icon: FileText },
               { id: 'premium', label: 'Services Premium', icon: Crown },
             ].map((tab) => {
               const Icon = tab.icon;
+              const hasBadge = (tab as any).badge && (tab as any).badge > 0;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 transition ${
+                  className={`px-6 py-4 font-medium whitespace-nowrap flex items-center space-x-2 transition relative ${
                     activeTab === tab.id
                       ? 'border-b-2 border-[#0E2F56] text-[#0E2F56] bg-blue-50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -503,6 +511,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 >
                   <Icon className="w-5 h-5" />
                   <span>{tab.label}</span>
+                  {hasBadge && (
+                    <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full">
+                      {(tab as any).badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1273,12 +1286,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
 
             {activeTab === 'messages' && (
-              <div className="text-center py-12">
-                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Messagerie</h3>
-                <p className="text-gray-600 mb-6">Communiquez directement avec les recruteurs</p>
-                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
-              </div>
+              <CandidateMessaging />
             )}
 
             {activeTab === 'documents' && (
