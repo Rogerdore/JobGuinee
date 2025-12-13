@@ -124,7 +124,16 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(msg => msg.status === statusFilter);
+      if (statusFilter === 'received') {
+        // Filtrer les messages reçus par le recruteur
+        filtered = filtered.filter(msg => msg.recipient_id === user?.id);
+      } else if (statusFilter === 'sent') {
+        // Filtrer les messages envoyés par le recruteur
+        filtered = filtered.filter(msg => msg.sender_id === user?.id);
+      } else {
+        // Autres statuts (delivered, failed)
+        filtered = filtered.filter(msg => msg.status === statusFilter);
+      }
     }
 
     setFilteredMessages(filtered);
@@ -276,6 +285,7 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               >
                 <option value="all">Tous les statuts</option>
+                <option value="received">Reçus</option>
                 <option value="sent">Envoyés</option>
                 <option value="delivered">Délivrés</option>
                 <option value="failed">Échecs</option>
