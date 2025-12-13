@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { calculateRecruiterCompletion, getCompletionStatus } from '../../utils/profileCompletion';
 import { CreditStoreService, CreditPackage } from '../../services/creditStoreService';
 import OrangeMoneyPaymentInfo from '../payments/OrangeMoneyPaymentInfo';
+import SuccessModal from '../notifications/SuccessModal';
 
 interface Plan {
   name: string;
@@ -27,6 +28,7 @@ export default function PremiumPlans({ onNavigateToProfile }: PremiumPlansProps 
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [purchaseInProgress, setPurchaseInProgress] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     checkProfileCompletion();
@@ -74,7 +76,7 @@ export default function PremiumPlans({ onNavigateToProfile }: PremiumPlansProps 
   const handlePurchaseComplete = async () => {
     setShowPaymentModal(false);
     setSelectedPackage(null);
-    alert('Achat initié avec succès! Veuillez suivre les instructions de paiement.');
+    setShowSuccessModal(true);
   };
   const plans: Plan[] = [
     {
@@ -419,6 +421,15 @@ export default function PremiumPlans({ onNavigateToProfile }: PremiumPlansProps 
           </div>
         </div>
       </div>
+    )}
+
+    {showSuccessModal && (
+      <SuccessModal
+        title="Achat initié avec succès !"
+        message="Veuillez suivre les instructions de paiement envoyées par email. Votre achat sera confirmé dès réception du paiement."
+        onClose={() => setShowSuccessModal(false)}
+        actionLabel="Compris"
+      />
     )}
     </div>
   );

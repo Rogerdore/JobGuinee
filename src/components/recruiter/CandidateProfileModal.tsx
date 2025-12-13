@@ -47,16 +47,55 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
   const loadCandidateData = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from('applications')
-      .select(`
-        id,
-        ai_score,
-        ai_category,
-        applied_at,
-        cover_letter,
-        cv_url,
-        candidate:candidate_profiles!applications_candidate_id_fkey(
+    try {
+      const { data: applicationData, error: appError } = await supabase
+        .from('applications')
+        .select(`
+          id,
+          ai_score,
+          ai_category,
+          applied_at,
+          cover_letter,
+          cv_url,
+          candidate_id,
+          job:jobs(title)
+        `)
+        .eq('id', applicationId)
+        .single();
+
+      if (appError) {
+        console.error('Error loading application:', appError);
+        setLoading(false);
+        return;
+      }
+
+      if (!applicationData) {
+        console.error('Application not found');
+        setLoading(false);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          email,
+          phone,
+          avatar_url
+        `)
+        .eq('id', applicationData.candidate_id)
+        .single();
+
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        setLoading(false);
+        return;
+      }
+
+      const { data: candidateProfile } = await supabase
+        .from('candidate_profiles')
+        .select(`
           id,
           title,
           experience_years,
@@ -64,51 +103,41 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
           skills,
           professional_summary,
           location,
-          desired_salary,
-          availability,
-          profile:profiles!candidate_profiles_profile_id_fkey(
-            full_name,
-            email,
-            phone,
-            avatar_url
-          )
-        ),
-        job:jobs!applications_job_id_fkey(
-          title
-        )
-      `)
-      .eq('id', applicationId)
-      .single();
+          desired_salary_min,
+          desired_salary_max,
+          availability
+        `)
+        .eq('profile_id', applicationData.candidate_id)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Error loading candidate:', error);
-    } else if (data) {
       setCandidate({
-        id: data.id,
+        id: applicationData.id,
         candidate: {
-          id: data.candidate.id,
-          full_name: data.candidate.profile.full_name,
-          email: data.candidate.profile.email,
-          phone: data.candidate.profile.phone,
-          avatar_url: data.candidate.profile.avatar_url,
+          id: profileData.id,
+          full_name: profileData.full_name || 'Candidat',
+          email: profileData.email,
+          phone: profileData.phone,
+          avatar_url: profileData.avatar_url,
         },
         candidate_profile: {
-          title: data.candidate.title,
-          experience_years: data.candidate.experience_years,
-          education_level: data.candidate.education_level,
-          skills: data.candidate.skills,
-          professional_summary: data.candidate.professional_summary,
-          location: data.candidate.location,
-          desired_salary: data.candidate.desired_salary,
-          availability: data.candidate.availability,
+          title: candidateProfile?.title,
+          experience_years: candidateProfile?.experience_years,
+          education_level: candidateProfile?.education_level,
+          skills: candidateProfile?.skills,
+          professional_summary: candidateProfile?.professional_summary,
+          location: candidateProfile?.location,
+          desired_salary: candidateProfile?.desired_salary_max,
+          availability: candidateProfile?.availability,
         },
-        job: data.job,
-        ai_score: data.ai_score || 0,
-        ai_category: data.ai_category || 'medium',
-        applied_at: data.applied_at,
-        cover_letter: data.cover_letter,
-        cv_url: data.cv_url,
+        job: applicationData.job,
+        ai_score: applicationData.ai_score || 0,
+        ai_category: applicationData.ai_category || 'medium',
+        applied_at: applicationData.applied_at,
+        cover_letter: applicationData.cover_letter,
+        cv_url: applicationData.cv_url,
       });
+    } catch (error) {
+      console.error('Unexpected error:', error);
     }
 
     setLoading(false);
@@ -137,11 +166,17 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
   if (!candidate) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center">
-          <p className="text-gray-600">Profil introuvable</p>
+        <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center shadow-2xl">
+          <div className="mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+              <X className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Profil introuvable</h3>
+            <p className="text-gray-600">Impossible de charger les informations du candidat.</p>
+          </div>
           <button
             onClick={onClose}
-            className="mt-4 px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold"
+            className="mt-4 px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors w-full"
           >
             Fermer
           </button>
