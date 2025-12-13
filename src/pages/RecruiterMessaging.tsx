@@ -26,8 +26,16 @@ interface Message {
   channel: string;
   status: string;
   sent_at: string;
-  sender: { full_name: string };
-  recipient: { full_name: string };
+  sender: {
+    full_name: string;
+    user_type?: string;
+    companies?: Array<{ name: string }>;
+  };
+  recipient: {
+    full_name: string;
+    user_type?: string;
+    companies?: Array<{ name: string }>;
+  };
   application: {
     job: { title: string };
     workflow_stage: string;
@@ -87,8 +95,16 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
         .from('communications_log')
         .select(`
           *,
-          sender:profiles!communications_log_sender_id_fkey(full_name),
-          recipient:profiles!communications_log_recipient_id_fkey(full_name),
+          sender:profiles!communications_log_sender_id_fkey(
+            full_name,
+            user_type,
+            companies!companies_profile_id_fkey(name)
+          ),
+          recipient:profiles!communications_log_recipient_id_fkey(
+            full_name,
+            user_type,
+            companies!companies_profile_id_fkey(name)
+          ),
           application:applications(
             workflow_stage,
             job:jobs(title)
@@ -137,6 +153,15 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
     }
 
     setFilteredMessages(filtered);
+  };
+
+  const getDisplayName = (profile: { full_name: string; user_type?: string; companies?: Array<{ name: string }> }) => {
+    // Si c'est un recruteur et qu'il a une entreprise, afficher le nom de l'entreprise
+    if (profile.user_type === 'recruiter' && profile.companies?.[0]?.name) {
+      return profile.companies[0].name;
+    }
+    // Sinon afficher le nom complet
+    return profile.full_name;
   };
 
   const getStatusBadge = (message: Message) => {
@@ -314,7 +339,7 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-semibold text-gray-900">
-                            {msg.sender_id === user?.id ? msg.recipient?.full_name : msg.sender?.full_name}
+                            {msg.sender_id === user?.id ? getDisplayName(msg.recipient) : getDisplayName(msg.sender)}
                           </span>
                           {msg.application?.job && (
                             <span className="text-sm text-gray-500">
@@ -380,10 +405,10 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">
-                        {selectedMessage.sender?.full_name}
+                        {getDisplayName(selectedMessage.sender)}
                       </p>
                       <p className="text-sm text-gray-500">
-                        À: {selectedMessage.recipient?.full_name}
+                        À: {getDisplayName(selectedMessage.recipient)}
                       </p>
                     </div>
                   </div>
