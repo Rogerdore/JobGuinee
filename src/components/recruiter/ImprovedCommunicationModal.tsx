@@ -3,6 +3,7 @@ import { X, Send, Mail, MessageSquare, Search, Filter, CheckSquare, Square, User
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { communicationService, CommunicationTemplate } from '../../services/communicationService';
 
 interface Candidate {
@@ -40,6 +41,7 @@ export default function ImprovedCommunicationModal({
   onClose,
   onSuccess
 }: ImprovedCommunicationModalProps) {
+  const { user } = useAuth();
   const [step, setStep] = useState<1 | 2>(1);
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -58,17 +60,21 @@ export default function ImprovedCommunicationModal({
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    loadCandidates();
-    loadTemplates();
-  }, [companyId]);
+    if (user) {
+      loadCandidates();
+      loadTemplates();
+    }
+  }, [companyId, user]);
 
   const loadCandidates = async () => {
+    if (!user) return;
+
     setLoading(true);
 
     const { data: jobsData } = await supabase
       .from('jobs')
       .select('id')
-      .eq('company_id', companyId);
+      .eq('user_id', user.id);
 
     if (!jobsData || jobsData.length === 0) {
       setLoading(false);
@@ -86,18 +92,15 @@ export default function ImprovedCommunicationModal({
         job:jobs!applications_job_id_fkey(
           title
         ),
-        candidate:candidate_profiles!applications_candidate_id_fkey(
+        candidate:profiles!fk_applications_candidate(
           id,
-          profile_id,
-          profile:profiles!candidate_profiles_profile_id_fkey(
-            full_name,
-            email,
-            phone
-          )
+          full_name,
+          email,
+          phone
         )
       `)
       .in('job_id', jobIds)
-      .order('created_at', { ascending: false });
+      .order('applied_at', { ascending: false });
 
     if (error) {
       console.error('Error loading candidates:', error);
@@ -108,12 +111,12 @@ export default function ImprovedCommunicationModal({
     const candidatesData: Candidate[] = (data || []).map((app: any) => ({
       id: app.candidate.id,
       application_id: app.id,
-      full_name: app.candidate.profile.full_name,
-      email: app.candidate.profile.email,
-      phone: app.candidate.profile.phone,
+      full_name: app.candidate.full_name || 'Nom non disponible',
+      email: app.candidate.email,
+      phone: app.candidate.phone,
       job_id: app.job_id,
       job_title: app.job.title,
-      profile_id: app.candidate.profile_id
+      profile_id: app.candidate.id
     }));
 
     setCandidates(candidatesData);
