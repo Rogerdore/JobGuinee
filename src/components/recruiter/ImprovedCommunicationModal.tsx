@@ -515,9 +515,24 @@ export default function ImprovedCommunicationModal({
                       style={{ minHeight: '250px' }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Variables disponibles: {'{'}candidate_name{'}'}, {'{'}job_title{'}'}, {'{'}company_name{'}'}
-                  </p>
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="text-xs text-blue-900 space-y-1">
+                        <p className="font-semibold">Comment modifier ce message :</p>
+                        <ul className="list-disc list-inside space-y-0.5 ml-1">
+                          <li>Utilisez les outils de formatage ci-dessus pour personnaliser le texte</li>
+                          <li>Vous pouvez effacer entièrement le contenu et rédiger votre propre message</li>
+                          <li>Vous pouvez aussi coller un message déjà préparé (Ctrl+V / Cmd+V)</li>
+                          <li>Variables disponibles : <code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}candidate_name{'}'}</code>, <code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}job_title{'}'}</code>, <code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}company_name{'}'}</code></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
