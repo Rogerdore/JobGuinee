@@ -58,7 +58,6 @@ export default function CandidateMessaging() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    console.log('CandidateMessaging mounted, user:', user?.id);
     if (user?.id) {
       loadConversations();
       const unsubscribe = subscribeToMessages();
@@ -107,11 +106,9 @@ export default function CandidateMessaging() {
 
   const loadConversations = async () => {
     if (!user?.id) {
-      console.log('No user ID, skipping load');
       return;
     }
 
-    console.log('Loading conversations for user:', user.id);
     setLoading(true);
     try {
       const [notificationsData, communicationsData, applicationsData] = await Promise.all([
@@ -271,14 +268,6 @@ export default function CandidateMessaging() {
           new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
         );
 
-      console.log('✅ Loaded conversations:', conversationsArray.length);
-      if (conversationsArray.length > 0) {
-        console.log('📋 Conversations:');
-        conversationsArray.forEach(conv => {
-          console.log(`  - ${conv.company_name}: ${conv.messages.length} messages, unread: ${conv.unread_count}`);
-        });
-      }
-
       setConversations(conversationsArray);
 
       if (selectedConversation) {
@@ -322,11 +311,8 @@ export default function CandidateMessaging() {
     // loadConversations();
   };
 
-  const handleSelectConversation = (conversation: Conversation) => {
-    console.log('🔵 Selecting conversation:', conversation.company_name);
-    console.log('   ID:', conversation.id);
-    console.log('   Messages:', conversation.messages.length);
-    console.log('   First message:', conversation.messages[0]?.message.substring(0, 50));
+  const handleSelectConversation = (e: React.MouseEvent, conversation: Conversation) => {
+    e.preventDefault();
     setSelectedConversation(conversation);
     markAsRead(conversation);
   };
@@ -438,7 +424,11 @@ export default function CandidateMessaging() {
               </p>
             </div>
             <button
-              onClick={() => setShowFilters(!showFilters)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowFilters(!showFilters);
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
             >
               <Filter className="w-5 h-5 text-gray-600" />
@@ -464,7 +454,11 @@ export default function CandidateMessaging() {
           {showFilters && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
               <button
-                onClick={() => setFilterType('all')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setFilterType('all');
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                   filterType === 'all' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
                 }`}
@@ -472,7 +466,11 @@ export default function CandidateMessaging() {
                 <span className="font-medium">Tous les messages</span>
               </button>
               <button
-                onClick={() => setFilterType('unread')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setFilterType('unread');
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                   filterType === 'unread' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
                 }`}
@@ -480,7 +478,11 @@ export default function CandidateMessaging() {
                 <span className="font-medium">Non lus</span>
               </button>
               <button
-                onClick={() => setFilterType('email')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setFilterType('email');
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   filterType === 'email' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
                 }`}
@@ -489,7 +491,11 @@ export default function CandidateMessaging() {
                 <span className="font-medium">Emails</span>
               </button>
               <button
-                onClick={() => setFilterType('notification')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setFilterType('notification');
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   filterType === 'notification' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
                 }`}
@@ -515,7 +521,8 @@ export default function CandidateMessaging() {
             filteredConversations.map((conversation) => (
               <button
                 key={conversation.id}
-                onClick={() => handleSelectConversation(conversation)}
+                type="button"
+                onClick={(e) => handleSelectConversation(e, conversation)}
                 className={`w-full p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left ${
                   selectedConversation?.id === conversation.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
                 }`}
@@ -584,7 +591,11 @@ export default function CandidateMessaging() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedConversation(null)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedConversation(null);
+                  }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
                 >
                   <X className="w-5 h-5 text-gray-600" />
@@ -713,7 +724,11 @@ export default function CandidateMessaging() {
                     </p>
                   </div>
                   <button
-                    onClick={handleSendReply}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSendReply();
+                    }}
                     disabled={!replyMessage.trim() || sending}
                     className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
                   >
