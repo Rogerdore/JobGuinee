@@ -130,14 +130,21 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
     setFilteredMessages(filtered);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (message: Message) => {
+    const isReceived = message.recipient_id === user?.id;
+    const isSent = message.sender_id === user?.id;
+
     const badges: Record<string, { color: string; label: string; icon: any }> = {
-      sent: { color: 'bg-blue-100 text-blue-700', label: 'Envoyé', icon: Send },
+      sent: {
+        color: isReceived ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700',
+        label: isReceived ? 'Reçu' : 'Envoyé',
+        icon: isReceived ? CheckCircle : Send
+      },
       delivered: { color: 'bg-green-100 text-green-700', label: 'Délivré', icon: CheckCircle },
       failed: { color: 'bg-red-100 text-red-700', label: 'Échec', icon: AlertCircle }
     };
 
-    const badge = badges[status] || badges.sent;
+    const badge = badges[message.status] || badges.sent;
     const Icon = badge.icon;
 
     return (
@@ -307,7 +314,7 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
                           {getChannelBadge(msg.channel)}
-                          {getStatusBadge(msg.status)}
+                          {getStatusBadge(msg)}
                           {msg.application?.workflow_stage && (
                             <span className="text-xs text-gray-500">
                               {msg.application.workflow_stage}
@@ -376,7 +383,7 @@ export default function RecruiterMessaging({ onNavigate }: RecruiterMessagingPro
                     </p>
                     <div className="flex items-center justify-end space-x-2 mt-1">
                       {getChannelBadge(selectedMessage.channel)}
-                      {getStatusBadge(selectedMessage.status)}
+                      {getStatusBadge(selectedMessage)}
                     </div>
                   </div>
                 </div>
