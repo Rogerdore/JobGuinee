@@ -492,7 +492,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           isPremium={isPremium}
           onUpgrade={() => {
             setShowMatchingModal(false);
-            onNavigate('premium-ai-services');
+            onNavigate('premium-subscribe');
           }}
         />
       ) : null}
