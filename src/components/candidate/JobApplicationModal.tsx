@@ -82,6 +82,11 @@ export default function JobApplicationModal({
   };
 
   const handleSubmitWithProfile = async () => {
+    if (!candidateProfile?.cv_url) {
+      alert('Votre profil ne contient pas de CV. Veuillez utiliser la candidature personnalisée pour télécharger votre CV.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await applicationSubmissionService.submitApplication({
@@ -109,9 +114,17 @@ export default function JobApplicationModal({
       return;
     }
 
+    const hasExistingCV = candidateProfile?.cv_url;
+    const hasNewCV = manualData.cvFile;
+
+    if (!hasExistingCV && !hasNewCV) {
+      alert('Veuillez télécharger votre CV. Le CV est obligatoire pour postuler.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      let cvUrl = '';
+      let cvUrl = candidateProfile?.cv_url || '';
 
       if (manualData.cvFile) {
         const fileName = `${candidateId}-${Date.now()}.pdf`;
@@ -132,7 +145,7 @@ export default function JobApplicationModal({
         jobId,
         candidateId,
         coverLetter: manualData.coverLetter,
-        cvUrl: cvUrl || candidateProfile?.cv_url
+        cvUrl: cvUrl
       });
 
       if (result.success) {
@@ -163,7 +176,8 @@ export default function JobApplicationModal({
   };
 
   const completionPercentage = candidateProfile?.profile_completion_percentage || 0;
-  const canUseProfile = completionPercentage >= 80;
+  const hasCV = !!candidateProfile?.cv_url;
+  const canUseProfile = completionPercentage >= 80 && hasCV;
 
   if (loading) {
     return (
@@ -224,14 +238,30 @@ export default function JobApplicationModal({
                     </p>
 
                     {canUseProfile ? (
-                      <div className="flex items-center gap-2 text-green-600 font-semibold">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>Profil {completionPercentage}% complété</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-green-600 font-semibold">
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span>Profil {completionPercentage}% complété</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-green-600 font-semibold">
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span>CV enregistré</span>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-orange-600 font-semibold text-xs">
-                        <AlertCircle className="w-5 h-5" />
-                        <span>Profil {completionPercentage}% (80% requis)</span>
+                      <div className="space-y-2">
+                        {completionPercentage < 80 && (
+                          <div className="flex items-center gap-2 text-orange-600 font-semibold text-xs">
+                            <AlertCircle className="w-5 h-5" />
+                            <span>Profil {completionPercentage}% (80% requis)</span>
+                          </div>
+                        )}
+                        {!hasCV && (
+                          <div className="flex items-center gap-2 text-orange-600 font-semibold text-xs">
+                            <AlertCircle className="w-5 h-5" />
+                            <span>CV manquant</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -265,10 +295,20 @@ export default function JobApplicationModal({
                     <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <h5 className="font-semibold text-orange-900 mb-1">
-                        Profil incomplet
+                        Conditions non remplies
                       </h5>
                       <p className="text-sm text-orange-700">
-                        Pour utiliser votre profil, complétez-le à au moins 80%.
+                        Pour utiliser votre profil, vous devez :
+                      </p>
+                      <ul className="text-sm text-orange-700 mt-2 space-y-1">
+                        {completionPercentage < 80 && (
+                          <li>• Compléter votre profil à au moins 80% (actuellement {completionPercentage}%)</li>
+                        )}
+                        {!hasCV && (
+                          <li>• Ajouter un CV à votre profil</li>
+                        )}
+                      </ul>
+                      <p className="text-sm text-orange-700 mt-2">
                         En attendant, vous pouvez faire une candidature personnalisée.
                       </p>
                     </div>
@@ -411,8 +451,23 @@ export default function JobApplicationModal({
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    CV (optionnel si vous en avez un dans votre profil)
+                    CV {candidateProfile?.cv_url ? (
+                      <span className="text-green-600 font-normal">(vous avez déjà un CV enregistré)</span>
+                    ) : (
+                      <span className="text-red-600">*</span>
+                    )}
                   </label>
+
+                  {candidateProfile?.cv_url && (
+                    <div className="mb-3 p-3 bg-green-50 border-2 border-green-200 rounded-lg flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-green-900">CV existant trouvé</p>
+                        <p className="text-xs text-green-700">Votre CV enregistré sera utilisé (vous pouvez en télécharger un nouveau si vous le souhaitez)</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="relative">
                     <input
                       type="file"
@@ -423,17 +478,28 @@ export default function JobApplicationModal({
                     />
                     <label
                       htmlFor="cv-upload"
-                      className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg cursor-pointer transition"
+                      className={`flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed rounded-lg cursor-pointer transition ${
+                        !candidateProfile?.cv_url && !manualData.cvFile
+                          ? 'border-red-300 hover:border-red-500'
+                          : 'border-gray-300 hover:border-blue-500'
+                      }`}
                     >
-                      <Upload className="w-6 h-6 text-gray-600" />
+                      <Upload className={`w-6 h-6 ${!candidateProfile?.cv_url && !manualData.cvFile ? 'text-red-600' : 'text-gray-600'}`} />
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {manualData.cvFile ? manualData.cvFile.name : 'Télécharger votre CV'}
+                          {manualData.cvFile ? manualData.cvFile.name : (candidateProfile?.cv_url ? 'Télécharger un nouveau CV (optionnel)' : 'Télécharger votre CV (obligatoire)')}
                         </p>
                         <p className="text-sm text-gray-600">PDF, DOC, DOCX (max 5 MB)</p>
                       </div>
                     </label>
                   </div>
+
+                  {!candidateProfile?.cv_url && !manualData.cvFile && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      Le CV est obligatoire pour postuler
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -474,7 +540,7 @@ export default function JobApplicationModal({
                   </button>
                   <button
                     onClick={handleSubmitManual}
-                    disabled={submitting || !manualData.coverLetter.trim()}
+                    disabled={submitting || !manualData.coverLetter.trim() || (!candidateProfile?.cv_url && !manualData.cvFile)}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? (
