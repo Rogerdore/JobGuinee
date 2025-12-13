@@ -15,6 +15,10 @@ interface JobApplicationModalProps {
   onSuccess: (applicationRef: string, nextSteps: string[]) => void;
 }
 
+interface JobDetails {
+  cover_letter_required: boolean;
+}
+
 interface CandidateProfile {
   id: string;
   profile_id: string;
@@ -47,6 +51,7 @@ export default function JobApplicationModal({
   const [submitting, setSubmitting] = useState(false);
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   const [profileData, setProfileData] = useState<any>(null);
+  const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
 
   const [manualData, setManualData] = useState({
     coverLetter: '',
@@ -56,7 +61,24 @@ export default function JobApplicationModal({
 
   useEffect(() => {
     loadCandidateProfile();
-  }, [candidateId]);
+    loadJobDetails();
+  }, [candidateId, jobId]);
+
+  const loadJobDetails = async () => {
+    try {
+      const { data: job } = await supabase
+        .from('jobs')
+        .select('cover_letter_required')
+        .eq('id', jobId)
+        .single();
+
+      if (job) {
+        setJobDetails(job);
+      }
+    } catch (error) {
+      console.error('Error loading job details:', error);
+    }
+  };
 
   const loadCandidateProfile = async () => {
     setLoading(true);
@@ -87,6 +109,11 @@ export default function JobApplicationModal({
       return;
     }
 
+    if (jobDetails?.cover_letter_required && !candidateProfile?.professional_summary?.trim()) {
+      alert('Une lettre de motivation est requise pour cette offre. Veuillez compléter votre résumé professionnel ou utiliser la candidature personnalisée.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await applicationSubmissionService.submitApplication({
@@ -109,16 +136,16 @@ export default function JobApplicationModal({
   };
 
   const handleSubmitManual = async () => {
-    if (!manualData.coverLetter.trim()) {
-      alert('Veuillez rédiger une lettre de motivation');
-      return;
-    }
-
     const hasExistingCV = candidateProfile?.cv_url;
     const hasNewCV = manualData.cvFile;
 
     if (!hasExistingCV && !hasNewCV) {
       alert('Veuillez télécharger votre CV. Le CV est obligatoire pour postuler.');
+      return;
+    }
+
+    if (jobDetails?.cover_letter_required && !manualData.coverLetter.trim()) {
+      alert('Une lettre de motivation est requise par le recruteur pour cette offre.');
       return;
     }
 
@@ -177,7 +204,9 @@ export default function JobApplicationModal({
 
   const completionPercentage = candidateProfile?.profile_completion_percentage || 0;
   const hasCV = !!candidateProfile?.cv_url;
-  const canUseProfile = completionPercentage >= 80 && hasCV;
+  const hasCoverLetter = !!candidateProfile?.professional_summary?.trim();
+  const coverLetterRequired = jobDetails?.cover_letter_required || false;
+  const canUseProfile = completionPercentage >= 80 && hasCV && (!coverLetterRequired || hasCoverLetter);
 
   if (loading) {
     return (
@@ -247,6 +276,12 @@ export default function JobApplicationModal({
                           <CheckCircle2 className="w-5 h-5" />
                           <span>CV enregistré</span>
                         </div>
+                        {coverLetterRequired && (
+                          <div className="flex items-center gap-2 text-green-600 font-semibold">
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span>Lettre de motivation présente</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -260,6 +295,12 @@ export default function JobApplicationModal({
                           <div className="flex items-center gap-2 text-orange-600 font-semibold text-xs">
                             <AlertCircle className="w-5 h-5" />
                             <span>CV manquant</span>
+                          </div>
+                        )}
+                        {coverLetterRequired && !hasCoverLetter && (
+                          <div className="flex items-center gap-2 text-orange-600 font-semibold text-xs">
+                            <AlertCircle className="w-5 h-5" />
+                            <span>Lettre de motivation manquante (requise)</span>
                           </div>
                         )}
                       </div>
@@ -306,6 +347,9 @@ export default function JobApplicationModal({
                         )}
                         {!hasCV && (
                           <li>• Ajouter un CV à votre profil</li>
+                        )}
+                        {coverLetterRequired && !hasCoverLetter && (
+                          <li>• Ajouter une lettre de motivation (résumé professionnel) - requise par le recruteur</li>
                         )}
                       </ul>
                       <p className="text-sm text-orange-700 mt-2">
@@ -504,7 +548,11 @@ export default function JobApplicationModal({
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Lettre de motivation <span className="text-red-600">*</span>
+                    Lettre de motivation {coverLetterRequired ? (
+                      <span className="text-red-600">* (requise par le recruteur)</span>
+                    ) : (
+                      <span className="text-gray-600">(recommandée)</span>
+                    )}
                   </label>
                   <textarea
                     value={manualData.coverLetter}
@@ -518,11 +566,17 @@ export default function JobApplicationModal({
                   </p>
                 </div>
 
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                  <h5 className="font-semibold text-blue-900 mb-2">
-                    Conseils pour votre lettre de motivation
+                <div className={`border-2 rounded-lg p-4 ${coverLetterRequired ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <h5 className={`font-semibold mb-2 flex items-center gap-2 ${coverLetterRequired ? 'text-orange-900' : 'text-blue-900'}`}>
+                    <FileText className="w-5 h-5" />
+                    {coverLetterRequired ? 'Lettre de motivation requise' : 'Conseils pour votre lettre de motivation'}
                   </h5>
-                  <ul className="space-y-1 text-sm text-blue-800">
+                  {coverLetterRequired && (
+                    <p className="text-sm text-orange-800 font-semibold mb-2">
+                      Le recruteur exige une lettre de motivation pour cette offre.
+                    </p>
+                  )}
+                  <ul className={`space-y-1 text-sm ${coverLetterRequired ? 'text-orange-800' : 'text-blue-800'}`}>
                     <li>• Personnalisez votre lettre pour ce poste spécifique</li>
                     <li>• Mettez en avant vos compétences pertinentes</li>
                     <li>• Expliquez votre motivation pour l'entreprise</li>
@@ -540,7 +594,7 @@ export default function JobApplicationModal({
                   </button>
                   <button
                     onClick={handleSubmitManual}
-                    disabled={submitting || !manualData.coverLetter.trim() || (!candidateProfile?.cv_url && !manualData.cvFile)}
+                    disabled={submitting || (!candidateProfile?.cv_url && !manualData.cvFile) || (coverLetterRequired && !manualData.coverLetter.trim())}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? (

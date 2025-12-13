@@ -318,6 +318,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       application_deadline: data.deadline,
       required_skills: data.skills,
       status: 'published',
+      cover_letter_required: data.required_documents.includes('Lettre de motivation'),
     });
 
     if (!error) {
