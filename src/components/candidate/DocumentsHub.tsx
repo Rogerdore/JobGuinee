@@ -25,6 +25,9 @@ export default function DocumentsHub() {
   const [selectedDocument, setSelectedDocument] = useState<CandidateDocument | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(false);
+  const [availableToImport, setAvailableToImport] = useState(0);
+  const [autoImportDone, setAutoImportDone] = useState(false);
+  const [showImportSuggestion, setShowImportSuggestion] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -32,17 +35,29 @@ export default function DocumentsHub() {
     }
   }, [profile?.id, showArchived]);
 
+  useEffect(() => {
+    if (profile?.id && documents.length === 0 && !loading && !autoImportDone) {
+      checkAvailableDocuments();
+    }
+  }, [profile?.id, documents.length, loading, autoImportDone]);
+
   const loadData = async () => {
     if (!profile?.id) return;
 
     setLoading(true);
     try {
-      const [docs, statistics] = await Promise.all([
+      const [docs, statistics, availableCount] = await Promise.all([
         candidateDocumentService.getAllDocuments(profile.id, showArchived),
-        candidateDocumentService.getDocumentStats(profile.id)
+        candidateDocumentService.getDocumentStats(profile.id),
+        candidateDocumentService.countAvailableDocuments(profile.id)
       ]);
       setDocuments(docs);
       setStats(statistics);
+      setAvailableToImport(availableCount);
+
+      if (docs.length === 0 && availableCount > 0 && !autoImportDone) {
+        setShowImportSuggestion(true);
+      }
     } catch (error) {
       console.error('Error loading documents:', error);
     } finally {
@@ -50,17 +65,38 @@ export default function DocumentsHub() {
     }
   };
 
+  const checkAvailableDocuments = async () => {
+    if (!profile?.id) return;
+
+    try {
+      const count = await candidateDocumentService.countAvailableDocuments(profile.id);
+      setAvailableToImport(count);
+
+      if (count > 0 && documents.length === 0) {
+        setShowImportSuggestion(true);
+      }
+    } catch (error) {
+      console.error('Error checking available documents:', error);
+    }
+  };
+
   const handleImportExisting = async () => {
     if (!profile?.id) return;
 
     setLoading(true);
+    setShowImportSuggestion(false);
     try {
       const count = await candidateDocumentService.aggregateFromExistingSources(profile.id);
-      alert(`${count} document(s) importé(s) depuis vos sources existantes`);
+      setAutoImportDone(true);
+      if (count > 0) {
+        alert(`✅ ${count} document(s) importé(s) avec succès !`);
+      } else {
+        alert('ℹ️ Aucun nouveau document à importer (tous déjà importés)');
+      }
       loadData();
     } catch (error) {
       console.error('Error importing documents:', error);
-      alert('Erreur lors de l\'importation');
+      alert('❌ Erreur lors de l\'importation');
     } finally {
       setLoading(false);
     }
@@ -266,6 +302,35 @@ export default function DocumentsHub() {
         )}
       </div>
 
+      {showImportSuggestion && availableToImport > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-bold text-blue-900 mb-1">
+              {availableToImport} document{availableToImport > 1 ? 's' : ''} disponible{availableToImport > 1 ? 's' : ''} à importer
+            </h3>
+            <p className="text-sm text-blue-700 mb-3">
+              Nous avons détecté des documents dans votre profil et vos candidatures. Voulez-vous les importer dans votre centre de documentation ?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleImportExisting}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2 text-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Oui, importer maintenant
+              </button>
+              <button
+                onClick={() => setShowImportSuggestion(false)}
+                className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg transition text-sm"
+              >
+                Plus tard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div className="flex flex-wrap gap-2">
           <button
@@ -277,10 +342,15 @@ export default function DocumentsHub() {
           </button>
           <button
             onClick={handleImportExisting}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center gap-2"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center gap-2 relative"
           >
             <Sparkles className="w-4 h-4" />
             Importer documents existants
+            {availableToImport > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                {availableToImport}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setShowArchived(!showArchived)}

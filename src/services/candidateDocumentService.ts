@@ -406,6 +406,34 @@ class CandidateDocumentService {
     }
   }
 
+  async countAvailableDocuments(candidateId: string): Promise<number> {
+    let count = 0;
+
+    const { data: profile } = await supabase
+      .from('candidate_profiles')
+      .select('cv_url, cover_letter_url, certificates_url')
+      .eq('profile_id', candidateId)
+      .maybeSingle();
+
+    if (profile) {
+      if (profile.cv_url) count++;
+      if (profile.cover_letter_url) count++;
+      if (profile.certificates_url) count++;
+    }
+
+    const { data: applications } = await supabase
+      .from('applications')
+      .select('cv_url')
+      .eq('candidate_id', candidateId)
+      .not('cv_url', 'is', null);
+
+    if (applications) {
+      count += applications.length;
+    }
+
+    return count;
+  }
+
   async aggregateFromExistingSources(candidateId: string): Promise<number> {
     let count = 0;
 
