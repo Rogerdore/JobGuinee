@@ -185,6 +185,38 @@ class CandidateDocumentService {
     source: DocumentSource,
     additionalMetadata: Record<string, any> = {}
   ): Promise<CandidateDocument> {
+    const { data: existing } = await supabase
+      .from('candidate_documents')
+      .select('id, metadata')
+      .eq('candidate_id', candidateId)
+      .eq('file_url', fileUrl)
+      .maybeSingle();
+
+    if (existing) {
+      const existingMetadata = existing.metadata || {};
+
+      if (additionalMetadata.application_id) {
+        const updatedMetadata = {
+          ...existingMetadata,
+          application_ids: [
+            ...(Array.isArray(existingMetadata.application_ids) ? existingMetadata.application_ids : []),
+            additionalMetadata.application_id
+          ].filter((v, i, a) => a.indexOf(v) === i),
+          jobs: [
+            ...(Array.isArray(existingMetadata.jobs) ? existingMetadata.jobs : []),
+            { job_id: additionalMetadata.job_id, job_title: additionalMetadata.job_title }
+          ]
+        };
+
+        await supabase
+          .from('candidate_documents')
+          .update({ metadata: updatedMetadata })
+          .eq('id', existing.id);
+      }
+
+      throw new Error('DOCUMENT_ALREADY_EXISTS');
+    }
+
     const fileName = fileUrl.split('/').pop() || 'document';
 
     const documentData = {
@@ -407,7 +439,13 @@ class CandidateDocumentService {
   }
 
   async countAvailableDocuments(candidateId: string): Promise<number> {
-    let count = 0;
+    const { data: existingDocs } = await supabase
+      .from('candidate_documents')
+      .select('file_url')
+      .eq('candidate_id', candidateId);
+
+    const existingUrls = new Set((existingDocs || []).map(doc => doc.file_url));
+    const uniqueUrls = new Set<string>();
 
     const { data: profile } = await supabase
       .from('candidate_profiles')
@@ -416,9 +454,15 @@ class CandidateDocumentService {
       .maybeSingle();
 
     if (profile) {
-      if (profile.cv_url) count++;
-      if (profile.cover_letter_url) count++;
-      if (profile.certificates_url) count++;
+      if (profile.cv_url && !existingUrls.has(profile.cv_url)) {
+        uniqueUrls.add(profile.cv_url);
+      }
+      if (profile.cover_letter_url && !existingUrls.has(profile.cover_letter_url)) {
+        uniqueUrls.add(profile.cover_letter_url);
+      }
+      if (profile.certificates_url && !existingUrls.has(profile.certificates_url)) {
+        uniqueUrls.add(profile.certificates_url);
+      }
     }
 
     const { data: applications } = await supabase
@@ -428,10 +472,14 @@ class CandidateDocumentService {
       .not('cv_url', 'is', null);
 
     if (applications) {
-      count += applications.length;
+      for (const app of applications) {
+        if (app.cv_url && !existingUrls.has(app.cv_url)) {
+          uniqueUrls.add(app.cv_url);
+        }
+      }
     }
 
-    return count;
+    return uniqueUrls.size;
   }
 
   async aggregateFromExistingSources(candidateId: string): Promise<number> {
@@ -454,8 +502,10 @@ class CandidateDocumentService {
             { source: 'candidate_profile' }
           );
           count++;
-        } catch (e) {
-          console.log('CV already imported or error:', e);
+        } catch (e: any) {
+          if (e.message !== 'DOCUMENT_ALREADY_EXISTS') {
+            console.error('Error importing CV:', e);
+          }
         }
       }
 
@@ -469,8 +519,10 @@ class CandidateDocumentService {
             { source: 'candidate_profile' }
           );
           count++;
-        } catch (e) {
-          console.log('Cover letter already imported or error:', e);
+        } catch (e: any) {
+          if (e.message !== 'DOCUMENT_ALREADY_EXISTS') {
+            console.error('Error importing cover letter:', e);
+          }
         }
       }
 
@@ -484,8 +536,10 @@ class CandidateDocumentService {
             { source: 'candidate_profile' }
           );
           count++;
-        } catch (e) {
-          console.log('Certificate already imported or error:', e);
+        } catch (e: any) {
+          if (e.message !== 'DOCUMENT_ALREADY_EXISTS') {
+            console.error('Error importing certificate:', e);
+          }
         }
       }
     }
@@ -513,8 +567,10 @@ class CandidateDocumentService {
               }
             );
             count++;
-          } catch (e) {
-            console.log('Application CV already imported or error:', e);
+          } catch (e: any) {
+            if (e.message !== 'DOCUMENT_ALREADY_EXISTS') {
+              console.error('Error importing application CV:', e);
+            }
           }
         }
       }
