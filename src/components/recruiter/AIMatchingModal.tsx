@@ -62,6 +62,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
   const [showResults, setShowResults] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showInjectionModal, setShowInjectionModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
@@ -213,8 +214,7 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
     }
 
     if (!isPremium) {
-      alert('⭐ Fonctionnalité Premium\n\nL\'analyse IA et le matching automatique des candidatures sont réservés aux membres Premium.\n\nPassez à Premium pour :\n• Scoring automatique des candidatures\n• Analyse approfondie des profils\n• Recommandations personnalisées\n• Statistiques avancées');
-      onUpgrade();
+      setShowPremiumModal(true);
       return;
     }
 
@@ -885,6 +885,102 @@ export default function AIMatchingModal({ job, applications, onClose, onUpdateSc
             onClose();
           }}
         />
+      )}
+
+      {showPremiumModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-500 text-white p-8 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white rounded-full filter blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-200 rounded-full filter blur-2xl"></div>
+              </div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl">
+                    <Crown className="w-12 h-12 animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold mb-1">Fonctionnalité Premium</h2>
+                    <p className="text-amber-100">Débloquez tout le potentiel de votre recrutement</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8">
+              <div className="mb-6">
+                <p className="text-gray-700 text-lg leading-relaxed">
+                  L'analyse IA et le matching automatique des candidatures sont réservés aux membres Premium.
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6 mb-6">
+                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-600" />
+                  Passez à Premium pour :
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="p-1 bg-green-500 rounded-full mt-0.5">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">Scoring automatique des candidatures</span>
+                      <p className="text-sm text-gray-600 mt-0.5">Évaluez instantanément chaque profil avec notre IA avancée</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="p-1 bg-green-500 rounded-full mt-0.5">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">Analyse approfondie des profils</span>
+                      <p className="text-sm text-gray-600 mt-0.5">Points forts, faiblesses et recommandations détaillées</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="p-1 bg-green-500 rounded-full mt-0.5">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">Recommandations personnalisées</span>
+                      <p className="text-sm text-gray-600 mt-0.5">Conseils sur-mesure pour chaque candidature</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="p-1 bg-green-500 rounded-full mt-0.5">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900">Statistiques avancées</span>
+                      <p className="text-sm text-gray-600 mt-0.5">Tableaux de bord et analytics complets</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPremiumModal(false)}
+                  className="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition-all"
+                >
+                  Plus tard
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPremiumModal(false);
+                    onUpgrade();
+                  }}
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-600 hover:via-orange-600 hover:to-yellow-600 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Crown className="w-5 h-5" />
+                  Passer à Premium
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
