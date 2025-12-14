@@ -254,7 +254,8 @@ export default function JobApplicationModal({
       let cvUrl = (hasExistingCV ? candidateProfile?.cv_url : '') || '';
 
       if (customData.cvFile) {
-        const fileName = `${candidateId}-${Date.now()}.pdf`;
+        const fileExt = customData.cvFile.name.split('.').pop();
+        const fileName = `${candidateId}/${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage
           .from('candidate-cvs')
           .upload(fileName, customData.cvFile);
