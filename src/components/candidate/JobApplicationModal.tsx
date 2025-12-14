@@ -867,46 +867,9 @@ Cordialement"
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Section 3: Informations complémentaires (facultatif) */}
-                <div>
-                  <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-green-500 pb-3">
-                    <Award className="w-6 h-6 text-green-600" />
-                    3. Informations complémentaires <span className="text-gray-500 font-normal text-sm">(facultatif)</span>
-                  </h5>
-
-                  <div className="space-y-4">
-                    {/* Salaire souhaité */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Salaire souhaité
-                      </label>
-                      <input
-                        type="text"
-                        value={customData.desiredSalary}
-                        onChange={(e) => setCustomData({ ...customData, desiredSalary: e.target.value })}
-                        placeholder="Ex: 5 000 000 GNF/mois, À négocier..."
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    </div>
-
-                    {/* Commentaire libre */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Commentaire supplémentaire
-                      </label>
-                      <textarea
-                        value={customData.additionalComments}
-                        onChange={(e) => setCustomData({ ...customData, additionalComments: e.target.value })}
-                        rows={4}
-                        placeholder="Informations complémentaires que vous souhaitez partager avec le recruteur..."
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
+              <div className="flex gap-4 mt-8 pt-6 border-t-2 border-gray-200">
                   <button
                     onClick={() => setMode('select')}
                     disabled={submitting}
@@ -940,9 +903,8 @@ Cordialement"
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </div>
       </div>
 
