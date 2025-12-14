@@ -981,15 +981,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       <div className="relative">
                         {/* Barre de fond avec marqueurs */}
                         <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
-                          {/* Barre de progression avec couleur dynamique */}
+                          {/* Barre de progression avec dégradé orange uniforme */}
                           <div
-                            className={`h-full transition-all duration-1000 ease-out ${
-                              profileCompletion >= 80
-                                ? 'bg-gradient-to-r from-green-500 to-green-600'
-                                : profileCompletion >= 50
-                                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
-                                : 'bg-gradient-to-r from-red-500 to-red-600'
-                            }`}
+                            className="h-full transition-all duration-1000 ease-out bg-gradient-to-r from-amber-500 to-orange-500"
                             style={{ width: `${profileCompletion}%` }}
                           >
                             {/* Animation de brillance */}
@@ -1015,7 +1009,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                           {/* 80% CVthèque */}
                           <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
-                            profileCompletion >= 80 ? 'text-green-600 font-semibold' : 'text-gray-500 font-medium'
+                            profileCompletion >= 80 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
                           } flex items-center gap-1 whitespace-nowrap`}>
                             {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
                             80% CVthèque
@@ -1023,9 +1017,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                           {/* 100% */}
                           <span className={`absolute right-0 text-xs ${
-                            profileCompletion >= 100 ? 'text-green-600 font-semibold' : 'text-gray-400'
+                            profileCompletion >= 100 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
                           } flex items-center gap-1`}>
-                            {profileCompletion >= 100 && <Star className="w-3 h-3 fill-current" />}
+                            {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3" />}
                             100%
                           </span>
                         </div>

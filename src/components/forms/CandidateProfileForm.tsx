@@ -12,6 +12,9 @@ import {
   MapPin,
   CheckCircle2,
   AlertCircle,
+  Trash2,
+  FileText,
+  Upload as UploadIcon,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -85,6 +88,15 @@ const COMMON_POSITIONS = [
   'Ingénieur',
 ];
 
+type FileType = 'cv' | 'cover_letter' | 'certificate';
+
+interface FileToUpload {
+  id: string;
+  file: File;
+  fileType: FileType;
+  customTitle: string;
+}
+
 interface CandidateProfileFormProps {
   onSaveSuccess?: () => void;
 }
@@ -129,6 +141,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     isOpen: false,
     errors: []
   });
+
+  const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   function getInitialFormData() {
     return {
@@ -214,6 +229,126 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
 
     return Math.round((completedFields / totalFields) * 100);
   }, [formData]);
+
+  const addFiles = (files: File[], fileType: FileType) => {
+    const newFiles: FileToUpload[] = Array.from(files).map(file => ({
+      id: `${Date.now()}-${Math.random()}`,
+      file,
+      fileType,
+      customTitle: ''
+    }));
+    setFilesToUpload(prev => [...prev, ...newFiles]);
+  };
+
+  const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files);
+      const validFiles = filesArray.filter(file => {
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`Le fichier ${file.name} dépasse 10 MB`);
+          return false;
+        }
+        return true;
+      });
+      addFiles(validFiles, fileType);
+    }
+  };
+
+  const removeFile = (id: string) => {
+    setFilesToUpload(prev => prev.filter(f => f.id !== id));
+  };
+
+  const updateFileTitle = (id: string, title: string) => {
+    setFilesToUpload(prev =>
+      prev.map(f => f.id === id ? { ...f, customTitle: title } : f)
+    );
+  };
+
+  const getFileTypeLabel = (type: FileType) => {
+    const labels = {
+      cv: 'CV',
+      cover_letter: 'Lettre de motivation',
+      certificate: 'Certificat / Attestation'
+    };
+    return labels[type];
+  };
+
+  const getFilesByType = (type: FileType) => {
+    return filesToUpload.filter(f => f.fileType === type);
+  };
+
+  const MultipleFileUploadSection = ({ fileType, label, required = false }: { fileType: FileType; label: string; required?: boolean }) => {
+    const filesOfType = getFilesByType(fileType);
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-semibold text-gray-900">
+            {label} {required && <span className="text-red-600">*</span>}
+          </label>
+        </div>
+
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          onChange={(e) => handleMultipleFilesChange(e, fileType)}
+          className="hidden"
+          id={`file-upload-${fileType}`}
+        />
+
+        <label
+          htmlFor={`file-upload-${fileType}`}
+          className="flex items-center justify-center gap-3 px-4 py-6 bg-white border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg cursor-pointer transition"
+        >
+          <UploadIcon className="w-6 h-6 text-gray-600" />
+          <div className="text-center">
+            <p className="font-semibold text-gray-900">
+              Cliquer pour télécharger {filesOfType.length > 0 ? 'd\'autres fichiers' : 'un ou plusieurs fichiers'}
+            </p>
+            <p className="text-sm text-gray-600">Formats acceptés: PDF, Word, JPG, PNG (max 10 MB par fichier)</p>
+          </div>
+        </label>
+
+        {filesOfType.length > 0 && (
+          <div className="space-y-2">
+            {filesOfType.map((fileItem) => (
+              <div key={fileItem.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{fileItem.file.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(fileItem.file.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={fileItem.customTitle}
+                      onChange={(e) => updateFileTitle(fileItem.id, e.target.value)}
+                      placeholder="Titre personnalisé (optionnel)"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => removeFile(fileItem.id)}
+                    className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    type="button"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const loadExistingProfile = async () => {
@@ -375,16 +510,48 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     }
 
     try {
-      // Upload files if provided, otherwise keep existing URLs
-      const cvUrl = formData.cv
-        ? await uploadFile(formData.cv, 'candidate-cvs')
-        : (formData.cvUrl || null);
-      const coverLetterUrl = formData.coverLetter
-        ? await uploadFile(formData.coverLetter, 'candidate-cover-letters')
-        : (formData.coverLetterUrl || null);
-      const certificatesUrl = formData.certificates
-        ? await uploadFile(formData.certificates, 'candidate-certificates')
-        : (formData.certificatesUrl || null);
+      setUploadingFiles(true);
+
+      const uploadedFiles: { type: FileType; url: string; title: string }[] = [];
+
+      for (const fileItem of filesToUpload) {
+        const fileExt = fileItem.file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+
+        const storageBucket = fileItem.fileType === 'cv'
+          ? 'candidate-cvs'
+          : fileItem.fileType === 'cover_letter'
+          ? 'candidate-cover-letters'
+          : 'candidate-certificates';
+
+        const { error: uploadError } = await supabase.storage
+          .from(storageBucket)
+          .upload(fileName, fileItem.file);
+
+        if (uploadError) {
+          console.error(`Error uploading file to ${storageBucket}:`, uploadError);
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from(storageBucket)
+          .getPublicUrl(fileName);
+
+        uploadedFiles.push({
+          type: fileItem.fileType,
+          url: urlData.publicUrl,
+          title: fileItem.customTitle || fileItem.file.name
+        });
+      }
+
+      const cvFiles = uploadedFiles.filter(f => f.type === 'cv');
+      const cvUrl = cvFiles.length > 0 ? cvFiles[0].url : (formData.cvUrl || null);
+
+      const coverLetterFiles = uploadedFiles.filter(f => f.type === 'cover_letter');
+      const coverLetterUrl = coverLetterFiles.length > 0 ? coverLetterFiles[0].url : (formData.coverLetterUrl || null);
+
+      const certificateFiles = uploadedFiles.filter(f => f.type === 'certificate');
+      const certificatesUrl = certificateFiles.length > 0 ? certificateFiles[0].url : (formData.certificatesUrl || null);
       const candidateData = {
         profile_id: profile.id,
         user_id: user?.id,
@@ -481,6 +648,8 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         title: 'Erreur d\'enregistrement',
         message: 'Une erreur est survenue lors de l\'enregistrement de votre profil. Veuillez réessayer.'
       });
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -506,7 +675,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-blue-600" />
+            <CheckCircle2 className="w-5 h-5 text-orange-600" />
             <span className="text-sm font-semibold text-gray-800">Profil complété</span>
           </div>
           <div className="flex items-center gap-3">
@@ -521,20 +690,56 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
                 Sauvegardé à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
-            <span className="text-xl font-bold text-blue-700">{progress}%</span>
+            <span className="text-xl font-bold text-orange-600">{progress}%</span>
           </div>
         </div>
-        <div className="w-full bg-white rounded-full h-4 overflow-hidden shadow-inner">
-          <div
-            className={`h-4 rounded-full transition-all duration-500 ${
-              progress < 40
-                ? 'bg-gradient-to-r from-red-400 to-orange-400'
-                : progress < 70
-                ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                : 'bg-gradient-to-r from-green-400 to-green-500'
-            }`}
-            style={{ width: `${progress}%` }}
-          />
+
+        {/* Barre de progression intelligente */}
+        <div className="relative">
+          {/* Barre de fond avec marqueurs */}
+          <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
+            {/* Barre de progression avec dégradé orange uniforme */}
+            <div
+              className="h-full transition-all duration-1000 ease-out bg-gradient-to-r from-amber-500 to-orange-500"
+              style={{ width: `${progress}%` }}
+            >
+              {/* Animation de brillance */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
+            </div>
+
+            {/* Marqueurs d'étapes clés */}
+            <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-30"></div>
+            <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
+          </div>
+
+          {/* Labels des étapes positionnés exactement */}
+          <div className="relative mt-2 h-5">
+            {/* 0% */}
+            <span className="absolute left-0 text-xs text-gray-600 font-medium">
+              0%
+            </span>
+
+            {/* 50% */}
+            <span className="absolute left-1/2 -translate-x-1/2 text-xs text-gray-600 font-medium">
+              50%
+            </span>
+
+            {/* 80% CVthèque */}
+            <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
+              progress >= 80 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
+            } flex items-center gap-1 whitespace-nowrap`}>
+              {progress >= 80 && <CheckCircle2 className="w-3 h-3" />}
+              80% CVthèque
+            </span>
+
+            {/* 100% */}
+            <span className={`absolute right-0 text-xs ${
+              progress >= 100 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
+            } flex items-center gap-1`}>
+              {progress >= 100 && <CheckCircle2 className="w-3 h-3" />}
+              100%
+            </span>
+          </div>
         </div>
       </div>
 
@@ -875,22 +1080,22 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
               value={formData.drivingLicense}
               onChange={(value) => updateField('drivingLicense', value)}
             />
-            <Upload
+            <MultipleFileUploadSection
+              fileType="cv"
               label="CV principal (PDF ou Word)"
-              onChange={(file) => updateField('cv', file)}
-              helpText="Téléchargez votre CV le plus récent (max 5 Mo)"
-              existingFileUrl={formData.cvUrl}
+              required={false}
             />
-            <Upload
+
+            <MultipleFileUploadSection
+              fileType="cover_letter"
               label="Lettre de motivation (optionnel)"
-              onChange={(file) => updateField('coverLetter', file)}
-              helpText="Formats acceptés: PDF, Word, JPG, PNG"
-              existingFileUrl={formData.coverLetterUrl}
+              required={false}
             />
-            <Upload
+
+            <MultipleFileUploadSection
+              fileType="certificate"
               label="Certificats / Attestations (optionnel)"
-              onChange={(file) => updateField('certificates', file)}
-              existingFileUrl={formData.certificatesUrl}
+              required={false}
             />
           </FormSection>
 
