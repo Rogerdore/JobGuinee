@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User } from 'lucide-react';
+import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 import { isPremiumActive } from '../utils/premiumHelpers';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import CandidateMessaging from '../components/candidate/CandidateMessaging';
 import DocumentsHub from '../components/candidate/DocumentsHub';
+import ApplicationTrackingModal from '../components/candidate/ApplicationTrackingModal';
 import { candidateMessagingService } from '../services/candidateMessagingService';
+import { candidateApplicationTrackingService } from '../services/candidateApplicationTrackingService';
 import { usePendingApplication } from '../hooks/usePendingApplication';
 
 interface CandidateDashboardProps {
@@ -33,6 +35,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [jobViewsCount, setJobViewsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [trackingApplicationId, setTrackingApplicationId] = useState<string | null>(null);
 
   const { pendingApplication, shouldShowApplicationModal, clearPendingApplication } = usePendingApplication(profile?.id || null);
 
@@ -794,9 +797,18 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                               </div>
                             )}
                           </div>
-                          <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
-                            {getStatusLabel(app.status)}
-                          </span>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(app.status)} shadow-sm`}>
+                              {getStatusLabel(app.status)}
+                            </span>
+                            <button
+                              onClick={() => setTrackingApplicationId(app.id)}
+                              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:underline"
+                            >
+                              <Activity size={14} />
+                              Voir le suivi
+                            </button>
+                          </div>
                         </div>
 
                         <div className="mb-4 relative">
@@ -1603,6 +1615,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             </div>
           </div>
         </div>
+      )}
+
+      {/* Application Tracking Modal */}
+      {trackingApplicationId && (
+        <ApplicationTrackingModal
+          applicationId={trackingApplicationId}
+          onClose={() => setTrackingApplicationId(null)}
+        />
       )}
     </div>
   );
