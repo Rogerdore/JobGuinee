@@ -66,11 +66,17 @@ export default function JobApplicationModal({
   const [showMissingFieldsModal, setShowMissingFieldsModal] = useState(false);
 
   const [customData, setCustomData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     coverLetter: '',
-    cvFile: null as File | null
+    cvFile: null as File | null,
+    useExistingCV: true,
+    saveNewCVToProfile: false,
+    availability: '',
+    desiredSalary: '',
+    additionalComments: ''
   });
 
   useEffect(() => {
@@ -79,11 +85,17 @@ export default function JobApplicationModal({
 
   useEffect(() => {
     if (profileData && candidateProfile) {
+      const nameParts = (profileData.full_name || '').split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       setCustomData(prev => ({
         ...prev,
-        fullName: profileData.full_name || '',
+        firstName: firstName,
+        lastName: lastName,
         email: profileData.email || '',
-        phone: profileData.phone || ''
+        phone: profileData.phone || '',
+        useExistingCV: !!candidateProfile.cv_url
       }));
     }
   }, [profileData, candidateProfile]);
@@ -195,8 +207,13 @@ export default function JobApplicationModal({
   };
 
   const handleCustomSubmit = async () => {
-    if (!customData.fullName.trim()) {
-      alert('Le nom complet est obligatoire.');
+    if (!customData.firstName.trim()) {
+      alert('Le prénom est obligatoire.');
+      return;
+    }
+
+    if (!customData.lastName.trim()) {
+      alert('Le nom est obligatoire.');
       return;
     }
 
@@ -210,7 +227,7 @@ export default function JobApplicationModal({
       return;
     }
 
-    const hasExistingCV = candidateProfile?.cv_url;
+    const hasExistingCV = candidateProfile?.cv_url && customData.useExistingCV;
     const hasNewCV = customData.cvFile;
 
     if (!hasExistingCV && !hasNewCV) {
@@ -225,16 +242,17 @@ export default function JobApplicationModal({
 
     setSubmitting(true);
     try {
+      const fullName = `${customData.firstName} ${customData.lastName}`.trim();
+
       await supabase
         .from('profiles')
         .update({
-          full_name: customData.fullName,
-          email: customData.email,
+          full_name: fullName,
           phone: customData.phone
         })
         .eq('id', candidateId);
 
-      let cvUrl = candidateProfile?.cv_url || '';
+      let cvUrl = (hasExistingCV ? candidateProfile?.cv_url : '') || '';
 
       if (customData.cvFile) {
         const fileName = `${candidateId}-${Date.now()}.pdf`;
@@ -249,6 +267,13 @@ export default function JobApplicationModal({
           .getPublicUrl(fileName);
 
         cvUrl = urlData.publicUrl;
+
+        if (customData.saveNewCVToProfile) {
+          await supabase
+            .from('candidate_profiles')
+            .update({ cv_url: cvUrl })
+            .eq('id', candidateId);
+        }
       }
 
       const result = await applicationSubmissionService.submitApplication({
@@ -562,32 +587,50 @@ export default function JobApplicationModal({
               </button>
 
               <div className="space-y-6">
-                {/* Informations obligatoires */}
+                {/* Section 1: Informations candidat */}
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                   <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <User className="w-5 h-5 text-blue-600" />
-                    Informations obligatoires
+                    1. Informations candidat
                   </h5>
                   <div className="space-y-4">
-                    {/* Nom complet */}
+                    {/* Prénom */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Nom complet <span className="text-red-600">*</span>
+                        Prénom <span className="text-red-600">*</span>
                       </label>
                       <input
                         type="text"
-                        value={customData.fullName}
-                        onChange={(e) => setCustomData({ ...customData, fullName: e.target.value })}
-                        placeholder="Ex: Jean Dupont"
+                        value={customData.firstName}
+                        onChange={(e) => setCustomData({ ...customData, firstName: e.target.value })}
+                        placeholder="Ex: Jean"
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
-                      {!customData.fullName && (
+                      {!customData.firstName && (
                         <p className="mt-1 text-xs text-red-600">Ce champ est obligatoire</p>
                       )}
                     </div>
 
-                    {/* Email */}
+                    {/* Nom */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Nom <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customData.lastName}
+                        onChange={(e) => setCustomData({ ...customData, lastName: e.target.value })}
+                        placeholder="Ex: Dupont"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                      {!customData.lastName && (
+                        <p className="mt-1 text-xs text-red-600">Ce champ est obligatoire</p>
+                      )}
+                    </div>
+
+                    {/* Email (non modifiable) */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-900 mb-2">
                         Email <span className="text-red-600">*</span>
@@ -595,14 +638,13 @@ export default function JobApplicationModal({
                       <input
                         type="email"
                         value={customData.email}
-                        onChange={(e) => setCustomData({ ...customData, email: e.target.value })}
-                        placeholder="Ex: jean.dupont@email.com"
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
+                        readOnly
+                        disabled
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                       />
-                      {!customData.email && (
-                        <p className="mt-1 text-xs text-red-600">Ce champ est obligatoire</p>
-                      )}
+                      <p className="mt-1 text-xs text-gray-500">
+                        L'email est celui de votre compte et ne peut pas être modifié ici
+                      </p>
                     </div>
 
                     {/* Téléphone */}
@@ -625,88 +667,257 @@ export default function JobApplicationModal({
                   </div>
                 </div>
 
-                {/* CV */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    CV {candidateProfile?.cv_url ? (
-                      <span className="text-green-600 font-normal">(vous avez déjà un CV enregistré)</span>
-                    ) : (
-                      <span className="text-red-600">*</span>
-                    )}
-                  </label>
+                {/* Section 2: CV */}
+                <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6">
+                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-gray-700" />
+                    2. CV <span className="text-red-600">*</span>
+                  </h5>
 
-                  {candidateProfile?.cv_url && (
-                    <div className="mb-3 p-3 bg-green-50 border-2 border-green-200 rounded-lg flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-green-900">CV existant trouvé</p>
-                        <p className="text-xs text-green-700">Votre CV enregistré sera utilisé (vous pouvez en télécharger un nouveau)</p>
-                      </div>
+                  {candidateProfile?.cv_url ? (
+                    <div className="space-y-4">
+                      {/* Option: CV existant */}
+                      <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition hover:bg-white" style={{ borderColor: customData.useExistingCV ? '#3b82f6' : '#d1d5db', backgroundColor: customData.useExistingCV ? '#eff6ff' : 'white' }}>
+                        <input
+                          type="radio"
+                          name="cvChoice"
+                          checked={customData.useExistingCV}
+                          onChange={() => setCustomData({ ...customData, useExistingCV: true, cvFile: null })}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <p className="font-semibold text-gray-900">Utiliser mon CV enregistré</p>
+                          </div>
+                          <p className="text-sm text-gray-600">Votre CV sera automatiquement joint à la candidature</p>
+                          {customData.useExistingCV && (
+                            <a
+                              href={candidateProfile.cv_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              Voir mon CV
+                            </a>
+                          )}
+                        </div>
+                      </label>
+
+                      {/* Option: Nouveau CV */}
+                      <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition hover:bg-white" style={{ borderColor: !customData.useExistingCV ? '#3b82f6' : '#d1d5db', backgroundColor: !customData.useExistingCV ? '#eff6ff' : 'white' }}>
+                        <input
+                          type="radio"
+                          name="cvChoice"
+                          checked={!customData.useExistingCV}
+                          onChange={() => setCustomData({ ...customData, useExistingCV: false })}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Upload className="w-5 h-5 text-gray-700" />
+                            <p className="font-semibold text-gray-900">Télécharger un nouveau CV</p>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">Pour cette candidature spécifique</p>
+
+                          {!customData.useExistingCV && (
+                            <div className="mt-3 space-y-3">
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
+                                id="cv-upload-new"
+                              />
+                              <label
+                                htmlFor="cv-upload-new"
+                                className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg cursor-pointer transition"
+                              >
+                                <Upload className="w-5 h-5 text-gray-600" />
+                                <div>
+                                  <p className="font-semibold text-gray-900">
+                                    {customData.cvFile ? customData.cvFile.name : 'Cliquez pour sélectionner un fichier'}
+                                  </p>
+                                  <p className="text-sm text-gray-600">PDF, DOC, DOCX, Image (max 5 MB)</p>
+                                </div>
+                              </label>
+
+                              {customData.cvFile && (
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={customData.saveNewCVToProfile}
+                                    onChange={(e) => setCustomData({ ...customData, saveNewCVToProfile: e.target.checked })}
+                                    className="rounded border-gray-300"
+                                  />
+                                  <span className="text-gray-700">Enregistrer ce CV dans mon profil pour les futures candidatures</span>
+                                </label>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </label>
                     </div>
-                  )}
+                  ) : (
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="cv-upload"
+                      />
+                      <label
+                        htmlFor="cv-upload"
+                        className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-dashed border-red-300 hover:border-red-500 rounded-lg cursor-pointer transition"
+                      >
+                        <Upload className="w-6 h-6 text-red-600" />
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {customData.cvFile ? customData.cvFile.name : 'Télécharger votre CV (obligatoire)'}
+                          </p>
+                          <p className="text-sm text-gray-600">PDF, DOC, DOCX, Image (max 5 MB)</p>
+                        </div>
+                      </label>
 
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="cv-upload"
-                    />
-                    <label
-                      htmlFor="cv-upload"
-                      className={`flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed rounded-lg cursor-pointer transition ${
-                        !candidateProfile?.cv_url && !customData.cvFile
-                          ? 'border-red-300 hover:border-red-500'
-                          : 'border-gray-300 hover:border-blue-500'
-                      }`}
-                    >
-                      <Upload className={`w-6 h-6 ${!candidateProfile?.cv_url && !customData.cvFile ? 'text-red-600' : 'text-gray-600'}`} />
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {customData.cvFile ? customData.cvFile.name : (candidateProfile?.cv_url ? 'Télécharger un nouveau CV (optionnel)' : 'Télécharger votre CV (obligatoire)')}
+                      {!customData.cvFile && (
+                        <p className="text-sm text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          Le CV est obligatoire pour postuler
                         </p>
-                        <p className="text-sm text-gray-600">PDF, DOC, DOCX (max 5 MB)</p>
-                      </div>
-                    </label>
-                  </div>
+                      )}
 
-                  {!candidateProfile?.cv_url && !customData.cvFile && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" />
-                      Le CV est obligatoire pour postuler
-                    </p>
+                      {customData.cvFile && (
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={customData.saveNewCVToProfile}
+                            onChange={(e) => setCustomData({ ...customData, saveNewCVToProfile: e.target.checked })}
+                            className="rounded border-gray-300"
+                          />
+                          <span className="text-gray-700">Enregistrer ce CV dans mon profil pour les futures candidatures</span>
+                        </label>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-semibold text-gray-900">
-                      Lettre de motivation {coverLetterRequired ? (
-                        <span className="text-red-600">* (requise)</span>
-                      ) : (
-                        <span className="text-gray-600">(recommandée)</span>
+                {/* Section 3: Lettre de motivation */}
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                    3. Lettre de motivation {coverLetterRequired ? (
+                      <span className="text-red-600">*</span>
+                    ) : (
+                      <span className="text-gray-500 font-normal text-sm">(recommandée)</span>
+                    )}
+                  </h5>
+
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-lg text-sm font-medium transition"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        Importer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          alert('Cette fonctionnalité IA est disponible pour les utilisateurs Premium. Elle vous permettra de générer ou améliorer automatiquement votre lettre de motivation.');
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-sm font-medium transition shadow-md"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Générer / Améliorer avec l'IA
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={customData.coverLetter}
+                      onChange={(e) => setCustomData({ ...customData, coverLetter: e.target.value })}
+                      rows={12}
+                      placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste...
+
+Exemple :
+Madame, Monsieur,
+
+Je me permets de vous présenter ma candidature pour le poste de [titre du poste]...
+
+[Expérience et compétences pertinentes]
+
+[Motivation et valeur ajoutée]
+
+Cordialement"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-sans"
+                    />
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-600">
+                        {customData.coverLetter.length} caractères
+                      </p>
+                      {coverLetterRequired && !customData.coverLetter.trim() && (
+                        <p className="text-sm text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          Ce champ est requis par le recruteur
+                        </p>
                       )}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowImportModal(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition"
-                    >
-                      <FolderOpen className="w-4 h-4" />
-                      Importer
-                    </button>
+                    </div>
                   </div>
-                  <textarea
-                    value={customData.coverLetter}
-                    onChange={(e) => setCustomData({ ...customData, coverLetter: e.target.value })}
-                    rows={12}
-                    placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste..."
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="mt-2 text-sm text-gray-600">
-                    {customData.coverLetter.length} caractères
-                  </p>
+                </div>
+
+                {/* Section 4: Informations complémentaires (facultatif) */}
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-green-600" />
+                    4. Informations complémentaires <span className="text-gray-500 font-normal text-sm">(facultatif)</span>
+                  </h5>
+
+                  <div className="space-y-4">
+                    {/* Disponibilité */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Disponibilité
+                      </label>
+                      <input
+                        type="text"
+                        value={customData.availability}
+                        onChange={(e) => setCustomData({ ...customData, availability: e.target.value })}
+                        placeholder="Ex: Immédiate, Dans 1 mois, Préavis de 2 mois..."
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    {/* Salaire souhaité */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Salaire souhaité
+                      </label>
+                      <input
+                        type="text"
+                        value={customData.desiredSalary}
+                        onChange={(e) => setCustomData({ ...customData, desiredSalary: e.target.value })}
+                        placeholder="Ex: 5 000 000 GNF/mois, À négocier..."
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    {/* Commentaire libre */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Commentaire supplémentaire
+                      </label>
+                      <textarea
+                        value={customData.additionalComments}
+                        onChange={(e) => setCustomData({ ...customData, additionalComments: e.target.value })}
+                        rows={4}
+                        placeholder="Informations complémentaires que vous souhaitez partager avec le recruteur..."
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
@@ -719,7 +930,14 @@ export default function JobApplicationModal({
                   </button>
                   <button
                     onClick={handleCustomSubmit}
-                    disabled={submitting || (!candidateProfile?.cv_url && !customData.cvFile) || (coverLetterRequired && !customData.coverLetter.trim())}
+                    disabled={
+                      submitting ||
+                      !customData.firstName.trim() ||
+                      !customData.lastName.trim() ||
+                      !customData.phone.trim() ||
+                      (!(candidateProfile?.cv_url && customData.useExistingCV) && !customData.cvFile) ||
+                      (coverLetterRequired && !customData.coverLetter.trim())
+                    }
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? (
