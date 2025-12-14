@@ -801,46 +801,45 @@ export default function JobApplicationModal({
                       )}
                     </div>
                   )}
-                </div>
 
-                {/* Section 3: Lettre de motivation */}
-                <div>
-                  <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-purple-500 pb-3">
-                    <FileText className="w-6 h-6 text-purple-600" />
-                    3. Lettre de motivation {coverLetterRequired ? (
-                      <span className="text-red-600">*</span>
-                    ) : (
-                      <span className="text-gray-500 font-normal text-sm">(recommandée)</span>
-                    )}
-                  </h5>
+                  {/* Lettre de motivation - intégrée dans la section CV */}
+                  <div className="mt-8 pt-8 border-t-2 border-gray-200">
+                    <h6 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-base">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                      Lettre de motivation {coverLetterRequired ? (
+                        <span className="text-red-600">*</span>
+                      ) : (
+                        <span className="text-gray-500 font-normal text-sm">(recommandée)</span>
+                      )}
+                    </h6>
 
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowImportModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-lg text-sm font-medium transition"
-                      >
-                        <FolderOpen className="w-4 h-4" />
-                        Importer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          alert('Cette fonctionnalité IA est disponible pour les utilisateurs Premium. Elle vous permettra de générer ou améliorer automatiquement votre lettre de motivation.');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-sm font-medium transition shadow-md"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Générer / Améliorer avec l'IA
-                      </button>
-                    </div>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowImportModal(true)}
+                          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-lg text-sm font-medium transition"
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          Importer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            alert('Cette fonctionnalité IA est disponible pour les utilisateurs Premium. Elle vous permettra de générer ou améliorer automatiquement votre lettre de motivation.');
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-sm font-medium transition shadow-md"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Générer / Améliorer avec l'IA
+                        </button>
+                      </div>
 
-                    <textarea
-                      value={customData.coverLetter}
-                      onChange={(e) => setCustomData({ ...customData, coverLetter: e.target.value })}
-                      rows={12}
-                      placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste...
+                      <textarea
+                        value={customData.coverLetter}
+                        onChange={(e) => setCustomData({ ...customData, coverLetter: e.target.value })}
+                        rows={12}
+                        placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste...
 
 Exemple :
 Madame, Monsieur,
@@ -852,27 +851,28 @@ Je me permets de vous présenter ma candidature pour le poste de [titre du poste
 [Motivation et valeur ajoutée]
 
 Cordialement"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-sans"
-                    />
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm text-gray-600">
-                        {customData.coverLetter.length} caractères
-                      </p>
-                      {coverLetterRequired && !customData.coverLetter.trim() && (
-                        <p className="text-sm text-red-600 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          Ce champ est requis par le recruteur
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-sans"
+                      />
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">
+                          {customData.coverLetter.length} caractères
                         </p>
-                      )}
+                        {coverLetterRequired && !customData.coverLetter.trim() && (
+                          <p className="text-sm text-red-600 flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4" />
+                            Ce champ est requis par le recruteur
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Section 4: Informations complémentaires (facultatif) */}
+                {/* Section 3: Informations complémentaires (facultatif) */}
                 <div>
                   <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-green-500 pb-3">
                     <Award className="w-6 h-6 text-green-600" />
-                    4. Informations complémentaires <span className="text-gray-500 font-normal text-sm">(facultatif)</span>
+                    3. Informations complémentaires <span className="text-gray-500 font-normal text-sm">(facultatif)</span>
                   </h5>
 
                   <div className="space-y-4">
