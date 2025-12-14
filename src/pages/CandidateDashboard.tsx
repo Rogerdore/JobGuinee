@@ -63,6 +63,51 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     }
   }, [profile?.id, user?.id]);
 
+  // Synchronisation en temps réel des messages non lus
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const updateUnreadCount = async () => {
+      const count = await candidateMessagingService.getUnreadCount();
+      setUnreadMessagesCount(count);
+    };
+
+    // Écouter les changements de notifications
+    const notificationsChannel = supabase
+      .channel('candidate_notifications_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        updateUnreadCount
+      )
+      .subscribe();
+
+    // Écouter les changements de communications
+    const communicationsChannel = supabase
+      .channel('candidate_communications_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'communications_log',
+          filter: `recipient_id=eq.${user.id}`
+        },
+        updateUnreadCount
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(communicationsChannel);
+    };
+  }, [user?.id]);
+
   const loadData = async () => {
     if (!profile?.id || !user?.id) {
       setLoading(false);
