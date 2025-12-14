@@ -32,6 +32,7 @@ import SkillsAutoComplete from '../profile/SkillsAutoComplete';
 import AutoCompleteInput from './AutoCompleteInput';
 import { ParsedCVData } from '../../services/cvUploadParserService';
 import { useCVParsing } from '../../hooks/useCVParsing';
+import SuccessModal from '../notifications/SuccessModal';
 
 const CITIES_GUINEA = [
   'Conakry',
@@ -108,6 +109,17 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
   const [cvParsed, setCvParsed] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
   function getInitialFormData() {
     return {
@@ -407,14 +419,27 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         .eq('id', profile.id);
 
       localStorage.removeItem('candidateProfileDraft');
-      alert('Profil enregistré avec succès! Votre profil est maintenant complet.');
+
+      setModalConfig({
+        isOpen: true,
+        type: 'success',
+        title: 'Profil enregistré avec succès !',
+        message: 'Votre profil est maintenant complet et visible par les recruteurs.'
+      });
 
       if (onSaveSuccess) {
-        onSaveSuccess();
+        setTimeout(() => {
+          onSaveSuccess();
+        }, 2000);
       }
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Erreur lors de l\'enregistrement du profil. Veuillez réessayer.');
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Erreur d\'enregistrement',
+        message: 'Une erreur est survenue lors de l\'enregistrement de votre profil. Veuillez réessayer.'
+      });
     }
   };
 
@@ -878,6 +903,16 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           </FormSection>
         </>
       )}
+
+      <SuccessModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        autoClose={modalConfig.type === 'success'}
+        autoCloseDelay={2500}
+      />
     </form>
   );
 }
