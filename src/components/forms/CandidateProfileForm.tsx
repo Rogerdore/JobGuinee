@@ -33,6 +33,7 @@ import AutoCompleteInput from './AutoCompleteInput';
 import { ParsedCVData } from '../../services/cvUploadParserService';
 import { useCVParsing } from '../../hooks/useCVParsing';
 import SuccessModal from '../notifications/SuccessModal';
+import ErrorListModal from '../notifications/ErrorListModal';
 
 const CITIES_GUINEA = [
   'Conakry',
@@ -119,6 +120,14 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     type: 'success',
     title: '',
     message: ''
+  });
+
+  const [errorListModal, setErrorListModal] = useState<{
+    isOpen: boolean;
+    errors: string[];
+  }>({
+    isOpen: false,
+    errors: []
   });
 
   function getInitialFormData() {
@@ -348,13 +357,20 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      const errorMessages = Object.values(newErrors).join('\n');
-      alert('Veuillez corriger les erreurs suivantes:\n\n' + errorMessages);
+      setErrorListModal({
+        isOpen: true,
+        errors: Object.values(newErrors)
+      });
       return;
     }
 
     if (!profile?.id) {
-      alert('Erreur: Profil utilisateur introuvable');
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Erreur',
+        message: 'Profil utilisateur introuvable'
+      });
       return;
     }
 
@@ -531,7 +547,12 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           <CVUploadWithParser
             onParsed={handleCVParsed}
             onError={(error) => {
-              alert(error);
+              setModalConfig({
+                isOpen: true,
+                type: 'error',
+                title: 'Erreur lors de l\'analyse du CV',
+                message: error
+              });
               setShowManualForm(true);
             }}
           />
@@ -940,6 +961,12 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         type={modalConfig.type}
         autoClose={modalConfig.type === 'success'}
         autoCloseDelay={2500}
+      />
+
+      <ErrorListModal
+        isOpen={errorListModal.isOpen}
+        onClose={() => setErrorListModal({ isOpen: false, errors: [] })}
+        errors={errorListModal.errors}
       />
     </form>
   );
