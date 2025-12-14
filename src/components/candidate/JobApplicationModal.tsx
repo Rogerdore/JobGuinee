@@ -820,20 +820,10 @@ export default function JobApplicationModal({
                         <button
                           type="button"
                           onClick={() => setShowImportModal(true)}
-                          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-lg text-sm font-medium transition"
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-md"
                         >
                           <FolderOpen className="w-4 h-4" />
                           Importer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            alert('Cette fonctionnalité IA est disponible pour les utilisateurs Premium. Elle vous permettra de générer ou améliorer automatiquement votre lettre de motivation.');
-                          }}
-                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-sm font-medium transition shadow-md"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          Générer / Améliorer avec l'IA
                         </button>
                       </div>
 

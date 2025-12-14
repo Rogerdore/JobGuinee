@@ -30,7 +30,7 @@ interface Document {
   created_at: string;
 }
 
-type ImportMode = 'choose' | 'upload' | 'documents';
+type ImportMode = 'choose' | 'upload' | 'documents' | 'paste';
 type SortBy = 'date_desc' | 'date_asc' | 'name_asc' | 'name_desc';
 
 export default function CoverLetterImportModal({
@@ -47,6 +47,7 @@ export default function CoverLetterImportModal({
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [pastedText, setPastedText] = useState('');
 
   useEffect(() => {
     if (isOpen && mode === 'documents') {
@@ -168,11 +169,21 @@ export default function CoverLetterImportModal({
     }
   };
 
+  const handlePasteSubmit = () => {
+    if (!pastedText.trim()) {
+      alert('Veuillez coller ou saisir du texte');
+      return;
+    }
+    onImport(pastedText, 'Texte collé');
+    resetAndClose();
+  };
+
   const resetAndClose = () => {
     setMode('choose');
     setSearchQuery('');
     setSelectedFile(null);
     setPreviewDocument(null);
+    setPastedText('');
     onClose();
   };
 
@@ -210,34 +221,52 @@ export default function CoverLetterImportModal({
 
         <div className="flex-1 overflow-y-auto p-6">
           {mode === 'choose' && (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               <button
                 onClick={() => setMode('upload')}
-                className="group p-8 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-center"
+                className="group p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-center"
               >
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition">
-                  <Upload className="w-8 h-8 text-blue-600" />
+                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition">
+                  <Upload className="w-7 h-7 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  Télécharger un fichier
+                <h3 className="text-base font-bold text-gray-900 mb-1">
+                  Télécharger
                 </h3>
-                <p className="text-sm text-gray-600">
-                  Depuis votre ordinateur, Dropbox, Drive, etc.
+                <p className="text-xs text-gray-600">
+                  PC, Drive, Dropbox
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  PDF, DOCX
                 </p>
               </button>
 
               <button
                 onClick={() => setMode('documents')}
-                className="group p-8 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition text-center"
+                className="group p-6 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition text-center"
               >
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition">
-                  <FolderOpen className="w-8 h-8 text-green-600" />
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-green-200 transition">
+                  <FolderOpen className="w-7 h-7 text-green-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                <h3 className="text-base font-bold text-gray-900 mb-1">
                   Mes documents
                 </h3>
-                <p className="text-sm text-gray-600">
-                  Importer depuis votre centre de documents
+                <p className="text-xs text-gray-600">
+                  Centre de documents
+                </p>
+              </button>
+
+              <button
+                onClick={() => setMode('paste')}
+                className="group p-6 border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition text-center"
+              >
+                <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-200 transition">
+                  <FileText className="w-7 h-7 text-orange-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900 mb-1">
+                  Coller le texte
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Copier / Coller
                 </p>
               </button>
             </div>
@@ -343,11 +372,24 @@ export default function CoverLetterImportModal({
               ) : filteredDocuments.length === 0 ? (
                 <div className="text-center py-12">
                   <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">
+                  <p className="text-gray-700 font-medium mb-2">
                     {searchQuery
                       ? 'Aucun document ne correspond à votre recherche'
-                      : 'Aucune lettre de motivation trouvée dans vos documents'}
+                      : 'Aucune lettre de motivation trouvée'}
                   </p>
+                  {!searchQuery && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Vous n'avez pas encore de lettres de motivation enregistrées dans votre centre de documents.
+                      </p>
+                      <button
+                        onClick={() => setMode('choose')}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+                      >
+                        Choisir une autre option
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid gap-3">
@@ -384,6 +426,51 @@ export default function CoverLetterImportModal({
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {mode === 'paste' && (
+            <div className="max-w-2xl mx-auto">
+              <button
+                onClick={() => setMode('choose')}
+                className="text-blue-600 hover:text-blue-700 mb-4 flex items-center gap-1 text-sm font-medium"
+              >
+                ← Retour
+              </button>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Collez ou saisissez votre lettre de motivation
+                  </label>
+                  <textarea
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    rows={15}
+                    placeholder="Madame, Monsieur,
+
+Je me permets de vous présenter ma candidature pour le poste de...
+
+[Votre expérience et compétences]
+
+[Votre motivation]
+
+Cordialement"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-sans text-sm"
+                  />
+                  <p className="text-sm text-gray-600 mt-2">
+                    {pastedText.length} caractères
+                  </p>
+                </div>
+
+                <button
+                  onClick={handlePasteSubmit}
+                  disabled={!pastedText.trim() || loading}
+                  className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Utiliser ce texte
+                </button>
+              </div>
             </div>
           )}
         </div>
