@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   X, FileText, User, Upload, CheckCircle2, AlertCircle,
   Briefcase, Mail, Phone, MapPin, Award, Clock, Send, FolderOpen,
-  Sparkles, Zap, Edit3, ArrowRight, Plus, RefreshCw, ExternalLink
+  Sparkles, Zap, Edit3, Plus, ExternalLink
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { applicationSubmissionService } from '../../services/applicationSubmissionService';
@@ -45,7 +45,7 @@ interface CandidateProfile {
   cover_letter_url?: string;
 }
 
-type ApplicationMode = 'select' | 'quick' | 'assisted' | 'custom';
+type ApplicationMode = 'select' | 'quick' | 'custom';
 
 export default function JobApplicationModal({
   jobId,
@@ -58,19 +58,12 @@ export default function JobApplicationModal({
   const [mode, setMode] = useState<ApplicationMode>('select');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [generatingAI, setGeneratingAI] = useState(false);
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showMissingFieldsModal, setShowMissingFieldsModal] = useState(false);
-
-  const [assistedData, setAssistedData] = useState({
-    optimizedCoverLetter: '',
-    suggestions: [] as string[],
-    matchScore: 0
-  });
 
   const [customData, setCustomData] = useState({
     coverLetter: '',
@@ -154,7 +147,7 @@ export default function JobApplicationModal({
     }
 
     if (jobDetails?.cover_letter_required && !candidateProfile?.professional_summary?.trim()) {
-      alert('Une lettre de motivation est requise. Veuillez utiliser la candidature assistée ou personnalisée.');
+      alert('Une lettre de motivation est requise. Veuillez utiliser la candidature classique.');
       return;
     }
 
@@ -185,72 +178,6 @@ export default function JobApplicationModal({
     sessionStorage.setItem('pendingApplicationJobTitle', jobTitle);
     sessionStorage.setItem('pendingApplicationCompanyName', companyName);
     window.location.href = '/candidate-dashboard?tab=profile';
-  };
-
-  const generateAssistedApplication = async () => {
-    if (!candidateProfile?.cv_url) {
-      alert('Un CV est requis pour générer une candidature assistée.');
-      return;
-    }
-
-    setGeneratingAI(true);
-    try {
-      const coverLetter = `Madame, Monsieur,
-
-Je me permets de vous adresser ma candidature pour le poste de ${jobTitle} au sein de ${companyName}.
-
-Fort(e) de ${candidateProfile.experience_years || 0} années d'expérience${candidateProfile.title ? ` en tant que ${candidateProfile.title}` : ''}, je suis ${candidateProfile.location ? `basé(e) à ${candidateProfile.location} et ` : ''}particulièrement intéressé(e) par cette opportunité qui correspond parfaitement à mon parcours professionnel.
-
-${candidateProfile.skills && candidateProfile.skills.length > 0 ? `Mes compétences en ${candidateProfile.skills.slice(0, 3).join(', ')} me permettront de contribuer efficacement aux missions proposées.` : ''}
-
-${candidateProfile.professional_summary || 'Je suis motivé(e) et disponible pour rejoindre votre équipe et contribuer à vos projets.'}
-
-Je reste à votre disposition pour un entretien afin de vous présenter plus en détail ma motivation et mes compétences.
-
-Cordialement`;
-
-      setAssistedData({
-        optimizedCoverLetter: coverLetter,
-        suggestions: [
-          'Lettre adaptée au poste',
-          'Vos compétences mises en avant',
-          'Format professionnel respecté'
-        ],
-        matchScore: 85
-      });
-    } catch (error) {
-      console.error('Error generating assisted application:', error);
-      alert('Erreur lors de la génération de la candidature assistée');
-    }
-    setGeneratingAI(false);
-  };
-
-  const handleAssistedSubmit = async () => {
-    if (!candidateProfile?.cv_url) {
-      alert('Un CV est requis');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const result = await applicationSubmissionService.submitApplication({
-        jobId,
-        candidateId,
-        coverLetter: assistedData.optimizedCoverLetter,
-        cvUrl: candidateProfile.cv_url
-      });
-
-      if (result.success) {
-        onSuccess(result.applicationReference || '', result.nextSteps || []);
-      } else {
-        alert(result.error || 'Une erreur est survenue');
-      }
-    } catch (error: any) {
-      console.error('Error submitting application:', error);
-      const errorMessage = error?.message || error?.error_description || error?.toString() || 'Une erreur est survenue';
-      alert(`Erreur: ${errorMessage}`);
-    }
-    setSubmitting(false);
   };
 
   const handleCustomSubmit = async () => {
@@ -352,7 +279,7 @@ Cordialement`;
           </div>
           <button
             onClick={onClose}
-            disabled={submitting || generatingAI}
+            disabled={submitting}
             className="p-2 hover:bg-white/20 rounded-lg transition"
           >
             <X className="w-6 h-6" />
@@ -371,7 +298,7 @@ Cordialement`;
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* OPTION 1 - CANDIDATURE RAPIDE */}
                 <button
                   onClick={handleQuickApplyClick}
@@ -433,64 +360,7 @@ Cordialement`;
                   </div>
                 </button>
 
-                {/* OPTION 2 - CANDIDATURE ASSISTÉE */}
-                <button
-                  onClick={() => {
-                    if (hasCV) {
-                      setMode('assisted');
-                      generateAssistedApplication();
-                    }
-                  }}
-                  className="group relative p-6 rounded-xl border-2 border-green-500 bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all"
-                >
-                  <div className="absolute top-3 right-3 px-2 py-1 bg-green-600 text-white text-xs font-bold rounded-full">
-                    Recommandé
-                  </div>
-
-                  <div className="flex flex-col h-full">
-                    <div className="w-14 h-14 rounded-full bg-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <Sparkles className="w-7 h-7 text-white" />
-                    </div>
-
-                    <h4 className="text-lg font-bold text-gray-900 mb-2 text-left">
-                      Candidature Assistée
-                    </h4>
-                    <p className="text-sm text-gray-700 mb-4 text-left flex-1">
-                      L'IA adapte votre profil à cette offre
-                    </p>
-
-                    <div className="space-y-2 text-left">
-                      <div className="flex items-center gap-2 text-green-600 text-sm font-semibold">
-                        <Sparkles className="w-4 h-4" />
-                        <span>Optimisé pour cette offre</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-green-600 text-sm font-semibold">
-                        <Edit3 className="w-4 h-4" />
-                        <span>Modifiable avant envoi</span>
-                      </div>
-                    </div>
-
-                    {!hasCV && (
-                      <div className="mt-4 pt-4 border-t border-green-200">
-                        <p className="text-xs text-orange-700 font-semibold mb-2">
-                          CV requis pour cette option
-                        </p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open('/candidate-dashboard?tab=profile', '_blank');
-                          }}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Ajouter un CV
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* OPTION 3 - CANDIDATURE PERSONNALISÉE */}
+                {/* OPTION 2 - CANDIDATURE CLASSIQUE */}
                 <button
                   onClick={() => setMode('custom')}
                   className="group relative p-6 rounded-xl border-2 border-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-xl transition-all hover:border-gray-500"
@@ -501,7 +371,7 @@ Cordialement`;
                     </div>
 
                     <h4 className="text-lg font-bold text-gray-900 mb-2 text-left">
-                      Candidature Personnalisée
+                      Candidature Classique
                     </h4>
                     <p className="text-sm text-gray-700 mb-4 text-left flex-1">
                       Contrôle total sur votre candidature
@@ -530,7 +400,7 @@ Cordialement`;
                         Lettre de motivation requise
                       </h5>
                       <p className="text-sm text-orange-700">
-                        Le recruteur exige une lettre de motivation pour cette offre. Nous vous recommandons d'utiliser la <strong>candidature assistée</strong> ou <strong>personnalisée</strong>.
+                        Le recruteur exige une lettre de motivation pour cette offre. Vous devrez la fournir via la <strong>candidature classique</strong>.
                       </p>
                     </div>
                   </div>
@@ -637,104 +507,6 @@ Cordialement`;
                     <>
                       <Send className="w-5 h-5" />
                       Envoyer ma candidature
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {mode === 'assisted' && (
-            <div>
-              <button
-                onClick={() => setMode('select')}
-                disabled={generatingAI || submitting}
-                className="mb-6 text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-2"
-              >
-                ← Retour
-              </button>
-
-              <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-xl p-6 mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 text-lg">Candidature Assistée par IA</h4>
-                    <p className="text-sm text-gray-700">Optimisée automatiquement pour cette offre</p>
-                  </div>
-                  {assistedData.matchScore > 0 && (
-                    <div className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold">
-                      {assistedData.matchScore}% match
-                    </div>
-                  )}
-                </div>
-
-                {generatingAI ? (
-                  <div className="bg-white rounded-lg p-8 text-center">
-                    <RefreshCw className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-700 font-semibold">Génération de votre candidature optimisée...</p>
-                    <p className="text-sm text-gray-600 mt-2">L'IA adapte votre profil à cette offre</p>
-                  </div>
-                ) : (
-                  <>
-                    {assistedData.suggestions.length > 0 && (
-                      <div className="bg-white rounded-lg p-4 mb-4">
-                        <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-green-600" />
-                          Optimisations appliquées
-                        </h5>
-                        <div className="space-y-2">
-                          {assistedData.suggestions.map((suggestion, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-sm text-green-700">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>{suggestion}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Lettre de motivation optimisée
-                      </label>
-                      <textarea
-                        value={assistedData.optimizedCoverLetter}
-                        onChange={(e) => setAssistedData({ ...assistedData, optimizedCoverLetter: e.target.value })}
-                        rows={12}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
-                      />
-                      <p className="mt-2 text-sm text-gray-600">
-                        Vous pouvez modifier ce texte avant l'envoi
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setMode('select')}
-                  disabled={submitting || generatingAI}
-                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-semibold transition"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleAssistedSubmit}
-                  disabled={submitting || generatingAI || !assistedData.optimizedCoverLetter}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      Envoi en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      Envoyer la candidature
                     </>
                   )}
                 </button>
@@ -943,7 +715,7 @@ Cordialement`;
                       Autres options disponibles
                     </h5>
                     <p className="text-sm text-blue-700">
-                      En attendant, vous pouvez utiliser la <strong>Candidature Assistée</strong> ou <strong>Personnalisée</strong> qui ne nécessitent pas un profil 100% complet.
+                      En attendant, vous pouvez utiliser la <strong>Candidature Classique</strong> qui ne nécessite pas un profil 100% complet.
                     </p>
                   </div>
                 </div>
