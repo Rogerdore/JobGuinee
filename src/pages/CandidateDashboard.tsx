@@ -961,11 +961,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   <div className="p-6">
                     {/* Header avec boutons d'action */}
                     <div className="mb-6 pb-6 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-3">
                         <div>
                           <h2 className="text-2xl font-bold text-gray-900">Mon Profil</h2>
                           <p className="text-gray-600 text-sm mt-1">
-                            Complété à {candidateProfile?.profile_completion_percentage || 0}%
+                            Complété à <span className="font-semibold">{profileCompletion}%</span>
                           </p>
                         </div>
                         <button
@@ -975,6 +975,49 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           <Edit className="w-5 h-5" />
                           Modifier/Compléter
                         </button>
+                      </div>
+
+                      {/* Barre de progression intelligente */}
+                      <div className="relative">
+                        {/* Barre de fond avec marqueurs */}
+                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
+                          {/* Barre de progression avec couleur dynamique */}
+                          <div
+                            className={`h-full transition-all duration-1000 ease-out ${
+                              profileCompletion >= 80
+                                ? 'bg-gradient-to-r from-green-500 to-green-600'
+                                : profileCompletion >= 50
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                                : 'bg-gradient-to-r from-red-500 to-red-600'
+                            }`}
+                            style={{ width: `${profileCompletion}%` }}
+                          >
+                            {/* Animation de brillance */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
+                          </div>
+
+                          {/* Marqueurs d'étapes clés */}
+                          <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-30"></div>
+                          <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
+                        </div>
+
+                        {/* Labels des étapes */}
+                        <div className="flex justify-between items-center mt-2 text-xs">
+                          <span className={`${profileCompletion >= 0 ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+                            0%
+                          </span>
+                          <span className={`${profileCompletion >= 50 ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+                            50%
+                          </span>
+                          <span className={`${profileCompletion >= 80 ? 'text-green-600 font-semibold' : 'text-gray-500 font-medium'} flex items-center gap-1`}>
+                            {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
+                            80% CVthèque
+                          </span>
+                          <span className={`${profileCompletion >= 100 ? 'text-green-600 font-semibold' : 'text-gray-400'} flex items-center gap-1`}>
+                            {profileCompletion >= 100 && <Star className="w-3 h-3 fill-current" />}
+                            100%
+                          </span>
+                        </div>
                       </div>
 
                       {/* Alerte de complétion */}
