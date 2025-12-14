@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity } from 'lucide-react';
+import { Briefcase, FileText, Bell, BellOff, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, CheckCircle2, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 import { isPremiumActive } from '../utils/premiumHelpers';
@@ -1014,6 +1014,38 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           </div>
                         )}
 
+                        {/* Situation professionnelle actuelle */}
+                        {(candidateProfile.professional_status || candidateProfile.current_position || candidateProfile.current_company) && (
+                          <div className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Briefcase className="w-6 h-6 text-blue-600" />
+                              </div>
+                              <h3 className="text-lg font-bold text-gray-900">Situation professionnelle actuelle</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {candidateProfile.professional_status && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Statut professionnel</label>
+                                  <p className="text-gray-900 font-medium mt-1">{candidateProfile.professional_status}</p>
+                                </div>
+                              )}
+                              {candidateProfile.current_position && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Poste actuel</label>
+                                  <p className="text-gray-900 font-medium mt-1">{candidateProfile.current_position}</p>
+                                </div>
+                              )}
+                              {candidateProfile.current_company && (
+                                <div className="md:col-span-2">
+                                  <label className="text-sm font-medium text-gray-500">Entreprise actuelle</label>
+                                  <p className="text-gray-900 font-medium mt-1">{candidateProfile.current_company}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Poste recherché et disponibilité */}
                         <div className="bg-white border border-gray-200 rounded-xl p-6">
                           <div className="flex items-center gap-3 mb-4">
@@ -1066,6 +1098,24 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                     </span>
                                   ))}
                                 </div>
+                              </div>
+                            )}
+                            {candidateProfile.willing_to_relocate !== undefined && candidateProfile.willing_to_relocate !== null && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm font-medium text-gray-500">Accepte la délocalisation</label>
+                                <p className="text-gray-900 font-medium mt-1">
+                                  {candidateProfile.willing_to_relocate ? (
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
+                                      <CheckCircle2 className="w-4 h-4" />
+                                      Oui, ouvert à la délocalisation
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200">
+                                      <X className="w-4 h-4" />
+                                      Non, préfère rester dans sa région
+                                    </span>
+                                  )}
+                                </p>
                               </div>
                             )}
                             {(candidateProfile.desired_salary_min || candidateProfile.desired_salary_max) && (
@@ -1302,6 +1352,50 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             </div>
                           </div>
                         )}
+
+                        {/* Préférences de profil */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                              <Settings className="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Préférences du profil</h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Visible dans la CVThèque</label>
+                              <p className="text-gray-900 font-medium mt-1">
+                                {candidateProfile.visible_in_cvtheque ? (
+                                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Profil public - Visible par les recruteurs
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200">
+                                    <X className="w-4 h-4" />
+                                    Profil privé
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Alertes emploi</label>
+                              <p className="text-gray-900 font-medium mt-1">
+                                {candidateProfile.receive_alerts ? (
+                                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200">
+                                    <Bell className="w-4 h-4" />
+                                    Notifications activées
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200">
+                                    <BellOff className="w-4 h-4" />
+                                    Notifications désactivées
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

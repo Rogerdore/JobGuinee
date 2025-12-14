@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Plus, Upload as UploadIcon, AlertCircle, HelpCircle } from 'lucide-react';
+import { X, Plus, Upload as UploadIcon, AlertCircle, HelpCircle, FileCheck, Download, Trash2 } from 'lucide-react';
 
 interface InputProps {
   label: string;
@@ -261,9 +261,10 @@ interface UploadProps {
   accept?: string;
   error?: string;
   helpText?: string;
+  existingFileUrl?: string;
 }
 
-export function Upload({ label, onChange, accept = '.pdf,.docx,.doc,.jpg,.jpeg,.png', error, helpText }: UploadProps) {
+export function Upload({ label, onChange, accept = '.pdf,.docx,.doc,.jpg,.jpeg,.png', error, helpText, existingFileUrl }: UploadProps) {
   const [fileName, setFileName] = useState<string>('');
   const [showHelp, setShowHelp] = useState(false);
 
@@ -271,6 +272,11 @@ export function Upload({ label, onChange, accept = '.pdf,.docx,.doc,.jpg,.jpeg,.
     const file = e.target.files?.[0] || null;
     setFileName(file?.name || '');
     onChange?.(file);
+  };
+
+  const getFileNameFromUrl = (url: string) => {
+    const parts = url.split('/');
+    return parts[parts.length - 1];
   };
 
   return (
@@ -293,6 +299,25 @@ export function Upload({ label, onChange, accept = '.pdf,.docx,.doc,.jpg,.jpeg,.
           </button>
         )}
       </div>
+
+      {existingFileUrl && !fileName && (
+        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <FileCheck className="w-5 h-5 text-green-600" />
+            <span className="text-sm text-green-700 font-medium">Fichier existant</span>
+          </div>
+          <a
+            href={existingFileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Télécharger
+          </a>
+        </div>
+      )}
+
       <div className="relative">
         <input
           type="file"
@@ -309,7 +334,7 @@ export function Upload({ label, onChange, accept = '.pdf,.docx,.doc,.jpg,.jpeg,.
         >
           <UploadIcon className="w-5 h-5 text-gray-500" />
           <span className="text-sm text-gray-600">
-            {fileName || 'Cliquer pour télécharger un fichier'}
+            {fileName || (existingFileUrl ? 'Remplacer le fichier' : 'Cliquer pour télécharger un fichier')}
           </span>
         </label>
       </div>

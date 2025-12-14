@@ -165,6 +165,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
       cv: null as File | null,
       coverLetter: null as File | null,
       certificates: null as File | null,
+      cvUrl: '',
+      coverLetterUrl: '',
+      certificatesUrl: '',
 
       visibleInCVTheque: false,
       receiveAlerts: false,
@@ -263,6 +266,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             cv: null,
             coverLetter: null,
             certificates: null,
+            cvUrl: data.cv_url || '',
+            coverLetterUrl: data.cover_letter_url || '',
+            certificatesUrl: data.certificates_url || '',
 
             visibleInCVTheque: data.visible_in_cvtheque || false,
             receiveAlerts: data.receive_alerts || false,
@@ -353,10 +359,16 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     }
 
     try {
-      // Upload files if provided
-      const cvUrl = formData.cv ? await uploadFile(formData.cv, 'candidate-cvs') : null;
-      const coverLetterUrl = formData.coverLetter ? await uploadFile(formData.coverLetter, 'candidate-cover-letters') : null;
-      const certificatesUrl = formData.certificates ? await uploadFile(formData.certificates, 'candidate-certificates') : null;
+      // Upload files if provided, otherwise keep existing URLs
+      const cvUrl = formData.cv
+        ? await uploadFile(formData.cv, 'candidate-cvs')
+        : (formData.cvUrl || null);
+      const coverLetterUrl = formData.coverLetter
+        ? await uploadFile(formData.coverLetter, 'candidate-cover-letters')
+        : (formData.coverLetterUrl || null);
+      const certificatesUrl = formData.certificates
+        ? await uploadFile(formData.certificates, 'candidate-certificates')
+        : (formData.certificatesUrl || null);
       const candidateData = {
         profile_id: profile.id,
         user_id: user?.id,
@@ -846,15 +858,18 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
               label="CV principal (PDF ou Word)"
               onChange={(file) => updateField('cv', file)}
               helpText="Téléchargez votre CV le plus récent (max 5 Mo)"
+              existingFileUrl={formData.cvUrl}
             />
             <Upload
               label="Lettre de motivation (optionnel)"
               onChange={(file) => updateField('coverLetter', file)}
               helpText="Formats acceptés: PDF, Word, JPG, PNG"
+              existingFileUrl={formData.coverLetterUrl}
             />
             <Upload
               label="Certificats / Attestations (optionnel)"
               onChange={(file) => updateField('certificates', file)}
+              existingFileUrl={formData.certificatesUrl}
             />
           </FormSection>
 
