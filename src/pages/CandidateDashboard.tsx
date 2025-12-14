@@ -960,20 +960,38 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 ) : (
                   <div className="p-6">
                     {/* Header avec boutons d'action */}
-                    <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-900">Mon Profil</h2>
-                        <p className="text-gray-600 text-sm mt-1">
-                          Complété à {candidateProfile?.profile_completion_percentage || 0}%
-                        </p>
+                    <div className="mb-6 pb-6 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-2xl font-bold text-gray-900">Mon Profil</h2>
+                          <p className="text-gray-600 text-sm mt-1">
+                            Complété à {candidateProfile?.profile_completion_percentage || 0}%
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setIsEditingProfile(true)}
+                          className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
+                        >
+                          <Edit className="w-5 h-5" />
+                          Modifier/Compléter
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setIsEditingProfile(true)}
-                        className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
-                      >
-                        <Edit className="w-5 h-5" />
-                        Modifier/Compléter
-                      </button>
+
+                      {/* Alerte de complétion */}
+                      {profileCompletion < 80 && (
+                        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-amber-900">
+                              Profil incomplet pour la CVthèque
+                            </p>
+                            <p className="text-sm text-amber-700 mt-1">
+                              Votre profil doit être complété à au moins <strong>80%</strong> pour être visible dans la CVthèque et accessible aux recruteurs.
+                              Complétez encore <strong>{80 - profileCompletion}%</strong> pour devenir visible.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {!candidateProfile ? (

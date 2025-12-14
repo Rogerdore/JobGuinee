@@ -72,6 +72,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
         )
       `)
       .eq('visibility', 'public')
+      .gte('profile_completion_percentage', 80)
       .order('is_gold', { ascending: false })
       .order('is_verified', { ascending: false })
       .order('last_active_at', { ascending: false });
