@@ -129,7 +129,7 @@ export default function DocumentsHub() {
     }
   };
 
-  const handleUpload = async (file: File, documentType: DocumentType) => {
+  const handleUpload = async (file: File, documentType: DocumentType, customTitle?: string) => {
     if (!profile?.id) return;
 
     setUploadProgress(true);
@@ -139,6 +139,7 @@ export default function DocumentsHub() {
         document_type: documentType,
         document_source: 'upload',
         tags: [],
+        metadata: customTitle ? { custom_title: customTitle } : {},
         is_primary: documents.filter(d => d.document_type === documentType && !d.archived_at).length === 0
       });
 
@@ -148,7 +149,9 @@ export default function DocumentsHub() {
         show: true,
         type: 'success',
         title: 'Document téléversé !',
-        message: `Votre document "${file.name}" a été ajouté avec succès à votre centre de documentation.`
+        message: customTitle
+          ? `Votre document "${customTitle}" a été ajouté avec succès à votre centre de documentation.`
+          : `Votre document "${file.name}" a été ajouté avec succès à votre centre de documentation.`
       });
     } catch (error) {
       console.error('Error uploading document:', error);
@@ -230,9 +233,14 @@ export default function DocumentsHub() {
   const filteredDocuments = documents.filter(doc => {
     if (filterType !== 'all' && doc.document_type !== filterType) return false;
     if (filterSource !== 'all' && doc.document_source !== filterSource) return false;
-    if (searchTerm && !doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !doc.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) {
-      return false;
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      const matchesFileName = doc.file_name.toLowerCase().includes(search);
+      const matchesCustomTitle = doc.metadata?.custom_title?.toLowerCase().includes(search);
+      const matchesTags = doc.tags.some(tag => tag.toLowerCase().includes(search));
+      if (!matchesFileName && !matchesCustomTitle && !matchesTags) {
+        return false;
+      }
     }
     return true;
   });
@@ -465,7 +473,12 @@ export default function DocumentsHub() {
                       <Icon className="w-5 h-5 text-[#0E2F56]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 truncate" title={doc.file_name}>{doc.file_name}</h3>
+                      <h3 className="font-bold text-gray-900 truncate" title={doc.metadata?.custom_title || doc.file_name}>
+                        {doc.metadata?.custom_title || doc.file_name}
+                      </h3>
+                      {doc.metadata?.custom_title && (
+                        <p className="text-xs text-gray-500 truncate" title={doc.file_name}>{doc.file_name}</p>
+                      )}
                       <p className="text-xs text-gray-500">v{doc.version}</p>
                     </div>
                   </div>
@@ -609,13 +622,14 @@ export default function DocumentsHub() {
 
 interface UploadModalProps {
   onClose: () => void;
-  onUpload: (file: File, documentType: DocumentType) => void;
+  onUpload: (file: File, documentType: DocumentType, customTitle?: string) => void;
   uploading: boolean;
 }
 
 function UploadModal({ onClose, onUpload, uploading }: UploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<DocumentType>('cv');
+  const [customTitle, setCustomTitle] = useState('');
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -646,7 +660,7 @@ function UploadModal({ onClose, onUpload, uploading }: UploadModalProps) {
 
   const handleSubmit = () => {
     if (selectedFile) {
-      onUpload(selectedFile, documentType);
+      onUpload(selectedFile, documentType, customTitle || undefined);
     }
   };
 
@@ -668,13 +682,34 @@ function UploadModal({ onClose, onUpload, uploading }: UploadModalProps) {
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="cv">CV</option>
               <option value="cover_letter">Lettre de motivation</option>
-              <option value="certificate">Certificat</option>
-              <option value="other">Autre</option>
+              <option value="certificate">Certificat / Attestation</option>
+              <option value="other">Autre document</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Titre du document <span className="text-gray-500">(optionnel)</span>
+            </label>
+            <input
+              type="text"
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder={
+                documentType === 'cv' ? 'Ex: CV Développeur Senior' :
+                documentType === 'cover_letter' ? 'Ex: Lettre de motivation pour poste RH' :
+                documentType === 'certificate' ? 'Ex: Certificat de formation React' :
+                'Ex: Portfolio de projets'
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Donnez un nom personnalisé à votre document pour le retrouver facilement
+            </p>
           </div>
 
           <div
