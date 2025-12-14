@@ -224,15 +224,31 @@ export default function ApplicationTrackingModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-gray-200 p-6 bg-gray-50">
+        {/* Footer with contextual advice */}
+        <div className="border-t border-gray-200 p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <div className="mb-4">
+            <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+              💡 Conseil
+            </h4>
+            <p className="text-sm text-gray-700">
+              {status.status_label === 'Postulé' && 'Votre candidature a été reçue. Assurez-vous que votre profil est complet pour maximiser vos chances.'}
+              {status.status_label === 'Vu' && 'Votre profil a attiré l\'attention ! Restez disponible, vous pourriez être contacté(e) prochainement.'}
+              {status.status_label === 'En analyse' && 'Votre candidature est en cours d\'analyse. Vous serez notifié(e) dès qu\'il y aura du nouveau.'}
+              {status.status_label === 'Shortlist' && 'Félicitations ! Vous êtes présélectionné(e). Préparez-vous pour un éventuel entretien.'}
+              {status.status_label === 'Entretien' && 'Préparez-vous bien pour votre entretien. N\'hésitez pas à vous renseigner sur l\'entreprise.'}
+              {status.status_label === 'Accepté' && 'Félicitations ! Le recruteur devrait vous contacter prochainement pour finaliser les détails.'}
+              {status.status_label === 'Refusé' && 'Cette fois n\'était pas la bonne, mais continuez à postuler. Chaque expérience vous rapproche de votre objectif !'}
+              {!['Postulé', 'Vu', 'En analyse', 'Shortlist', 'Entretien', 'Accepté', 'Refusé'].includes(status.status_label) &&
+                'Vous recevrez une notification à chaque étape importante de votre candidature.'}
+            </p>
+          </div>
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              💡 Vous recevrez une notification à chaque étape importante
+            <p className="text-xs text-gray-500">
+              🔔 Notifications actives pour cette candidature
             </p>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm"
             >
               Fermer
             </button>
