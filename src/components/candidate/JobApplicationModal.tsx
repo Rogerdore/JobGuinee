@@ -74,7 +74,6 @@ export default function JobApplicationModal({
     cvFile: null as File | null,
     useExistingCV: true,
     saveNewCVToProfile: false,
-    availability: '',
     desiredSalary: '',
     additionalComments: ''
   });
@@ -876,20 +875,6 @@ Cordialement"
                   </h5>
 
                   <div className="space-y-4">
-                    {/* Disponibilité */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Disponibilité
-                      </label>
-                      <input
-                        type="text"
-                        value={customData.availability}
-                        onChange={(e) => setCustomData({ ...customData, availability: e.target.value })}
-                        placeholder="Ex: Immédiate, Dans 1 mois, Préavis de 2 mois..."
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      />
-                    </div>
-
                     {/* Salaire souhaité */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-900 mb-2">
