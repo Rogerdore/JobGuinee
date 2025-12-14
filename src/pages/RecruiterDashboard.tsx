@@ -254,6 +254,23 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       return;
     }
 
+    // Upload company logo if provided, otherwise keep existing URL
+    let logoUrl = data.company_logo_url || null;
+    if (data.company_logo) {
+      const fileExt = data.company_logo.name.split('.').pop();
+      const fileName = `${company.id}-${Date.now()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, data.company_logo, { upsert: true });
+
+      if (!uploadError && uploadData) {
+        const { data: urlData } = supabase.storage
+          .from('company-logos')
+          .getPublicUrl(fileName);
+        logoUrl = urlData.publicUrl;
+      }
+    }
+
     let fullDescription = `# ${data.title}\n\n`;
     fullDescription += `**Catégorie:** ${data.category} | **Contrat:** ${data.contract_type} | **Postes:** ${data.position_count}\n\n`;
 
@@ -313,12 +330,38 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       location: data.location,
       contract_type: data.contract_type,
       department: data.company_name,
+      sector: data.sector,
       experience_level: data.experience_required,
       education_level: data.education_level,
       application_deadline: data.deadline,
-      required_skills: data.skills,
+      languages: data.languages,
+      keywords: data.skills,
       status: 'published',
       cover_letter_required: data.required_documents.includes('Lettre de motivation'),
+
+      // Nouveaux champs ajoutés
+      category: data.category,
+      position_count: data.position_count,
+      position_level: data.position_level,
+      profile_sought: data.profile,
+      company_logo_url: logoUrl,
+      company_description: data.company_description,
+      company_website: data.website || null,
+      salary_range: data.salary_range,
+      salary_type: data.salary_type,
+      application_email: data.application_email,
+      receive_in_platform: data.receive_in_platform,
+      required_documents: data.required_documents,
+      application_instructions: data.application_instructions,
+      visibility: data.visibility,
+      is_premium: data.is_premium,
+      announcement_language: data.announcement_language,
+      auto_share: data.auto_share,
+      publication_duration: data.publication_duration,
+      auto_renewal: data.auto_renewal,
+      legal_compliance: data.legal_compliance,
+      responsibilities: data.responsibilities,
+      benefits: data.benefits.join(', '),
     });
 
     if (!error) {
@@ -327,6 +370,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setActiveTab('projects');
       alert('✅ Offre publiée avec succès !');
     } else {
+      console.error('Error publishing job:', error);
       alert('❌ Erreur lors de la publication de l\'offre');
     }
   };

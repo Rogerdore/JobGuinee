@@ -21,6 +21,7 @@ import {
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
   onClose: () => void;
+  existingJob?: any;
 }
 
 export interface JobFormData {
@@ -39,6 +40,7 @@ export interface JobFormData {
   languages: string[];
   company_name: string;
   company_logo?: File;
+  company_logo_url?: string;
   sector: string;
   location: string;
   company_description: string;
@@ -59,7 +61,7 @@ export interface JobFormData {
   legal_compliance: boolean;
 }
 
-export default function JobPublishForm({ onPublish, onClose }: JobPublishFormProps) {
+export default function JobPublishForm({ onPublish, onClose, existingJob }: JobPublishFormProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -72,40 +74,82 @@ export default function JobPublishForm({ onPublish, onClose }: JobPublishFormPro
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
-  const [formData, setFormData] = useState<JobFormData>({
-    title: '',
-    category: 'Ressources Humaines',
-    contract_type: 'CDI',
-    position_count: 1,
-    position_level: 'Intermédiaire',
-    deadline: '',
-    description: '',
-    responsibilities: '',
-    profile: '',
-    skills: [],
-    education_level: 'Licence',
-    experience_required: '3–5 ans',
-    languages: [],
-    company_name: '',
-    sector: 'Mines',
-    location: '',
-    company_description: '',
-    website: '',
-    salary_range: '',
-    salary_type: 'Négociable',
-    benefits: [],
-    application_email: '',
-    receive_in_platform: true,
-    required_documents: ['CV', 'Lettre de motivation'],
-    application_instructions: '',
-    visibility: 'Publique',
-    is_premium: false,
-    announcement_language: 'Français',
-    auto_share: false,
-    publication_duration: '30 jours',
-    auto_renewal: false,
-    legal_compliance: false,
-  });
+  const getInitialFormData = (): JobFormData => {
+    if (existingJob) {
+      return {
+        title: existingJob.title || '',
+        category: existingJob.category || 'Ressources Humaines',
+        contract_type: existingJob.contract_type || 'CDI',
+        position_count: existingJob.position_count || 1,
+        position_level: existingJob.position_level || 'Intermédiaire',
+        deadline: existingJob.application_deadline || existingJob.deadline || '',
+        description: existingJob.description || '',
+        responsibilities: existingJob.responsibilities || '',
+        profile: existingJob.profile_sought || '',
+        skills: existingJob.keywords || existingJob.required_skills || [],
+        education_level: existingJob.education_level || 'Licence',
+        experience_required: existingJob.experience_level || '3–5 ans',
+        languages: existingJob.languages || [],
+        company_name: existingJob.department || '',
+        company_logo_url: existingJob.company_logo_url || '',
+        sector: existingJob.sector || 'Mines',
+        location: existingJob.location || '',
+        company_description: existingJob.company_description || '',
+        website: existingJob.company_website || '',
+        salary_range: existingJob.salary_range || '',
+        salary_type: existingJob.salary_type || 'Négociable',
+        benefits: existingJob.benefits ? existingJob.benefits.split(', ') : [],
+        application_email: existingJob.application_email || '',
+        receive_in_platform: existingJob.receive_in_platform !== undefined ? existingJob.receive_in_platform : true,
+        required_documents: existingJob.required_documents || ['CV', 'Lettre de motivation'],
+        application_instructions: existingJob.application_instructions || '',
+        visibility: existingJob.visibility || 'Publique',
+        is_premium: existingJob.is_premium || false,
+        announcement_language: existingJob.announcement_language || 'Français',
+        auto_share: existingJob.auto_share || false,
+        publication_duration: existingJob.publication_duration || '30 jours',
+        auto_renewal: existingJob.auto_renewal || false,
+        legal_compliance: existingJob.legal_compliance || false,
+      };
+    }
+
+    return {
+      title: '',
+      category: 'Ressources Humaines',
+      contract_type: 'CDI',
+      position_count: 1,
+      position_level: 'Intermédiaire',
+      deadline: '',
+      description: '',
+      responsibilities: '',
+      profile: '',
+      skills: [],
+      education_level: 'Licence',
+      experience_required: '3–5 ans',
+      languages: [],
+      company_name: '',
+      sector: 'Mines',
+      location: '',
+      company_description: '',
+      website: '',
+      salary_range: '',
+      salary_type: 'Négociable',
+      benefits: [],
+      application_email: '',
+      receive_in_platform: true,
+      required_documents: ['CV', 'Lettre de motivation'],
+      application_instructions: '',
+      visibility: 'Publique',
+      is_premium: false,
+      announcement_language: 'Français',
+      auto_share: false,
+      publication_duration: '30 jours',
+      auto_renewal: false,
+      legal_compliance: false,
+    };
+  };
+
+  const [formData, setFormData] = useState<JobFormData>(getInitialFormData());
 
   const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft, hasDraft } = useAutoSave({
     data: formData,
