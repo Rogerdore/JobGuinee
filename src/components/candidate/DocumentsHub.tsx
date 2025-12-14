@@ -143,24 +143,10 @@ export default function DocumentsHub() {
         is_primary: documents.filter(d => d.document_type === documentType && !d.archived_at).length === 0
       });
 
-      setShowUploadModal(false);
       loadData();
-      setNotification({
-        show: true,
-        type: 'success',
-        title: 'Document téléversé !',
-        message: customTitle
-          ? `Votre document "${customTitle}" a été ajouté avec succès à votre centre de documentation.`
-          : `Votre document "${file.name}" a été ajouté avec succès à votre centre de documentation.`
-      });
     } catch (error) {
       console.error('Error uploading document:', error);
-      setNotification({
-        show: true,
-        type: 'error',
-        title: 'Erreur de téléversement',
-        message: 'Une erreur est survenue lors du téléversement de votre document. Veuillez réessayer.'
-      });
+      throw error;
     } finally {
       setUploadProgress(false);
     }
@@ -566,6 +552,13 @@ export default function DocumentsHub() {
                       >
                         <Archive className="w-4 h-4" />
                       </button>
+                      <button
+                        onClick={() => handleDelete(doc.id)}
+                        className="flex-1 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
+                        title="Supprimer définitivement"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </>
                   ) : (
                     <>
@@ -597,6 +590,23 @@ export default function DocumentsHub() {
           onClose={() => setShowUploadModal(false)}
           onUpload={handleUpload}
           uploading={uploadProgress}
+          onComplete={(successCount, errorCount) => {
+            if (successCount > 0) {
+              setNotification({
+                show: true,
+                type: 'success',
+                title: 'Documents téléversés !',
+                message: `${successCount} document${successCount > 1 ? 's ont' : ' a'} été téléversé${successCount > 1 ? 's' : ''} avec succès.${errorCount > 0 ? ` ${errorCount} échec${errorCount > 1 ? 's' : ''}.` : ''}`
+              });
+            } else if (errorCount > 0) {
+              setNotification({
+                show: true,
+                type: 'error',
+                title: 'Erreur de téléversement',
+                message: `Échec du téléversement de ${errorCount} document${errorCount > 1 ? 's' : ''}.`
+              });
+            }
+          }}
         />
       )}
 
@@ -622,15 +632,22 @@ export default function DocumentsHub() {
 
 interface UploadModalProps {
   onClose: () => void;
-  onUpload: (file: File, documentType: DocumentType, customTitle?: string) => void;
+  onUpload: (file: File, documentType: DocumentType, customTitle?: string) => Promise<void>;
   uploading: boolean;
+  onComplete: (successCount: number, errorCount: number) => void;
 }
 
-function UploadModal({ onClose, onUpload, uploading }: UploadModalProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<DocumentType>('cv');
-  const [customTitle, setCustomTitle] = useState('');
+interface DocumentToUpload {
+  id: string;
+  file: File;
+  documentType: DocumentType;
+  customTitle: string;
+}
+
+function UploadModal({ onClose, onUpload, uploading, onComplete }: UploadModalProps) {
+  const [documentsToUpload, setDocumentsToUpload] = useState<DocumentToUpload[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -647,71 +664,76 @@ function UploadModal({ onClose, onUpload, uploading }: UploadModalProps) {
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setSelectedFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files);
+      addFiles(filesArray);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files);
+      addFiles(filesArray);
     }
   };
 
-  const handleSubmit = () => {
-    if (selectedFile) {
-      onUpload(selectedFile, documentType, customTitle || undefined);
+  const addFiles = (files: File[]) => {
+    const newDocuments: DocumentToUpload[] = files.map(file => ({
+      id: `${Date.now()}-${Math.random()}`,
+      file,
+      documentType: 'other' as DocumentType,
+      customTitle: ''
+    }));
+    setDocumentsToUpload(prev => [...prev, ...newDocuments]);
+  };
+
+  const removeDocument = (id: string) => {
+    setDocumentsToUpload(prev => prev.filter(doc => doc.id !== id));
+  };
+
+  const updateDocumentType = (id: string, type: DocumentType) => {
+    setDocumentsToUpload(prev =>
+      prev.map(doc => doc.id === id ? { ...doc, documentType: type } : doc)
+    );
+  };
+
+  const updateDocumentTitle = (id: string, title: string) => {
+    setDocumentsToUpload(prev =>
+      prev.map(doc => doc.id === id ? { ...doc, customTitle: title } : doc)
+    );
+  };
+
+  const handleSubmit = async () => {
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < documentsToUpload.length; i++) {
+      setUploadingIndex(i);
+      const doc = documentsToUpload[i];
+      try {
+        await onUpload(doc.file, doc.documentType, doc.customTitle || undefined);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+      }
     }
+    setUploadingIndex(null);
+    setDocumentsToUpload([]);
+    onComplete(successCount, errorCount);
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Téléverser un document</h3>
+      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-xl font-bold text-gray-900">Téléverser des documents</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             ✕
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type de document
-            </label>
-            <select
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="cv">CV</option>
-              <option value="cover_letter">Lettre de motivation</option>
-              <option value="certificate">Certificat / Attestation</option>
-              <option value="other">Autre document</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Titre du document <span className="text-gray-500">(optionnel)</span>
-            </label>
-            <input
-              type="text"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder={
-                documentType === 'cv' ? 'Ex: CV Développeur Senior' :
-                documentType === 'cover_letter' ? 'Ex: Lettre de motivation pour poste RH' :
-                documentType === 'certificate' ? 'Ex: Certificat de formation React' :
-                'Ex: Portfolio de projets'
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Donnez un nom personnalisé à votre document pour le retrouver facilement
-            </p>
-          </div>
-
+        <div className="flex-1 overflow-auto p-6 space-y-4">
           <div
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -723,49 +745,132 @@ function UploadModal({ onClose, onUpload, uploading }: UploadModalProps) {
           >
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 mb-2">
-              {selectedFile ? selectedFile.name : 'Glissez-déposez un fichier ici'}
+              Glissez-déposez vos fichiers ici
             </p>
             <p className="text-sm text-gray-500 mb-4">ou</p>
             <label className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg cursor-pointer inline-block">
-              Choisir un fichier
+              Choisir des fichiers
               <input
                 type="file"
                 onChange={handleFileChange}
                 className="hidden"
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                multiple
               />
             </label>
             <p className="text-xs text-gray-500 mt-2">
-              PDF, DOC, DOCX, JPG, PNG (max 10MB)
+              PDF, DOC, DOCX, JPG, PNG (max 10MB par fichier)
             </p>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-              disabled={uploading}
-            >
-              Annuler
-            </button>
+          {documentsToUpload.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-gray-900">
+                  Documents à téléverser ({documentsToUpload.length})
+                </h4>
+              </div>
+
+              {documentsToUpload.map((doc, index) => (
+                <div
+                  key={doc.id}
+                  className={`bg-gray-50 border rounded-lg p-4 ${
+                    uploadingIndex === index ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm mb-1">{doc.file.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(doc.file.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Type de document
+                          </label>
+                          <select
+                            value={doc.documentType}
+                            onChange={(e) => updateDocumentType(doc.id, e.target.value as DocumentType)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={uploadingIndex !== null}
+                          >
+                            <option value="cv">CV</option>
+                            <option value="cover_letter">Lettre de motivation</option>
+                            <option value="certificate">Certificat / Attestation</option>
+                            <option value="other">Autre document</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Titre personnalisé (optionnel)
+                          </label>
+                          <input
+                            type="text"
+                            value={doc.customTitle}
+                            onChange={(e) => updateDocumentTitle(doc.id, e.target.value)}
+                            placeholder="Ex: CV Développeur Senior"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={uploadingIndex !== null}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => removeDocument(doc.id)}
+                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                      disabled={uploadingIndex !== null}
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {uploadingIndex === index && (
+                    <div className="mt-3 flex items-center gap-2 text-blue-600 text-sm">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Téléversement en cours...</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 p-6 border-t">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            disabled={uploadingIndex !== null}
+          >
+            {documentsToUpload.length > 0 && uploadingIndex === null ? 'Annuler' : 'Fermer'}
+          </button>
+          {documentsToUpload.length > 0 && (
             <button
               onClick={handleSubmit}
-              disabled={!selectedFile || uploading}
+              disabled={uploadingIndex !== null}
               className="flex-1 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {uploading ? (
+              {uploadingIndex !== null ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Téléversement...
+                  Téléversement ({uploadingIndex + 1}/{documentsToUpload.length})
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  Téléverser
+                  Téléverser {documentsToUpload.length} document{documentsToUpload.length > 1 ? 's' : ''}
                 </>
               )}
             </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
