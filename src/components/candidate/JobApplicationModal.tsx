@@ -332,8 +332,9 @@ export default function JobApplicationModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-4xl w-full my-8 shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-4xl w-full my-8 shadow-2xl max-h-[calc(100vh-4rem)]">
+        <div className="max-h-full overflow-y-auto rounded-2xl">
         <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white p-6 rounded-t-2xl flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Postuler à cette offre</h2>
@@ -941,6 +942,7 @@ Cordialement"
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
