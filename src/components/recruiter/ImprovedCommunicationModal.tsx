@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Send, Mail, MessageSquare, Search, Filter, CheckSquare, Square, Users, MessageCircle, Smartphone } from 'lucide-react';
+import { X, Send, Mail, MessageSquare, Search, Filter, CheckSquare, Square, Users, MessageCircle, Smartphone, Eye } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
@@ -239,7 +239,11 @@ export default function ImprovedCommunicationModal({
       candidate_id: c.profile_id,
       candidate: {
         full_name: c.full_name
-      }
+      },
+      job: {
+        title: c.job_title
+      },
+      company_name: 'Votre entreprise'
     }));
 
     try {
@@ -587,16 +591,44 @@ export default function ImprovedCommunicationModal({
                         </svg>
                       </div>
                       <div className="text-xs text-blue-900 space-y-1">
-                        <p className="font-semibold">Comment modifier ce message :</p>
+                        <p className="font-semibold">Variables disponibles :</p>
                         <ul className="list-disc list-inside space-y-0.5 ml-1">
-                          <li>Utilisez les outils de formatage ci-dessus pour personnaliser le texte</li>
-                          <li>Vous pouvez effacer entièrement le contenu et rédiger votre propre message</li>
-                          <li>Vous pouvez aussi coller un message déjà préparé (Ctrl+V / Cmd+V)</li>
-                          <li>Variables disponibles : <code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}candidate_name{'}'}</code>, <code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}job_title{'}'}</code>, <code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}company_name{'}'}</code></li>
+                          <li><code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}candidate_name{'}'}</code> - Nom complet du candidat</li>
+                          <li><code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}job_title{'}'}</code> - Titre du poste</li>
+                          <li><code className="bg-white px-1 py-0.5 rounded text-[10px]">{'{'}company_name{'}'}</code> - Nom de l'entreprise</li>
                         </ul>
                       </div>
                     </div>
                   </div>
+
+                  {message && selectedCandidates.size > 0 && (() => {
+                    const firstCandidate = candidates.find(c => selectedCandidates.has(c.id));
+                    if (!firstCandidate) return null;
+
+                    const previewVariables = {
+                      candidate_name: firstCandidate.full_name,
+                      job_title: firstCandidate.job_title,
+                      company_name: 'Votre entreprise'
+                    };
+
+                    const previewMessage = communicationService.replaceVariables(message, previewVariables);
+
+                    return (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Eye className="w-5 h-5 text-green-700" />
+                          <h4 className="font-bold text-green-900">Aperçu du message personnalisé</h4>
+                        </div>
+                        <p className="text-xs text-green-700 mb-3">
+                          Voici comment le message apparaîtra pour <strong>{firstCandidate.full_name}</strong> :
+                        </p>
+                        <div
+                          className="bg-white p-4 rounded-lg border border-green-200 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: previewMessage }}
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </>

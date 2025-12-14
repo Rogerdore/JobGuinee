@@ -22,6 +22,31 @@ export interface SendCommunicationParams {
 }
 
 export const communicationService = {
+  // Fonction pour remplacer les variables dans un message
+  replaceVariables(
+    message: string,
+    variables: {
+      candidate_name?: string;
+      job_title?: string;
+      company_name?: string;
+      interview_date?: string;
+      interview_time?: string;
+      interview_location?: string;
+      [key: string]: string | undefined;
+    }
+  ): string {
+    let result = message;
+
+    Object.entries(variables).forEach(([key, value]) => {
+      if (value) {
+        const regex = new RegExp(`\\{${key}\\}`, 'g');
+        result = result.replace(regex, value);
+      }
+    });
+
+    return result;
+  },
+
   async getTemplates(companyId?: string): Promise<CommunicationTemplate[]> {
     try {
       let query = supabase
@@ -134,7 +159,17 @@ export const communicationService = {
   },
 
   async sendBulkCommunication(
-    applications: Array<{ id: string; candidate_id: string }>,
+    applications: Array<{
+      id: string;
+      candidate_id: string;
+      candidate?: {
+        full_name?: string;
+      };
+      job?: {
+        title?: string;
+      };
+      company_name?: string;
+    }>,
     subject: string,
     message: string,
     channel: 'notification' | 'email' | 'sms' | 'whatsapp' = 'notification'
@@ -143,11 +178,21 @@ export const communicationService = {
     let failed = 0;
 
     for (const app of applications) {
+      // Remplacer les variables dans le sujet et le message pour chaque candidat
+      const variables = {
+        candidate_name: app.candidate?.full_name || 'Candidat',
+        job_title: app.job?.title || '',
+        company_name: app.company_name || ''
+      };
+
+      const personalizedSubject = this.replaceVariables(subject, variables);
+      const personalizedMessage = this.replaceVariables(message, variables);
+
       const result = await this.sendCommunication({
         applicationId: app.id,
         recipientId: app.candidate_id,
-        subject,
-        message,
+        subject: personalizedSubject,
+        message: personalizedMessage,
         channel
       });
 
