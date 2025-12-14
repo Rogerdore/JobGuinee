@@ -233,7 +233,7 @@ export default function CandidateMessaging() {
             channel: comm.channel,
             sender: {
               id: comm.sender_id,
-              name: comm.sender?.full_name || 'Recruteur',
+              name: comm.application?.jobs?.companies?.name || 'Recruteur',
               company: comm.application?.jobs?.companies?.name
             },
             subject: comm.subject,
@@ -675,7 +675,10 @@ export default function CandidateMessaging() {
                               {message.subject}
                             </p>
                           )}
-                          <p className="whitespace-pre-wrap leading-relaxed">{message.message}</p>
+                          <div
+                            className="whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: message.message }}
+                          />
 
                           {message.application && (
                             <div className={`mt-3 pt-3 border-t ${isSystem ? 'border-blue-500' : 'border-gray-200'}`}>
