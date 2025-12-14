@@ -9,6 +9,11 @@ import { applicationSubmissionService } from '../../services/applicationSubmissi
 import { fastApplicationValidator, ValidationResult } from '../../services/fastApplicationValidator';
 import CoverLetterImportModal from './CoverLetterImportModal';
 
+function sanitizeText(text: string | undefined): string {
+  if (!text) return '';
+  return text.replace(/\\/g, '\\\\');
+}
+
 interface JobApplicationModalProps {
   jobId: string;
   jobTitle: string;
@@ -181,7 +186,7 @@ export default function JobApplicationModal({
       const result = await applicationSubmissionService.submitApplication({
         jobId,
         candidateId,
-        coverLetter: candidateProfile?.professional_summary,
+        coverLetter: sanitizeText(candidateProfile?.professional_summary),
         cvUrl: candidateProfile?.cv_url
       });
 
@@ -279,7 +284,7 @@ export default function JobApplicationModal({
       const result = await applicationSubmissionService.submitApplication({
         jobId,
         candidateId,
-        coverLetter: customData.coverLetter,
+        coverLetter: sanitizeText(customData.coverLetter),
         cvUrl: cvUrl
       });
 
