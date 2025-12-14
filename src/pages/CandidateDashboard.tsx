@@ -613,7 +613,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 mb-2">Complétez votre profil</h3>
-                      <p className="text-sm text-gray-600">Votre profil est complété à {profileCompletion}%</p>
+                      <p className="text-sm text-gray-600">Votre profil est complété à <span className="font-bold text-orange-600">{profileCompletion}%</span></p>
                     </div>
                     <button
                       onClick={() => setActiveTab('profile')}
@@ -622,11 +622,53 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       Compléter
                     </button>
                   </div>
-                  <div className="w-full bg-white rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-[#0E2F56] to-blue-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${profileCompletion}%` }}
-                    ></div>
+
+                  {/* Barre de progression intelligente */}
+                  <div className="relative">
+                    {/* Barre de fond avec marqueurs */}
+                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
+                      {/* Barre de progression avec dégradé orange uniforme */}
+                      <div
+                        className="h-full transition-all duration-1000 ease-out bg-gradient-to-r from-amber-500 to-orange-500"
+                        style={{ width: `${profileCompletion}%` }}
+                      >
+                        {/* Animation de brillance */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
+                      </div>
+
+                      {/* Marqueurs d'étapes clés */}
+                      <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-30"></div>
+                      <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
+                    </div>
+
+                    {/* Labels des étapes positionnés exactement */}
+                    <div className="relative mt-2 h-5">
+                      {/* 0% */}
+                      <span className="absolute left-0 text-xs text-gray-600 font-medium">
+                        0%
+                      </span>
+
+                      {/* 50% */}
+                      <span className="absolute left-1/2 -translate-x-1/2 text-xs text-gray-600 font-medium">
+                        50%
+                      </span>
+
+                      {/* 80% CVthèque */}
+                      <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
+                        profileCompletion >= 80 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
+                      } flex items-center gap-1 whitespace-nowrap`}>
+                        {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
+                        80% CVthèque
+                      </span>
+
+                      {/* 100% */}
+                      <span className={`absolute right-0 text-xs ${
+                        profileCompletion >= 100 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
+                      } flex items-center gap-1`}>
+                        {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3" />}
+                        100%
+                      </span>
+                    </div>
                   </div>
                 </div>
 
