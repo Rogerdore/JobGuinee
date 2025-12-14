@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   X, FileText, User, Upload, CheckCircle2, AlertCircle,
-  Briefcase, Mail, Phone, MapPin, Award, Clock, Send
+  Briefcase, Mail, Phone, MapPin, Award, Clock, Send, FolderOpen
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { applicationSubmissionService } from '../../services/applicationSubmissionService';
+import CoverLetterImportModal from './CoverLetterImportModal';
 
 interface JobApplicationModalProps {
   jobId: string;
@@ -52,6 +53,7 @@ export default function JobApplicationModal({
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const [manualData, setManualData] = useState({
     coverLetter: '',
@@ -200,6 +202,11 @@ export default function JobApplicationModal({
       }
       setManualData({ ...manualData, cvFile: file });
     }
+  };
+
+  const handleImportCoverLetter = (content: string, fileName?: string) => {
+    setManualData({ ...manualData, coverLetter: content });
+    setShowImportModal(false);
   };
 
   const completionPercentage = candidateProfile?.profile_completion_percentage || 0;
@@ -547,13 +554,23 @@ export default function JobApplicationModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Lettre de motivation {coverLetterRequired ? (
-                      <span className="text-red-600">* (requise par le recruteur)</span>
-                    ) : (
-                      <span className="text-gray-600">(recommandée)</span>
-                    )}
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-gray-900">
+                      Lettre de motivation {coverLetterRequired ? (
+                        <span className="text-red-600">* (requise par le recruteur)</span>
+                      ) : (
+                        <span className="text-gray-600">(recommandée)</span>
+                      )}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowImportModal(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      Importer
+                    </button>
+                  </div>
                   <textarea
                     value={manualData.coverLetter}
                     onChange={(e) => setManualData({ ...manualData, coverLetter: e.target.value })}
@@ -615,6 +632,13 @@ export default function JobApplicationModal({
           )}
         </div>
       </div>
+
+      <CoverLetterImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleImportCoverLetter}
+        candidateId={candidateId}
+      />
     </div>
   );
 }
