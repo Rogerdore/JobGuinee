@@ -23,12 +23,11 @@ interface CoverLetterImportModalProps {
 
 interface Document {
   id: string;
-  document_name: string;
+  file_name: string;
   document_type: string;
-  document_category: string;
   file_url: string;
   file_size: number;
-  uploaded_at: string;
+  created_at: string;
 }
 
 type ImportMode = 'choose' | 'upload' | 'documents';
@@ -62,14 +61,8 @@ export default function CoverLetterImportModal({
   const loadDocuments = async () => {
     setLoading(true);
     try {
-      const docs = await candidateDocumentService.getDocumentsByCandidate(candidateId);
-
-      const coverLetters = docs.filter(
-        doc => doc.document_category === 'cover_letter' ||
-               doc.document_type.toLowerCase().includes('lettre')
-      );
-
-      setDocuments(coverLetters);
+      const coverLetters = await candidateDocumentService.getDocumentsByType(candidateId, 'cover_letter');
+      setDocuments(coverLetters as any);
     } catch (error) {
       console.error('Error loading documents:', error);
     } finally {
@@ -83,20 +76,20 @@ export default function CoverLetterImportModal({
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(doc =>
-        doc.document_name.toLowerCase().includes(query)
+        doc.file_name.toLowerCase().includes(query)
       );
     }
 
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date_desc':
-          return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case 'date_asc':
-          return new Date(a.uploaded_at).getTime() - new Date(b.uploaded_at).getTime();
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         case 'name_asc':
-          return a.document_name.localeCompare(b.document_name);
+          return a.file_name.localeCompare(b.file_name);
         case 'name_desc':
-          return b.document_name.localeCompare(a.document_name);
+          return b.file_name.localeCompare(a.file_name);
         default:
           return 0;
       }
@@ -149,14 +142,23 @@ export default function CoverLetterImportModal({
     try {
       setLoading(true);
 
+      const urlParts = doc.file_url.split('/');
+      const bucketIndex = urlParts.findIndex(part => part === 'candidate-cover-letters');
+
+      if (bucketIndex === -1) {
+        throw new Error('Invalid file URL');
+      }
+
+      const filePath = urlParts.slice(bucketIndex + 1).join('/');
+
       const { data, error } = await supabase.storage
-        .from('candidate-documents')
-        .download(doc.file_url);
+        .from('candidate-cover-letters')
+        .download(filePath);
 
       if (error) throw error;
 
       const text = await data.text();
-      onImport(text, doc.document_name);
+      onImport(text, doc.file_name);
       resetAndClose();
     } catch (error) {
       console.error('Error importing document:', error);
@@ -360,14 +362,14 @@ export default function CoverLetterImportModal({
 
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-gray-900 truncate">
-                          {doc.document_name}
+                          {doc.file_name}
                         </h4>
                         <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {formatDate(doc.uploaded_at)}
+                            {formatDate(doc.created_at)}
                           </span>
-                          <span>{formatFileSize(doc.file_size)}</span>
+                          <span>{formatFileSize(doc.file_size || 0)}</span>
                         </div>
                       </div>
 
