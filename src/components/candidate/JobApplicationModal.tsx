@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import {
   X, FileText, User, Upload, CheckCircle2, AlertCircle,
   Briefcase, Mail, Phone, MapPin, Award, Clock, Send, FolderOpen,
-  Sparkles, Zap, Edit3, ArrowRight, Plus, RefreshCw
+  Sparkles, Zap, Edit3, ArrowRight, Plus, RefreshCw, ExternalLink
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { applicationSubmissionService } from '../../services/applicationSubmissionService';
+import { fastApplicationValidator, ValidationResult } from '../../services/fastApplicationValidator';
 import CoverLetterImportModal from './CoverLetterImportModal';
 
 interface JobApplicationModalProps {
@@ -62,6 +63,8 @@ export default function JobApplicationModal({
   const [profileData, setProfileData] = useState<any>(null);
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [showMissingFieldsModal, setShowMissingFieldsModal] = useState(false);
 
   const [assistedData, setAssistedData] = useState({
     optimizedCoverLetter: '',
@@ -132,6 +135,18 @@ export default function JobApplicationModal({
     }
   };
 
+  const handleQuickApplyClick = async () => {
+    const validation = await fastApplicationValidator.checkEligibility(candidateId, jobId);
+    setValidationResult(validation);
+
+    if (!validation.isEligible) {
+      setShowMissingFieldsModal(true);
+      return;
+    }
+
+    setMode('quick');
+  };
+
   const handleQuickApply = async () => {
     if (!candidateProfile?.cv_url) {
       alert('Veuillez d\'abord ajouter un CV à votre profil ou utiliser une autre méthode de candidature.');
@@ -163,6 +178,13 @@ export default function JobApplicationModal({
       alert(`Erreur: ${errorMessage}`);
     }
     setSubmitting(false);
+  };
+
+  const handleCompleteProfile = () => {
+    sessionStorage.setItem('pendingApplicationJobId', jobId);
+    sessionStorage.setItem('pendingApplicationJobTitle', jobTitle);
+    sessionStorage.setItem('pendingApplicationCompanyName', companyName);
+    window.location.href = '/candidate-dashboard?tab=profile';
   };
 
   const generateAssistedApplication = async () => {
@@ -352,11 +374,7 @@ Cordialement`;
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* OPTION 1 - CANDIDATURE RAPIDE */}
                 <button
-                  onClick={() => {
-                    if (hasCV) {
-                      setMode('quick');
-                    }
-                  }}
+                  onClick={handleQuickApplyClick}
                   className="group relative p-6 rounded-xl border-2 border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all"
                 >
                   <div className="flex flex-col h-full">
@@ -848,6 +866,108 @@ Cordialement`;
           )}
         </div>
       </div>
+
+      {/* Modal de champs manquants pour candidature rapide */}
+      {showMissingFieldsModal && validationResult && !validationResult.isEligible && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-500 text-white p-6 rounded-t-2xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Profil Incomplet</h3>
+                  <p className="text-orange-100 text-sm">Complétez votre profil pour postuler</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMissingFieldsModal(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Pour utiliser la <strong>Candidature Rapide</strong>, votre profil doit contenir toutes les informations obligatoires.
+                </p>
+                <p className="text-sm text-gray-600">
+                  Il vous manque les éléments suivants :
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                {validationResult.missingFields.map((field, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border-2 ${
+                      field.isJobSpecific
+                        ? 'bg-orange-50 border-orange-200'
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                        field.isJobSpecific ? 'text-orange-600' : 'text-red-600'
+                      }`} />
+                      <div className="flex-1">
+                        <h4 className={`font-semibold ${
+                          field.isJobSpecific ? 'text-orange-900' : 'text-red-900'
+                        }`}>
+                          {field.label}
+                          {field.isJobSpecific && (
+                            <span className="ml-2 text-xs px-2 py-0.5 bg-orange-200 text-orange-800 rounded-full">
+                              Exigé par l'offre
+                            </span>
+                          )}
+                        </h4>
+                        <p className={`text-sm mt-1 ${
+                          field.isJobSpecific ? 'text-orange-700' : 'text-red-700'
+                        }`}>
+                          {field.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-semibold text-blue-900 mb-1">
+                      Autres options disponibles
+                    </h5>
+                    <p className="text-sm text-blue-700">
+                      En attendant, vous pouvez utiliser la <strong>Candidature Assistée</strong> ou <strong>Personnalisée</strong> qui ne nécessitent pas un profil 100% complet.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowMissingFieldsModal(false)}
+                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-semibold transition"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={handleCompleteProfile}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Compléter mon profil
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CoverLetterImportModal
         isOpen={showImportModal}

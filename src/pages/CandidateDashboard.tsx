@@ -7,6 +7,7 @@ import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import CandidateMessaging from '../components/candidate/CandidateMessaging';
 import DocumentsHub from '../components/candidate/DocumentsHub';
 import { candidateMessagingService } from '../services/candidateMessagingService';
+import { usePendingApplication } from '../hooks/usePendingApplication';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -32,6 +33,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [jobViewsCount, setJobViewsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  const { pendingApplication, shouldShowApplicationModal, clearPendingApplication } = usePendingApplication(profile?.id || null);
 
   const [formData, setFormData] = useState({
     skills: [] as string[],
@@ -1531,6 +1534,70 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   className="w-full px-6 py-4 bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white rounded-xl font-bold text-lg hover:from-blue-900 hover:to-blue-900 transition-all shadow-lg"
                 >
                   Souscrire maintenant
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification de reprise de candidature */}
+      {shouldShowApplicationModal && pendingApplication && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md animate-slide-up">
+          <div className="bg-white rounded-xl shadow-2xl border-2 border-green-500 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-600 to-green-500 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-white font-bold text-lg">Profil Complété !</h4>
+                  <p className="text-green-100 text-sm">Vous pouvez maintenant postuler</p>
+                </div>
+                <button
+                  onClick={clearPendingApplication}
+                  className="p-1 hover:bg-white/20 rounded transition"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              <div className="mb-4">
+                <p className="text-gray-700 font-semibold mb-1">
+                  {pendingApplication.jobTitle}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {pendingApplication.companyName}
+                </p>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-800">
+                    Votre profil contient maintenant toutes les informations requises pour cette offre.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={clearPendingApplication}
+                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition"
+                >
+                  Plus tard
+                </button>
+                <button
+                  onClick={() => {
+                    clearPendingApplication();
+                    onNavigate('job-detail', pendingApplication.jobId);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  Postuler
                 </button>
               </div>
             </div>
