@@ -130,9 +130,10 @@ export default function JobApplicationModal({
       } else {
         alert(result.error || 'Une erreur est survenue');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting application:', error);
-      alert('Une erreur est survenue lors de l\'envoi de votre candidature');
+      const errorMessage = error?.message || error?.error_description || error?.toString() || 'Une erreur est survenue';
+      alert(`Erreur: ${errorMessage}`);
     }
     setSubmitting(false);
   };
@@ -182,9 +183,10 @@ export default function JobApplicationModal({
       } else {
         alert(result.error || 'Une erreur est survenue');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting application:', error);
-      alert('Une erreur est survenue lors de l\'envoi de votre candidature');
+      const errorMessage = error?.message || error?.error_description || error?.toString() || 'Une erreur est survenue';
+      alert(`Erreur: ${errorMessage}`);
     }
     setSubmitting(false);
   };

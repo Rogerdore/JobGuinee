@@ -216,8 +216,13 @@ export const applicationSubmissionService = {
         .select('id, application_reference')
         .single();
 
-      if (insertError || !application) {
-        throw new Error('Erreur lors de la création de la candidature');
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        throw new Error(`Erreur lors de la création de la candidature: ${insertError.message || insertError.code}`);
+      }
+
+      if (!application) {
+        throw new Error('Aucune candidature créée');
       }
 
       const appliedDate = new Date().toLocaleDateString('fr-FR', {
