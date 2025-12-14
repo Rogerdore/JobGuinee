@@ -332,9 +332,9 @@ export default function JobApplicationModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-4xl w-full my-8 shadow-2xl max-h-[calc(100vh-4rem)]">
-        <div className="max-h-full overflow-y-auto rounded-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[100] p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-4xl w-full my-8 shadow-2xl">
+        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl">
         <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white p-6 rounded-t-2xl flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold">Postuler à cette offre</h2>
@@ -840,7 +840,7 @@ export default function JobApplicationModal({
                       <textarea
                         value={customData.coverLetter}
                         onChange={(e) => setCustomData({ ...customData, coverLetter: e.target.value })}
-                        rows={12}
+                        rows={8}
                         placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste...
 
 Exemple :
@@ -871,7 +871,7 @@ Cordialement"
                 </div>
               </div>
 
-              <div className="flex gap-4 mt-8 pt-6 border-t-2 border-gray-200">
+              <div className="flex gap-4 mt-8 pt-6 pb-4 border-t-2 border-gray-200">
                   <button
                     onClick={() => setMode('select')}
                     disabled={submitting}
