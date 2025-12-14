@@ -586,11 +586,11 @@ export default function JobApplicationModal({
                 ← Retour
               </button>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* Section 1: Informations candidat */}
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
+                <div>
+                  <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-blue-500 pb-3">
+                    <User className="w-6 h-6 text-blue-600" />
                     1. Informations candidat
                   </h5>
                   <div className="space-y-4">
@@ -668,9 +668,9 @@ export default function JobApplicationModal({
                 </div>
 
                 {/* Section 2: CV */}
-                <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6">
-                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-gray-700" />
+                <div>
+                  <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-gray-400 pb-3">
+                    <Briefcase className="w-6 h-6 text-gray-700" />
                     2. CV <span className="text-red-600">*</span>
                   </h5>
 
@@ -804,9 +804,9 @@ export default function JobApplicationModal({
                 </div>
 
                 {/* Section 3: Lettre de motivation */}
-                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-purple-600" />
+                <div>
+                  <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-purple-500 pb-3">
+                    <FileText className="w-6 h-6 text-purple-600" />
                     3. Lettre de motivation {coverLetterRequired ? (
                       <span className="text-red-600">*</span>
                     ) : (
@@ -869,9 +869,9 @@ Cordialement"
                 </div>
 
                 {/* Section 4: Informations complémentaires (facultatif) */}
-                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Award className="w-5 h-5 text-green-600" />
+                <div>
+                  <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-green-500 pb-3">
+                    <Award className="w-6 h-6 text-green-600" />
                     4. Informations complémentaires <span className="text-gray-500 font-normal text-sm">(facultatif)</span>
                   </h5>
 
