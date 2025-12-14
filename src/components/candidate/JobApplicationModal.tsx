@@ -66,6 +66,9 @@ export default function JobApplicationModal({
   const [showMissingFieldsModal, setShowMissingFieldsModal] = useState(false);
 
   const [customData, setCustomData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
     coverLetter: '',
     cvFile: null as File | null
   });
@@ -73,6 +76,17 @@ export default function JobApplicationModal({
   useEffect(() => {
     loadData();
   }, [candidateId, jobId]);
+
+  useEffect(() => {
+    if (profileData && candidateProfile) {
+      setCustomData(prev => ({
+        ...prev,
+        fullName: profileData.full_name || '',
+        email: profileData.email || '',
+        phone: profileData.phone || ''
+      }));
+    }
+  }, [profileData, candidateProfile]);
 
   const loadData = async () => {
     setLoading(true);
@@ -181,6 +195,21 @@ export default function JobApplicationModal({
   };
 
   const handleCustomSubmit = async () => {
+    if (!customData.fullName.trim()) {
+      alert('Le nom complet est obligatoire.');
+      return;
+    }
+
+    if (!customData.email.trim()) {
+      alert('L\'email est obligatoire.');
+      return;
+    }
+
+    if (!customData.phone.trim()) {
+      alert('Le téléphone est obligatoire.');
+      return;
+    }
+
     const hasExistingCV = candidateProfile?.cv_url;
     const hasNewCV = customData.cvFile;
 
@@ -196,6 +225,15 @@ export default function JobApplicationModal({
 
     setSubmitting(true);
     try {
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: customData.fullName,
+          email: customData.email,
+          phone: customData.phone
+        })
+        .eq('id', candidateId);
+
       let cvUrl = candidateProfile?.cv_url || '';
 
       if (customData.cvFile) {
@@ -524,6 +562,70 @@ export default function JobApplicationModal({
               </button>
 
               <div className="space-y-6">
+                {/* Informations obligatoires */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                  <h5 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" />
+                    Informations obligatoires
+                  </h5>
+                  <div className="space-y-4">
+                    {/* Nom complet */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Nom complet <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customData.fullName}
+                        onChange={(e) => setCustomData({ ...customData, fullName: e.target.value })}
+                        placeholder="Ex: Jean Dupont"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                      {!customData.fullName && (
+                        <p className="mt-1 text-xs text-red-600">Ce champ est obligatoire</p>
+                      )}
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Email <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={customData.email}
+                        onChange={(e) => setCustomData({ ...customData, email: e.target.value })}
+                        placeholder="Ex: jean.dupont@email.com"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                      {!customData.email && (
+                        <p className="mt-1 text-xs text-red-600">Ce champ est obligatoire</p>
+                      )}
+                    </div>
+
+                    {/* Téléphone */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Téléphone <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={customData.phone}
+                        onChange={(e) => setCustomData({ ...customData, phone: e.target.value })}
+                        placeholder="Ex: +224 XXX XX XX XX"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                      {!customData.phone && (
+                        <p className="mt-1 text-xs text-red-600">Ce champ est obligatoire</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* CV */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     CV {candidateProfile?.cv_url ? (
