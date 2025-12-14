@@ -803,15 +803,17 @@ export default function JobApplicationModal({
                   )}
 
                   {/* Lettre de motivation - intégrée dans la section CV */}
-                  <div className="mt-8 pt-8 border-t-2 border-gray-200">
-                    <h6 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-base">
-                      <FileText className="w-5 h-5 text-purple-600" />
-                      Lettre de motivation {coverLetterRequired ? (
-                        <span className="text-red-600">*</span>
-                      ) : (
-                        <span className="text-gray-500 font-normal text-sm">(recommandée)</span>
-                      )}
-                    </h6>
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-purple-600" />
+                        Lettre de motivation {coverLetterRequired ? (
+                          <span className="text-red-600">*</span>
+                        ) : (
+                          <span className="text-gray-500 font-normal text-sm">(recommandée)</span>
+                        )}
+                      </label>
+                    </div>
 
                     <div className="space-y-3">
                       <div className="flex gap-2">
