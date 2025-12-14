@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   X, FileText, User, Upload, CheckCircle2, AlertCircle,
   Briefcase, Mail, Phone, MapPin, Award, Clock, Send, FolderOpen,
-  Sparkles, Zap, Edit3, Plus, ExternalLink
+  Sparkles, Zap, Edit3, Plus, ExternalLink, Trash2, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { applicationSubmissionService } from '../../services/applicationSubmissionService';
@@ -52,6 +52,15 @@ interface CandidateProfile {
 
 type ApplicationMode = 'select' | 'quick' | 'custom';
 
+type FileType = 'cv' | 'cover_letter' | 'certificate';
+
+interface FileToUpload {
+  id: string;
+  file: File;
+  fileType: FileType;
+  customTitle: string;
+}
+
 export default function JobApplicationModal({
   jobId,
   jobTitle,
@@ -69,6 +78,9 @@ export default function JobApplicationModal({
   const [showImportModal, setShowImportModal] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showMissingFieldsModal, setShowMissingFieldsModal] = useState(false);
+
+  const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const [customData, setCustomData] = useState({
     firstName: '',
@@ -231,20 +243,19 @@ export default function JobApplicationModal({
       return;
     }
 
-    const hasExistingCV = candidateProfile?.cv_url && customData.useExistingCV;
-    const hasNewCV = customData.cvFile;
-
-    if (!hasExistingCV && !hasNewCV) {
-      alert('Veuillez télécharger votre CV. Le CV est obligatoire pour postuler.');
+    if (getFilesByType('cv').length === 0) {
+      alert('Veuillez télécharger au moins un CV. Le CV est obligatoire pour postuler.');
       return;
     }
 
-    if (jobDetails?.cover_letter_required && !customData.coverLetter.trim()) {
+    if (coverLetterRequired && getFilesByType('cover_letter').length === 0) {
       alert('Une lettre de motivation est requise par le recruteur pour cette offre.');
       return;
     }
 
     setSubmitting(true);
+    setUploadingFiles(true);
+
     try {
       const fullName = `${customData.firstName} ${customData.lastName}`.trim();
 
@@ -256,36 +267,48 @@ export default function JobApplicationModal({
         })
         .eq('id', candidateId);
 
-      let cvUrl = (hasExistingCV ? candidateProfile?.cv_url : '') || '';
+      const uploadedFiles: { type: FileType; url: string; title: string }[] = [];
 
-      if (customData.cvFile) {
-        const fileExt = customData.cvFile.name.split('.').pop();
-        const fileName = `${candidateId}/${Date.now()}.${fileExt}`;
+      for (const fileItem of filesToUpload) {
+        const fileExt = fileItem.file.name.split('.').pop();
+        const fileName = `${candidateId}/application-${jobId}/${Date.now()}-${Math.random()}.${fileExt}`;
+
+        const storageBucket = fileItem.fileType === 'cv'
+          ? 'candidate-cvs'
+          : fileItem.fileType === 'cover_letter'
+          ? 'candidate-cover-letters'
+          : 'candidate-certificates';
+
         const { error: uploadError } = await supabase.storage
-          .from('candidate-cvs')
-          .upload(fileName, customData.cvFile);
+          .from(storageBucket)
+          .upload(fileName, fileItem.file);
 
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage
-          .from('candidate-cvs')
+          .from(storageBucket)
           .getPublicUrl(fileName);
 
-        cvUrl = urlData.publicUrl;
-
-        if (customData.saveNewCVToProfile) {
-          await supabase
-            .from('candidate_profiles')
-            .update({ cv_url: cvUrl })
-            .eq('id', candidateId);
-        }
+        uploadedFiles.push({
+          type: fileItem.fileType,
+          url: urlData.publicUrl,
+          title: fileItem.customTitle || fileItem.file.name
+        });
       }
+
+      const cvFiles = uploadedFiles.filter(f => f.type === 'cv');
+      const primaryCvUrl = cvFiles[0]?.url || '';
 
       const result = await applicationSubmissionService.submitApplication({
         jobId,
         candidateId,
-        coverLetter: sanitizeText(customData.coverLetter),
-        cvUrl: cvUrl
+        coverLetter: uploadedFiles.find(f => f.type === 'cover_letter')?.title || '',
+        cvUrl: primaryCvUrl,
+        additionalDocuments: uploadedFiles.map(f => ({
+          type: f.type,
+          url: f.url,
+          title: f.title
+        }))
       });
 
       if (result.success) {
@@ -297,8 +320,10 @@ export default function JobApplicationModal({
       console.error('Error submitting application:', error);
       const errorMessage = error?.message || error?.error_description || error?.toString() || 'Une erreur est survenue';
       alert(`Erreur: ${errorMessage}`);
+    } finally {
+      setSubmitting(false);
+      setUploadingFiles(false);
     }
-    setSubmitting(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,6 +341,53 @@ export default function JobApplicationModal({
     }
   };
 
+  const addFiles = (files: File[], fileType: FileType) => {
+    const newFiles: FileToUpload[] = Array.from(files).map(file => ({
+      id: `${Date.now()}-${Math.random()}`,
+      file,
+      fileType,
+      customTitle: ''
+    }));
+    setFilesToUpload(prev => [...prev, ...newFiles]);
+  };
+
+  const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files);
+      const validFiles = filesArray.filter(file => {
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`Le fichier ${file.name} dépasse 10 MB`);
+          return false;
+        }
+        return true;
+      });
+      addFiles(validFiles, fileType);
+    }
+  };
+
+  const removeFile = (id: string) => {
+    setFilesToUpload(prev => prev.filter(f => f.id !== id));
+  };
+
+  const updateFileTitle = (id: string, title: string) => {
+    setFilesToUpload(prev =>
+      prev.map(f => f.id === id ? { ...f, customTitle: title } : f)
+    );
+  };
+
+  const getFileTypeLabel = (type: FileType) => {
+    const labels = {
+      cv: 'CV',
+      cover_letter: 'Lettre de motivation',
+      certificate: 'Certificat / Attestation'
+    };
+    return labels[type];
+  };
+
+  const getFilesByType = (type: FileType) => {
+    return filesToUpload.filter(f => f.fileType === type);
+  };
+
   const handleImportCoverLetter = (content: string) => {
     setCustomData({ ...customData, coverLetter: content });
     setShowImportModal(false);
@@ -325,6 +397,79 @@ export default function JobApplicationModal({
   const hasCV = !!candidateProfile?.cv_url;
   const hasCoverLetter = !!candidateProfile?.professional_summary?.trim();
   const coverLetterRequired = jobDetails?.cover_letter_required || false;
+
+  const MultipleFileUploadSection = ({ fileType, label, required = false }: { fileType: FileType; label: string; required?: boolean }) => {
+    const filesOfType = getFilesByType(fileType);
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-semibold text-gray-900">
+            {label} {required && <span className="text-red-600">*</span>}
+          </label>
+        </div>
+
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          onChange={(e) => handleMultipleFilesChange(e, fileType)}
+          className="hidden"
+          id={`file-upload-${fileType}`}
+        />
+
+        <label
+          htmlFor={`file-upload-${fileType}`}
+          className="flex items-center justify-center gap-3 px-4 py-6 bg-white border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg cursor-pointer transition"
+        >
+          <Upload className="w-6 h-6 text-gray-600" />
+          <div className="text-center">
+            <p className="font-semibold text-gray-900">
+              Cliquer pour télécharger {filesOfType.length > 0 ? 'd\'autres fichiers' : 'un ou plusieurs fichiers'}
+            </p>
+            <p className="text-sm text-gray-600">Formats acceptés: PDF, Word, JPG, PNG</p>
+          </div>
+        </label>
+
+        {filesOfType.length > 0 && (
+          <div className="space-y-2">
+            {filesOfType.map((fileItem) => (
+              <div key={fileItem.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{fileItem.file.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(fileItem.file.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={fileItem.customTitle}
+                      onChange={(e) => updateFileTitle(fileItem.id, e.target.value)}
+                      placeholder="Titre personnalisé (optionnel)"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => removeFile(fileItem.id)}
+                    className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    type="button"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -673,197 +818,46 @@ export default function JobApplicationModal({
                   </div>
                 </div>
 
-                {/* Section 2: CV */}
+                {/* Section 2: Documents */}
                 <div>
                   <h5 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg border-b-2 border-gray-400 pb-3">
                     <Briefcase className="w-6 h-6 text-gray-700" />
-                    2. CV <span className="text-red-600">*</span>
+                    2. Documents de candidature
                   </h5>
 
-                  {candidateProfile?.cv_url ? (
-                    <div className="space-y-4">
-                      {/* Option: CV existant */}
-                      <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition hover:bg-white" style={{ borderColor: customData.useExistingCV ? '#3b82f6' : '#d1d5db', backgroundColor: customData.useExistingCV ? '#eff6ff' : 'white' }}>
-                        <input
-                          type="radio"
-                          name="cvChoice"
-                          checked={customData.useExistingCV}
-                          onChange={() => setCustomData({ ...customData, useExistingCV: true, cvFile: null })}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                            <p className="font-semibold text-gray-900">Utiliser mon CV enregistré</p>
-                          </div>
-                          <p className="text-sm text-gray-600">Votre CV sera automatiquement joint à la candidature</p>
-                          {customData.useExistingCV && (
-                            <a
-                              href={candidateProfile.cv_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                              Voir mon CV
-                            </a>
-                          )}
-                        </div>
-                      </label>
+                  <div className="space-y-6">
+                    <MultipleFileUploadSection
+                      fileType="cv"
+                      label="CV principal (PDF ou Word)"
+                      required={true}
+                    />
 
-                      {/* Option: Nouveau CV */}
-                      <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition hover:bg-white" style={{ borderColor: !customData.useExistingCV ? '#3b82f6' : '#d1d5db', backgroundColor: !customData.useExistingCV ? '#eff6ff' : 'white' }}>
-                        <input
-                          type="radio"
-                          name="cvChoice"
-                          checked={!customData.useExistingCV}
-                          onChange={() => setCustomData({ ...customData, useExistingCV: false })}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Upload className="w-5 h-5 text-gray-700" />
-                            <p className="font-semibold text-gray-900">Télécharger un nouveau CV</p>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">Pour cette candidature spécifique</p>
+                    <MultipleFileUploadSection
+                      fileType="cover_letter"
+                      label={`Lettre de motivation ${coverLetterRequired ? '(requise)' : '(optionnelle)'}`}
+                      required={coverLetterRequired}
+                    />
 
-                          {!customData.useExistingCV && (
-                            <div className="mt-3 space-y-3">
-                              <input
-                                type="file"
-                                accept=".pdf,.doc,.docx,image/*"
-                                onChange={handleFileChange}
-                                className="hidden"
-                                id="cv-upload-new"
-                              />
-                              <label
-                                htmlFor="cv-upload-new"
-                                className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg cursor-pointer transition"
-                              >
-                                <Upload className="w-5 h-5 text-gray-600" />
-                                <div>
-                                  <p className="font-semibold text-gray-900">
-                                    {customData.cvFile ? customData.cvFile.name : 'Cliquez pour sélectionner un fichier'}
-                                  </p>
-                                  <p className="text-sm text-gray-600">PDF, DOC, DOCX, Image (max 5 MB)</p>
-                                </div>
-                              </label>
+                    <MultipleFileUploadSection
+                      fileType="certificate"
+                      label="Certificats / Attestations (optionnel)"
+                      required={false}
+                    />
+                  </div>
 
-                              {customData.cvFile && (
-                                <label className="flex items-center gap-2 text-sm">
-                                  <input
-                                    type="checkbox"
-                                    checked={customData.saveNewCVToProfile}
-                                    onChange={(e) => setCustomData({ ...customData, saveNewCVToProfile: e.target.checked })}
-                                    className="rounded border-gray-300"
-                                  />
-                                  <span className="text-gray-700">Enregistrer ce CV dans mon profil pour les futures candidatures</span>
-                                </label>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="cv-upload"
-                      />
-                      <label
-                        htmlFor="cv-upload"
-                        className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-dashed border-red-300 hover:border-red-500 rounded-lg cursor-pointer transition"
-                      >
-                        <Upload className="w-6 h-6 text-red-600" />
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {customData.cvFile ? customData.cvFile.name : 'Télécharger votre CV (obligatoire)'}
-                          </p>
-                          <p className="text-sm text-gray-600">PDF, DOC, DOCX, Image (max 5 MB)</p>
-                        </div>
-                      </label>
-
-                      {!customData.cvFile && (
-                        <p className="text-sm text-red-600 flex items-center gap-1">
-                          <AlertCircle className="w-4 h-4" />
-                          Le CV est obligatoire pour postuler
-                        </p>
-                      )}
-
-                      {customData.cvFile && (
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={customData.saveNewCVToProfile}
-                            onChange={(e) => setCustomData({ ...customData, saveNewCVToProfile: e.target.checked })}
-                            className="rounded border-gray-300"
-                          />
-                          <span className="text-gray-700">Enregistrer ce CV dans mon profil pour les futures candidatures</span>
-                        </label>
-                      )}
-                    </div>
+                  {getFilesByType('cv').length === 0 && (
+                    <p className="text-sm text-red-600 flex items-center gap-1 mt-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Au moins un CV est obligatoire pour postuler
+                    </p>
                   )}
 
-                  {/* Lettre de motivation - intégrée dans la section CV */}
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-semibold text-gray-900 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-purple-600" />
-                        Lettre de motivation {coverLetterRequired ? (
-                          <span className="text-red-600">*</span>
-                        ) : (
-                          <span className="text-gray-500 font-normal text-sm">(recommandée)</span>
-                        )}
-                      </label>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowImportModal(true)}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-md"
-                        >
-                          <FolderOpen className="w-4 h-4" />
-                          Importer
-                        </button>
-                      </div>
-
-                      <textarea
-                        value={customData.coverLetter}
-                        onChange={(e) => setCustomData({ ...customData, coverLetter: e.target.value })}
-                        rows={8}
-                        placeholder="Expliquez pourquoi vous êtes le candidat idéal pour ce poste...
-
-Exemple :
-Madame, Monsieur,
-
-Je me permets de vous présenter ma candidature pour le poste de [titre du poste]...
-
-[Expérience et compétences pertinentes]
-
-[Motivation et valeur ajoutée]
-
-Cordialement"
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-sans"
-                      />
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-gray-600">
-                          {customData.coverLetter.length} caractères
-                        </p>
-                        {coverLetterRequired && !customData.coverLetter.trim() && (
-                          <p className="text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="w-4 h-4" />
-                            Ce champ est requis par le recruteur
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  {coverLetterRequired && getFilesByType('cover_letter').length === 0 && (
+                    <p className="text-sm text-orange-600 flex items-center gap-1 mt-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Une lettre de motivation est requise par le recruteur
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -882,8 +876,8 @@ Cordialement"
                       !customData.firstName.trim() ||
                       !customData.lastName.trim() ||
                       !customData.phone.trim() ||
-                      (!(candidateProfile?.cv_url && customData.useExistingCV) && !customData.cvFile) ||
-                      (coverLetterRequired && !customData.coverLetter.trim())
+                      getFilesByType('cv').length === 0 ||
+                      (coverLetterRequired && getFilesByType('cover_letter').length === 0)
                     }
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
