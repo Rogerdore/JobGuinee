@@ -1001,19 +1001,30 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
                         </div>
 
-                        {/* Labels des étapes */}
-                        <div className="flex justify-between items-center mt-2 text-xs">
-                          <span className={`${profileCompletion >= 0 ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+                        {/* Labels des étapes positionnés exactement */}
+                        <div className="relative mt-2 h-5">
+                          {/* 0% */}
+                          <span className="absolute left-0 text-xs text-gray-600 font-medium">
                             0%
                           </span>
-                          <span className={`${profileCompletion >= 50 ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>
+
+                          {/* 50% */}
+                          <span className="absolute left-1/2 -translate-x-1/2 text-xs text-gray-600 font-medium">
                             50%
                           </span>
-                          <span className={`${profileCompletion >= 80 ? 'text-green-600 font-semibold' : 'text-gray-500 font-medium'} flex items-center gap-1`}>
+
+                          {/* 80% CVthèque */}
+                          <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
+                            profileCompletion >= 80 ? 'text-green-600 font-semibold' : 'text-gray-500 font-medium'
+                          } flex items-center gap-1 whitespace-nowrap`}>
                             {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
                             80% CVthèque
                           </span>
-                          <span className={`${profileCompletion >= 100 ? 'text-green-600 font-semibold' : 'text-gray-400'} flex items-center gap-1`}>
+
+                          {/* 100% */}
+                          <span className={`absolute right-0 text-xs ${
+                            profileCompletion >= 100 ? 'text-green-600 font-semibold' : 'text-gray-400'
+                          } flex items-center gap-1`}>
                             {profileCompletion >= 100 && <Star className="w-3 h-3 fill-current" />}
                             100%
                           </span>
