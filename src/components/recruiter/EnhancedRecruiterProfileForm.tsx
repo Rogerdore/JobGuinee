@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { calculateRecruiterCompletion, getCompletionStatus, getMissingRecruiterFields } from '../../utils/profileCompletion';
 import AutoCompleteInput from '../forms/AutoCompleteInput';
+import SuccessModal from '../notifications/SuccessModal';
 import {
   User,
   Building2,
@@ -43,7 +44,17 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState<any>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -188,11 +199,12 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     if (draft) {
       setProfileData(draft.profileData);
       setCompanyData(draft.companyData);
-      setMessage({
+      setModalConfig({
+        isOpen: true,
         type: 'success',
-        text: 'Brouillon récupéré avec succès!'
+        title: 'Brouillon récupéré',
+        message: 'Votre brouillon a été récupéré avec succès!'
       });
-      setTimeout(() => setMessage(null), 3000);
     }
     setShowDraftModal(false);
     setInitialLoadComplete(true);
@@ -212,23 +224,26 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     const maxSize = 5 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
-      setMessage({
+      setModalConfig({
+        isOpen: true,
         type: 'error',
-        text: 'Format non supporté. Utilisez JPG, PNG, GIF ou WebP.'
+        title: 'Format non supporté',
+        message: 'Veuillez utiliser un fichier JPG, PNG, GIF ou WebP.'
       });
       return;
     }
 
     if (file.size > maxSize) {
-      setMessage({
+      setModalConfig({
+        isOpen: true,
         type: 'error',
-        text: 'Fichier trop volumineux. Taille max: 5MB.'
+        title: 'Fichier trop volumineux',
+        message: 'La taille maximale autorisée est de 5MB.'
       });
       return;
     }
 
     setUploadingLogo(true);
-    setMessage(null);
 
     try {
       const fileExt = file.name.split('.').pop();
@@ -259,15 +274,19 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
       setCompanyData(prev => ({ ...prev, logo_url: publicUrl }));
 
-      setMessage({
+      setModalConfig({
+        isOpen: true,
         type: 'success',
-        text: 'Logo uploadé avec succès!'
+        title: 'Logo uploadé',
+        message: 'Le logo de votre entreprise a été uploadé avec succès!'
       });
     } catch (error) {
       console.error('Error uploading logo:', error);
-      setMessage({
+      setModalConfig({
+        isOpen: true,
         type: 'error',
-        text: 'Erreur lors de l\'upload du logo.'
+        title: 'Erreur d\'upload',
+        message: 'Une erreur est survenue lors de l\'upload du logo.'
       });
     } finally {
       setUploadingLogo(false);
@@ -278,7 +297,6 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     if (!user) return;
 
     setSaving(true);
-    setMessage(null);
 
     try {
       const { error: profileError } = await supabase
@@ -410,10 +428,21 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       }
 
       autoSave.clearDraft();
-      setMessage({ type: 'success', text: 'Profil enregistré avec succès!' });
+
+      setModalConfig({
+        isOpen: true,
+        type: 'success',
+        title: 'Profil enregistré avec succès!',
+        message: 'Votre profil recruteur a été mis à jour et sauvegardé avec succès.'
+      });
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      setMessage({ type: 'error', text: error.message || 'Erreur lors de la sauvegarde' });
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Erreur d\'enregistrement',
+        message: error.message || 'Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.'
+      });
     } finally {
       setSaving(false);
     }
@@ -571,18 +600,6 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         </div>
       )}
 
-      {message && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${
-          message.type === 'success' ? 'bg-green-50 text-green-900 border border-green-200' : 'bg-red-50 text-red-900 border border-red-200'
-        }`}>
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-600" />
-          ) : (
-            <X className="w-5 h-5 text-red-600" />
-          )}
-          <span className="font-medium">{message.text}</span>
-        </div>
-      )}
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
@@ -1027,6 +1044,16 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
           )}
         </button>
       </div>
+
+      <SuccessModal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        autoClose={modalConfig.type === 'success'}
+        autoCloseDelay={3000}
+      />
     </div>
   );
 }
