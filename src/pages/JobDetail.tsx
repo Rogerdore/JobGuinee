@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
 import JobApplicationModal from '../components/candidate/JobApplicationModal';
+import CompanyLogo from '../components/common/CompanyLogo';
 
 interface JobDetailProps {
   jobId: string;
@@ -209,9 +210,13 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center space-x-2 mb-2">
-                  <Building className="w-5 h-5" />
-                  <span className="text-xl">{job.companies?.name || job.department}</span>
+                <div className="flex items-center space-x-3 mb-2">
+                  <CompanyLogo
+                    logoUrl={job.companies?.logo_url}
+                    companyName={job.companies?.name || job.department || 'Entreprise'}
+                    size="sm"
+                  />
+                  <span className="text-xl font-semibold">{job.companies?.name || job.department}</span>
                 </div>
                 {job.location && (
                   <div className="flex items-center space-x-2 text-blue-100">
@@ -220,13 +225,12 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                   </div>
                 )}
               </div>
-              {job.companies?.logo_url && (
-                <img
-                  src={job.companies.logo_url}
-                  alt={job.companies.name}
-                  className="w-24 h-24 rounded-xl bg-white object-cover border-4 border-white/20"
-                />
-              )}
+              <CompanyLogo
+                logoUrl={job.companies?.logo_url}
+                companyName={job.companies?.name || job.department || 'Entreprise'}
+                size="xl"
+                className="border-4 border-white/20 shadow-lg"
+              />
             </div>
           </div>
 

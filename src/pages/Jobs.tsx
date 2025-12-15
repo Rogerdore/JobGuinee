@@ -9,6 +9,7 @@ import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
 import { testimonials, companies as recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
+import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -588,7 +589,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                         </div>
 
                         <div className="flex items-center gap-2 mb-2">
-                          <Building className="w-4 h-4 text-[#FF8C00]" />
+                          <CompanyLogoWithIcon
+                            logoUrl={job.companies?.logo_url}
+                            companyName={job.companies?.name || 'Entreprise'}
+                            size="sm"
+                          />
                           <span className="font-semibold text-gray-800">{job.companies?.name}</span>
                         </div>
 
@@ -739,9 +744,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                   className="bg-white rounded-xl border-2 border-purple-200 p-6 cursor-pointer hover:border-purple-400 hover:shadow-xl transition-all card-hover"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    {job.companies?.logo_url && (
-                      <img src={job.companies.logo_url} alt="" className="w-12 h-12 rounded-lg" />
-                    )}
+                    <CompanyLogoWithIcon
+                      logoUrl={job.companies?.logo_url}
+                      companyName={job.companies?.name || 'Entreprise'}
+                      size="md"
+                    />
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 line-clamp-1">{job.title}</h3>
                       <p className="text-sm text-gray-600">{job.companies?.name}</p>

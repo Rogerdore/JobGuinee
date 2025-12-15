@@ -33,6 +33,7 @@ import RecruiterMessaging from './RecruiterMessaging';
 import DirectionDashboard from '../components/recruiter/DirectionDashboard';
 import RecentJobsCard from '../components/recruiter/RecentJobsCard';
 import RecentApplicationsCard from '../components/recruiter/RecentApplicationsCard';
+import CompanyLogo from '../components/common/CompanyLogo';
 import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
 import ExportModal from '../components/recruiter/ExportModal';
 import SendMessageModal from '../components/recruiter/SendMessageModal';
@@ -561,9 +562,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 Gestion intelligente du processus de recrutement avec IA
               </p>
               {company ? (
-                <div className="mt-2 flex items-center text-sm text-blue-200">
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  {company.name}
+                <div className="mt-4 flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
+                  <CompanyLogo
+                    logoUrl={company.logo_url}
+                    companyName={company.name}
+                    size="md"
+                    className="bg-white"
+                  />
+                  <span className="text-white font-semibold">{company.name}</span>
                 </div>
               ) : (
                 <div className="mt-2 flex items-center text-sm text-[#FF8C00] font-semibold">
