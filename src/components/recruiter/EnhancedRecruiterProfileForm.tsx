@@ -120,12 +120,19 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       }
 
       if (profile) {
+        // Load recruiter-specific data from recruiter_profiles
+        const { data: recruiterProfile } = await supabase
+          .from('recruiter_profiles')
+          .select('job_title, bio, linkedin_url')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
         const loadedProfileData = {
           full_name: profile.full_name || '',
-          job_title: profile.job_title || '',
-          bio: profile.bio || '',
+          job_title: recruiterProfile?.job_title || '',
+          bio: recruiterProfile?.bio || '',
           phone: profile.phone || '',
-          linkedin_url: profile.linkedin_url || '',
+          linkedin_url: recruiterProfile?.linkedin_url || '',
           avatar_url: profile.avatar_url || ''
         };
 
@@ -278,18 +285,46 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         .from('profiles')
         .update({
           full_name: profileData.full_name,
-          job_title: profileData.job_title,
-          bio: profileData.bio,
           phone: profileData.phone,
-          linkedin_url: profileData.linkedin_url,
           avatar_url: profileData.avatar_url,
-          profile_completed: true,
-          profile_completion_percentage: completionPercentage,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
 
       if (profileError) throw profileError;
+
+      // Save or update recruiter profile
+      const { data: existingRecruiterProfile } = await supabase
+        .from('recruiter_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingRecruiterProfile) {
+        const { error: recruiterUpdateError } = await supabase
+          .from('recruiter_profiles')
+          .update({
+            job_title: profileData.job_title,
+            bio: profileData.bio,
+            linkedin_url: profileData.linkedin_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (recruiterUpdateError) throw recruiterUpdateError;
+      } else {
+        const { error: recruiterInsertError } = await supabase
+          .from('recruiter_profiles')
+          .insert({
+            profile_id: user.id,
+            user_id: user.id,
+            job_title: profileData.job_title,
+            bio: profileData.bio,
+            linkedin_url: profileData.linkedin_url
+          });
+
+        if (recruiterInsertError) throw recruiterInsertError;
+      }
 
       let companyId = profile?.company_id;
 
@@ -350,8 +385,22 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               .from('profiles')
               .update({ company_id: newCompany.id })
               .eq('id', user.id);
+
+            // Update company_id in recruiter_profiles
+            await supabase
+              .from('recruiter_profiles')
+              .update({ company_id: newCompany.id })
+              .eq('user_id', user.id);
           }
         }
+      }
+
+      // Update company_id in recruiter_profiles if company exists
+      if (companyId) {
+        await supabase
+          .from('recruiter_profiles')
+          .update({ company_id: companyId })
+          .eq('user_id', user.id);
       }
 
       await refreshProfile();
