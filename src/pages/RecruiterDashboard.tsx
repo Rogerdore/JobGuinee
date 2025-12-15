@@ -17,6 +17,8 @@ import {
   Settings,
   Target,
   Package,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -108,6 +110,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -569,7 +579,28 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                     size="md"
                     className="bg-white"
                   />
-                  <span className="text-white font-semibold">{company.name}</span>
+                  <div className="flex-1">
+                    <span className="text-white font-semibold block">{company.name}</span>
+                    <div className="flex items-center gap-4 text-xs text-blue-200 mt-1">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{currentDateTime.toLocaleDateString('fr-FR', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{currentDateTime.toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-2 flex items-center text-sm text-[#FF8C00] font-semibold">
