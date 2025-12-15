@@ -404,14 +404,13 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       }
 
       await refreshProfile();
-      autoSave.clearDraft();
-      setMessage({ type: 'success', text: 'Profil enregistré avec succès!' });
 
       if (onProfileComplete) {
-        setTimeout(() => {
-          onProfileComplete();
-        }, 1500);
+        await onProfileComplete();
       }
+
+      autoSave.clearDraft();
+      setMessage({ type: 'success', text: 'Profil enregistré avec succès!' });
     } catch (error: any) {
       console.error('Error saving profile:', error);
       setMessage({ type: 'error', text: error.message || 'Erreur lors de la sauvegarde' });

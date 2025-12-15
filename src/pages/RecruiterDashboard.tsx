@@ -155,9 +155,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   }, [profile, loading, company]);
 
-  const loadData = async () => {
-    if (!profile?.id) return;
-    setLoading(true);
+  const loadCompanyData = async () => {
+    if (!profile?.id) return null;
 
     const { data: companyData } = await supabase
       .from('companies')
@@ -167,6 +166,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     if (companyData) {
       setCompany(companyData);
+    }
+
+    return companyData;
+  };
+
+  const loadData = async () => {
+    if (!profile?.id) return;
+    setLoading(true);
+
+    const companyData = await loadCompanyData();
+
+    if (companyData) {
 
       const { data: subscriptionData } = await supabase
         .from('enterprise_subscriptions')
@@ -1113,7 +1124,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
           {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
-          {activeTab === 'profile' && <EnhancedRecruiterProfileForm />}
+          {activeTab === 'profile' && <EnhancedRecruiterProfileForm onProfileComplete={loadCompanyData} />}
 
           {activeTab === 'purchased-profiles' && <PurchasedProfiles profile={profile} />}
         </div>
