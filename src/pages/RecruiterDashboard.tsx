@@ -111,6 +111,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [logoVersion, setLogoVersion] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -165,7 +166,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       .maybeSingle();
 
     if (companyData) {
-      setCompany(companyData);
+      // Force state update by creating a new object
+      setCompany({ ...companyData });
+      // Increment logo version to force CompanyLogo re-render
+      setLogoVersion(prev => prev + 1);
+      console.log('✅ Company data reloaded, logo_url:', companyData.logo_url);
     }
 
     return companyData;
@@ -585,6 +590,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               {company ? (
                 <div className="mt-4 flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
                   <CompanyLogo
+                    key={`logo-${logoVersion}`}
                     logoUrl={company.logo_url}
                     companyName={company.name}
                     size="md"
