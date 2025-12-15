@@ -3,7 +3,7 @@ import {
   Settings, Search, Link, BarChart3, FileText, Globe, Map,
   Save, RefreshCw, Download, TrendingUp, CheckCircle, AlertCircle,
   ArrowUp, ArrowDown, Minus, Activity, Eye, Zap, Brain, Award,
-  Lightbulb, Target, Sparkles
+  Lightbulb, Target, Sparkles, ExternalLink, Shield, AlertTriangle
 } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import { seoService, SEOConfig, SEOPageMeta } from '../services/seoService';
@@ -12,13 +12,14 @@ import { seoAutoGeneratorService } from '../services/seoAutoGeneratorService';
 import { seoSemanticAIService } from '../services/seoSemanticAIService';
 import { seoInternalLinkingService } from '../services/seoInternalLinkingService';
 import { seoScoringService } from '../services/seoScoringService';
+import { seoExternalLinkingService } from '../services/seoExternalLinkingService';
 import { supabase } from '../lib/supabase';
 
 interface AdminSEOProps {
   onNavigate: (page: string) => void;
 }
 
-type Tab = 'config' | 'pages' | 'keywords' | 'generator' | 'sitemap' | 'analytics' | 'logs' | 'ai-content' | 'scoring' | 'links' | 'quick-wins';
+type Tab = 'config' | 'pages' | 'keywords' | 'generator' | 'sitemap' | 'analytics' | 'logs' | 'ai-content' | 'scoring' | 'links' | 'external-links' | 'quick-wins';
 
 export default function AdminSEO({ onNavigate }: AdminSEOProps) {
   const [activeTab, setActiveTab] = useState<Tab>('config');
@@ -140,7 +141,8 @@ export default function AdminSEO({ onNavigate }: AdminSEOProps) {
     { id: 'sitemap' as Tab, label: 'Sitemap', icon: Map },
     { id: 'ai-content' as Tab, label: 'IA Contenu', icon: Brain, badge: 'Phase 3' },
     { id: 'scoring' as Tab, label: 'Scoring', icon: Award, badge: 'Phase 3' },
-    { id: 'links' as Tab, label: 'Maillage', icon: Link, badge: 'Phase 3' },
+    { id: 'links' as Tab, label: 'Maillage Interne', icon: Link, badge: 'Phase 3' },
+    { id: 'external-links' as Tab, label: 'Liens Externes', icon: ExternalLink, badge: 'Phase 3' },
     { id: 'quick-wins' as Tab, label: 'Quick Wins', icon: Zap, badge: 'Phase 3' },
     { id: 'analytics' as Tab, label: 'Analytics', icon: BarChart3 },
     { id: 'logs' as Tab, label: 'Logs', icon: Activity }
@@ -239,6 +241,10 @@ export default function AdminSEO({ onNavigate }: AdminSEOProps) {
 
                   {activeTab === 'links' && (
                     <InternalLinksTab />
+                  )}
+
+                  {activeTab === 'external-links' && (
+                    <ExternalLinksTab />
                   )}
 
                   {activeTab === 'quick-wins' && (
@@ -1316,6 +1322,314 @@ function QuickWinsTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ExternalLinksTab() {
+  const [activeSubTab, setActiveSubTab] = useState<'backlinks' | 'domains' | 'outbound' | 'opportunities' | 'toxic'>('backlinks');
+  const [profile, setProfile] = useState<any>(null);
+  const [backlinks, setBacklinks] = useState<any[]>([]);
+  const [domains, setDomains] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [toxicLinks, setToxicLinks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, [activeSubTab]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (activeSubTab === 'backlinks') {
+        const profileData = await seoExternalLinkingService.getBacklinkProfile();
+        setProfile(profileData);
+        const linksData = await seoExternalLinkingService.getBacklinks({ status: 'active' });
+        setBacklinks(linksData);
+      } else if (activeSubTab === 'domains') {
+        const domainsData = await seoExternalLinkingService.getDomains({});
+        setDomains(domainsData);
+      } else if (activeSubTab === 'opportunities') {
+        const oppsData = await seoExternalLinkingService.getLinkOpportunities({ status: 'identified' });
+        setOpportunities(oppsData);
+      } else if (activeSubTab === 'toxic') {
+        const toxicData = await seoExternalLinkingService.getToxicLinks();
+        setToxicLinks(toxicData);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadDisavowFile = async () => {
+    await seoExternalLinkingService.downloadDisavowFile();
+  };
+
+  const subTabs = [
+    { id: 'backlinks', label: 'Backlinks', icon: ExternalLink },
+    { id: 'domains', label: 'Domaines', icon: Globe },
+    { id: 'outbound', label: 'Liens Sortants', icon: ArrowUp },
+    { id: 'opportunities', label: 'Opportunités', icon: Target },
+    { id: 'toxic', label: 'Liens Toxiques', icon: AlertTriangle }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <ExternalLink className="w-5 h-5 text-emerald-600" />
+          Gestion des Liens Externes
+        </h3>
+        <p className="text-gray-600">
+          Monitoring des backlinks, analyse des domaines référents, opportunités de netlinking et détection de liens toxiques
+        </p>
+      </div>
+
+      {profile && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600 mb-1">Backlinks Actifs</div>
+            <div className="text-2xl font-bold text-gray-900">{profile.active_backlinks || 0}</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600 mb-1">Domaines Uniques</div>
+            <div className="text-2xl font-bold text-gray-900">{profile.unique_domains || 0}</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600 mb-1">DA Moyen</div>
+            <div className="text-2xl font-bold text-gray-900">{profile.avg_domain_authority?.toFixed(0) || 0}</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="text-sm text-gray-600 mb-1">Score Qualité</div>
+            <div className="text-2xl font-bold text-emerald-600">{profile.quality_score?.toFixed(0) || 0}/100</div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="border-b border-gray-200">
+          <nav className="flex">
+            {subTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+                  activeSubTab === tab.id
+                    ? 'text-emerald-600 border-b-2 border-emerald-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-emerald-600"></div>
+              <p className="mt-4 text-gray-600">Chargement...</p>
+            </div>
+          ) : (
+            <>
+              {activeSubTab === 'backlinks' && (
+                <div className="space-y-4">
+                  {backlinks.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ExternalLink className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucun backlink enregistré</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Ajoutez vos premiers backlinks pour commencer le monitoring
+                      </p>
+                    </div>
+                  ) : (
+                    backlinks.map((link) => (
+                      <div key={link.id} className="border border-gray-200 rounded-lg p-4 hover:border-emerald-300 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <a
+                              href={link.source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline font-medium flex items-center gap-2"
+                            >
+                              {link.source_url.substring(0, 60)}...
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Vers: {link.target_page}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              link.quality_score >= 70 ? 'bg-green-100 text-green-800' :
+                              link.quality_score >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              Score: {link.quality_score}
+                            </span>
+                            {link.is_dofollow && (
+                              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                                DoFollow
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {link.anchor_text && (
+                          <div className="mt-2">
+                            <span className="text-sm text-gray-600">Ancre: </span>
+                            <span className="text-sm font-medium text-gray-900">{link.anchor_text}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeSubTab === 'domains' && (
+                <div className="space-y-4">
+                  {domains.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucun domaine enregistré</p>
+                    </div>
+                  ) : (
+                    domains.map((domain) => (
+                      <div key={domain.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{domain.domain}</h4>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                              <span>DA: {domain.domain_authority}</span>
+                              <span>Backlinks: {domain.total_backlinks}</span>
+                              <span>Spam Score: {domain.spam_score}%</span>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            domain.category === 'excellent' ? 'bg-green-100 text-green-800' :
+                            domain.category === 'good' ? 'bg-blue-100 text-blue-800' :
+                            domain.category === 'average' ? 'bg-yellow-100 text-yellow-800' :
+                            domain.category === 'toxic' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {domain.category.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeSubTab === 'opportunities' && (
+                <div className="space-y-4">
+                  {opportunities.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucune opportunité identifiée</p>
+                    </div>
+                  ) : (
+                    opportunities.map((opp) => (
+                      <div key={opp.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{opp.target_site}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{opp.target_url}</p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            opp.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                            opp.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                            opp.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {opp.priority.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                          <span>Score: {opp.opportunity_score}/100</span>
+                          <span>Difficulté: {opp.difficulty}/10</span>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            opp.status === 'identified' ? 'bg-blue-100 text-blue-800' :
+                            opp.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                            opp.status === 'acquired' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {opp.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeSubTab === 'toxic' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Liens Toxiques Détectés</h4>
+                      <p className="text-sm text-gray-600">
+                        {toxicLinks.length} liens identifiés comme potentiellement toxiques
+                      </p>
+                    </div>
+                    {toxicLinks.length > 0 && (
+                      <button
+                        onClick={downloadDisavowFile}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Télécharger Disavow File
+                      </button>
+                    )}
+                  </div>
+
+                  {toxicLinks.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Shield className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucun lien toxique détecté</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Votre profil de backlinks semble sain
+                      </p>
+                    </div>
+                  ) : (
+                    toxicLinks.map((link) => (
+                      <div key={link.id} className="border border-red-200 bg-red-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-semibold text-gray-900">{link.source_domain}</p>
+                            <p className="text-sm text-gray-600 mt-1">{link.source_url}</p>
+                          </div>
+                          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                            Score: {link.toxicity_score}/100
+                          </span>
+                        </div>
+                        {link.toxicity_reasons && link.toxicity_reasons.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Raisons:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {link.toxicity_reasons.map((reason: string, idx: number) => (
+                                <span key={idx} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
+                                  {reason}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
