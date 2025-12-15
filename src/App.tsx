@@ -50,8 +50,9 @@ const RecruiterMessaging = lazy(() => import('./pages/RecruiterMessaging'));
 const AdminAutomationRules = lazy(() => import('./pages/AdminAutomationRules'));
 const AdminRecruiterNotifications = lazy(() => import('./pages/AdminRecruiterNotifications'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
+const AdminJobModeration = lazy(() => import('./pages/AdminJobModeration'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -132,6 +133,7 @@ function AppContent() {
         {currentPage === 'admin-automation-rules' && <AdminAutomationRules />}
         {currentPage === 'admin-recruiter-notifications' && <AdminRecruiterNotifications />}
         {currentPage === 'admin-seo' && <AdminSEO onNavigate={handleNavigate} />}
+        {currentPage === 'admin-job-moderation' && <AdminJobModeration onNavigate={handleNavigate} />}
         {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
         {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
         {currentPage === 'enterprise-subscribe' && <EnterpriseSubscribe onNavigate={handleNavigate} />}

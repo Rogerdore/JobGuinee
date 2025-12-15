@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -41,6 +41,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <Users className="w-4 h-4" />
                 <span>Utilisateurs</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-job-moderation')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-green-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Modération Offres</span>
               </button>
 
               <button

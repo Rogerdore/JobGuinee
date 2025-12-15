@@ -363,7 +363,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       application_deadline: data.deadline,
       languages: data.languages,
       keywords: data.skills,
-      status: 'published',
+      status: 'pending',
       cover_letter_required: data.required_documents.includes('Lettre de motivation'),
 
       // Nouveaux champs ajoutés
@@ -395,10 +395,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
-      alert('✅ Offre publiée avec succès !');
+      alert('✅ Offre soumise avec succès !\n\n⏳ Votre offre est en attente de validation par notre équipe.\nVous recevrez une notification une fois qu\'elle sera approuvée et visible publiquement.');
     } else {
       console.error('Error publishing job:', error);
-      alert('❌ Erreur lors de la publication de l\'offre');
+      alert('❌ Erreur lors de la soumission de l\'offre');
     }
   };
 
@@ -767,11 +767,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
                           job.status === 'published'
                             ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200'
+                            : job.status === 'pending'
+                            ? 'bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border border-yellow-200'
+                            : job.status === 'rejected'
+                            ? 'bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200'
                             : job.status === 'draft'
                             ? 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-800 border border-gray-200'
-                            : 'bg-gradient-to-r from-red-100 to-red-50 text-red-800 border border-red-200'
+                            : 'bg-gradient-to-r from-gray-300 to-gray-100 text-gray-700 border border-gray-300'
                         }`}>
-                          {job.status === 'published' ? '🟢 Publié' : job.status === 'draft' ? '📝 Brouillon' : '⏸️ Fermé'}
+                          {job.status === 'published' ? '🟢 Publié' : job.status === 'pending' ? '⏳ En attente' : job.status === 'rejected' ? '❌ Rejeté' : job.status === 'draft' ? '📝 Brouillon' : '⏸️ Fermé'}
                         </span>
                       </div>
 
