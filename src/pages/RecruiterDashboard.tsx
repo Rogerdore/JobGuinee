@@ -29,7 +29,7 @@ import PremiumPlans from '../components/recruiter/PremiumPlans';
 import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
-import RecruiterProfileForm from '../components/recruiter/RecruiterProfileForm';
+import EnhancedRecruiterProfileForm from '../components/recruiter/EnhancedRecruiterProfileForm';
 import PurchasedProfiles from './PurchasedProfiles';
 import RecruiterMessaging from './RecruiterMessaging';
 import DirectionDashboard from '../components/recruiter/DirectionDashboard';
@@ -1113,7 +1113,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
           {activeTab === 'premium' && <PremiumPlans onNavigateToProfile={() => setActiveTab('profile')} />}
 
-          {activeTab === 'profile' && <RecruiterProfileForm />}
+          {activeTab === 'profile' && <EnhancedRecruiterProfileForm />}
 
           {activeTab === 'purchased-profiles' && <PurchasedProfiles profile={profile} />}
         </div>
