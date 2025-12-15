@@ -33,6 +33,7 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
   const [company, setCompany] = useState<any>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const [profileData, setProfileData] = useState({
     full_name: '',
@@ -129,6 +130,76 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({
+        type: 'error',
+        text: 'Format non supporté. Utilisez JPG, PNG, GIF ou WebP.'
+      });
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setMessage({
+        type: 'error',
+        text: 'Fichier trop volumineux. Taille max: 5MB.'
+      });
+      return;
+    }
+
+    setUploadingLogo(true);
+    setMessage(null);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      if (companyData.logo_url) {
+        const oldPath = companyData.logo_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('company-logos')
+            .remove([oldPath]);
+        }
+      }
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      setCompanyData({ ...companyData, logo_url: publicUrl });
+
+      setMessage({
+        type: 'success',
+        text: 'Logo uploadé avec succès!'
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      setMessage({
+        type: 'error',
+        text: 'Erreur lors de l\'upload du logo.'
+      });
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -417,6 +488,71 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Logo de l'entreprise
+            </label>
+            <div className="flex items-start gap-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="logo-upload"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleLogoUpload}
+                    disabled={uploadingLogo}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="logo-upload"
+                    className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                      uploadingLogo
+                        ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                        : 'border-blue-300 hover:border-blue-500 bg-blue-50 hover:bg-blue-100'
+                    }`}
+                  >
+                    {uploadingLogo ? (
+                      <>
+                        <Loader className="w-5 h-5 animate-spin text-blue-600" />
+                        <span className="text-sm text-gray-600">Upload en cours...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-700">
+                          Cliquez pour uploader le logo
+                        </span>
+                      </>
+                    )}
+                  </label>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Formats acceptés: JPG, PNG, GIF, WebP (max 5MB)
+                </p>
+              </div>
+
+              {companyData.logo_url && (
+                <div className="relative group">
+                  <div className="w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden bg-white flex items-center justify-center">
+                    <img
+                      src={companyData.logo_url}
+                      alt="Logo entreprise"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCompanyData({ ...companyData, logo_url: '' })}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                    title="Supprimer le logo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
