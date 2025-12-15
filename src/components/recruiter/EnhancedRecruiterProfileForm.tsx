@@ -250,7 +250,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         .from('company-logos')
         .getPublicUrl(filePath);
 
-      setCompanyData({ ...companyData, logo_url: publicUrl });
+      setCompanyData(prev => ({ ...prev, logo_url: publicUrl }));
 
       setMessage({
         type: 'success',
@@ -373,19 +373,19 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
   const addBenefit = () => {
     if (newBenefit.trim() && !companyData.benefits.includes(newBenefit.trim())) {
-      setCompanyData({
-        ...companyData,
-        benefits: [...companyData.benefits, newBenefit.trim()]
-      });
+      setCompanyData(prev => ({
+        ...prev,
+        benefits: [...prev.benefits, newBenefit.trim()]
+      }));
       setNewBenefit('');
     }
   };
 
   const removeBenefit = (benefit: string) => {
-    setCompanyData({
-      ...companyData,
-      benefits: companyData.benefits.filter(b => b !== benefit)
-    });
+    setCompanyData(prev => ({
+      ...prev,
+      benefits: prev.benefits.filter(b => b !== benefit)
+    }));
   };
 
   if (loading) {
@@ -550,7 +550,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="text"
               value={profileData.full_name}
-              onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
+              onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
               placeholder="Ex: Mamadou Diallo"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
@@ -563,7 +563,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <AutoCompleteInput
               value={profileData.job_title}
-              onChange={(value) => setProfileData({ ...profileData, job_title: value })}
+              onChange={(value) => setProfileData(prev => ({ ...prev, job_title: value }))}
               suggestions={jobTitles}
               placeholder="Ex: Responsable RH"
               minChars={1}
@@ -577,7 +577,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="tel"
               value={profileData.phone}
-              onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+              onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
               placeholder="+224 620 10 20 30"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -590,7 +590,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="url"
               value={profileData.linkedin_url}
-              onChange={(e) => setProfileData({ ...profileData, linkedin_url: e.target.value })}
+              onChange={(e) => setProfileData(prev => ({ ...prev, linkedin_url: e.target.value }))}
               placeholder="https://linkedin.com/in/..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -602,7 +602,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <textarea
               value={profileData.bio}
-              onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+              onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
               placeholder="Décrivez votre parcours et votre rôle..."
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -624,7 +624,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <AutoCompleteInput
               value={companyData.name}
-              onChange={(value) => setCompanyData({ ...companyData, name: value })}
+              onChange={(value) => setCompanyData(prev => ({ ...prev, name: value }))}
               suggestions={companyNames}
               placeholder="Ex: TechCorp Guinea"
               minChars={1}
@@ -685,7 +685,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
                   </div>
                   <button
                     type="button"
-                    onClick={() => setCompanyData({ ...companyData, logo_url: '' })}
+                    onClick={() => setCompanyData(prev => ({ ...prev, logo_url: '' }))}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
                     title="Supprimer le logo"
                   >
@@ -702,7 +702,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <AutoCompleteInput
               value={companyData.industry}
-              onChange={(value) => setCompanyData({ ...companyData, industry: value })}
+              onChange={(value) => setCompanyData(prev => ({ ...prev, industry: value }))}
               suggestions={industries}
               placeholder="Sélectionner..."
               minChars={0}
@@ -715,7 +715,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <select
               value={companyData.size}
-              onChange={(e) => setCompanyData({ ...companyData, size: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, size: e.target.value }))}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Sélectionner...</option>
@@ -734,7 +734,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="text"
               value={companyData.employee_count}
-              onChange={(e) => setCompanyData({ ...companyData, employee_count: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, employee_count: e.target.value }))}
               placeholder="Ex: 150"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -746,7 +746,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <AutoCompleteInput
               value={companyData.location}
-              onChange={(value) => setCompanyData({ ...companyData, location: value })}
+              onChange={(value) => setCompanyData(prev => ({ ...prev, location: value }))}
               suggestions={guineaCities}
               placeholder="Ex: Conakry"
               minChars={1}
@@ -760,7 +760,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="number"
               value={companyData.founded_year}
-              onChange={(e) => setCompanyData({ ...companyData, founded_year: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, founded_year: e.target.value }))}
               placeholder="Ex: 2010"
               min="1900"
               max={new Date().getFullYear()}
@@ -775,7 +775,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="text"
               value={companyData.address}
-              onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Ex: Quartier Kaloum, Rue KA-001, Conakry"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -788,7 +788,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="email"
               value={companyData.email}
-              onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="contact@entreprise.com"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -801,7 +801,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="tel"
               value={companyData.phone}
-              onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, phone: e.target.value }))}
               placeholder="+224 XXX XX XX XX"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -814,7 +814,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="url"
               value={companyData.website}
-              onChange={(e) => setCompanyData({ ...companyData, website: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, website: e.target.value }))}
               placeholder="https://www.entreprise.com"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -826,7 +826,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <textarea
               value={companyData.description}
-              onChange={(e) => setCompanyData({ ...companyData, description: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Décrivez votre entreprise, son activité, ses valeurs..."
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -839,7 +839,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             </label>
             <textarea
               value={companyData.culture_description}
-              onChange={(e) => setCompanyData({ ...companyData, culture_description: e.target.value })}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, culture_description: e.target.value }))}
               placeholder="Décrivez l'environnement de travail, les valeurs, l'ambiance..."
               rows={3}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -901,10 +901,10 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="url"
               value={companyData.social_media.facebook}
-              onChange={(e) => setCompanyData({
-                ...companyData,
-                social_media: { ...companyData.social_media, facebook: e.target.value }
-              })}
+              onChange={(e) => setCompanyData(prev => ({
+                ...prev,
+                social_media: { ...prev.social_media, facebook: e.target.value }
+              }))}
               placeholder="https://facebook.com/..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -917,10 +917,10 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="url"
               value={companyData.social_media.twitter}
-              onChange={(e) => setCompanyData({
-                ...companyData,
-                social_media: { ...companyData.social_media, twitter: e.target.value }
-              })}
+              onChange={(e) => setCompanyData(prev => ({
+                ...prev,
+                social_media: { ...prev.social_media, twitter: e.target.value }
+              }))}
               placeholder="https://twitter.com/..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -933,10 +933,10 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="url"
               value={companyData.social_media.linkedin}
-              onChange={(e) => setCompanyData({
-                ...companyData,
-                social_media: { ...companyData.social_media, linkedin: e.target.value }
-              })}
+              onChange={(e) => setCompanyData(prev => ({
+                ...prev,
+                social_media: { ...prev.social_media, linkedin: e.target.value }
+              }))}
               placeholder="https://linkedin.com/company/..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -949,10 +949,10 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             <input
               type="url"
               value={companyData.social_media.instagram}
-              onChange={(e) => setCompanyData({
-                ...companyData,
-                social_media: { ...companyData.social_media, instagram: e.target.value }
-              })}
+              onChange={(e) => setCompanyData(prev => ({
+                ...prev,
+                social_media: { ...prev.social_media, instagram: e.target.value }
+              }))}
               placeholder="https://instagram.com/..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
