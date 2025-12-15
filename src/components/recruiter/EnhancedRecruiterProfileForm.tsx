@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAutoSave } from '../../hooks/useAutoSave';
@@ -81,23 +81,29 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
   });
 
   const [newBenefit, setNewBenefit] = useState('');
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const dataLoadedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
 
-  const combinedData = {
+  const combinedData = useMemo(() => ({
     profileData,
-    companyData,
-    timestamp: new Date().toISOString()
-  };
+    companyData
+  }), [profileData, companyData]);
 
   const autoSave = useAutoSave({
     data: combinedData,
     key: `recruiter-profile-${user?.id}`,
     delay: 2000,
-    enabled: !loading && !saving
+    enabled: !loading && !saving && initialLoadComplete
   });
 
   useEffect(() => {
-    loadData();
-  }, [user]);
+    if (user?.id && !dataLoadedRef.current && userIdRef.current !== user.id) {
+      userIdRef.current = user.id;
+      dataLoadedRef.current = true;
+      loadData();
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const percentage = calculateRecruiterCompletion(profileData, companyData);
@@ -110,6 +116,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     try {
       if (autoSave.hasDraft()) {
         setShowDraftModal(true);
+        return;
       }
 
       if (profile) {
@@ -163,6 +170,9 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+      if (!showDraftModal) {
+        setInitialLoadComplete(true);
+      }
     }
   };
 
@@ -178,11 +188,13 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       setTimeout(() => setMessage(null), 3000);
     }
     setShowDraftModal(false);
+    setInitialLoadComplete(true);
   };
 
   const dismissDraft = () => {
     autoSave.clearDraft();
     setShowDraftModal(false);
+    setInitialLoadComplete(true);
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
