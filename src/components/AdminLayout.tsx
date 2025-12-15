@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -137,6 +137,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <Zap className="w-4 h-4" />
                 <span>Automations</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-seo')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Globe className="w-4 h-4" />
+                <span>SEO</span>
               </button>
 
               <button
