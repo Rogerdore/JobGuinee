@@ -19,6 +19,7 @@ import {
   Package,
   Clock,
   Calendar,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -39,6 +40,7 @@ import CompanyLogo from '../components/common/CompanyLogo';
 import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
 import ExportModal from '../components/recruiter/ExportModal';
 import SendMessageModal from '../components/recruiter/SendMessageModal';
+import JobModerationModal from '../components/recruiter/JobModerationModal';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 import { recruiterDashboardService, DashboardMetrics, RecentJob, RecentApplication } from '../services/recruiterDashboardService';
 
@@ -112,6 +114,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [subscription, setSubscription] = useState<any>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [logoVersion, setLogoVersion] = useState(0);
+  const [showModerationInfoModal, setShowModerationInfoModal] = useState(false);
+  const [showModerationSuccessModal, setShowModerationSuccessModal] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -395,7 +399,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
-      alert('✅ Offre soumise avec succès !\n\n⏳ Votre offre est en attente de validation par notre équipe.\nVous recevrez une notification une fois qu\'elle sera approuvée et visible publiquement.');
+      setShowModerationSuccessModal(true);
     } else {
       console.error('Error publishing job:', error);
       alert('❌ Erreur lors de la soumission de l\'offre');
@@ -626,13 +630,22 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setShowJobForm(true)}
-              className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
-            >
-              <Plus className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
-              <span>Publier une offre</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowJobForm(true)}
+                className="px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white font-bold rounded-xl transition-all duration-300 shadow-2xl flex items-center gap-3 group hover:scale-105 transform"
+              >
+                <Plus className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
+                <span>Publier une offre</span>
+              </button>
+              <button
+                onClick={() => setShowModerationInfoModal(true)}
+                className="p-4 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl transition-all duration-300 shadow-lg hover:scale-105 transform"
+                title="Comment fonctionne la modération ?"
+              >
+                <Info className="w-6 h-6" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -778,6 +791,35 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                           {job.status === 'published' ? '🟢 Publié' : job.status === 'pending' ? '⏳ En attente' : job.status === 'rejected' ? '❌ Rejeté' : job.status === 'draft' ? '📝 Brouillon' : '⏸️ Fermé'}
                         </span>
                       </div>
+
+                      {job.status === 'pending' && (
+                        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+                          <div className="flex items-start gap-2">
+                            <Clock className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm">
+                              <p className="font-semibold text-yellow-800">En cours de validation</p>
+                              <p className="text-yellow-700">Notre équipe examine votre offre. Vous serez notifié sous 24h.</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {job.status === 'rejected' && (
+                        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm">
+                              <p className="font-semibold text-red-800">Offre non approuvée</p>
+                              <p className="text-red-700">Modifiez votre offre selon les remarques et soumettez-la à nouveau.</p>
+                              {(job as any).rejection_reason && (
+                                <p className="mt-2 text-red-800 font-medium">
+                                  Raison: {(job as any).rejection_reason}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
                         <div className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden">
@@ -1166,6 +1208,22 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
             setShowMessageModal(false);
             setSelectedApplicationForMessage(null);
           }}
+        />
+      )}
+
+      {showModerationInfoModal && (
+        <JobModerationModal
+          isOpen={showModerationInfoModal}
+          onClose={() => setShowModerationInfoModal(false)}
+          type="info"
+        />
+      )}
+
+      {showModerationSuccessModal && (
+        <JobModerationModal
+          isOpen={showModerationSuccessModal}
+          onClose={() => setShowModerationSuccessModal(false)}
+          type="success"
         />
       )}
     </div>

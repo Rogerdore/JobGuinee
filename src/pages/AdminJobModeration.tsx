@@ -58,6 +58,7 @@ export default function AdminJobModeration({ onNavigate }: AdminJobModerationPro
   const [statusFilter, setStatusFilter] = useState<'pending' | 'all'>('pending');
   const [historyModal, setHistoryModal] = useState<string | null>(null);
   const [moderationHistory, setModerationHistory] = useState<ModerationHistory[]>([]);
+  const [showApproveModal, setShowApproveModal] = useState<string | null>(null);
 
   useEffect(() => {
     loadJobs();
@@ -150,13 +151,13 @@ export default function AdminJobModeration({ onNavigate }: AdminJobModerationPro
     }
   };
 
-  const handleApprove = async (jobId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir approuver cette offre ?')) return;
+  const confirmApprove = async () => {
+    if (!showApproveModal) return;
 
-    setProcessing(jobId);
+    setProcessing(showApproveModal);
     try {
       const { data, error } = await supabase.rpc('approve_job', {
-        p_job_id: jobId,
+        p_job_id: showApproveModal,
         p_notes: moderationNotes || null
       });
 
@@ -164,6 +165,7 @@ export default function AdminJobModeration({ onNavigate }: AdminJobModerationPro
 
       if (data?.success) {
         showMessage('success', 'Offre approuvée avec succès');
+        setShowApproveModal(null);
         setModerationNotes('');
         await loadJobs();
       } else {
@@ -418,12 +420,12 @@ export default function AdminJobModeration({ onNavigate }: AdminJobModerationPro
 
                           <div className="flex gap-3">
                             <button
-                              onClick={() => handleApprove(job.id)}
+                              onClick={() => setShowApproveModal(job.id)}
                               disabled={processing === job.id}
                               className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                               <CheckCircle className="w-5 h-5" />
-                              {processing === job.id ? 'Approbation...' : 'Approuver'}
+                              Approuver
                             </button>
                             <button
                               onClick={() => setShowRejectModal(job.id)}
@@ -550,6 +552,57 @@ export default function AdminJobModeration({ onNavigate }: AdminJobModerationPro
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {showApproveModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Approuver l'offre</h3>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-gray-700 leading-relaxed">
+                    Vous êtes sur le point d'approuver cette offre d'emploi.
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>L'offre sera immédiatement visible publiquement</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>Le recruteur recevra une notification d'approbation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>Les candidats pourront postuler à cette offre</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowApproveModal(null)}
+                    className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={confirmApprove}
+                    disabled={processing === showApproveModal}
+                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processing === showApproveModal ? 'Approbation...' : 'Confirmer l\'approbation'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
