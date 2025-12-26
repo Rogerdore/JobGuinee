@@ -135,6 +135,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             phone: profileData.phone,
             avatar_url: profileData.avatar_url,
             profile_visibility: profileData.profile_visibility,
+            profile_completion_percentage: completionPercentage,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id);

@@ -137,7 +137,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     if (activeTab === 'dashboard' && profile?.id) {
       setTimeout(() => {
         loadData();
-      }, 500);
+      }, 100);
     }
   }, [activeTab]);
 
@@ -196,6 +196,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const loadData = async () => {
     if (!profile?.id) return;
     setLoading(true);
+
+    const { data: freshProfile } = await supabase
+      .from('profiles')
+      .select('profile_completion_percentage')
+      .eq('id', profile.id)
+      .maybeSingle();
 
     const companyData = await loadCompanyData();
 
@@ -274,14 +280,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       };
     }
 
-    const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
-    setCompletionPercentage(percentage);
-
-    console.log('📊 Dashboard completion calculation:', {
-      profileData: profileDataForCompletion,
-      companyData: companyDataForCompletion,
-      percentage
-    });
+    const savedPercentage = freshProfile?.profile_completion_percentage;
+    if (savedPercentage !== null && savedPercentage !== undefined) {
+      setCompletionPercentage(savedPercentage);
+      console.log('📊 Dashboard using saved completion percentage:', savedPercentage);
+    } else {
+      const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
+      setCompletionPercentage(percentage);
+      console.log('📊 Dashboard calculated completion percentage:', percentage);
+    }
 
     if (companyData) {
 
