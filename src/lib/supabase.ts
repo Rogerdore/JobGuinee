@@ -15,7 +15,10 @@ export type Profile = {
   id: string;
   user_type: UserRole;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
+  professional_email?: string;
   phone?: string;
   avatar_url?: string;
   birth_date?: string;
@@ -25,6 +28,12 @@ export type Profile = {
   credits_balance?: number;
   company_id?: string;
   company_name?: string;
+  profile_visibility?: string;
+  job_title?: string;
+  bio?: string;
+  linkedin_url?: string;
+  profile_completed?: boolean;
+  profile_completion_percentage?: number;
   created_at: string;
   updated_at: string;
 };
@@ -64,8 +73,24 @@ export type Company = {
   industry?: string;
   website?: string;
   location?: string;
+  address?: string;
   size?: string;
+  company_type?: string;
+  origin_country?: string;
+  phone?: string;
+  email?: string;
+  employee_count?: string;
+  founded_year?: number;
+  culture_description?: string;
+  benefits?: string[];
+  social_media?: {
+    facebook?: string;
+    twitter?: string;
+    linkedin?: string;
+    instagram?: string;
+  };
   created_at?: string;
+  updated_at?: string;
 };
 
 export type Job = {
@@ -192,6 +217,19 @@ export type TrainerProfile = {
   institute_type?: string;
   institute_accreditation?: any;
   institute_description?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RecruiterProfile = {
+  id: string;
+  profile_id: string;
+  user_id: string;
+  job_title?: string;
+  bio?: string;
+  linkedin_url?: string;
+  company_id?: string;
+  recruitment_role?: string;
   created_at: string;
   updated_at: string;
 };
