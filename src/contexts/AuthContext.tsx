@@ -116,10 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let profileData = null;
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 30;
 
     while (!profileData && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -136,10 +136,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!profileData) {
-      throw new Error('Délai d\'attente dépassé. Veuillez vous reconnecter.');
+      throw new Error('Inscription échouée. Veuillez rafraîchir et vous reconnecter.');
     }
 
     if (role === 'trainer') {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const { error: trainerError } = await supabase
         .from('trainer_profiles')
         .insert({
