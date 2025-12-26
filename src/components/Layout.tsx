@@ -1,5 +1,5 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatbotWidget from './chatbot/ChatbotWidget';
@@ -41,6 +41,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { name: 'Accueil', page: 'home', icon: Home },
     { name: "Offres d'emploi", page: 'jobs', icon: Briefcase },
     { name: 'CVthèque', page: 'cvtheque', icon: Users },
+    { name: 'Solutions B2B', page: 'b2b-solutions', icon: Building2 },
     { name: 'Formations', page: 'formations', icon: BookOpen },
     { name: 'Blog', page: 'blog', icon: FileText },
   ];

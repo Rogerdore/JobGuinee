@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -153,6 +153,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <Globe className="w-4 h-4" />
                 <span>SEO</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-b2b-management')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-indigo-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Gestion B2B</span>
               </button>
 
               <button
