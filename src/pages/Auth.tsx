@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Briefcase, Mail, Lock, User, AlertCircle, GraduationCap } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../lib/supabase';
 
@@ -47,8 +47,12 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-900 text-white rounded-full mb-4">
-            <Briefcase className="w-8 h-8" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            <img
+              src="/image.png"
+              alt="JobGuinée"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {isLogin ? 'Connexion' : 'Inscription'}
