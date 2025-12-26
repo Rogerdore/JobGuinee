@@ -120,13 +120,20 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     setCompletionPercentage(percentage);
 
     if (user && initialLoadComplete && !saving) {
-      supabase
-        .from('profiles')
-        .update({ profile_completion_percentage: percentage })
-        .eq('id', user.id)
-        .then(() => {
-          console.log('📊 Form completion percentage saved:', percentage);
-        });
+      const savePercentage = setTimeout(() => {
+        supabase
+          .from('profiles')
+          .update({ profile_completion_percentage: percentage })
+          .eq('id', user.id)
+          .then(() => {
+            console.log('📊 Form completion percentage saved:', percentage);
+          })
+          .catch((error) => {
+            console.error('Error saving completion percentage:', error);
+          });
+      }, 1000);
+
+      return () => clearTimeout(savePercentage);
     }
   }, [profileData, companyData, user, initialLoadComplete, saving]);
 

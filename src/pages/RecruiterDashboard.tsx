@@ -197,9 +197,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     const { data: freshProfile } = await supabase
       .from('profiles')
-      .select('profile_completion_percentage')
+      .select('*')
       .eq('id', profile.id)
       .maybeSingle();
+
+    console.log('🔄 Loaded fresh profile from database:', {
+      id: freshProfile?.id,
+      completion: freshProfile?.profile_completion_percentage,
+      full_name: freshProfile?.full_name
+    });
 
     const companyData = await loadCompanyData();
 
@@ -214,16 +220,16 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
 
     const profileDataForCompletion = {
-      full_name: profile.full_name || '',
-      first_name: profile.first_name || '',
-      last_name: profile.last_name || '',
-      professional_email: profile.professional_email || '',
+      full_name: freshProfile?.full_name || profile.full_name || '',
+      first_name: freshProfile?.first_name || profile.first_name || '',
+      last_name: freshProfile?.last_name || profile.last_name || '',
+      professional_email: freshProfile?.professional_email || profile.professional_email || '',
       job_title: recruiterProfileData?.job_title || '',
       bio: recruiterProfileData?.bio || '',
-      phone: profile.phone || '',
+      phone: freshProfile?.phone || profile.phone || '',
       linkedin_url: recruiterProfileData?.linkedin_url || '',
-      avatar_url: profile.avatar_url || '',
-      profile_visibility: profile.profile_visibility || 'public'
+      avatar_url: freshProfile?.avatar_url || profile.avatar_url || '',
+      profile_visibility: freshProfile?.profile_visibility || profile.profile_visibility || 'public'
     };
 
     let companyDataForCompletion = {
@@ -279,13 +285,19 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
 
     const savedPercentage = freshProfile?.profile_completion_percentage;
+    console.log('📊 Dashboard completion check:', {
+      hasSavedPercentage: savedPercentage !== null && savedPercentage !== undefined,
+      savedPercentage,
+      willCalculate: savedPercentage === null || savedPercentage === undefined
+    });
+
     if (savedPercentage !== null && savedPercentage !== undefined) {
       setCompletionPercentage(savedPercentage);
-      console.log('📊 Dashboard using saved completion percentage:', savedPercentage);
+      console.log('✅ Dashboard using saved completion percentage:', savedPercentage);
     } else {
       const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
       setCompletionPercentage(percentage);
-      console.log('📊 Dashboard calculated completion percentage:', percentage);
+      console.log('🔢 Dashboard calculated completion percentage:', percentage);
     }
 
     if (companyData) {
