@@ -575,7 +575,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             {[
               { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
               { id: 'applications', label: `Candidatures (${applications.length})`, icon: Briefcase },
-              { id: 'profile', label: 'Mon profil', icon: Settings },
+              { id: 'profile', label: 'Création de profil', icon: Settings },
               { id: 'formations', label: 'Formations', icon: BookOpen },
               { id: 'alerts', label: 'Alertes emploi', icon: Bell },
               { id: 'messages', label: `Messages${unreadMessagesCount > 0 ? ` (${unreadMessagesCount})` : ''}`, icon: MessageCircle, badge: unreadMessagesCount },
