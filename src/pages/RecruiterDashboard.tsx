@@ -855,7 +855,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 )}
               </div>
               <button
-                onClick={() => setActiveTab('profile')}
+                onClick={() => {
+                  setActiveTab(completionPercentage >= 80 ? 'view-profile' : 'profile');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className={`px-6 py-3 ${
                   completionPercentage >= 80
                     ? 'bg-green-600 hover:bg-green-700'
