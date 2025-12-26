@@ -51,8 +51,10 @@ const AdminAutomationRules = lazy(() => import('./pages/AdminAutomationRules'));
 const AdminRecruiterNotifications = lazy(() => import('./pages/AdminRecruiterNotifications'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
 const AdminJobModeration = lazy(() => import('./pages/AdminJobModeration'));
+const B2BSolutions = lazy(() => import('./pages/B2BSolutions'));
+const AdminB2BManagement = lazy(() => import('./pages/AdminB2BManagement'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -149,6 +151,8 @@ function AppContent() {
         {currentPage === 'ai-chat' && <AIChat onNavigate={handleNavigate} />}
         {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
         {currentPage === 'credit-store' && <CreditStore onNavigate={handleNavigate} scrollTarget={scrollTarget} />}
+        {currentPage === 'b2b-solutions' && <B2BSolutions />}
+        {currentPage === 'admin-b2b-management' && <AdminB2BManagement />}
       </Suspense>
     </Layout>
   );
