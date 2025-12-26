@@ -135,9 +135,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   useEffect(() => {
     if (activeTab === 'dashboard' && profile?.id) {
-      loadData();
+      // Small delay to ensure data is saved in backend
+      const timer = setTimeout(() => {
+        loadData();
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [activeTab]);
+  }, [activeTab, profile?.id]);
 
   useEffect(() => {
     if (company?.id && activeTab === 'dashboard') {
@@ -170,39 +174,6 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       }
     }
   }, [profile, loading, company]);
-
-  // Recalculate completion percentage when profile or company changes
-  useEffect(() => {
-    if (profile && company) {
-      const profileDataForCompletion = {
-        full_name: profile.full_name || '',
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
-        professional_email: profile.professional_email || '',
-        job_title: profile.job_title || '',
-        bio: profile.bio || '',
-        phone: profile.phone || '',
-        linkedin_url: profile.linkedin_url || '',
-        avatar_url: profile.avatar_url || '',
-        profile_visibility: profile.profile_visibility || 'public'
-      };
-
-      const companyDataForCompletion = {
-        name: company.name || '',
-        description: company.description || '',
-        industry: company.industry || '',
-        location: company.location || '',
-        address: company.address || '',
-        phone: company.phone || '',
-        email: company.email || '',
-        website: company.website || '',
-        benefits: company.benefits || []
-      };
-
-      const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
-      setCompletionPercentage(percentage);
-    }
-  }, [profile, company]);
 
   const loadCompanyData = async (profileId?: string) => {
     const idToUse = profileId || profile?.id;
@@ -254,11 +225,22 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       hasData: !!companyData
     });
 
-    const { data: recruiterProfileData } = await supabase
+    const { data: recruiterProfileData, error: recruiterError } = await supabase
       .from('recruiter_profiles')
       .select('job_title, bio, linkedin_url, recruitment_role')
       .eq('user_id', profile.id)
       .maybeSingle();
+
+    if (recruiterError) {
+      console.error('Error loading recruiter profile:', recruiterError);
+    }
+
+    console.log('📝 Recruiter profile loaded:', {
+      exists: !!recruiterProfileData,
+      job_title: recruiterProfileData?.job_title,
+      bio: recruiterProfileData?.bio,
+      linkedin_url: recruiterProfileData?.linkedin_url
+    });
 
     if (recruiterProfileData) {
       setRecruiterProfile(recruiterProfileData);
