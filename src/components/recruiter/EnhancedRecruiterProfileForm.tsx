@@ -739,8 +739,37 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       )}
 
       <div className="bg-gradient-to-r from-blue-600 to-[#0E2F56] rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Mon Profil Recruteur</h1>
-        <p className="text-blue-100">Complétez votre profil pour maximiser votre visibilité auprès des candidats</p>
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold mb-2">Mon Profil Recruteur</h1>
+          <p className="text-blue-100">Complétez votre profil pour maximiser votre visibilité auprès des candidats</p>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Complétion du profil</span>
+            <span className="text-2xl font-bold">{completionPercentage}%</span>
+          </div>
+          <div className="w-full bg-white bg-opacity-20 rounded-full h-4 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${completionPercentage}%`,
+                background: completionPercentage <= 16
+                  ? `linear-gradient(90deg, #dc2626 0%, #f87171 ${(completionPercentage / 16) * 100}%)`
+                  : completionPercentage <= 33
+                  ? `linear-gradient(90deg, #f87171 0%, #f59e0b ${((completionPercentage - 16) / 17) * 100}%)`
+                  : completionPercentage <= 50
+                  ? `linear-gradient(90deg, #f59e0b 0%, #fde047 ${((completionPercentage - 33) / 17) * 100}%)`
+                  : completionPercentage <= 66
+                  ? `linear-gradient(90deg, #fde047 0%, #86efac ${((completionPercentage - 50) / 16) * 100}%)`
+                  : completionPercentage <= 83
+                  ? `linear-gradient(90deg, #86efac 0%, #16a34a ${((completionPercentage - 66) / 17) * 100}%)`
+                  : `linear-gradient(90deg, #16a34a 0%, #16a34a 100%)`
+              }}
+            ></div>
+          </div>
+          <p className="text-sm text-blue-200 mt-2">{completionStatus.message}</p>
+        </div>
       </div>
 
       {completionPercentage < 80 && missingFields.length > 0 && (
