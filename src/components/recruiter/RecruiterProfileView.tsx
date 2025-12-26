@@ -12,7 +12,10 @@ import {
   Award,
   Sparkles,
   Edit,
-  Linkedin
+  Linkedin,
+  Facebook,
+  Twitter,
+  Instagram
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,18 +32,25 @@ interface RecruiterProfile {
 interface Company {
   id: string;
   name: string;
-  industry: string | null;
-  company_size: string | null;
-  website: string | null;
   description: string | null;
-  address: string | null;
-  city: string | null;
-  country: string | null;
   logo_url: string | null;
+  website: string | null;
+  industry: string | null;
+  size: string | null;
+  location: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  employee_count: string | null;
   founded_year: number | null;
-  company_culture: string | null;
   benefits: string[] | null;
-  premium_subscription: boolean;
+  culture_description: string | null;
+  social_media: {
+    facebook?: string;
+    twitter?: string;
+    linkedin?: string;
+    instagram?: string;
+  } | null;
   subscription_tier: string | null;
   subscription_start_date: string | null;
   subscription_end_date: string | null;
@@ -160,10 +170,10 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-3xl font-bold">{company.name}</h3>
-                  {company.premium_subscription && (
+                  {(company.subscription_tier === 'premium' || company.subscription_tier === 'enterprise') && (
                     <span className="px-3 py-1 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white text-xs font-bold rounded-full flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      PREMIUM
+                      {company.subscription_tier === 'enterprise' ? 'ENTERPRISE' : 'PREMIUM'}
                     </span>
                   )}
                 </div>
@@ -194,25 +204,23 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
                 </div>
               )}
 
-              {company.company_size && (
+              {company.size && (
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="flex items-center gap-2 text-blue-200 mb-1">
                     <Users className="w-4 h-4" />
                     <span className="text-xs font-medium">Taille</span>
                   </div>
-                  <p className="text-white font-semibold text-sm">{company.company_size}</p>
+                  <p className="text-white font-semibold text-sm">{company.size}</p>
                 </div>
               )}
 
-              {company.city && (
+              {company.location && (
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                   <div className="flex items-center gap-2 text-blue-200 mb-1">
                     <MapPin className="w-4 h-4" />
                     <span className="text-xs font-medium">Localisation</span>
                   </div>
-                  <p className="text-white font-semibold text-sm">
-                    {company.city}{company.country && `, ${company.country}`}
-                  </p>
+                  <p className="text-white font-semibold text-sm">{company.location}</p>
                 </div>
               )}
 
@@ -225,7 +233,57 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
                   <p className="text-white font-semibold text-sm">{company.founded_year}</p>
                 </div>
               )}
+
+              {company.employee_count && (
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center gap-2 text-blue-200 mb-1">
+                    <Users className="w-4 h-4" />
+                    <span className="text-xs font-medium">Employés</span>
+                  </div>
+                  <p className="text-white font-semibold text-sm">{company.employee_count}</p>
+                </div>
+              )}
+
+              {company.phone && (
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center gap-2 text-blue-200 mb-1">
+                    <Phone className="w-4 h-4" />
+                    <span className="text-xs font-medium">Téléphone</span>
+                  </div>
+                  <p className="text-white font-semibold text-sm">{company.phone}</p>
+                </div>
+              )}
+
+              {company.email && (
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center gap-2 text-blue-200 mb-1">
+                    <Mail className="w-4 h-4" />
+                    <span className="text-xs font-medium">Email</span>
+                  </div>
+                  <p className="text-white font-semibold text-sm truncate">{company.email}</p>
+                </div>
+              )}
+
+              {company.address && (
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center gap-2 text-blue-200 mb-1">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-xs font-medium">Adresse</span>
+                  </div>
+                  <p className="text-white font-semibold text-sm">{company.address}</p>
+                </div>
+              )}
             </div>
+
+            {company.culture_description && (
+              <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center gap-2 text-blue-200 mb-3">
+                  <Building2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Culture d'entreprise</span>
+                </div>
+                <p className="text-white text-sm leading-relaxed whitespace-pre-line">{company.culture_description}</p>
+              </div>
+            )}
 
             {company.benefits && company.benefits.length > 0 && (
               <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
@@ -242,6 +300,61 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
                       {benefit}
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {company.social_media && Object.values(company.social_media).some(val => val) && (
+              <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center gap-2 text-blue-200 mb-3">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-sm font-medium">Réseaux sociaux</span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {company.social_media.facebook && (
+                    <a
+                      href={company.social_media.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+                    >
+                      <Facebook className="w-4 h-4" />
+                      <span className="text-sm font-medium">Facebook</span>
+                    </a>
+                  )}
+                  {company.social_media.twitter && (
+                    <a
+                      href={company.social_media.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+                    >
+                      <Twitter className="w-4 h-4" />
+                      <span className="text-sm font-medium">Twitter</span>
+                    </a>
+                  )}
+                  {company.social_media.linkedin && (
+                    <a
+                      href={company.social_media.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+                    >
+                      <Linkedin className="w-4 h-4" />
+                      <span className="text-sm font-medium">LinkedIn</span>
+                    </a>
+                  )}
+                  {company.social_media.instagram && (
+                    <a
+                      href={company.social_media.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+                    >
+                      <Instagram className="w-4 h-4" />
+                      <span className="text-sm font-medium">Instagram</span>
+                    </a>
+                  )}
                 </div>
               </div>
             )}
