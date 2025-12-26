@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon, Download, Wand2, Save, Clock, AlertCircle, CheckCircle
+  CheckCircle2, Upload as UploadIcon, Download, Wand2, Save, Clock, AlertCircle, CheckCircle,
+  Image as ImageIcon, Percent
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../forms/RichTextEditor';
 import AutoCompleteInput from '../forms/AutoCompleteInput';
 import AutoSaveIndicator from '../forms/AutoSaveIndicator';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import { supabase } from '../../lib/supabase';
 import {
   jobTitleSuggestions,
   companySuggestions,
@@ -17,6 +19,12 @@ import {
   benefitSuggestions,
   sectorSuggestions,
 } from '../../utils/jobSuggestions';
+import {
+  calculateJobCompletion,
+  getJobCompletionStatus,
+  getMissingJobFields,
+  validateJobField
+} from '../../utils/jobCompletionHelpers';
 
 interface JobPublishFormProps {
   onPublish: (data: JobFormData) => void;
@@ -71,8 +79,15 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [importingFile, setImportingFile] = useState(false);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [logoPreview, setLogoPreview] = useState<string>('');
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
+
+  const completionPercentage = useMemo(() => calculateJobCompletion(formData), [formData]);
+  const completionStatus = useMemo(() => getJobCompletionStatus(completionPercentage), [completionPercentage]);
+  const missingFields = useMemo(() => getMissingJobFields(formData), [formData]);
 
   const getInitialFormData = (): JobFormData => {
     if (existingJob) {
@@ -181,6 +196,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
   const updateFormField = useCallback((field: keyof JobFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+
+    const error = validateJobField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
   }, []);
 
   const handleInputChange = useCallback((field: keyof JobFormData) => {
@@ -284,6 +305,52 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     reader.readAsText(file);
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner un fichier image (PNG, JPG, etc.)');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux (maximum 5 MB)');
+      return;
+    }
+
+    setUploadingLogo(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `company-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      updateFormField('company_logo_url', publicUrl);
+      setUploadingLogo(false);
+    } catch (error) {
+      console.error('Erreur upload logo:', error);
+      alert('Erreur lors de l\'upload du logo');
+      setUploadingLogo(false);
+    }
+  };
+
   const handleGenerateWithAI = async () => {
     if (!isPremium) {
       alert('Cette fonctionnalité est réservée aux abonnés Premium. Souscrivez pour débloquer la génération IA !');
@@ -363,12 +430,16 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   };
 
   const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-    <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <Icon className="w-6 h-6 text-[#FF8C00]" />
-        {title}
-      </h3>
-      <div className="space-y-4">
+    <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-2xl p-6 border-2 border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-3 mb-5 pb-3 border-b-2 border-blue-100">
+        <div className="p-2 bg-gradient-to-br from-[#0E2F56] to-blue-600 rounded-lg">
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-800">
+          {title}
+        </h3>
+      </div>
+      <div className="space-y-5">
         {children}
       </div>
     </div>
@@ -430,6 +501,50 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
           <AutoSaveIndicator status={autoSaveStatus} lastSaved={lastSaved} />
 
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-5 border-2 border-blue-200 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <Percent className="w-5 h-5 text-[#0E2F56]" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800">Complétion de l'offre</p>
+                  <p className={`text-sm font-medium ${completionStatus.color}`}>
+                    {completionStatus.label}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-[#0E2F56]">{completionPercentage}%</p>
+              </div>
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+              <div
+                className={`h-full ${completionStatus.bgColor} transition-all duration-500 ease-out rounded-full`}
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+
+            {missingFields.length > 0 && completionPercentage < 100 && (
+              <div className="mt-3 pt-3 border-t border-blue-200">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Champs manquants :</p>
+                <div className="flex flex-wrap gap-1">
+                  {missingFields.slice(0, 5).map((field, index) => (
+                    <span key={index} className="text-xs px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200">
+                      {field}
+                    </span>
+                  ))}
+                  {missingFields.length > 5 && (
+                    <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200">
+                      +{missingFields.length - 5} autres
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="bg-orange-50 border-2 border-[#FF8C00]/30 rounded-xl p-4">
             <p className="text-sm text-gray-800 text-center">
               <span className="font-semibold text-[#FF8C00]">📋 Formulaire complet :</span> Remplissez toutes les sections pour créer une offre professionnelle et conforme.
@@ -489,6 +604,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   required
                   minChars={2}
                 />
+                {validationErrors.title && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.title}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -565,10 +686,16 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <input
                   type="date"
                   value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  onChange={(e) => updateFormField('deadline', e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   required
                 />
+                {validationErrors.deadline && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.deadline}
+                  </p>
+                )}
               </div>
             </div>
           </FormSection>
@@ -582,6 +709,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   placeholder="Décrivez brièvement le poste..."
                   label="Présentation du poste *"
                 />
+                {validationErrors.description && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.description}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -710,6 +843,50 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
           </FormSection>
 
           <FormSection title="3. Informations sur l'entreprise" icon={Building2}>
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-5 border-2 border-blue-200 mb-5">
+              <label className="block text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-[#0E2F56]" />
+                Logo de l'entreprise (optionnel)
+              </label>
+
+              <div className="flex items-start gap-4">
+                {(logoPreview || formData.company_logo_url) && (
+                  <div className="relative">
+                    <img
+                      src={logoPreview || formData.company_logo_url}
+                      alt="Logo entreprise"
+                      className="w-24 h-24 object-cover rounded-xl border-2 border-blue-300 shadow-md"
+                    />
+                    {uploadingLogo && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
+                        <Loader className="w-6 h-6 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex-1">
+                  <label htmlFor="logo-upload" className="cursor-pointer">
+                    <div className="flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border-2 border-dashed border-blue-300 rounded-xl transition-all hover:border-blue-500 group">
+                      <UploadIcon className="w-5 h-5 text-[#0E2F56] group-hover:text-blue-600 transition" />
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-[#0E2F56] transition">
+                        {uploadingLogo ? 'Upload en cours...' : 'Télécharger un logo'}
+                      </span>
+                    </div>
+                  </label>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                    disabled={uploadingLogo}
+                  />
+                  <p className="text-xs text-gray-600 mt-2">PNG, JPG ou GIF (max 5 MB)</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <AutoCompleteInput
@@ -721,6 +898,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   required
                   minChars={2}
                 />
+                {validationErrors.company_name && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.company_name}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -745,6 +928,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   required
                   minChars={2}
                 />
+                {validationErrors.location && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.location}
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -767,10 +956,16 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <input
                   type="url"
                   value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  onChange={(e) => updateFormField('website', e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="https://www.monentreprise.com"
                 />
+                {validationErrors.website && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.website}
+                  </p>
+                )}
               </div>
             </div>
           </FormSection>
@@ -857,11 +1052,17 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <input
                   type="email"
                   value={formData.application_email}
-                  onChange={(e) => setFormData({ ...formData, application_email: e.target.value })}
+                  onChange={(e) => updateFormField('application_email', e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="Ex : rh@entreprise.com"
                   required
                 />
+                {validationErrors.application_email && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.application_email}
+                  </p>
+                )}
               </div>
 
               <div>
