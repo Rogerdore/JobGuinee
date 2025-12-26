@@ -13,6 +13,7 @@ import { seoSemanticAIService } from '../services/seoSemanticAIService';
 import { seoInternalLinkingService } from '../services/seoInternalLinkingService';
 import { seoScoringService } from '../services/seoScoringService';
 import { seoExternalLinkingService } from '../services/seoExternalLinkingService';
+import { seoAnalyticsService } from '../services/seoAnalyticsService';
 import { supabase } from '../lib/supabase';
 
 interface AdminSEOProps {
@@ -646,38 +647,503 @@ function SitemapTab({ stats, onDownload, onRefresh }: any) {
 }
 
 function AnalyticsTab() {
+  const [period, setPeriod] = useState<'7days' | '30days' | '90days'>('30days');
+  const [metrics, setMetrics] = useState<any>(null);
+  const [conversions, setConversions] = useState<any>(null);
+  const [topKeywords, setTopKeywords] = useState<any[]>([]);
+  const [topPages, setTopPages] = useState<any[]>([]);
+  const [roiMetrics, setRoiMetrics] = useState<any>(null);
+  const [trafficSources, setTrafficSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [period]);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    try {
+      const [metricsData, conversionsData, keywordsData, pagesData, roiData, trafficData] = await Promise.all([
+        seoAnalyticsService.getOverviewMetrics(period),
+        seoAnalyticsService.getConversionMetrics(period),
+        seoAnalyticsService.getTopKeywords(10),
+        seoAnalyticsService.getTopPages(10),
+        seoAnalyticsService.getROIMetrics('month'),
+        seoAnalyticsService.getTrafficBySource(30)
+      ]);
+
+      setMetrics(metricsData);
+      setConversions(conversionsData);
+      setTopKeywords(keywordsData);
+      setTopPages(pagesData);
+      setRoiMetrics(roiData);
+      setTrafficSources(trafficData);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const periodOptions = [
+    { value: '7days', label: '7 derniers jours' },
+    { value: '30days', label: '30 derniers jours' },
+    { value: '90days', label: '90 derniers jours' }
+  ];
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600"></div>
+        <p className="mt-4 text-gray-600">Chargement des analytics...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-yellow-600" />
-          Analytics SEO
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Fonctionnalité en développement. Les analytics SEO permettront de suivre:
-        </p>
-        <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
-          <li>Positions Google par mot-clé</li>
-          <li>Impressions et clics (Search Console)</li>
-          <li>Taux de clic (CTR)</li>
-          <li>Core Web Vitals par page</li>
-          <li>Évolution des performances SEO</li>
-        </ul>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            Dashboard SEO Analytics
+          </h3>
+          <p className="text-sm text-gray-600">
+            Vue d'ensemble des performances SEO et conversions
+          </p>
+        </div>
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as any)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          {periodOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {metrics && (
+        <>
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Eye className="w-5 h-5 text-blue-600" />
+              Visibilité & Trafic SEO
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Sessions Organiques</span>
+                  <div className="flex items-center gap-1">
+                    {metrics.organicSessionsChange >= 0 ? (
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      metrics.organicSessionsChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(metrics.organicSessionsChange)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {seoAnalyticsService.formatNumber(metrics.organicSessions)}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Impressions</span>
+                  <div className="flex items-center gap-1">
+                    {metrics.impressionsChange >= 0 ? (
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      metrics.impressionsChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(metrics.impressionsChange)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {seoAnalyticsService.formatNumber(metrics.impressions)}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Clics SEO</span>
+                  <div className="flex items-center gap-1">
+                    {metrics.clicksChange >= 0 ? (
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      metrics.clicksChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(metrics.clicksChange)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {seoAnalyticsService.formatNumber(metrics.clicks)}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">CTR Moyen</span>
+                  <div className="flex items-center gap-1">
+                    {metrics.ctrChange >= 0 ? (
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      metrics.ctrChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(metrics.ctrChange)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {metrics.averageCTR}%
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Position Moyenne</span>
+                  <div className="flex items-center gap-1">
+                    {metrics.positionChange < 0 ? (
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                    ) : metrics.positionChange > 0 ? (
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                    ) : (
+                      <Minus className="w-4 h-4 text-gray-400" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      metrics.positionChange < 0 ? 'text-green-600' :
+                      metrics.positionChange > 0 ? 'text-red-600' : 'text-gray-400'
+                    }`}>
+                      {Math.abs(metrics.positionChange)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {metrics.averagePosition}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Pages Indexées</span>
+                  <div className="flex items-center gap-1">
+                    {metrics.pagesIndexedChange >= 0 ? (
+                      <ArrowUp className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      metrics.pagesIndexedChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {metrics.pagesIndexedChange >= 0 ? '+' : ''}{metrics.pagesIndexedChange}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {metrics.pagesIndexed}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {conversions && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Target className="w-5 h-5 text-green-600" />
+                Conversions & ROI
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Candidatures (SEO)</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {conversions.candidateApplicationsFromSEO}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    sur {conversions.candidateApplications} total
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    {conversions.candidateApplicationsChange >= 0 ? (
+                      <ArrowUp className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      conversions.candidateApplicationsChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(conversions.candidateApplicationsChange)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Leads B2B (SEO)</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {conversions.b2bLeadsFromSEO}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    sur {conversions.b2bLeads} total
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    {conversions.b2bLeadsChange >= 0 ? (
+                      <ArrowUp className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      conversions.b2bLeadsChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(conversions.b2bLeadsChange)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Upgrades Premium</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {conversions.premiumUpgradesFromSEO}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    depuis SEO
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Taux Conversion</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {conversions.conversionRate}%
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    {conversions.conversionRateChange >= 0 ? (
+                      <ArrowUp className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3 text-red-600" />
+                    )}
+                    <span className={`text-xs font-semibold ${
+                      conversions.conversionRateChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {Math.abs(conversions.conversionRateChange)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {roiMetrics && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+                ROI & Revenus SEO (Mensuel)
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Investissement SEO</div>
+                  <div className="text-xl font-bold text-gray-900">
+                    {seoAnalyticsService.formatCurrency(roiMetrics.seoInvestment)}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Revenus SEO</div>
+                  <div className="text-xl font-bold text-green-600">
+                    {seoAnalyticsService.formatCurrency(roiMetrics.revenueFromSEO)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    B2B: {seoAnalyticsService.formatCurrency(roiMetrics.b2bRevenue)}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">ROI</div>
+                  <div className="text-xl font-bold text-purple-600">
+                    {roiMetrics.roi.toFixed(1)}:1
+                  </div>
+                  <div className={`text-xs font-semibold mt-1 ${
+                    roiMetrics.roi >= 3 ? 'text-green-600' : roiMetrics.roi >= 2 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {roiMetrics.roi >= 3 ? 'Excellent' : roiMetrics.roi >= 2 ? 'Bon' : 'À améliorer'}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Coût par Lead</div>
+                  <div className="text-xl font-bold text-gray-900">
+                    {seoAnalyticsService.formatCurrency(roiMetrics.costPerLead)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {roiMetrics.totalLeads} leads B2B
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="text-3xl font-bold text-gray-400 mb-2">--</div>
-          <div className="text-sm text-gray-600">Impressions totales</div>
+          <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Search className="w-5 h-5 text-blue-600" />
+            Top 10 Mots-Clés
+          </h4>
+          <div className="space-y-3">
+            {topKeywords.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-6">
+                Aucun mot-clé suivi. Configurez le tracking dans l'onglet Mots-clés.
+              </p>
+            ) : (
+              topKeywords.map((kw, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">{kw.keyword}</span>
+                      {kw.trend === 'up' && (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full font-semibold">
+                          +{kw.positionChange}
+                        </span>
+                      )}
+                      {kw.trend === 'down' && (
+                        <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full font-semibold">
+                          {kw.positionChange}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {kw.impressions} impressions • {kw.clicks} clics • CTR {kw.ctr}%
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900">#{kw.currentPosition}</div>
+                    <div className="text-xs text-gray-500">Position</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
+
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="text-3xl font-bold text-gray-400 mb-2">--</div>
-          <div className="text-sm text-gray-600">Clics organiques</div>
+          <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-green-600" />
+            Top 10 Pages
+          </h4>
+          <div className="space-y-3">
+            {topPages.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-6">
+                Aucune page SEO configurée. Générez des pages dans l'onglet Générateur.
+              </p>
+            ) : (
+              topPages.map((page, i) => (
+                <div key={i} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {page.pageUrl}
+                      </div>
+                      <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded mt-1">
+                        {page.pageType}
+                      </span>
+                    </div>
+                    <div className="text-right ml-3">
+                      <div className="text-lg font-bold text-gray-900">{page.seoScore}</div>
+                      <div className="text-xs text-gray-500">Score</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                    <div>
+                      <span className="font-semibold">{seoAnalyticsService.formatNumber(page.sessions)}</span> sessions
+                    </div>
+                    <div>
+                      <span className="font-semibold">{page.bounceRate}%</span> rebond
+                    </div>
+                    <div>
+                      <span className="font-semibold">{page.conversionRate}%</span> conv.
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
+      </div>
+
+      {trafficSources.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="text-3xl font-bold text-gray-400 mb-2">-- %</div>
-          <div className="text-sm text-gray-600">CTR moyen</div>
+          <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-orange-600" />
+            Sources de Trafic
+          </h4>
+          <div className="space-y-3">
+            {trafficSources.map((source, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="w-32 text-sm text-gray-700 font-medium">
+                  {source.source}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          i === 0 ? 'bg-blue-600' :
+                          i === 1 ? 'bg-gray-600' :
+                          i === 2 ? 'bg-purple-600' :
+                          i === 3 ? 'bg-green-600' :
+                          'bg-orange-600'
+                        }`}
+                        style={{ width: `${source.percentage}%` }}
+                      />
+                    </div>
+                    <div className="w-16 text-right">
+                      <span className="text-sm font-bold text-gray-900">{source.percentage}%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-20 text-right text-sm text-gray-600">
+                  {seoAnalyticsService.formatNumber(source.sessions)}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+        <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <Lightbulb className="w-5 h-5 text-blue-600" />
+          Prochaines Étapes
+        </h4>
+        <ul className="space-y-2 text-sm text-gray-700">
+          <li className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+            <span>Connectez Google Search Console pour des données temps réel</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+            <span>Configurez Google Analytics 4 pour le tracking précis des conversions</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+            <span>Activez le tracking des événements pour mesurer le ROI SEO exactement</span>
+          </li>
+        </ul>
       </div>
     </div>
   );
