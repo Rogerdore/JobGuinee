@@ -135,14 +135,25 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     data: formData,
     key: `job-draft-${profile?.id || 'anonymous'}`,
     delay: 5000,
-    enabled: !draftLoaded,
+    enabled: draftLoaded,
   });
 
   useEffect(() => {
-    if (hasDraft() && !draftLoaded) {
-      setShowDraftRecovery(true);
-    }
-  }, [hasDraft, draftLoaded]);
+    const checkDraft = () => {
+      try {
+        const savedData = localStorage.getItem(`autosave_job-draft-${profile?.id || 'anonymous'}`);
+        if (savedData && !draftLoaded) {
+          setShowDraftRecovery(true);
+        } else {
+          setDraftLoaded(true);
+        }
+      } catch (error) {
+        console.error('Error checking draft:', error);
+        setDraftLoaded(true);
+      }
+    };
+    checkDraft();
+  }, []);
 
   const handleRecoverDraft = () => {
     const draft = loadDraft();

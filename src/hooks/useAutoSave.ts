@@ -26,7 +26,12 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
     };
   }, []);
 
+  const initialLoadRef = useRef(false);
+
   useEffect(() => {
+    if (initialLoadRef.current) return;
+    initialLoadRef.current = true;
+
     const savedData = localStorage.getItem(`autosave_${key}`);
     if (savedData) {
       try {
@@ -69,24 +74,9 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
 
         if (isMountedRef.current) {
           setLastSaved(new Date());
-          setStatus('saved');
-
-          setTimeout(() => {
-            if (isMountedRef.current) {
-              setStatus('idle');
-            }
-          }, 2000);
         }
       } catch (error) {
         console.error('Auto-save error:', error);
-        if (isMountedRef.current) {
-          setStatus('error');
-          setTimeout(() => {
-            if (isMountedRef.current) {
-              setStatus('idle');
-            }
-          }, 3000);
-        }
       }
     }, delay);
 
