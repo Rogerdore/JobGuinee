@@ -51,10 +51,6 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
-  const completionPercentage = useMemo(() => calculateJobCompletion(formData), [formData]);
-  const completionStatus = useMemo(() => getJobCompletionStatus(completionPercentage), [completionPercentage]);
-  const missingFields = useMemo(() => getMissingJobFields(formData), [formData]);
-
   const getInitialFormData = (): JobFormData => {
     if (existingJob) {
       return {
@@ -131,6 +127,10 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   };
 
   const [formData, setFormData] = useState<JobFormData>(getInitialFormData());
+
+  const completionPercentage = useMemo(() => calculateJobCompletion(formData), [formData]);
+  const completionStatus = useMemo(() => getJobCompletionStatus(completionPercentage), [completionPercentage]);
+  const missingFields = useMemo(() => getMissingJobFields(formData), [formData]);
 
   const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft, hasDraft } = useAutoSave({
     data: formData,
