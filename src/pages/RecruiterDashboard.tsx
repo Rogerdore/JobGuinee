@@ -171,13 +171,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   }, [profile, loading, company]);
 
-  const loadCompanyData = async () => {
-    if (!profile?.id) return null;
+  const loadCompanyData = async (profileId?: string) => {
+    const idToUse = profileId || profile?.id;
+    if (!idToUse) {
+      console.log('⚠️ No profile ID for loading company data');
+      return null;
+    }
 
     const { data: companyData } = await supabase
       .from('companies')
       .select('*')
-      .eq('profile_id', profile.id)
+      .eq('profile_id', idToUse)
       .maybeSingle();
 
     if (companyData) {
@@ -195,6 +199,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     if (!profile?.id) return;
     setLoading(true);
 
+    console.log('🔍 Loading data for profile ID:', profile?.id);
+
     const { data: freshProfile } = await supabase
       .from('profiles')
       .select('*')
@@ -207,7 +213,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       full_name: freshProfile?.full_name
     });
 
-    const companyData = await loadCompanyData();
+    // Load company data using freshProfile ID to ensure we get the right company
+    const companyData = await loadCompanyData(freshProfile?.id);
+    console.log('🏢 Company data loaded:', {
+      id: companyData?.id,
+      name: companyData?.name,
+      hasData: !!companyData
+    });
 
     const { data: recruiterProfileData } = await supabase
       .from('recruiter_profiles')
@@ -284,39 +296,44 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       };
     }
 
-    const savedPercentage = freshProfile?.profile_completion_percentage;
-    console.log('📊 Dashboard completion check:', {
-      savedPercentage,
-      isValid: savedPercentage !== null && savedPercentage !== undefined && savedPercentage > 0
+    // Always recalculate - don't trust the saved value
+    console.log('📋 FULL Data for calculation:', {
+      profileData: {
+        full_name: profileDataForCompletion.full_name,
+        job_title: profileDataForCompletion.job_title,
+        bio: profileDataForCompletion.bio,
+        phone: profileDataForCompletion.phone,
+        linkedin_url: profileDataForCompletion.linkedin_url,
+        avatar_url: profileDataForCompletion.avatar_url
+      },
+      companyData: {
+        name: companyDataForCompletion.name,
+        description: companyDataForCompletion.description,
+        industry: companyDataForCompletion.industry,
+        location: companyDataForCompletion.location,
+        website: companyDataForCompletion.website,
+        address: companyDataForCompletion.address,
+        email: companyDataForCompletion.email,
+        phone: companyDataForCompletion.phone,
+        benefits: companyDataForCompletion.benefits
+      }
     });
 
-    if (savedPercentage !== null && savedPercentage !== undefined && savedPercentage > 0) {
-      setCompletionPercentage(savedPercentage);
-      console.log('✅ Dashboard using saved completion percentage:', savedPercentage);
-    } else {
-      console.log('📋 Data for calculation:', {
-        profileData: profileDataForCompletion,
-        companyData: companyDataForCompletion
+    const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
+    setCompletionPercentage(percentage);
+    console.log('🔢 Dashboard calculated completion percentage:', percentage, 'SCORE = ', percentage);
+
+    // Always save the calculated percentage
+    supabase
+      .from('profiles')
+      .update({ profile_completion_percentage: percentage })
+      .eq('id', profile.id)
+      .then(() => {
+        console.log('💾 Dashboard saved calculated completion percentage:', percentage);
+      })
+      .catch((error) => {
+        console.error('❌ Error saving calculated percentage:', error);
       });
-
-      const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
-      setCompletionPercentage(percentage);
-      console.log('🔢 Dashboard calculated completion percentage:', percentage);
-
-      // Save the calculated percentage for future loads
-      if (percentage > 0) {
-        supabase
-          .from('profiles')
-          .update({ profile_completion_percentage: percentage })
-          .eq('id', profile.id)
-          .then(() => {
-            console.log('💾 Dashboard saved calculated completion percentage:', percentage);
-          })
-          .catch((error) => {
-            console.error('❌ Error saving calculated percentage:', error);
-          });
-      }
-    }
 
     if (companyData) {
 
