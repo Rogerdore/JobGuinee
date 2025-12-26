@@ -42,7 +42,6 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [skillInput, setSkillInput] = useState('');
   const [benefitInput, setBenefitInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [importingFile, setImportingFile] = useState(false);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -229,45 +228,6 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       e.preventDefault();
       action();
     }
-  };
-
-  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const fileType = file.name.split('.').pop()?.toLowerCase();
-    if (fileType !== 'pdf' && fileType !== 'docx' && fileType !== 'doc') {
-      alert('Format non supporté. Veuillez importer un fichier PDF ou DOCX.');
-      return;
-    }
-
-    setImportingFile(true);
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-
-      const extractedTitle = text.match(/Titre[:\s]+(.+)/i)?.[1] || formData.title;
-      const extractedLocation = text.match(/Localisation[:\s]+(.+)/i)?.[1] || formData.location;
-      const extractedDescription = text.substring(0, 500);
-
-      setFormData(prev => ({
-        ...prev,
-        title: extractedTitle.trim(),
-        location: extractedLocation.trim(),
-        description: extractedDescription.trim(),
-      }));
-
-      setImportingFile(false);
-      alert('Fichier importé avec succès ! Veuillez vérifier et compléter les informations.');
-    };
-
-    reader.onerror = () => {
-      setImportingFile(false);
-      alert('Erreur lors de l\'import du fichier.');
-    };
-
-    reader.readAsText(file);
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -516,25 +476,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-            <div>
-              <label htmlFor="file-import" className="cursor-pointer">
-                <div className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition shadow-md">
-                  <UploadIcon className="w-5 h-5" />
-                  <span>{importingFile ? 'Import en cours...' : 'Importer depuis PDF/DOCX'}</span>
-                </div>
-              </label>
-              <input
-                id="file-import"
-                type="file"
-                accept=".pdf,.docx,.doc"
-                onChange={handleImportFile}
-                className="hidden"
-                disabled={importingFile}
-              />
-              <p className="text-xs text-gray-600 mt-2 text-center">Remplir automatiquement depuis un fichier</p>
-            </div>
-
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
             <div>
               <button
                 type="button"
