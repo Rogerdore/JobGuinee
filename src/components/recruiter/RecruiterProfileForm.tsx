@@ -155,12 +155,21 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
 
         const { data: recruiterData } = await supabase
           .from('recruiter_profiles')
-          .select('recruitment_role')
+          .select('recruitment_role, job_title, bio, linkedin_url')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (recruiterData) {
           setRecruitmentRole(recruiterData.recruitment_role || '');
+          if (recruiterData.job_title) {
+            setProfileData(prev => ({ ...prev, job_title: recruiterData.job_title }));
+          }
+          if (recruiterData.bio) {
+            setProfileData(prev => ({ ...prev, bio: recruiterData.bio }));
+          }
+          if (recruiterData.linkedin_url) {
+            setProfileData(prev => ({ ...prev, linkedin_url: recruiterData.linkedin_url }));
+          }
         }
       }
     } catch (error) {

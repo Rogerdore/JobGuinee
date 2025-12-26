@@ -171,6 +171,39 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }
   }, [profile, loading, company]);
 
+  // Recalculate completion percentage when profile or company changes
+  useEffect(() => {
+    if (profile && company) {
+      const profileDataForCompletion = {
+        full_name: profile.full_name || '',
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        professional_email: profile.professional_email || '',
+        job_title: profile.job_title || '',
+        bio: profile.bio || '',
+        phone: profile.phone || '',
+        linkedin_url: profile.linkedin_url || '',
+        avatar_url: profile.avatar_url || '',
+        profile_visibility: profile.profile_visibility || 'public'
+      };
+
+      const companyDataForCompletion = {
+        name: company.name || '',
+        description: company.description || '',
+        industry: company.industry || '',
+        location: company.location || '',
+        address: company.address || '',
+        phone: company.phone || '',
+        email: company.email || '',
+        website: company.website || '',
+        benefits: company.benefits || []
+      };
+
+      const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
+      setCompletionPercentage(percentage);
+    }
+  }, [profile, company]);
+
   const loadCompanyData = async (profileId?: string) => {
     const idToUse = profileId || profile?.id;
     if (!idToUse) {
