@@ -252,12 +252,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       const extractedLocation = text.match(/Localisation[:\s]+(.+)/i)?.[1] || formData.location;
       const extractedDescription = text.substring(0, 500);
 
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         title: extractedTitle.trim(),
         location: extractedLocation.trim(),
         description: extractedDescription.trim(),
-      });
+      }));
 
       setImportingFile(false);
       alert('Fichier importé avec succès ! Veuillez vérifier et compléter les informations.');
@@ -369,16 +369,16 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       application_instructions: `Les candidats intéressés sont priés d'envoyer leur dossier de candidature complet (CV détaillé et lettre de motivation) à l'adresse email indiquée avant la date limite. Seuls les candidats présélectionnés seront contactés pour un entretien.`
     };
 
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       description: aiGeneratedData.description,
       responsibilities: aiGeneratedData.responsibilities,
       profile: aiGeneratedData.profile,
-      skills: [...new Set([...formData.skills, ...aiGeneratedData.skills])],
-      benefits: [...new Set([...formData.benefits, ...aiGeneratedData.benefits])],
-      company_description: aiGeneratedData.company_description || formData.company_description,
-      application_instructions: aiGeneratedData.application_instructions || formData.application_instructions,
-    });
+      skills: [...new Set([...prev.skills, ...aiGeneratedData.skills])],
+      benefits: [...new Set([...prev.benefits, ...aiGeneratedData.benefits])],
+      company_description: aiGeneratedData.company_description || prev.company_description,
+      application_instructions: aiGeneratedData.application_instructions || prev.application_instructions,
+    }));
 
     setIsGeneratingAI(false);
     alert('✨ Offre générée avec succès par l\'IA ! Vérifiez et ajustez les informations si nécessaire.');
@@ -584,7 +584,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Ressources Humaines">Ressources Humaines</option>
@@ -604,7 +604,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <select
                   value={formData.contract_type}
-                  onChange={(e) => setFormData({ ...formData, contract_type: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contract_type: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="CDI">CDI</option>
@@ -623,7 +623,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   type="number"
                   min="1"
                   value={formData.position_count}
-                  onChange={(e) => setFormData({ ...formData, position_count: Number(e.target.value) })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, position_count: Number(e.target.value) }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 />
               </div>
@@ -634,7 +634,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <select
                   value={formData.position_level}
-                  onChange={(e) => setFormData({ ...formData, position_level: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, position_level: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Débutant">Débutant</option>
@@ -689,7 +689,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <textarea
                   value={formData.responsibilities}
-                  onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, responsibilities: e.target.value }))}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
@@ -702,7 +702,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <textarea
                   value={formData.profile}
-                  onChange={(e) => setFormData({ ...formData, profile: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, profile: e.target.value }))}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Indiquez le type de profil souhaité..."
@@ -757,7 +757,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   </label>
                   <select
                     value={formData.education_level}
-                    onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, education_level: e.target.value }))}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   >
                     <option value="BEP">BEP</option>
@@ -775,7 +775,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   </label>
                   <select
                     value={formData.experience_required}
-                    onChange={(e) => setFormData({ ...formData, experience_required: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, experience_required: e.target.value }))}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   >
                     <option value="Débutant">Débutant</option>
@@ -908,7 +908,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <textarea
                   value={formData.company_description}
-                  onChange={(e) => setFormData({ ...formData, company_description: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, company_description: e.target.value }))}
                   rows={3}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Décrivez votre entreprise en quelques lignes..."
@@ -945,7 +945,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <input
                   type="text"
                   value={formData.salary_range}
-                  onChange={(e) => setFormData({ ...formData, salary_range: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, salary_range: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="Ex : 6.000.000 - 8.000.000 GNF"
                 />
@@ -957,7 +957,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <select
                   value={formData.salary_type}
-                  onChange={(e) => setFormData({ ...formData, salary_type: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, salary_type: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Fixe">Fixe</option>
@@ -1036,7 +1036,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   <input
                     type="checkbox"
                     checked={formData.receive_in_platform}
-                    onChange={(e) => setFormData({ ...formData, receive_in_platform: e.target.checked })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, receive_in_platform: e.target.checked }))}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Recevoir les candidatures directement dans mon espace recruteur</span>
@@ -1068,7 +1068,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <textarea
                   value={formData.application_instructions}
-                  onChange={(e) => setFormData({ ...formData, application_instructions: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, application_instructions: e.target.value }))}
                   rows={3}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Ex : Envoyez vos dossiers complets avant le 15 novembre..."
@@ -1091,7 +1091,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                         name="visibility"
                         value={option}
                         checked={formData.visibility === option}
-                        onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value }))}
                         className="w-5 h-5 text-[#0E2F56] focus:ring-[#0E2F56]"
                       />
                       <span className="text-sm font-medium text-gray-700">{option}</span>
@@ -1105,7 +1105,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   <input
                     type="checkbox"
                     checked={formData.is_premium}
-                    onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_premium: e.target.checked }))}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Mettre l'annonce en avant (Premium)</span>
@@ -1118,7 +1118,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <select
                   value={formData.announcement_language}
-                  onChange={(e) => setFormData({ ...formData, announcement_language: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, announcement_language: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Français">Français</option>
@@ -1132,7 +1132,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   <input
                     type="checkbox"
                     checked={formData.auto_share}
-                    onChange={(e) => setFormData({ ...formData, auto_share: e.target.checked })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, auto_share: e.target.checked }))}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Partager automatiquement sur Facebook / LinkedIn / Telegram RH</span>
@@ -1149,7 +1149,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <select
                   value={formData.publication_duration}
-                  onChange={(e) => setFormData({ ...formData, publication_duration: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, publication_duration: e.target.value }))}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="15 jours">15 jours</option>
@@ -1163,7 +1163,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   <input
                     type="checkbox"
                     checked={formData.auto_renewal}
-                    onChange={(e) => setFormData({ ...formData, auto_renewal: e.target.checked })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, auto_renewal: e.target.checked }))}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Renouvellement automatique après expiration</span>
@@ -1175,7 +1175,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   <input
                     type="checkbox"
                     checked={formData.legal_compliance}
-                    onChange={(e) => setFormData({ ...formData, legal_compliance: e.target.checked })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, legal_compliance: e.target.checked }))}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                     required
                   />
