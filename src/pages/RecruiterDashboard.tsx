@@ -506,7 +506,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     { id: 'analytics', label: 'Analyses', icon: BarChart3 },
     { id: 'pilotage', label: 'Pilotage RH', icon: TrendingUp },
     { id: 'premium', label: 'Premium', icon: Sparkles },
-    { id: 'profile', label: 'Mon Profil', icon: Settings },
+    { id: 'profile', label: 'Créer/Compléter le profil', icon: Settings },
   ];
 
   if (loading) {
