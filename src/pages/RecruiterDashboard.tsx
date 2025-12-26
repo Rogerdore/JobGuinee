@@ -199,7 +199,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     const { data: recruiterProfileData } = await supabase
       .from('recruiter_profiles')
-      .select('*')
+      .select('job_title, bio, linkedin_url')
       .eq('user_id', profile.id)
       .maybeSingle();
 
@@ -207,46 +207,35 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setRecruiterProfile(recruiterProfileData);
     }
 
-    const profileData = {
+    const profileDataForCompletion = {
       full_name: profile.full_name || '',
-      first_name: profile.first_name || '',
-      last_name: profile.last_name || '',
-      professional_email: profile.professional_email || '',
       job_title: recruiterProfileData?.job_title || '',
       bio: recruiterProfileData?.bio || '',
       phone: profile.phone || '',
       linkedin_url: recruiterProfileData?.linkedin_url || '',
-      avatar_url: profile.avatar_url || '',
-      profile_visibility: profile.profile_visibility || 'public'
+      avatar_url: profile.avatar_url || ''
     };
 
-    const companyDataForCalculation = {
-      name: companyData?.name || '',
-      description: companyData?.description || '',
-      industry: companyData?.industry || '',
-      company_type: companyData?.company_type || '',
-      origin_country: companyData?.origin_country || '',
-      size: companyData?.size || '',
-      location: companyData?.location || '',
-      address: companyData?.address || '',
-      phone: companyData?.phone || '',
-      email: companyData?.email || '',
-      website: companyData?.website || '',
-      employee_count: companyData?.employee_count || '',
-      founded_year: companyData?.founded_year?.toString() || '',
-      logo_url: companyData?.logo_url || '',
-      culture_description: companyData?.culture_description || '',
-      benefits: companyData?.benefits || [],
-      social_media: companyData?.social_media || {
-        facebook: '',
-        twitter: '',
-        linkedin: '',
-        instagram: ''
-      }
-    };
+    const companyDataForCompletion = companyData ? {
+      name: companyData.name || '',
+      description: companyData.description || '',
+      industry: companyData.industry || '',
+      location: companyData.location || '',
+      website: companyData.website || '',
+      address: companyData.address || '',
+      email: companyData.email || '',
+      phone: companyData.phone || '',
+      benefits: companyData.benefits || []
+    } : {};
 
-    const percentage = calculateRecruiterCompletion(profileData, companyDataForCalculation);
+    const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
     setCompletionPercentage(percentage);
+
+    console.log('📊 Completion calculation:', {
+      profileData: profileDataForCompletion,
+      companyData: companyDataForCompletion,
+      percentage
+    });
 
     if (companyData) {
 
