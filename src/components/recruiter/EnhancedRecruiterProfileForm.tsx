@@ -520,13 +520,17 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
           </div>
           <div className="w-full bg-white bg-opacity-20 rounded-full h-4 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                completionPercentage < 50 ? 'bg-red-500' :
-                completionPercentage < 80 ? 'bg-orange-500' :
-                completionPercentage < 100 ? 'bg-blue-400' :
-                'bg-green-500'
-              }`}
-              style={{ width: `${completionPercentage}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${completionPercentage}%`,
+                background: completionPercentage < 33
+                  ? `linear-gradient(90deg, #ef4444 0%, #f97316 ${completionPercentage * 3}%)`
+                  : completionPercentage < 66
+                  ? `linear-gradient(90deg, #f97316 0%, #fbbf24 ${(completionPercentage - 33) * 3}%)`
+                  : completionPercentage < 100
+                  ? `linear-gradient(90deg, #fbbf24 0%, #60a5fa ${(completionPercentage - 66) * 3}%)`
+                  : '#10b981'
+              }}
             ></div>
           </div>
           <p className="text-sm text-blue-200 mt-2">{completionStatus.message}</p>
