@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { calculateRecruiterCompletion, getCompletionStatus, getMissingRecruiterFields } from '../../utils/profileCompletion';
+import { validateAllRecruiterFields } from '../../utils/validationHelpers';
 import AutoCompleteInput from '../forms/AutoCompleteInput';
 import SuccessModal from '../notifications/SuccessModal';
 import AutoSaveIndicator from '../forms/AutoSaveIndicator';
@@ -51,17 +52,23 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
   const [profileData, setProfileData] = useState({
     full_name: '',
+    first_name: '',
+    last_name: '',
+    professional_email: '',
     job_title: '',
     bio: '',
     phone: '',
     linkedin_url: '',
-    avatar_url: ''
+    avatar_url: '',
+    profile_visibility: 'public'
   });
 
   const [companyData, setCompanyData] = useState({
     name: '',
     description: '',
     industry: '',
+    company_type: '',
+    origin_country: '',
     size: '',
     location: '',
     address: '',
@@ -81,6 +88,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     }
   });
 
+  const [recruitmentRole, setRecruitmentRole] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [newBenefit, setNewBenefit] = useState('');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const dataLoadedRef = useRef(false);
@@ -120,8 +129,12 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
           .from('profiles')
           .update({
             full_name: profileData.full_name,
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            professional_email: profileData.professional_email,
             phone: profileData.phone,
             avatar_url: profileData.avatar_url,
+            profile_visibility: profileData.profile_visibility,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id);
@@ -139,10 +152,11 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               job_title: profileData.job_title,
               bio: profileData.bio,
               linkedin_url: profileData.linkedin_url,
+              recruitment_role: recruitmentRole,
               updated_at: new Date().toISOString()
             })
             .eq('user_id', user.id);
-        } else if (profileData.job_title || profileData.bio || profileData.linkedin_url) {
+        } else if (profileData.job_title || profileData.bio || profileData.linkedin_url || recruitmentRole) {
           await supabase
             .from('recruiter_profiles')
             .insert({
@@ -150,7 +164,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               user_id: user.id,
               job_title: profileData.job_title,
               bio: profileData.bio,
-              linkedin_url: profileData.linkedin_url
+              linkedin_url: profileData.linkedin_url,
+              recruitment_role: recruitmentRole
             });
         }
 
@@ -162,6 +177,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
                 name: companyData.name,
                 description: companyData.description,
                 industry: companyData.industry,
+                company_type: companyData.company_type,
+                origin_country: companyData.origin_country,
                 size: companyData.size,
                 location: companyData.location,
                 address: companyData.address,
@@ -184,6 +201,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
                 name: companyData.name,
                 description: companyData.description,
                 industry: companyData.industry,
+                company_type: companyData.company_type,
+                origin_country: companyData.origin_country,
                 size: companyData.size,
                 location: companyData.location,
                 address: companyData.address,
@@ -232,23 +251,33 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         // Load recruiter-specific data from recruiter_profiles
         const { data: recruiterProfile } = await supabase
           .from('recruiter_profiles')
-          .select('job_title, bio, linkedin_url')
+          .select('job_title, bio, linkedin_url, recruitment_role')
           .eq('user_id', profile.id)
           .maybeSingle();
 
         const loadedProfileData = {
           full_name: profile.full_name || '',
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          professional_email: profile.professional_email || '',
           job_title: recruiterProfile?.job_title || '',
           bio: recruiterProfile?.bio || '',
           phone: profile.phone || '',
           linkedin_url: recruiterProfile?.linkedin_url || '',
-          avatar_url: profile.avatar_url || ''
+          avatar_url: profile.avatar_url || '',
+          profile_visibility: profile.profile_visibility || 'public'
         };
+
+        if (recruiterProfile?.recruitment_role) {
+          setRecruitmentRole(recruiterProfile.recruitment_role);
+        }
 
         let loadedCompanyData = {
           name: '',
           description: '',
           industry: '',
+          company_type: '',
+          origin_country: '',
           size: '',
           location: '',
           address: '',
@@ -281,6 +310,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               name: companyData.name || '',
               description: companyData.description || '',
               industry: companyData.industry || '',
+              company_type: companyData.company_type || '',
+              origin_country: companyData.origin_country || '',
               size: companyData.size || '',
               location: companyData.location || '',
               address: companyData.address || '',
@@ -420,6 +451,19 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
   const handleSaveProfile = async () => {
     if (!user) return;
 
+    const validation = validateAllRecruiterFields(profileData, companyData);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Erreurs de validation',
+        message: 'Veuillez corriger les erreurs dans le formulaire avant de continuer.'
+      });
+      return;
+    }
+
+    setValidationErrors({});
     setSaving(true);
 
     try {
@@ -427,8 +471,14 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         .from('profiles')
         .update({
           full_name: profileData.full_name,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          professional_email: profileData.professional_email,
           phone: profileData.phone,
           avatar_url: profileData.avatar_url,
+          profile_visibility: profileData.profile_visibility,
+          profile_completed: true,
+          profile_completion_percentage: completionPercentage,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -449,6 +499,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             job_title: profileData.job_title,
             bio: profileData.bio,
             linkedin_url: profileData.linkedin_url,
+            recruitment_role: recruitmentRole,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -462,7 +513,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             user_id: user.id,
             job_title: profileData.job_title,
             bio: profileData.bio,
-            linkedin_url: profileData.linkedin_url
+            linkedin_url: profileData.linkedin_url,
+            recruitment_role: recruitmentRole
           });
 
         if (recruiterInsertError) throw recruiterInsertError;
@@ -478,6 +530,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               name: companyData.name,
               description: companyData.description,
               industry: companyData.industry,
+              company_type: companyData.company_type,
+              origin_country: companyData.origin_country,
               size: companyData.size,
               location: companyData.location,
               address: companyData.address,
@@ -502,6 +556,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               name: companyData.name,
               description: companyData.description,
               industry: companyData.industry,
+              company_type: companyData.company_type,
+              origin_country: companyData.origin_country,
               size: companyData.size,
               location: companyData.location,
               address: companyData.address,
@@ -705,6 +761,32 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Prénom
+            </label>
+            <input
+              type="text"
+              value={profileData.first_name}
+              onChange={(e) => setProfileData(prev => ({ ...prev, first_name: e.target.value }))}
+              placeholder="Ex: Mamadou"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nom
+            </label>
+            <input
+              type="text"
+              value={profileData.last_name}
+              onChange={(e) => setProfileData(prev => ({ ...prev, last_name: e.target.value }))}
+              placeholder="Ex: Diallo"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Nom complet *
             </label>
             <input
@@ -715,6 +797,9 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Si vous remplissez le prénom et nom séparément, le nom complet sera automatiquement créé
+            </p>
           </div>
 
           <div>
@@ -732,6 +817,25 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rôle dans le recrutement
+            </label>
+            <select
+              value={recruitmentRole}
+              onChange={(e) => setRecruitmentRole(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Sélectionner...</option>
+              <option value="RH interne">RH interne</option>
+              <option value="Cabinet de recrutement">Cabinet de recrutement</option>
+              <option value="Consultant RH">Consultant RH</option>
+              <option value="Chasseur de têtes">Chasseur de têtes</option>
+              <option value="Responsable recrutement">Responsable recrutement</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Téléphone
             </label>
             <input
@@ -739,8 +843,45 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               value={profileData.phone}
               onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
               placeholder="+224 620 10 20 30"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+                validationErrors.phone
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {validationErrors.phone && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {validationErrors.phone}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email professionnel
+            </label>
+            <input
+              type="email"
+              value={profileData.professional_email}
+              onChange={(e) => setProfileData(prev => ({ ...prev, professional_email: e.target.value }))}
+              placeholder="votre.email@entreprise.com"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+                validationErrors.professional_email
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
+            />
+            {validationErrors.professional_email ? (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {validationErrors.professional_email}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                Email distinct de votre email de connexion (optionnel)
+              </p>
+            )}
           </div>
 
           <div>
@@ -752,8 +893,32 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               value={profileData.linkedin_url}
               onChange={(e) => setProfileData(prev => ({ ...prev, linkedin_url: e.target.value }))}
               placeholder="https://linkedin.com/in/..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+                validationErrors.linkedin_url
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {validationErrors.linkedin_url && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {validationErrors.linkedin_url}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Visibilité du profil
+            </label>
+            <select
+              value={profileData.profile_visibility}
+              onChange={(e) => setProfileData(prev => ({ ...prev, profile_visibility: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="public">Public (visible pour les candidats)</option>
+              <option value="private">Privé (interne uniquement)</option>
+            </select>
           </div>
 
           <div className="md:col-span-2">
@@ -858,6 +1023,41 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Type d'entreprise
+            </label>
+            <select
+              value={companyData.company_type}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, company_type: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Sélectionner...</option>
+              <option value="Privée">Entreprise privée</option>
+              <option value="Publique">Entreprise publique</option>
+              <option value="ONG">ONG / Association</option>
+              <option value="Startup">Startup</option>
+              <option value="Cabinet de recrutement">Cabinet de recrutement</option>
+              <option value="Multinationale">Multinationale</option>
+              <option value="PME">PME</option>
+              <option value="Grande entreprise">Grande entreprise</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Pays d'origine
+            </label>
+            <input
+              type="text"
+              value={companyData.origin_country}
+              onChange={(e) => setCompanyData(prev => ({ ...prev, origin_country: e.target.value }))}
+              placeholder="Ex: Guinée, France, etc."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Secteur d'activité *
             </label>
             <AutoCompleteInput
@@ -950,8 +1150,18 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               value={companyData.email}
               onChange={(e) => setCompanyData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="contact@entreprise.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+                validationErrors.company_email
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {validationErrors.company_email && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {validationErrors.company_email}
+              </p>
+            )}
           </div>
 
           <div>
@@ -963,8 +1173,18 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               value={companyData.phone}
               onChange={(e) => setCompanyData(prev => ({ ...prev, phone: e.target.value }))}
               placeholder="+224 XXX XX XX XX"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+                validationErrors.company_phone
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {validationErrors.company_phone && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {validationErrors.company_phone}
+              </p>
+            )}
           </div>
 
           <div className="md:col-span-2">
@@ -976,8 +1196,18 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               value={companyData.website}
               onChange={(e) => setCompanyData(prev => ({ ...prev, website: e.target.value }))}
               placeholder="https://www.entreprise.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+                validationErrors.website
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {validationErrors.website && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {validationErrors.website}
+              </p>
+            )}
           </div>
 
           <div className="md:col-span-2">
