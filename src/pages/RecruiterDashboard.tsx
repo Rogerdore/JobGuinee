@@ -45,6 +45,7 @@ import SendMessageModal from '../components/recruiter/SendMessageModal';
 import JobModerationModal from '../components/recruiter/JobModerationModal';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 import { recruiterDashboardService, DashboardMetrics, RecentJob, RecentApplication } from '../services/recruiterDashboardService';
+import { calculateRecruiterCompletion } from '../utils/profileCompletion';
 
 interface RecruiterDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -118,6 +119,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [logoVersion, setLogoVersion] = useState(0);
   const [showModerationInfoModal, setShowModerationInfoModal] = useState(false);
   const [showModerationSuccessModal, setShowModerationSuccessModal] = useState(false);
+  const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -129,6 +132,12 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   useEffect(() => {
     loadData();
   }, [profile?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'dashboard' && profile?.id) {
+      loadData();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (company?.id && activeTab === 'dashboard') {
@@ -187,6 +196,57 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     setLoading(true);
 
     const companyData = await loadCompanyData();
+
+    const { data: recruiterProfileData } = await supabase
+      .from('recruiter_profiles')
+      .select('*')
+      .eq('user_id', profile.id)
+      .maybeSingle();
+
+    if (recruiterProfileData) {
+      setRecruiterProfile(recruiterProfileData);
+    }
+
+    const profileData = {
+      full_name: profile.full_name || '',
+      first_name: profile.first_name || '',
+      last_name: profile.last_name || '',
+      professional_email: profile.professional_email || '',
+      job_title: recruiterProfileData?.job_title || '',
+      bio: recruiterProfileData?.bio || '',
+      phone: profile.phone || '',
+      linkedin_url: recruiterProfileData?.linkedin_url || '',
+      avatar_url: profile.avatar_url || '',
+      profile_visibility: profile.profile_visibility || 'public'
+    };
+
+    const companyDataForCalculation = {
+      name: companyData?.name || '',
+      description: companyData?.description || '',
+      industry: companyData?.industry || '',
+      company_type: companyData?.company_type || '',
+      origin_country: companyData?.origin_country || '',
+      size: companyData?.size || '',
+      location: companyData?.location || '',
+      address: companyData?.address || '',
+      phone: companyData?.phone || '',
+      email: companyData?.email || '',
+      website: companyData?.website || '',
+      employee_count: companyData?.employee_count || '',
+      founded_year: companyData?.founded_year?.toString() || '',
+      logo_url: companyData?.logo_url || '',
+      culture_description: companyData?.culture_description || '',
+      benefits: companyData?.benefits || [],
+      social_media: companyData?.social_media || {
+        facebook: '',
+        twitter: '',
+        linkedin: '',
+        instagram: ''
+      }
+    };
+
+    const percentage = calculateRecruiterCompletion(profileData, companyDataForCalculation);
+    setCompletionPercentage(percentage);
 
     if (companyData) {
 
@@ -654,23 +714,53 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
-        {profile && !profile.profile_completed && (
-          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-[#FF8C00] p-6 rounded-lg shadow-lg mt-6 mb-6">
+        {profile && completionPercentage < 100 && (
+          <div className={`${
+            completionPercentage >= 80
+              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500'
+              : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-[#FF8C00]'
+          } p-6 rounded-lg shadow-lg mt-6 mb-6`}>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#FF8C00] bg-opacity-20 rounded-full flex items-center justify-center">
-                <Settings className="w-6 h-6 text-[#FF8C00]" />
+              <div className={`w-12 h-12 ${
+                completionPercentage >= 80
+                  ? 'bg-green-500 bg-opacity-20'
+                  : 'bg-[#FF8C00] bg-opacity-20'
+              } rounded-full flex items-center justify-center`}>
+                <Settings className={`w-6 h-6 ${
+                  completionPercentage >= 80 ? 'text-green-600' : 'text-[#FF8C00]'
+                }`} />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-gray-900 text-lg mb-1">Complétez votre profil</h3>
-                <p className="text-gray-700">
-                  Pour profiter pleinement de toutes les fonctionnalités, veuillez compléter vos informations personnelles et celles de votre entreprise.
-                </p>
+                {completionPercentage >= 80 ? (
+                  <>
+                    <h3 className="font-bold text-gray-900 text-lg mb-1">
+                      Profil complété à {completionPercentage}%
+                    </h3>
+                    <p className="text-gray-700">
+                      Votre profil est maintenant visible par les candidats et partenaires.
+                      Vous avez accès à toutes les fonctionnalités premium de la plateforme.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-bold text-gray-900 text-lg mb-1">
+                      Complétez votre profil ({completionPercentage}%)
+                    </h3>
+                    <p className="text-gray-700">
+                      Pour profiter pleinement de toutes les fonctionnalités, veuillez compléter vos informations personnelles et celles de votre entreprise.
+                    </p>
+                  </>
+                )}
               </div>
               <button
                 onClick={() => setActiveTab('profile')}
-                className="px-6 py-3 bg-[#FF8C00] text-white rounded-lg font-semibold hover:bg-orange-600 transition whitespace-nowrap"
+                className={`px-6 py-3 ${
+                  completionPercentage >= 80
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-[#FF8C00] hover:bg-orange-600'
+                } text-white rounded-lg font-semibold transition whitespace-nowrap`}
               >
-                Compléter maintenant
+                {completionPercentage >= 80 ? 'Voir le profil' : 'Compléter maintenant'}
               </button>
             </div>
           </div>
