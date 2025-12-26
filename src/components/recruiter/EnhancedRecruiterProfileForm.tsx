@@ -138,6 +138,16 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     }
   }, [profileData, companyData, user, initialLoadComplete, saving]);
 
+  // Auto-sync full_name with first_name and last_name
+  useEffect(() => {
+    if (profileData.first_name || profileData.last_name) {
+      const fullName = `${profileData.first_name} ${profileData.last_name}`.trim();
+      if (fullName !== profileData.full_name) {
+        setProfileData(prev => ({ ...prev, full_name: fullName }));
+      }
+    }
+  }, [profileData.first_name, profileData.last_name]);
+
   useEffect(() => {
     if (!user || !initialLoadComplete || saving) return;
 
@@ -816,22 +826,6 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nom complet *
-            </label>
-            <input
-              type="text"
-              value={profileData.full_name}
-              onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
-              placeholder="Ex: Mamadou Diallo"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Si vous remplissez le prénom et nom séparément, le nom complet sera automatiquement créé
-            </p>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
