@@ -1,4 +1,4 @@
-import { JobFormData } from '../components/recruiter/JobPublishForm';
+import { JobFormData } from '../types/jobFormTypes';
 
 export function calculateJobCompletion(formData: JobFormData): number {
   const fields = [
