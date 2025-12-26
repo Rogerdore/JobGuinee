@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Briefcase,
   Users,
+  User,
   MessageSquare,
   BarChart3,
   Wand2,
@@ -31,6 +32,7 @@ import KanbanBoard from '../components/recruiter/KanbanBoard';
 import AnalyticsDashboard from '../components/recruiter/AnalyticsDashboard';
 import AIMatchingModal from '../components/recruiter/AIMatchingModal';
 import EnhancedRecruiterProfileForm from '../components/recruiter/EnhancedRecruiterProfileForm';
+import RecruiterProfileView from '../components/recruiter/RecruiterProfileView';
 import PurchasedProfiles from './PurchasedProfiles';
 import RecruiterMessaging from './RecruiterMessaging';
 import DirectionDashboard from '../components/recruiter/DirectionDashboard';
@@ -85,7 +87,7 @@ interface WorkflowStage {
   stage_color: string;
 }
 
-type Tab = 'dashboard' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'pilotage' | 'premium' | 'profile' | 'purchased-profiles';
+type Tab = 'dashboard' | 'view-profile' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'pilotage' | 'premium' | 'profile' | 'purchased-profiles';
 
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { profile } = useAuth();
@@ -498,6 +500,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'view-profile', label: 'Mon Profil', icon: User },
     { id: 'projects', label: 'Mes projets', icon: Briefcase },
     { id: 'applications', label: 'Candidatures', icon: Users, count: dashboardMetrics?.total_applications || applications.length },
     { id: 'purchased-profiles', label: 'Profils Achetés', icon: Package },
@@ -1171,6 +1174,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
               <AnalyticsDashboard data={analyticsData} />
             </div>
           )}
+
+          {activeTab === 'view-profile' && <RecruiterProfileView onEdit={() => setActiveTab('profile')} />}
 
           {activeTab === 'pilotage' && company && <DirectionDashboard companyId={company.id} />}
 
