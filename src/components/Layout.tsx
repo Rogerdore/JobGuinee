@@ -102,7 +102,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition"
                   >
                     <User className="w-4 h-4" />
-                    <span>{profile?.full_name || 'Mon compte'}</span>
+                    <span>
+                      {profile?.user_type === 'recruiter' && profile?.company_name
+                        ? profile.company_name
+                        : profile?.full_name || 'Mon compte'}
+                    </span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -224,10 +228,14 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               {user ? (
                 <>
                   <div className="px-4 py-3 neo-clay-pressed rounded-xl mb-2">
-                    <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {profile?.user_type === 'recruiter' && profile?.company_name
+                        ? profile.company_name
+                        : profile?.full_name}
+                    </p>
                     <p className="text-xs text-gray-500">{profile?.email}</p>
                     <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full soft-gradient-blue text-primary-700">
-                      {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'candidate' ? 'Candidat' : 'Recruteur'}
+                      {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'candidate' ? 'Candidat' : profile?.user_type === 'trainer' ? 'Formateur' : 'Recruteur'}
                     </span>
                   </div>
 
@@ -248,7 +256,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   ) : (
                     <button
                       onClick={() => {
-                        onNavigate(profile?.user_type === 'recruiter' ? 'recruiter-dashboard' : 'candidate-dashboard');
+                        const dashboardPage = profile?.user_type === 'recruiter'
+                          ? 'recruiter-dashboard'
+                          : profile?.user_type === 'trainer'
+                          ? 'trainer-dashboard'
+                          : 'candidate-dashboard';
+                        onNavigate(dashboardPage);
                         setMobileMenuOpen(false);
                       }}
                       className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left neo-clay-pressed text-primary-700 hover:shadow-md transition"
@@ -256,7 +269,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       <LayoutDashboard className="w-5 h-5" />
                       <div>
                         <p className="font-medium text-sm">
-                          {profile?.user_type === 'candidate' ? 'Espace Candidat' : 'Espace Recruteur'}
+                          {profile?.user_type === 'candidate' ? 'Espace Candidat' : profile?.user_type === 'trainer' ? 'Espace Formateur' : 'Espace Recruteur'}
                         </p>
                         <p className="text-xs opacity-75">Tableau de bord et profil</p>
                       </div>

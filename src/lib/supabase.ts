@@ -23,6 +23,8 @@ export type Profile = {
   address?: string;
   region?: string;
   credits_balance?: number;
+  company_id?: string;
+  company_name?: string;
   created_at: string;
   updated_at: string;
 };

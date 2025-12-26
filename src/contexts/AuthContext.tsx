@@ -31,6 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching profile:', error);
       return null;
     }
+
+    if (data && data.user_type === 'recruiter' && data.company_id) {
+      const { data: companyData } = await supabase
+        .from('companies')
+        .select('name')
+        .eq('id', data.company_id)
+        .maybeSingle();
+
+      if (companyData) {
+        return { ...data, company_name: companyData.name };
+      }
+    }
+
     return data;
   };
 
