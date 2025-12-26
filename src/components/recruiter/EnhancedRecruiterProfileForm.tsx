@@ -5,27 +5,16 @@ import { useAutoSave } from '../../hooks/useAutoSave';
 import { calculateRecruiterCompletion, getCompletionStatus, getMissingRecruiterFields } from '../../utils/profileCompletion';
 import AutoCompleteInput from '../forms/AutoCompleteInput';
 import SuccessModal from '../notifications/SuccessModal';
+import AutoSaveIndicator from '../forms/AutoSaveIndicator';
 import {
   User,
   Building2,
-  Briefcase,
-  Mail,
-  Phone,
-  MapPin,
   Globe,
-  Link as LinkIcon,
-  Calendar,
-  Users,
-  Award,
   Save,
-  CheckCircle,
   Loader,
   Image as ImageIcon,
   X,
-  AlertCircle,
-  CloudOff,
-  Cloud,
-  Clock
+  AlertCircle
 } from 'lucide-react';
 import {
   guineaCities,
@@ -476,44 +465,6 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
   const completionStatus = getCompletionStatus(completionPercentage);
   const missingFields = getMissingRecruiterFields(profileData, companyData);
 
-  const getAutoSaveIndicator = () => {
-    if (saving) return null;
-
-    switch (autoSave.status) {
-      case 'saving':
-        return (
-          <div className="flex items-center gap-2 text-blue-600 text-sm">
-            <Cloud className="w-4 h-4 animate-pulse" />
-            <span>Sauvegarde en cours...</span>
-          </div>
-        );
-      case 'saved':
-        return (
-          <div className="flex items-center gap-2 text-green-600 text-sm">
-            <CheckCircle className="w-4 h-4" />
-            <span>Brouillon sauvegardé</span>
-            {autoSave.lastSaved && (
-              <span className="text-xs text-gray-500">
-                {new Date(autoSave.lastSaved).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </span>
-            )}
-          </div>
-        );
-      case 'error':
-        return (
-          <div className="flex items-center gap-2 text-red-600 text-sm">
-            <CloudOff className="w-4 h-4" />
-            <span>Erreur de sauvegarde</span>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       {showDraftModal && (
@@ -551,13 +502,14 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
         </div>
       )}
 
+      {!saving && (
+        <AutoSaveIndicator status={autoSave.status} lastSaved={autoSave.lastSaved} />
+      )}
+
       <div className="bg-gradient-to-r from-blue-600 to-[#0E2F56] rounded-2xl p-8 text-white">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Mon Profil Recruteur</h1>
-            <p className="text-blue-100">Complétez votre profil pour maximiser votre visibilité auprès des candidats</p>
-          </div>
-          {getAutoSaveIndicator()}
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold mb-2">Mon Profil Recruteur</h1>
+          <p className="text-blue-100">Complétez votre profil pour maximiser votre visibilité auprès des candidats</p>
         </div>
 
         <div className="mt-6">
