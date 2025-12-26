@@ -118,7 +118,17 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
   useEffect(() => {
     const percentage = calculateRecruiterCompletion(profileData, companyData);
     setCompletionPercentage(percentage);
-  }, [profileData, companyData]);
+
+    if (user && initialLoadComplete && !saving) {
+      supabase
+        .from('profiles')
+        .update({ profile_completion_percentage: percentage })
+        .eq('id', user.id)
+        .then(() => {
+          console.log('📊 Form completion percentage saved:', percentage);
+        });
+    }
+  }, [profileData, companyData, user, initialLoadComplete, saving]);
 
   useEffect(() => {
     if (!user || !initialLoadComplete || saving) return;

@@ -135,9 +135,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   useEffect(() => {
     if (activeTab === 'dashboard' && profile?.id) {
-      setTimeout(() => {
-        loadData();
-      }, 100);
+      loadData();
     }
   }, [activeTab]);
 
