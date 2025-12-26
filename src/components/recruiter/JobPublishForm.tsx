@@ -170,13 +170,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     }));
   }, []);
 
-  const handleInputChange = useCallback((field: keyof JobFormData) => {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked :
-                    e.target.type === 'number' ? Number(e.target.value) :
-                    e.target.value;
-      updateFormField(field, value);
-    };
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const field = e.target.name as keyof JobFormData;
+    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked :
+                  e.target.type === 'number' ? Number(e.target.value) :
+                  e.target.value;
+    updateFormField(field, value);
   }, [updateFormField]);
 
   const handleAddSkill = useCallback(() => {
@@ -583,8 +582,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Catégorie / Domaine *
                 </label>
                 <select
+                  name="category"
                   value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Ressources Humaines">Ressources Humaines</option>
@@ -603,8 +603,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Type de contrat *
                 </label>
                 <select
+                  name="contract_type"
                   value={formData.contract_type}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contract_type: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="CDI">CDI</option>
@@ -621,9 +622,10 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <input
                   type="number"
+                  name="position_count"
                   min="1"
                   value={formData.position_count}
-                  onChange={(e) => setFormData(prev => ({ ...prev, position_count: Number(e.target.value) }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 />
               </div>
@@ -633,8 +635,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Niveau de poste
                 </label>
                 <select
+                  name="position_level"
                   value={formData.position_level}
-                  onChange={(e) => setFormData(prev => ({ ...prev, position_level: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Débutant">Débutant</option>
@@ -688,8 +691,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Missions principales
                 </label>
                 <textarea
+                  name="responsibilities"
                   value={formData.responsibilities}
-                  onChange={(e) => setFormData(prev => ({ ...prev, responsibilities: e.target.value }))}
+                  onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
@@ -701,8 +705,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Profil recherché
                 </label>
                 <textarea
+                  name="profile"
                   value={formData.profile}
-                  onChange={(e) => setFormData(prev => ({ ...prev, profile: e.target.value }))}
+                  onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Indiquez le type de profil souhaité..."
@@ -756,8 +761,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                     Niveau d'études requis
                   </label>
                   <select
+                    name="education_level"
                     value={formData.education_level}
-                    onChange={(e) => setFormData(prev => ({ ...prev, education_level: e.target.value }))}
+                    onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   >
                     <option value="BEP">BEP</option>
@@ -774,8 +780,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                     Expérience requise
                   </label>
                   <select
+                    name="experience_required"
                     value={formData.experience_required}
-                    onChange={(e) => setFormData(prev => ({ ...prev, experience_required: e.target.value }))}
+                    onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   >
                     <option value="Débutant">Débutant</option>
@@ -907,8 +914,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Présentation de l'entreprise
                 </label>
                 <textarea
+                  name="company_description"
                   value={formData.company_description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, company_description: e.target.value }))}
+                  onChange={handleInputChange}
                   rows={3}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Décrivez votre entreprise en quelques lignes..."
@@ -944,8 +952,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <input
                   type="text"
+                  name="salary_range"
                   value={formData.salary_range}
-                  onChange={(e) => setFormData(prev => ({ ...prev, salary_range: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="Ex : 6.000.000 - 8.000.000 GNF"
                 />
@@ -956,8 +965,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Type de salaire
                 </label>
                 <select
+                  name="salary_type"
                   value={formData.salary_type}
-                  onChange={(e) => setFormData(prev => ({ ...prev, salary_type: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Fixe">Fixe</option>
@@ -1035,8 +1045,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    name="receive_in_platform"
                     checked={formData.receive_in_platform}
-                    onChange={(e) => setFormData(prev => ({ ...prev, receive_in_platform: e.target.checked }))}
+                    onChange={handleInputChange}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Recevoir les candidatures directement dans mon espace recruteur</span>
@@ -1067,8 +1078,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Instructions supplémentaires
                 </label>
                 <textarea
+                  name="application_instructions"
                   value={formData.application_instructions}
-                  onChange={(e) => setFormData(prev => ({ ...prev, application_instructions: e.target.value }))}
+                  onChange={handleInputChange}
                   rows={3}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Ex : Envoyez vos dossiers complets avant le 15 novembre..."
@@ -1091,7 +1103,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                         name="visibility"
                         value={option}
                         checked={formData.visibility === option}
-                        onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value }))}
+                        onChange={handleInputChange}
                         className="w-5 h-5 text-[#0E2F56] focus:ring-[#0E2F56]"
                       />
                       <span className="text-sm font-medium text-gray-700">{option}</span>
@@ -1104,8 +1116,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    name="is_premium"
                     checked={formData.is_premium}
-                    onChange={(e) => setFormData(prev => ({ ...prev, is_premium: e.target.checked }))}
+                    onChange={handleInputChange}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Mettre l'annonce en avant (Premium)</span>
@@ -1117,8 +1130,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Langue de l'annonce
                 </label>
                 <select
+                  name="announcement_language"
                   value={formData.announcement_language}
-                  onChange={(e) => setFormData(prev => ({ ...prev, announcement_language: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="Français">Français</option>
@@ -1131,8 +1145,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    name="auto_share"
                     checked={formData.auto_share}
-                    onChange={(e) => setFormData(prev => ({ ...prev, auto_share: e.target.checked }))}
+                    onChange={handleInputChange}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Partager automatiquement sur Facebook / LinkedIn / Telegram RH</span>
@@ -1148,8 +1163,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   Durée de publication
                 </label>
                 <select
+                  name="publication_duration"
                   value={formData.publication_duration}
-                  onChange={(e) => setFormData(prev => ({ ...prev, publication_duration: e.target.value }))}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                 >
                   <option value="15 jours">15 jours</option>
@@ -1162,8 +1178,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    name="auto_renewal"
                     checked={formData.auto_renewal}
-                    onChange={(e) => setFormData(prev => ({ ...prev, auto_renewal: e.target.checked }))}
+                    onChange={handleInputChange}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                   />
                   <span className="text-sm font-medium text-gray-700">Renouvellement automatique après expiration</span>
@@ -1174,8 +1191,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    name="legal_compliance"
                     checked={formData.legal_compliance}
-                    onChange={(e) => setFormData(prev => ({ ...prev, legal_compliance: e.target.checked }))}
+                    onChange={handleInputChange}
                     className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
                     required
                   />
