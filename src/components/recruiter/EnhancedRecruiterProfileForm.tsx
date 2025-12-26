@@ -143,6 +143,13 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
     const autoSaveToDatabase = setTimeout(async () => {
       try {
+        console.log('💾 Auto-saving to database:', {
+          completionPercentage,
+          job_title: profileData.job_title,
+          bio: profileData.bio,
+          full_name: profileData.full_name
+        });
+
         await supabase
           .from('profiles')
           .update({
@@ -165,6 +172,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
           .maybeSingle();
 
         if (existingRecruiterProfile) {
+          console.log('✅ Updating existing recruiter profile');
           await supabase
             .from('recruiter_profiles')
             .update({
@@ -175,7 +183,9 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               updated_at: new Date().toISOString()
             })
             .eq('user_id', user.id);
-        } else if (profileData.job_title || profileData.bio || profileData.linkedin_url || recruitmentRole) {
+        } else {
+          // Always insert recruiter profile, even if some fields are empty
+          console.log('✅ Inserting new recruiter profile');
           await supabase
             .from('recruiter_profiles')
             .insert({
@@ -187,6 +197,8 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               recruitment_role: recruitmentRole
             });
         }
+
+        console.log('✅ Recruiter profile saved successfully');
 
         if (companyData.name) {
           if (company) {
@@ -255,7 +267,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
       } catch (error) {
         console.error('Auto-save to database error:', error);
       }
-    }, 5000);
+    }, 1000);
 
     return () => clearTimeout(autoSaveToDatabase);
   }, [profileData, companyData, user, initialLoadComplete, saving, company, profile]);

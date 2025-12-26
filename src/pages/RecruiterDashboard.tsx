@@ -294,21 +294,28 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       setCompletionPercentage(savedPercentage);
       console.log('✅ Dashboard using saved completion percentage:', savedPercentage);
     } else {
+      console.log('📋 Data for calculation:', {
+        profileData: profileDataForCompletion,
+        companyData: companyDataForCompletion
+      });
+
       const percentage = calculateRecruiterCompletion(profileDataForCompletion, companyDataForCompletion);
       setCompletionPercentage(percentage);
       console.log('🔢 Dashboard calculated completion percentage:', percentage);
 
       // Save the calculated percentage for future loads
-      supabase
-        .from('profiles')
-        .update({ profile_completion_percentage: percentage })
-        .eq('id', profile.id)
-        .then(() => {
-          console.log('💾 Dashboard saved calculated completion percentage:', percentage);
-        })
-        .catch((error) => {
-          console.error('❌ Error saving calculated percentage:', error);
-        });
+      if (percentage > 0) {
+        supabase
+          .from('profiles')
+          .update({ profile_completion_percentage: percentage })
+          .eq('id', profile.id)
+          .then(() => {
+            console.log('💾 Dashboard saved calculated completion percentage:', percentage);
+          })
+          .catch((error) => {
+            console.error('❌ Error saving calculated percentage:', error);
+          });
+      }
     }
 
     if (companyData) {
