@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   LayoutDashboard,
   Briefcase,
@@ -443,7 +443,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     setLoading(false);
   };
 
-  const handlePublishJob = async (data: JobFormData) => {
+  const handlePublishJob = useCallback(async (data: JobFormData) => {
     if (!company?.id) {
       alert("Veuillez d'abord créer votre profil entreprise");
       return;
@@ -568,7 +568,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       console.error('Error publishing job:', error);
       alert('❌ Erreur lors de la soumission de l\'offre');
     }
-  };
+  }, [company]);
 
   const handleMoveApplication = async (applicationId: string, newStage: string) => {
     const { error } = await supabase
@@ -590,6 +590,10 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     setSelectedJobForMatching(job);
     setShowMatchingModal(true);
   };
+
+  const handleCloseJobForm = useCallback(() => {
+    setShowJobForm(false);
+  }, []);
 
   const isPremium = Boolean(
     subscription &&
@@ -698,7 +702,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       {showJobForm && (
         <JobPublishForm
           onPublish={handlePublishJob}
-          onClose={() => setShowJobForm(false)}
+          onClose={handleCloseJobForm}
         />
       )}
 
