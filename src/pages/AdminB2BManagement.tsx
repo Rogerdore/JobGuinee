@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import {
   Users, CheckCircle, XCircle, Clock, TrendingUp, Mail, Phone,
   Building2, MessageSquare, User, Calendar, Eye, Edit, Save, X,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, Globe, FileText, HelpCircle
 } from 'lucide-react';
 import { b2bLeadsService, B2BLead, B2BPageConfig } from '../services/b2bLeadsService';
 
-type TabType = 'leads' | 'config';
+type TabType = 'leads' | 'config' | 'seo';
 
 export default function AdminB2BManagement() {
   const [activeTab, setActiveTab] = useState<TabType>('leads');
@@ -15,6 +15,11 @@ export default function AdminB2BManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<B2BLead | null>(null);
   const [editingSection, setEditingSection] = useState<B2BPageConfig | null>(null);
+  const [seoSettings, setSeoSettings] = useState({
+    title: 'Solutions B2B RH en Guinée | Recrutement, Externalisation & IA – JobGuinée',
+    description: 'Solutions RH B2B complètes : externalisation du recrutement, ATS, matching IA, formation et conseil RH pour entreprises et institutions en Guinée et Afrique de l\'Ouest.',
+    keywords: 'solutions b2b rh guinée, externalisation recrutement, ATS digital, CVthèque intelligente, formation professionnelle, conseil RH, recrutement minier, recrutement PME, cabinet RH, matching IA recrutement'
+  });
 
   useEffect(() => {
     loadData();
@@ -183,6 +188,17 @@ export default function AdminB2BManagement() {
               >
                 <Edit className="w-5 h-5 inline mr-2" />
                 Configuration Page
+              </button>
+              <button
+                onClick={() => setActiveTab('seo')}
+                className={`py-4 px-2 border-b-2 font-medium transition ${
+                  activeTab === 'seo'
+                    ? 'border-[#FF8C00] text-[#FF8C00]'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Globe className="w-5 h-5 inline mr-2" />
+                SEO Avancé
               </button>
             </div>
           </div>
@@ -374,6 +390,136 @@ export default function AdminB2BManagement() {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {activeTab === 'seo' && (
+                  <div className="space-y-8">
+                    {/* Meta Tags SEO */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <div className="flex items-center gap-3 mb-6">
+                        <Globe className="w-6 h-6 text-[#FF8C00]" />
+                        <h3 className="text-xl font-bold text-gray-900">
+                          Meta Tags SEO
+                        </h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Title (55-65 caractères optimal)
+                          </label>
+                          <input
+                            type="text"
+                            value={seoSettings.title}
+                            onChange={e => setSeoSettings({ ...seoSettings, title: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56]"
+                            maxLength={70}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Longueur actuelle : {seoSettings.title.length} caractères
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Meta Description (155-165 caractères optimal)
+                          </label>
+                          <textarea
+                            value={seoSettings.description}
+                            onChange={e => setSeoSettings({ ...seoSettings, description: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56]"
+                            rows={3}
+                            maxLength={200}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Longueur actuelle : {seoSettings.description.length} caractères
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Keywords SEO (séparés par des virgules)
+                          </label>
+                          <textarea
+                            value={seoSettings.keywords}
+                            onChange={e => setSeoSettings({ ...seoSettings, keywords: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56]"
+                            rows={2}
+                          />
+                        </div>
+
+                        <button
+                          className="px-6 py-2 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-medium rounded-lg transition flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          Enregistrer les paramètres SEO
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Preview SEO */}
+                    <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+                      <div className="flex items-center gap-3 mb-6">
+                        <Eye className="w-6 h-6 text-blue-600" />
+                        <h3 className="text-xl font-bold text-gray-900">
+                          Prévisualisation Google
+                        </h3>
+                      </div>
+
+                      <div className="bg-white p-4 border border-gray-200 rounded-lg">
+                        <div className="text-sm text-green-700 mb-1">
+                          https://jobguinee.com › solutions-b2b
+                        </div>
+                        <div className="text-xl text-blue-600 hover:underline cursor-pointer mb-1 font-medium">
+                          {seoSettings.title}
+                        </div>
+                        <div className="text-sm text-gray-600 leading-relaxed">
+                          {seoSettings.description}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info SEO */}
+                    <div className="bg-blue-50 rounded-xl p-6">
+                      <div className="flex items-start gap-3">
+                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-2">Conseils SEO</h4>
+                          <ul className="space-y-2 text-sm text-gray-700">
+                            <li>• Le title doit contenir les mots-clés principaux et être attractif</li>
+                            <li>• La description doit inciter au clic tout en décrivant le contenu</li>
+                            <li>• Utilisez des mots-clés pertinents pour le marché guinéen (Guinée, Conakry, etc.)</li>
+                            <li>• Les schemas JSON-LD (Organization, Service, FAQPage) sont automatiquement ajoutés</li>
+                            <li>• La page contient déjà 5 questions/réponses FAQ optimisées pour le SEO</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Schema.org Status */}
+                    <div className="bg-green-50 rounded-xl p-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                        <h3 className="text-lg font-bold text-gray-900">
+                          Schemas JSON-LD actifs
+                        </h3>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-gray-700"><strong>Organization Schema</strong> - Informations sur JobGuinée</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-gray-700"><strong>Service Schema</strong> - Description des services B2B</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-gray-700"><strong>FAQPage Schema</strong> - 5 questions/réponses structurées</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
