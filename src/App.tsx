@@ -129,7 +129,7 @@ function AppContent() {
         {currentPage === 'admin-credit-packages' && <AdminCreditPackages />}
         {currentPage === 'admin-security-logs' && <AdminSecurityLogs onNavigate={handleNavigate} />}
         {currentPage === 'admin-premium-subscriptions' && <AdminPremiumSubscriptions onNavigate={handleNavigate} />}
-        {currentPage === 'admin-enterprise-subscriptions' && <AdminEnterpriseSubscriptions />}
+        {currentPage === 'admin-enterprise-subscriptions' && <AdminEnterpriseSubscriptions onNavigate={handleNavigate} />}
         {currentPage === 'admin-automation-rules' && <AdminAutomationRules />}
         {currentPage === 'admin-recruiter-notifications' && <AdminRecruiterNotifications />}
         {currentPage === 'admin-seo' && <AdminSEO onNavigate={handleNavigate} />}

@@ -6,6 +6,11 @@ export interface ApplicationSubmissionData {
   candidateId: string;
   coverLetter?: string;
   cvUrl?: string;
+  additionalDocuments?: Array<{
+    type: string;
+    url: string;
+    title: string;
+  }>;
 }
 
 export interface ApplicationSubmissionResult {
