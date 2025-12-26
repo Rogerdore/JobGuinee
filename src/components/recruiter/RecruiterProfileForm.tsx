@@ -456,7 +456,6 @@ export default function RecruiterProfileForm({ onProfileComplete }: RecruiterPro
               className={`h-full rounded-full transition-all duration-500 ${
                 completionPercentage < 50 ? 'bg-red-500' :
                 completionPercentage < 80 ? 'bg-orange-500' :
-                completionPercentage < 100 ? 'bg-blue-400' :
                 'bg-green-500'
               }`}
               style={{ width: `${completionPercentage}%` }}
