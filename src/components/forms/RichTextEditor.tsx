@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import {
@@ -39,7 +39,7 @@ interface ImportedBlock {
   timestamp: number;
 }
 
-export default function RichTextEditor({
+const RichTextEditor = memo(function RichTextEditor({
   value,
   onChange,
   placeholder = 'Décrivez le poste en détail...',
@@ -57,13 +57,17 @@ export default function RichTextEditor({
   const isManipulatingRef = useRef(false);
   const changeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const combineAllContent = () => {
+  const combineAllContent = useCallback(() => {
     const quill = quillRef.current?.getEditor();
     const currentContent = quill ? quill.root.innerHTML : editorContent;
     const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
     const combined = blocksContent ? `${blocksContent}\n\n${currentContent}` : currentContent;
-    onChange(combined);
-  };
+
+    if (combined !== lastContentRef.current) {
+      lastContentRef.current = combined;
+      onChange(combined);
+    }
+  }, [editorContent, importedBlocks, onChange]);
 
   const handleUndo = () => {
     const quill = quillRef.current?.getEditor();
@@ -79,7 +83,7 @@ export default function RichTextEditor({
     }
   };
 
-  const handleSaveContent = () => {
+  const handleSaveContent = useCallback(() => {
     const quill = quillRef.current?.getEditor();
     if (quill) {
       setEditorContent(quill.root.innerHTML);
@@ -97,10 +101,15 @@ export default function RichTextEditor({
     `;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
-  };
+  }, [combineAllContent]);
+
+  const initialValueRef = useRef(value);
 
   useEffect(() => {
-    setEditorContent(value);
+    if (!initialValueRef.current) {
+      initialValueRef.current = value;
+      setEditorContent(value);
+    }
   }, []);
 
   useEffect(() => {
@@ -414,7 +423,9 @@ export default function RichTextEditor({
     setTimeout(combineAllContent, 100);
   };
 
-  const handleEditorChange = (content: string, delta: any, source: any) => {
+  const lastContentRef = useRef(value);
+
+  const handleEditorChange = useCallback((content: string, delta: any, source: any) => {
     if (source !== 'user' || isManipulatingRef.current) {
       return;
     }
@@ -436,9 +447,13 @@ export default function RichTextEditor({
     updateTimeoutRef.current = setTimeout(() => {
       const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
       const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
-      onChange(combined);
-    }, 1000);
-  };
+
+      if (combined !== lastContentRef.current) {
+        lastContentRef.current = combined;
+        onChange(combined);
+      }
+    }, 2000);
+  }, [importedBlocks, onChange]);
 
   const handleResetContent = () => {
     if (confirm('Êtes-vous sûr de vouloir réinitialiser tout le contenu ? Cette action est irréversible.')) {
@@ -743,4 +758,6 @@ export default function RichTextEditor({
       </div>
     </div>
   );
-}
+});
+
+export default RichTextEditor;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
@@ -126,6 +126,11 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   };
 
   const [formData, setFormData] = useState<JobFormData>(getInitialFormData());
+  const formDataRef = useRef(formData);
+
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
 
   const completionPercentage = useMemo(() => calculateJobCompletion(formData), [formData]);
   const completionStatus = useMemo(() => getJobCompletionStatus(completionPercentage), [completionPercentage]);
@@ -134,7 +139,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft, hasDraft } = useAutoSave({
     data: formData,
     key: `job-draft-${profile?.id || 'anonymous'}`,
-    delay: 5000,
+    delay: 10000,
     enabled: draftLoaded,
   });
 
@@ -170,14 +175,36 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     setDraftLoaded(true);
   };
 
+  const validationErrorsRef = useRef<Record<string, string>>({});
+
   const updateFormField = useCallback((field: keyof JobFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      formDataRef.current = newData;
+      return newData;
+    });
 
     const error = validateJobField(field, value);
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
+    const currentError = validationErrorsRef.current[field];
+
+    if (error !== currentError) {
+      if (error) {
+        validationErrorsRef.current = { ...validationErrorsRef.current, [field]: error };
+        setValidationErrors(prev => ({
+          ...prev,
+          [field]: error
+        }));
+      } else {
+        const newErrors = { ...validationErrorsRef.current };
+        delete newErrors[field];
+        validationErrorsRef.current = newErrors;
+        setValidationErrors(prev => {
+          const updated = { ...prev };
+          delete updated[field];
+          return updated;
+        });
+      }
+    }
   }, []);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -233,6 +260,18 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
         : [...prev.required_documents, doc]
     }));
   }, []);
+
+  const handleDescriptionChange = useCallback((value: string) => {
+    updateFormField('description', value);
+  }, [updateFormField]);
+
+  const handleResponsibilitiesChange = useCallback((value: string) => {
+    updateFormField('responsibilities', value);
+  }, [updateFormField]);
+
+  const handleProfileChange = useCallback((value: string) => {
+    updateFormField('profile', value);
+  }, [updateFormField]);
 
   const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
     if (e.key === 'Enter') {
@@ -627,7 +666,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
               <div>
                 <RichTextEditor
                   value={formData.description}
-                  onChange={(value) => updateFormField('description', value)}
+                  onChange={handleDescriptionChange}
                   placeholder="Décrivez brièvement le poste..."
                   label="Présentation du poste *"
                 />
