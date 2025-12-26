@@ -111,14 +111,122 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
     setCompletionPercentage(percentage);
   }, [profileData, companyData]);
 
+  useEffect(() => {
+    if (!user || !initialLoadComplete || saving) return;
+
+    const autoSaveToDatabase = setTimeout(async () => {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: profileData.full_name,
+            phone: profileData.phone,
+            avatar_url: profileData.avatar_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        const { data: existingRecruiterProfile } = await supabase
+          .from('recruiter_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existingRecruiterProfile) {
+          await supabase
+            .from('recruiter_profiles')
+            .update({
+              job_title: profileData.job_title,
+              bio: profileData.bio,
+              linkedin_url: profileData.linkedin_url,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id);
+        } else if (profileData.job_title || profileData.bio || profileData.linkedin_url) {
+          await supabase
+            .from('recruiter_profiles')
+            .insert({
+              profile_id: user.id,
+              user_id: user.id,
+              job_title: profileData.job_title,
+              bio: profileData.bio,
+              linkedin_url: profileData.linkedin_url
+            });
+        }
+
+        if (companyData.name) {
+          if (company) {
+            await supabase
+              .from('companies')
+              .update({
+                name: companyData.name,
+                description: companyData.description,
+                industry: companyData.industry,
+                size: companyData.size,
+                location: companyData.location,
+                address: companyData.address,
+                phone: companyData.phone,
+                email: companyData.email,
+                website: companyData.website,
+                employee_count: companyData.employee_count,
+                founded_year: companyData.founded_year ? parseInt(companyData.founded_year) : null,
+                logo_url: companyData.logo_url,
+                culture_description: companyData.culture_description,
+                benefits: companyData.benefits,
+                social_media: companyData.social_media
+              })
+              .eq('id', company.id);
+          } else if (profile) {
+            const { data: newCompany } = await supabase
+              .from('companies')
+              .insert({
+                profile_id: user.id,
+                name: companyData.name,
+                description: companyData.description,
+                industry: companyData.industry,
+                size: companyData.size,
+                location: companyData.location,
+                address: companyData.address,
+                phone: companyData.phone,
+                email: companyData.email,
+                website: companyData.website,
+                employee_count: companyData.employee_count,
+                founded_year: companyData.founded_year ? parseInt(companyData.founded_year) : null,
+                logo_url: companyData.logo_url,
+                culture_description: companyData.culture_description,
+                benefits: companyData.benefits,
+                social_media: companyData.social_media
+              })
+              .select()
+              .single();
+
+            if (newCompany) {
+              setCompany(newCompany);
+              await supabase
+                .from('profiles')
+                .update({ company_id: newCompany.id })
+                .eq('id', user.id);
+
+              await supabase
+                .from('recruiter_profiles')
+                .update({ company_id: newCompany.id })
+                .eq('user_id', user.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Auto-save to database error:', error);
+      }
+    }, 5000);
+
+    return () => clearTimeout(autoSaveToDatabase);
+  }, [profileData, companyData, user, initialLoadComplete, saving, company, profile]);
+
   const loadData = async () => {
     if (!user) return;
 
     try {
-      if (autoSave.hasDraft()) {
-        setShowDraftModal(true);
-        return;
-      }
+      const draft = autoSave.loadDraft();
 
       if (profile) {
         // Load recruiter-specific data from recruiter_profiles
@@ -137,7 +245,28 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
           avatar_url: profile.avatar_url || ''
         };
 
-        setProfileData(loadedProfileData);
+        let loadedCompanyData = {
+          name: '',
+          description: '',
+          industry: '',
+          size: '',
+          location: '',
+          address: '',
+          phone: '',
+          email: '',
+          website: '',
+          employee_count: '',
+          founded_year: '',
+          logo_url: '',
+          culture_description: '',
+          benefits: [] as string[],
+          social_media: {
+            facebook: '',
+            twitter: '',
+            linkedin: '',
+            instagram: ''
+          }
+        };
 
         if (profile.company_id) {
           const { data: companyData, error: companyError } = await supabase
@@ -148,7 +277,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
 
           if (companyData) {
             setCompany(companyData);
-            const loadedCompanyData = {
+            loadedCompanyData = {
               name: companyData.name || '',
               description: companyData.description || '',
               industry: companyData.industry || '',
@@ -170,17 +299,22 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
                 instagram: ''
               }
             };
-            setCompanyData(loadedCompanyData);
           }
+        }
+
+        if (draft) {
+          setProfileData(draft.profileData);
+          setCompanyData(draft.companyData);
+        } else {
+          setProfileData(loadedProfileData);
+          setCompanyData(loadedCompanyData);
         }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
-      if (!showDraftModal) {
-        setInitialLoadComplete(true);
-      }
+      setInitialLoadComplete(true);
     }
   };
 

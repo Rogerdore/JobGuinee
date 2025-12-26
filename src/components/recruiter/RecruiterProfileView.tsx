@@ -10,10 +10,7 @@ import {
   User,
   Calendar,
   Award,
-  Target,
-  TrendingUp,
   Sparkles,
-  CheckCircle2,
   Edit,
   Linkedin
 } from 'lucide-react';
@@ -23,16 +20,10 @@ import CompanyLogo from '../common/CompanyLogo';
 
 interface RecruiterProfile {
   id: string;
-  full_name: string | null;
-  phone: string | null;
-  position: string | null;
-  department: string | null;
+  job_title: string | null;
   bio: string | null;
   linkedin_url: string | null;
-  specializations: string[] | null;
-  years_experience: number | null;
-  preferred_contact_method: string | null;
-  avatar_url: string | null;
+  company_id: string | null;
 }
 
 interface Company {
@@ -77,7 +68,7 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
 
       const { data: recruiterData, error: recruiterError } = await supabase
         .from('recruiter_profiles')
-        .select('*')
+        .select('id, job_title, bio, linkedin_url, company_id')
         .eq('user_id', profile.id)
         .maybeSingle();
 
@@ -85,11 +76,13 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
 
       setRecruiterProfile(recruiterData);
 
-      if (recruiterData?.company_id) {
+      const companyId = recruiterData?.company_id || profile.company_id;
+
+      if (companyId) {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .select('*')
-          .eq('id', recruiterData.company_id)
+          .eq('id', companyId)
           .maybeSingle();
 
         if (companyError) throw companyError;
@@ -272,62 +265,30 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
                 <div className="flex-1">
                   <p className="text-sm text-gray-600 mb-1">Nom complet</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {recruiterProfile.full_name || 'Non renseigné'}
+                    {profile?.full_name || 'Non renseigné'}
                   </p>
                 </div>
               </div>
 
-              {recruiterProfile.position && (
+              {recruiterProfile.job_title && (
                 <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
                   <Briefcase className="w-5 h-5 text-[#0E2F56] mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm text-gray-600 mb-1">Poste</p>
-                    <p className="text-lg font-semibold text-gray-900">{recruiterProfile.position}</p>
-                  </div>
-                </div>
-              )}
-
-              {recruiterProfile.department && (
-                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
-                  <Building2 className="w-5 h-5 text-[#0E2F56] mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600 mb-1">Département</p>
-                    <p className="text-lg font-semibold text-gray-900">{recruiterProfile.department}</p>
+                    <p className="text-sm text-gray-600 mb-1">Poste / Fonction</p>
+                    <p className="text-lg font-semibold text-gray-900">{recruiterProfile.job_title}</p>
                   </div>
                 </div>
               )}
 
               {recruiterProfile.bio && (
                 <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                  <p className="text-sm text-blue-800 font-medium mb-2">Biographie</p>
-                  <p className="text-gray-700 leading-relaxed">{recruiterProfile.bio}</p>
+                  <p className="text-sm text-blue-800 font-medium mb-2">Biographie professionnelle</p>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">{recruiterProfile.bio}</p>
                 </div>
               )}
             </div>
           </div>
 
-          {recruiterProfile.specializations && recruiterProfile.specializations.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <Target className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900">Spécialisations</h3>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                {recruiterProfile.specializations.map((spec, index) => (
-                  <span
-                    key={index}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 font-semibold rounded-xl border border-purple-200 flex items-center gap-2"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    {spec}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="space-y-6">
@@ -340,12 +301,12 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
             </div>
 
             <div className="space-y-4">
-              {recruiterProfile.phone && (
+              {profile?.phone && (
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <Phone className="w-5 h-5 text-[#0E2F56]" />
                   <div>
                     <p className="text-xs text-gray-600 mb-0.5">Téléphone</p>
-                    <p className="font-semibold text-gray-900">{recruiterProfile.phone}</p>
+                    <p className="font-semibold text-gray-900">{profile.phone}</p>
                   </div>
                 </div>
               )}
@@ -376,32 +337,9 @@ export default function RecruiterProfileView({ onEdit }: RecruiterProfileViewPro
                   </div>
                 </div>
               )}
-
-              {recruiterProfile.preferred_contact_method && (
-                <div className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                  <p className="text-xs text-orange-800 font-medium mb-1">Méthode de contact préférée</p>
-                  <p className="font-semibold text-orange-900 capitalize">
-                    {recruiterProfile.preferred_contact_method}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
-          {recruiterProfile.years_experience !== null && (
-            <div className="bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl shadow-lg p-6 text-white">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold">Expérience</h3>
-              </div>
-              <div className="text-center py-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <div className="text-5xl font-bold mb-2">{recruiterProfile.years_experience}</div>
-                <p className="text-blue-200">années d'expérience en recrutement</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
