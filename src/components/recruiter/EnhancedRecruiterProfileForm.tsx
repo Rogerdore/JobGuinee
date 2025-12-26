@@ -523,13 +523,17 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${completionPercentage}%`,
-                background: completionPercentage < 33
-                  ? `linear-gradient(90deg, #ef4444 0%, #f97316 ${completionPercentage * 3}%)`
-                  : completionPercentage < 66
-                  ? `linear-gradient(90deg, #f97316 0%, #fbbf24 ${(completionPercentage - 33) * 3}%)`
-                  : completionPercentage < 100
-                  ? `linear-gradient(90deg, #fbbf24 0%, #60a5fa ${(completionPercentage - 66) * 3}%)`
-                  : '#10b981'
+                background: completionPercentage <= 16
+                  ? `linear-gradient(90deg, #dc2626 0%, #f87171 ${(completionPercentage / 16) * 100}%)`
+                  : completionPercentage <= 33
+                  ? `linear-gradient(90deg, #f87171 0%, #f59e0b ${((completionPercentage - 16) / 17) * 100}%)`
+                  : completionPercentage <= 50
+                  ? `linear-gradient(90deg, #f59e0b 0%, #fde047 ${((completionPercentage - 33) / 17) * 100}%)`
+                  : completionPercentage <= 66
+                  ? `linear-gradient(90deg, #fde047 0%, #86efac ${((completionPercentage - 50) / 16) * 100}%)`
+                  : completionPercentage <= 83
+                  ? `linear-gradient(90deg, #86efac 0%, #16a34a ${((completionPercentage - 66) / 17) * 100}%)`
+                  : `linear-gradient(90deg, #16a34a 0%, #16a34a 100%)`
               }}
             ></div>
           </div>
