@@ -140,6 +140,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               </button>
 
               <button
+                onClick={() => onNavigate('admin-diffusion-settings')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-red-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Config Diffusion</span>
+              </button>
+
+              <button
                 onClick={() => onNavigate('admin-credit-store-settings')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-orange-700 neo-clay-button rounded-xl transition hover:shadow-md"
               >

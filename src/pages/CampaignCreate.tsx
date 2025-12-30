@@ -11,7 +11,7 @@ import {
   AlertCircle,
   Loader,
 } from 'lucide-react';
-import { targetedDiffusionService, CHANNEL_COSTS, ADMIN_ORANGE_MONEY_NUMBER, AudienceFilters } from '../services/targetedDiffusionService';
+import { targetedDiffusionService, AudienceFilters } from '../services/targetedDiffusionService';
 import { useAuth } from '../contexts/AuthContext';
 
 interface CampaignCreateProps {
@@ -48,7 +48,28 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
   });
 
   const [totalCost, setTotalCost] = useState(0);
+  const [channelCosts, setChannelCosts] = useState({ email: 500, sms: 1000, whatsapp: 3000 });
+  const [orangeMoneyNumber, setOrangeMoneyNumber] = useState('+224 622 00 00 00');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const costs = await targetedDiffusionService.getChannelCosts();
+        setChannelCosts({
+          email: costs.email || 500,
+          sms: costs.sms || 1000,
+          whatsapp: costs.whatsapp || 3000,
+        });
+
+        const omNumber = await targetedDiffusionService.getOrangeMoneyNumber();
+        setOrangeMoneyNumber(omNumber);
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    };
+    loadConfig();
+  }, []);
 
   useEffect(() => {
     if (!entityType || !entityId) {
@@ -111,9 +132,9 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
 
   const calculateTotalCost = () => {
     let total = 0;
-    if (channels.email.enabled) total += channels.email.quantity * CHANNEL_COSTS.email;
-    if (channels.sms.enabled) total += channels.sms.quantity * CHANNEL_COSTS.sms;
-    if (channels.whatsapp.enabled) total += channels.whatsapp.quantity * CHANNEL_COSTS.whatsapp;
+    if (channels.email.enabled) total += channels.email.quantity * channelCosts.email;
+    if (channels.sms.enabled) total += channels.sms.quantity * channelCosts.sms;
+    if (channels.whatsapp.enabled) total += channels.whatsapp.quantity * channelCosts.whatsapp;
     setTotalCost(total);
   };
 
@@ -241,7 +262,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
               <div>
                 <p className="font-semibold text-gray-900">Effectuez le paiement via Orange Money</p>
                 <p className="text-gray-600 text-sm mt-1">
-                  Numéro Admin : <span className="font-mono font-bold text-[#FF8C00]">{ADMIN_ORANGE_MONEY_NUMBER}</span>
+                  Numéro Admin : <span className="font-mono font-bold text-[#FF8C00]">{orangeMoneyNumber}</span>
                 </p>
               </div>
             </div>
@@ -537,7 +558,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">Email</h3>
                           <p className="text-sm text-gray-600">
-                            {targetedDiffusionService.formatCurrency(CHANNEL_COSTS.email)} / personne
+                            {targetedDiffusionService.formatCurrency(channelCosts.email)} / personne
                           </p>
                         </div>
                       </div>
@@ -570,7 +591,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                         <p className="text-sm text-gray-600 mt-2">
                           Coût : <span className="font-bold text-[#FF8C00]">
                             {targetedDiffusionService.formatCurrency(
-                              channels.email.quantity * CHANNEL_COSTS.email
+                              channels.email.quantity * channelCosts.email
                             )}
                           </span>
                         </p>
@@ -593,7 +614,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">SMS</h3>
                           <p className="text-sm text-gray-600">
-                            {targetedDiffusionService.formatCurrency(CHANNEL_COSTS.sms)} / personne
+                            {targetedDiffusionService.formatCurrency(channelCosts.sms)} / personne
                           </p>
                         </div>
                       </div>
@@ -626,7 +647,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                         <p className="text-sm text-gray-600 mt-2">
                           Coût : <span className="font-bold text-[#FF8C00]">
                             {targetedDiffusionService.formatCurrency(
-                              channels.sms.quantity * CHANNEL_COSTS.sms
+                              channels.sms.quantity * channelCosts.sms
                             )}
                           </span>
                         </p>
@@ -649,7 +670,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">WhatsApp</h3>
                           <p className="text-sm text-gray-600">
-                            {targetedDiffusionService.formatCurrency(CHANNEL_COSTS.whatsapp)} / personne
+                            {targetedDiffusionService.formatCurrency(channelCosts.whatsapp)} / personne
                           </p>
                         </div>
                       </div>
@@ -682,7 +703,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                         <p className="text-sm text-gray-600 mt-2">
                           Coût : <span className="font-bold text-[#FF8C00]">
                             {targetedDiffusionService.formatCurrency(
-                              channels.whatsapp.quantity * CHANNEL_COSTS.whatsapp
+                              channels.whatsapp.quantity * channelCosts.whatsapp
                             )}
                           </span>
                         </p>
@@ -730,7 +751,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                             <p className="font-medium text-gray-900">{channels.email.quantity} personnes</p>
                             <p className="text-sm text-gray-600">
                               {targetedDiffusionService.formatCurrency(
-                                channels.email.quantity * CHANNEL_COSTS.email
+                                channels.email.quantity * channelCosts.email
                               )}
                             </p>
                           </div>
@@ -746,7 +767,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                             <p className="font-medium text-gray-900">{channels.sms.quantity} personnes</p>
                             <p className="text-sm text-gray-600">
                               {targetedDiffusionService.formatCurrency(
-                                channels.sms.quantity * CHANNEL_COSTS.sms
+                                channels.sms.quantity * channelCosts.sms
                               )}
                             </p>
                           </div>
@@ -762,7 +783,7 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
                             <p className="font-medium text-gray-900">{channels.whatsapp.quantity} personnes</p>
                             <p className="text-sm text-gray-600">
                               {targetedDiffusionService.formatCurrency(
-                                channels.whatsapp.quantity * CHANNEL_COSTS.whatsapp
+                                channels.whatsapp.quantity * channelCosts.whatsapp
                               )}
                             </p>
                           </div>

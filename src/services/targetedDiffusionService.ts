@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { diffusionConfigService } from './diffusionConfigService';
 
 export interface Campaign {
   id: string;
@@ -56,15 +57,25 @@ export interface CampaignStats {
   delivery_rate: number;
 }
 
-export const CHANNEL_COSTS = {
-  email: 500,
-  sms: 1000,
-  whatsapp: 3000,
-} as const;
-
-export const ADMIN_ORANGE_MONEY_NUMBER = '+224 622 00 00 00';
-
 class TargetedDiffusionService {
+  async getChannelCosts() {
+    const channels = await diffusionConfigService.getChannelPricing();
+    const costs: Record<string, number> = {};
+    channels.forEach(ch => {
+      costs[ch.channel_type] = ch.unit_cost;
+    });
+    return costs;
+  }
+
+  async getOrangeMoneyNumber(): Promise<string> {
+    const settings = await diffusionConfigService.getSettings();
+    return settings?.orange_money_number || '+224 622 00 00 00';
+  }
+
+  formatCurrency(amount: number): string {
+    return diffusionConfigService.formatCurrency(amount);
+  }
+
   async calculateAvailableAudience(filters: AudienceFilters): Promise<number> {
     try {
       const { data, error } = await supabase.rpc('calculate_available_audience', {
@@ -93,6 +104,8 @@ class TargetedDiffusionService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const channelCosts = await this.getChannelCosts();
+
       const audienceAvailable = await this.calculateAvailableAudience(audienceFilters);
 
       for (const channel of channels) {
@@ -102,7 +115,7 @@ class TargetedDiffusionService {
       }
 
       const totalCost = channels.reduce(
-        (sum, channel) => sum + channel.quantity * CHANNEL_COSTS[channel.channel_type],
+        (sum, channel) => sum + channel.quantity * (channelCosts[channel.channel_type] || 0),
         0
       );
 
@@ -128,8 +141,8 @@ class TargetedDiffusionService {
         campaign_id: campaign.id,
         channel_type: channel.channel_type,
         quantity: channel.quantity,
-        unit_cost: CHANNEL_COSTS[channel.channel_type],
-        total_cost: channel.quantity * CHANNEL_COSTS[channel.channel_type],
+        unit_cost: channelCosts[channel.channel_type] || 0,
+        total_cost: channel.quantity * (channelCosts[channel.channel_type] || 0),
       }));
 
       const { error: channelsError } = await supabase
@@ -406,15 +419,6 @@ class TargetedDiffusionService {
       console.error('Error generating shortlink:', error);
       return originalUrl;
     }
-  }
-
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('fr-GN', {
-      style: 'currency',
-      currency: 'GNF',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
   }
 
   getChannelLabel(channelType: 'email' | 'sms' | 'whatsapp'): string {
