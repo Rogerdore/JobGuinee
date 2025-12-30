@@ -440,6 +440,105 @@ class SEOCoreWebVitalsService {
     const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
     return connection?.effectiveType || 'unknown';
   }
+
+  initRUM() {
+    return this.initRealUserMonitoring();
+  }
+
+  async getAverages(pagePath?: string, deviceType?: string, hours?: number) {
+    try {
+      const cutoffDate = hours
+        ? new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+        : undefined;
+
+      let query = supabase
+        .from('seo_core_web_vitals')
+        .select('*');
+
+      if (pagePath) {
+        query = query.eq('page_path', pagePath);
+      }
+
+      if (deviceType) {
+        query = query.eq('device_type', deviceType);
+      }
+
+      if (cutoffDate) {
+        query = query.gte('created_at', cutoffDate);
+      }
+
+      const { data, error } = await query.limit(1000);
+
+      if (error || !data || data.length === 0) {
+        return [];
+      }
+
+      const pageGroups = data.reduce((acc, metric) => {
+        if (!acc[metric.page_path]) {
+          acc[metric.page_path] = [];
+        }
+        acc[metric.page_path].push(metric);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      return Object.entries(pageGroups).map(([path, metrics]) => ({
+        page_path: path,
+        avg_lcp: this.average(metrics.map(m => m.lcp).filter(Boolean)),
+        avg_cls: this.average(metrics.map(m => m.cls).filter(Boolean)),
+        avg_inp: this.average(metrics.map(m => m.inp).filter(Boolean)),
+        avg_ttfb: this.average(metrics.map(m => m.ttfb).filter(Boolean)),
+        avg_fcp: this.average(metrics.map(m => m.fcp).filter(Boolean)),
+        count: metrics.length
+      }));
+    } catch (error) {
+      console.error('Error getting averages:', error);
+      return [];
+    }
+  }
+
+  async getAlerts(includeResolved: boolean = false) {
+    try {
+      let query = supabase
+        .from('seo_performance_alerts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!includeResolved) {
+        query = query.eq('is_resolved', false);
+      }
+
+      const { data, error } = await query.limit(100);
+
+      if (error) {
+        console.error('Error fetching alerts:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error getting alerts:', error);
+      return [];
+    }
+  }
+
+  async resolveAlert(alertId: string, resolvedBy: string) {
+    try {
+      const { error } = await supabase
+        .from('seo_performance_alerts')
+        .update({
+          is_resolved: true,
+          resolved_at: new Date().toISOString(),
+          resolved_by: resolvedBy
+        })
+        .eq('id', alertId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+      return false;
+    }
+  }
 }
 
 export const seoCoreWebVitalsService = new SEOCoreWebVitalsService();
