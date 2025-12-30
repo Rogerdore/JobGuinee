@@ -574,7 +574,15 @@ export default function Home({ onNavigate }: HomeProps) {
                 onClick={handleCreateProfile}
                 className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
               >
-                {user && profile?.user_type === 'candidate' ? 'Accéder à mon espace' : 'Créer mon profil gratuitement'}
+                {user && profile?.user_type === 'candidate'
+                  ? 'Accéder à mon espace candidat'
+                  : user && profile?.user_type === 'recruiter'
+                  ? 'Accéder à mon espace recruteur'
+                  : user && profile?.user_type === 'trainer'
+                  ? 'Accéder à mon espace formateur'
+                  : user && profile?.user_type === 'admin'
+                  ? 'Accéder au panel admin'
+                  : 'Créer mon profil gratuitement'}
               </button>
             </div>
 
