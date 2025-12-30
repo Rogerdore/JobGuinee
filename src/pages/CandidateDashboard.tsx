@@ -11,6 +11,8 @@ import ProfileQualityBadge from '../components/profile/ProfileQualityBadge';
 import { candidateMessagingService } from '../services/candidateMessagingService';
 import { candidateApplicationTrackingService } from '../services/candidateApplicationTrackingService';
 import { usePendingApplication } from '../hooks/usePendingApplication';
+import ExternalApplicationCTA from '../components/candidate/ExternalApplicationCTA';
+import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -673,6 +675,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                     </div>
                   </div>
                 </div>
+
+                <ExternalApplicationCTA
+                  profileCompletion={profileCompletion}
+                  onNavigate={onNavigate}
+                />
 
                 {(isPremium || creditsBalance > 0) && aiScore > 0 && (
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">

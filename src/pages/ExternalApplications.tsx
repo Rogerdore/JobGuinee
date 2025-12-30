@@ -186,33 +186,47 @@ export default function ExternalApplications({ onNavigate }: ExternalApplication
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <button
-              onClick={() => onNavigate?.('candidate-dashboard')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Retour au tableau de bord
-            </button>
+        <button
+          onClick={() => onNavigate?.('candidate-dashboard')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="font-medium">Retour au tableau de bord</span>
+        </button>
 
-            <h1 className="text-3xl font-bold text-gray-900">
-              Mes candidatures externes
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Suivez toutes vos candidatures à des offres externes
-            </p>
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Toutes vos candidatures externes
+              </h1>
+              <p className="text-gray-600">
+                Envoyées via votre profil JobGuinée
+              </p>
+            </div>
+
+            <button
+              onClick={() => onNavigate?.('external-application')}
+              className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all font-semibold shadow-lg hover:shadow-xl flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Postuler à une offre externe
+            </button>
           </div>
 
-          <button
-            onClick={() => onNavigate?.('external-application')}
-            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Nouvelle candidature
-          </button>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+            <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-blue-900 font-medium">
+                💡 Astuce : un profil bien complété augmente vos chances de réponse
+              </p>
+              <p className="text-xs text-blue-700 mt-1">
+                Les recruteurs apprécient les profils détaillés et professionnels.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
