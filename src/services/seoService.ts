@@ -39,6 +39,39 @@ export interface SEOPageMeta {
   is_active: boolean;
 }
 
+export interface SEOPageMetaI18n {
+  id: string;
+  seo_page_meta_id: string;
+  language_code: 'fr' | 'en';
+  title: string;
+  description?: string;
+  keywords?: string[];
+  og_title?: string;
+  og_description?: string;
+  og_image?: string;
+  canonical_url?: string;
+  is_active: boolean;
+}
+
+export interface SEOConfigI18n {
+  id: string;
+  language_code: 'fr' | 'en';
+  site_name: string;
+  site_tagline?: string;
+  default_title: string;
+  default_description: string;
+  keywords?: string[];
+  og_image?: string;
+  twitter_site?: string;
+  is_active: boolean;
+}
+
+export interface HreflangAlternate {
+  language_code: 'fr' | 'en';
+  alternate_url: string;
+  is_default: boolean;
+}
+
 class SEOService {
   async getConfig(): Promise<SEOConfig | null> {
     try {
@@ -52,6 +85,53 @@ class SEOService {
     } catch (error) {
       console.error('Error fetching SEO config:', error);
       return null;
+    }
+  }
+
+  async getConfigI18n(languageCode: 'fr' | 'en' = 'fr'): Promise<SEOConfigI18n | null> {
+    try {
+      const { data, error } = await supabase
+        .from('seo_config_i18n')
+        .select('*')
+        .eq('language_code', languageCode)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching i18n SEO config:', error);
+      return null;
+    }
+  }
+
+  async updateConfigI18n(languageCode: 'fr' | 'en', updates: Partial<SEOConfigI18n>): Promise<boolean> {
+    try {
+      const { data: existing } = await supabase
+        .from('seo_config_i18n')
+        .select('id')
+        .eq('language_code', languageCode)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('seo_config_i18n')
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('seo_config_i18n')
+          .insert([{ ...updates, language_code: languageCode }]);
+
+        if (error) throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating i18n SEO config:', error);
+      return false;
     }
   }
 
@@ -98,6 +178,123 @@ class SEOService {
     } catch (error) {
       console.error('Error fetching page meta:', error);
       return null;
+    }
+  }
+
+  async getPageMetaWithI18n(pagePath: string, languageCode: 'fr' | 'en' = 'fr'): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_page_meta_with_i18n', {
+          p_page_path: pagePath,
+          p_language_code: languageCode
+        })
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching page meta with i18n:', error);
+      return null;
+    }
+  }
+
+  async setPageMetaI18n(
+    pageMetaId: string,
+    languageCode: 'fr' | 'en',
+    translation: Partial<SEOPageMetaI18n>
+  ): Promise<boolean> {
+    try {
+      const { data: existing } = await supabase
+        .from('seo_page_meta_i18n')
+        .select('id')
+        .eq('seo_page_meta_id', pageMetaId)
+        .eq('language_code', languageCode)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('seo_page_meta_i18n')
+          .update({ ...translation, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('seo_page_meta_i18n')
+          .insert([{
+            ...translation,
+            seo_page_meta_id: pageMetaId,
+            language_code: languageCode
+          }]);
+
+        if (error) throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error setting page meta i18n:', error);
+      return false;
+    }
+  }
+
+  async getHreflangAlternates(pagePath: string): Promise<HreflangAlternate[]> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_hreflang_alternates', {
+          p_page_path: pagePath
+        });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching hreflang alternates:', error);
+      return [];
+    }
+  }
+
+  async setHreflangConfig(
+    pagePath: string,
+    languageCode: 'fr' | 'en',
+    alternateUrl: string,
+    isDefault: boolean = false
+  ): Promise<boolean> {
+    try {
+      const { data: existing } = await supabase
+        .from('seo_hreflang_config')
+        .select('id')
+        .eq('page_path', pagePath)
+        .eq('language_code', languageCode)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('seo_hreflang_config')
+          .update({
+            alternate_url: alternateUrl,
+            is_default: isDefault,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('seo_hreflang_config')
+          .insert([{
+            page_path: pagePath,
+            language_code: languageCode,
+            alternate_url: alternateUrl,
+            is_default: isDefault,
+            is_active: true
+          }]);
+
+        if (error) throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error setting hreflang config:', error);
+      return false;
     }
   }
 
@@ -240,7 +437,7 @@ class SEOService {
     };
   }
 
-  updateDocumentHead(metaTags: ReturnType<typeof this.buildMetaTags>) {
+  updateDocumentHead(metaTags: ReturnType<typeof this.buildMetaTags>, hreflangAlternates?: HreflangAlternate[]) {
     document.title = metaTags.title;
 
     this.updateOrCreateMeta('description', metaTags.description);
@@ -267,6 +464,34 @@ class SEOService {
     if (metaTags.googleSiteVerification) {
       this.updateOrCreateMeta('google-site-verification', metaTags.googleSiteVerification);
     }
+
+    if (hreflangAlternates && hreflangAlternates.length > 0) {
+      this.removeExistingHreflangLinks();
+
+      hreflangAlternates.forEach(alternate => {
+        const hreflang = alternate.is_default ? 'x-default' : alternate.language_code;
+        this.createHreflangLink(hreflang, alternate.alternate_url);
+      });
+
+      hreflangAlternates.forEach(alternate => {
+        if (!alternate.is_default) {
+          this.createHreflangLink(alternate.language_code, alternate.alternate_url);
+        }
+      });
+    }
+  }
+
+  private removeExistingHreflangLinks() {
+    const existingLinks = document.querySelectorAll('link[rel="alternate"][hreflang]');
+    existingLinks.forEach(link => link.remove());
+  }
+
+  private createHreflangLink(hreflang: string, href: string) {
+    const link = document.createElement('link');
+    link.setAttribute('rel', 'alternate');
+    link.setAttribute('hreflang', hreflang);
+    link.setAttribute('href', href);
+    document.head.appendChild(link);
   }
 
   private updateOrCreateMeta(name: string, content: string, attributeType: 'name' | 'property' = 'name') {

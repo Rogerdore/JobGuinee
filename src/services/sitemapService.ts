@@ -6,6 +6,29 @@ interface SitemapURL {
   lastmod?: string;
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
   priority?: number;
+  images?: SitemapImage[];
+  videos?: SitemapVideo[];
+  alternates?: SitemapAlternate[];
+}
+
+interface SitemapImage {
+  loc: string;
+  title?: string;
+  caption?: string;
+}
+
+interface SitemapVideo {
+  thumbnail_loc: string;
+  title: string;
+  description: string;
+  content_loc?: string;
+  duration?: number;
+  publication_date?: string;
+}
+
+interface SitemapAlternate {
+  hreflang: string;
+  href: string;
 }
 
 class SitemapService {
@@ -39,7 +62,12 @@ class SitemapService {
       loc: `${this.siteUrl}${page.path}`,
       lastmod: new Date().toISOString().split('T')[0],
       changefreq: page.changefreq,
-      priority: page.priority
+      priority: page.priority,
+      alternates: [
+        { hreflang: 'fr', href: `${this.siteUrl}/fr${page.path}` },
+        { hreflang: 'en', href: `${this.siteUrl}/en${page.path}` },
+        { hreflang: 'x-default', href: `${this.siteUrl}${page.path}` }
+      ]
     }));
   }
 
@@ -177,13 +205,59 @@ class SitemapService {
           urlEntry += `\n    <priority>${url.priority.toFixed(1)}</priority>`;
         }
 
+        if (url.alternates && url.alternates.length > 0) {
+          url.alternates.forEach(alt => {
+            urlEntry += `\n    <xhtml:link rel="alternate" hreflang="${alt.hreflang}" href="${this.escapeXML(alt.href)}" />`;
+          });
+        }
+
+        if (url.images && url.images.length > 0) {
+          url.images.forEach(image => {
+            urlEntry += `\n    <image:image>`;
+            urlEntry += `\n      <image:loc>${this.escapeXML(image.loc)}</image:loc>`;
+            if (image.title) {
+              urlEntry += `\n      <image:title>${this.escapeXML(image.title)}</image:title>`;
+            }
+            if (image.caption) {
+              urlEntry += `\n      <image:caption>${this.escapeXML(image.caption)}</image:caption>`;
+            }
+            urlEntry += `\n    </image:image>`;
+          });
+        }
+
+        if (url.videos && url.videos.length > 0) {
+          url.videos.forEach(video => {
+            urlEntry += `\n    <video:video>`;
+            urlEntry += `\n      <video:thumbnail_loc>${this.escapeXML(video.thumbnail_loc)}</video:thumbnail_loc>`;
+            urlEntry += `\n      <video:title>${this.escapeXML(video.title)}</video:title>`;
+            urlEntry += `\n      <video:description>${this.escapeXML(video.description)}</video:description>`;
+            if (video.content_loc) {
+              urlEntry += `\n      <video:content_loc>${this.escapeXML(video.content_loc)}</video:content_loc>`;
+            }
+            if (video.duration) {
+              urlEntry += `\n      <video:duration>${video.duration}</video:duration>`;
+            }
+            if (video.publication_date) {
+              urlEntry += `\n      <video:publication_date>${video.publication_date}</video:publication_date>`;
+            }
+            urlEntry += `\n    </video:video>`;
+          });
+        }
+
         urlEntry += '\n  </url>';
         return urlEntry;
       })
       .join('\n');
 
+    const namespaces = [
+      'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+      'xmlns:xhtml="http://www.w3.org/1999/xhtml"',
+      'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
+      'xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"'
+    ].join('\n  ');
+
     return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset ${namespaces}>
 ${urlsXML}
 </urlset>`;
   }

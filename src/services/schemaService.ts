@@ -229,6 +229,282 @@ class SchemaService {
     };
   }
 
+  generateLocalBusinessSchema(company: any) {
+    const siteUrl = 'https://jobguinee.com';
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      'name': company.name,
+      'description': company.description,
+      'image': company.logo_url,
+      'url': company.website || `${siteUrl}/company/${company.id}`,
+      'telephone': company.phone,
+      'email': company.email,
+      'address': {
+        '@type': 'PostalAddress',
+        'streetAddress': company.address,
+        'addressLocality': company.city || 'Conakry',
+        'addressRegion': company.region || 'Conakry',
+        'addressCountry': 'GN'
+      },
+      'geo': company.latitude && company.longitude ? {
+        '@type': 'GeoCoordinates',
+        'latitude': company.latitude,
+        'longitude': company.longitude
+      } : undefined,
+      'openingHoursSpecification': company.opening_hours ? {
+        '@type': 'OpeningHoursSpecification',
+        'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        'opens': '08:00',
+        'closes': '17:00'
+      } : undefined,
+      'priceRange': company.price_range,
+      'aggregateRating': company.rating ? {
+        '@type': 'AggregateRating',
+        'ratingValue': company.rating,
+        'reviewCount': company.review_count || 0,
+        'bestRating': 5,
+        'worstRating': 1
+      } : undefined
+    };
+  }
+
+  generateEmployerAggregateRatingSchema(company: any, ratings: any) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      'name': company.name,
+      'aggregateRating': {
+        '@type': 'AggregateRating',
+        'ratingValue': ratings.average_rating,
+        'reviewCount': ratings.total_reviews,
+        'bestRating': 5,
+        'worstRating': 1
+      },
+      'review': ratings.reviews?.map((review: any) => ({
+        '@type': 'Review',
+        'author': {
+          '@type': 'Person',
+          'name': review.author_name || 'Anonymous'
+        },
+        'datePublished': review.created_at,
+        'reviewBody': review.text,
+        'reviewRating': {
+          '@type': 'Rating',
+          'ratingValue': review.rating,
+          'bestRating': 5,
+          'worstRating': 1
+        }
+      }))
+    };
+  }
+
+  generateAggregateOfferSchema(job: any) {
+    if (!job.salary_min || !job.salary_max) return undefined;
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'AggregateOffer',
+      'priceCurrency': 'GNF',
+      'lowPrice': job.salary_min,
+      'highPrice': job.salary_max,
+      'offerCount': 1,
+      'availability': 'https://schema.org/InStock',
+      'priceSpecification': {
+        '@type': 'UnitPriceSpecification',
+        'price': (job.salary_min + job.salary_max) / 2,
+        'priceCurrency': 'GNF',
+        'unitText': 'MONTH'
+      }
+    };
+  }
+
+  generateVideoObjectSchema(video: any) {
+    const siteUrl = 'https://jobguinee.com';
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      'name': video.title,
+      'description': video.description,
+      'thumbnailUrl': video.thumbnail_url,
+      'uploadDate': video.upload_date || video.created_at,
+      'duration': video.duration,
+      'contentUrl': video.url,
+      'embedUrl': video.embed_url,
+      'interactionStatistic': {
+        '@type': 'InteractionCounter',
+        'interactionType': 'https://schema.org/WatchAction',
+        'userInteractionCount': video.view_count || 0
+      },
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'JobGuinée',
+        'logo': {
+          '@type': 'ImageObject',
+          'url': `${siteUrl}/logo.png`
+        }
+      }
+    };
+  }
+
+  generateEventSchema(event: any) {
+    const siteUrl = 'https://jobguinee.com';
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Event',
+      'name': event.title,
+      'description': event.description,
+      'startDate': event.start_date,
+      'endDate': event.end_date,
+      'eventStatus': 'https://schema.org/EventScheduled',
+      'eventAttendanceMode': event.is_online ?
+        'https://schema.org/OnlineEventAttendanceMode' :
+        'https://schema.org/OfflineEventAttendanceMode',
+      'location': event.is_online ? {
+        '@type': 'VirtualLocation',
+        'url': event.online_url
+      } : {
+        '@type': 'Place',
+        'name': event.venue_name,
+        'address': {
+          '@type': 'PostalAddress',
+          'streetAddress': event.address,
+          'addressLocality': event.city || 'Conakry',
+          'addressCountry': 'GN'
+        }
+      },
+      'image': event.image_url,
+      'organizer': {
+        '@type': 'Organization',
+        'name': event.organizer || 'JobGuinée',
+        'url': siteUrl
+      },
+      'offers': event.price || event.is_paid ? {
+        '@type': 'Offer',
+        'price': event.price || 0,
+        'priceCurrency': 'GNF',
+        'availability': 'https://schema.org/InStock',
+        'url': `${siteUrl}/events/${event.id}`,
+        'validFrom': event.registration_start_date
+      } : {
+        '@type': 'Offer',
+        'price': 0,
+        'priceCurrency': 'GNF',
+        'availability': 'https://schema.org/InStock',
+        'url': `${siteUrl}/events/${event.id}`
+      }
+    };
+  }
+
+  generateProductSchema(product: any) {
+    const siteUrl = 'https://jobguinee.com';
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      'name': product.name,
+      'description': product.description,
+      'image': product.image_url,
+      'brand': {
+        '@type': 'Brand',
+        'name': 'JobGuinée'
+      },
+      'offers': {
+        '@type': 'Offer',
+        'price': product.price,
+        'priceCurrency': 'GNF',
+        'availability': product.in_stock ?
+          'https://schema.org/InStock' :
+          'https://schema.org/OutOfStock',
+        'url': `${siteUrl}/products/${product.id}`,
+        'seller': {
+          '@type': 'Organization',
+          'name': 'JobGuinée'
+        }
+      },
+      'aggregateRating': product.rating ? {
+        '@type': 'AggregateRating',
+        'ratingValue': product.rating,
+        'reviewCount': product.review_count || 0,
+        'bestRating': 5,
+        'worstRating': 1
+      } : undefined,
+      'review': product.reviews?.map((review: any) => ({
+        '@type': 'Review',
+        'author': {
+          '@type': 'Person',
+          'name': review.author_name
+        },
+        'datePublished': review.created_at,
+        'reviewBody': review.text,
+        'reviewRating': {
+          '@type': 'Rating',
+          'ratingValue': review.rating,
+          'bestRating': 5,
+          'worstRating': 1
+        }
+      }))
+    };
+  }
+
+  generateReviewSchema(review: any, itemReviewed: any) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Review',
+      'author': {
+        '@type': 'Person',
+        'name': review.author_name || 'Anonymous'
+      },
+      'datePublished': review.created_at,
+      'reviewBody': review.text,
+      'reviewRating': {
+        '@type': 'Rating',
+        'ratingValue': review.rating,
+        'bestRating': 5,
+        'worstRating': 1
+      },
+      'itemReviewed': {
+        '@type': itemReviewed.type || 'Organization',
+        'name': itemReviewed.name
+      }
+    };
+  }
+
+  generateNewsArticleSchema(article: any) {
+    const siteUrl = 'https://jobguinee.com';
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      'headline': article.title,
+      'description': article.excerpt || article.description,
+      'image': article.image_url,
+      'datePublished': article.published_at,
+      'dateModified': article.updated_at,
+      'author': {
+        '@type': 'Person',
+        'name': article.author_name || 'JobGuinée'
+      },
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'JobGuinée',
+        'logo': {
+          '@type': 'ImageObject',
+          'url': `${siteUrl}/logo.png`
+        }
+      },
+      'mainEntityOfPage': {
+        '@type': 'WebPage',
+        '@id': `${siteUrl}/news/${article.slug || article.id}`
+      },
+      'articleSection': article.category,
+      'keywords': article.tags?.join(', ')
+    };
+  }
+
   injectSchemas(schemas: SchemaData[]) {
     const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
     existingScripts.forEach(script => script.remove());
