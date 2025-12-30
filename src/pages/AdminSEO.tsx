@@ -18,6 +18,7 @@ import { seoAnalyticsService } from '../services/seoAnalyticsService';
 import SEOOverviewTab from '../components/admin/seo/SEOOverviewTab';
 import SEOMarketplaceTab from '../components/admin/seo/SEOMarketplaceTab';
 import SEOPerformanceTab from '../components/admin/seo/SEOPerformanceTab';
+import SEOB2BTab from '../components/admin/seo/SEOB2BTab';
 import { supabase } from '../lib/supabase';
 
 interface AdminSEOProps {
@@ -241,14 +242,7 @@ export default function AdminSEO({ onNavigate }: AdminSEOProps) {
                   )}
 
                   {activeTab === 'b2b-seo' && (
-                    <div className="p-6">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO Solutions B2B</h2>
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                        <p className="text-yellow-800">
-                          Module de gestion des pages B2B orientées conversion - En cours de développement
-                        </p>
-                      </div>
-                    </div>
+                    <SEOB2BTab />
                   )}
 
                   {activeTab === 'performance' && (

@@ -71,38 +71,84 @@ export default function B2BSolutions() {
   const seoConfig = (heroSection?.seo_config as any) || {};
 
   useSEO({
-    title: seoConfig.title || 'Solutions B2B RH en Guinée | Recrutement, Externalisation & IA – JobGuinée',
-    description: seoConfig.description || 'Solutions RH B2B complètes : externalisation du recrutement, ATS, matching IA, formation et conseil RH pour entreprises et institutions en Guinée et Afrique de l\'Ouest.',
-    keywords: seoConfig.keywords || 'solutions b2b rh guinée, externalisation recrutement, ATS digital, CVthèque intelligente, formation professionnelle, conseil RH, recrutement minier, recrutement PME, cabinet RH, matching IA recrutement',
+    title: seoConfig.title || 'Solutions B2B RH en Guinée | Externalisation Recrutement, ATS, CVthèque | JobGuinée',
+    description: seoConfig.description || 'Solutions RH B2B professionnelles en Guinée : externalisation complète du recrutement, logiciel ATS nouvelle génération, CVthèque premium, matching IA, formation RH et conseil stratégique. Accompagnement PME, mines, ONG, institutions.',
+    keywords: seoConfig.keywords || 'solutions b2b rh guinée, externalisation recrutement guinée, cabinet recrutement guinée, ATS logiciel guinée, CVthèque premium guinée, recrutement clé en main, mission rh externalisée, recrutement minier guinée, recrutement industriel, conseil rh guinée, formation rh entreprise, matching ia recrutement',
+    canonical: 'https://jobguinee.com/b2b-solutions',
+    ogType: 'website',
     schemas: [
       {
         '@context': 'https://schema.org',
         '@type': 'Organization',
         'name': 'JobGuinée',
         'url': 'https://jobguinee.com',
-        'description': 'Plateforme RH leader en Guinée offrant des solutions B2B de recrutement, formation et conseil RH',
+        'logo': 'https://jobguinee.com/logo.png',
+        'description': 'Leader des solutions RH B2B en Guinée. Externalisation de recrutement, ATS, CVthèque, formation et conseil RH pour entreprises, ONG et institutions.',
         'address': {
           '@type': 'PostalAddress',
-          'addressCountry': 'GN'
+          'addressCountry': 'GN',
+          'addressLocality': 'Conakry',
+          'addressRegion': 'Conakry'
+        },
+        'contactPoint': {
+          '@type': 'ContactPoint',
+          'contactType': 'Service Client B2B',
+          'availableLanguage': ['fr', 'en']
+        },
+        'sameAs': [
+          'https://linkedin.com/company/jobguinee',
+          'https://facebook.com/jobguinee'
+        ]
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        'name': 'Solutions B2B RH JobGuinée',
+        'description': 'Suite complète de solutions RH pour entreprises en Guinée : externalisation recrutement, ATS, CVthèque, matching IA, formations',
+        'brand': {
+          '@type': 'Brand',
+          'name': 'JobGuinée'
         },
         'offers': {
-          '@type': 'Offer',
-          'category': 'Solutions RH B2B'
+          '@type': 'AggregateOffer',
+          'priceCurrency': 'GNF',
+          'availability': 'https://schema.org/InStock',
+          'url': 'https://jobguinee.com/b2b-solutions'
+        },
+        'category': 'Solutions RH Entreprise',
+        'audience': {
+          '@type': 'Audience',
+          'audienceType': 'Entreprises, ONG, Institutions, Cabinets RH'
         }
       },
       {
         '@context': 'https://schema.org',
         '@type': 'Service',
-        'name': 'Solutions B2B RH JobGuinée',
+        'name': 'Externalisation de Recrutement en Guinée',
         'provider': {
           '@type': 'Organization',
           'name': 'JobGuinée'
         },
-        'serviceType': 'Recrutement et Solutions RH',
+        'serviceType': 'RPO - Recruitment Process Outsourcing',
         'areaServed': {
           '@type': 'Country',
           'name': 'Guinée'
-        }
+        },
+        'description': 'Service complet d\'externalisation de recrutement : sourcing, présélection, évaluation, entretiens et recommandations. Expertise marché guinéen.',
+        'termsOfService': 'https://jobguinee.com/terms'
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        'name': 'ATS JobGuinée',
+        'applicationCategory': 'BusinessApplication',
+        'operatingSystem': 'Web',
+        'offers': {
+          '@type': 'Offer',
+          'priceCurrency': 'GNF'
+        },
+        'description': 'Logiciel ATS (Applicant Tracking System) pour gérer vos recrutements en Guinée. Interface intuitive, automatisations IA, analytics.',
+        'featureList': ['Gestion candidatures', 'Matching IA', 'Analytics temps réel', 'Collaboration équipe']
       },
       {
         '@context': 'https://schema.org',
@@ -115,6 +161,49 @@ export default function B2BSolutions() {
             'text': item.answer
           }
         }))
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        'itemListElement': [
+          {
+            '@type': 'ListItem',
+            'position': 1,
+            'name': 'Accueil',
+            'item': 'https://jobguinee.com'
+          },
+          {
+            '@type': 'ListItem',
+            'position': 2,
+            'name': 'Solutions B2B',
+            'item': 'https://jobguinee.com/b2b-solutions'
+          }
+        ]
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        'name': 'JobGuinée',
+        'image': 'https://jobguinee.com/logo.png',
+        'priceRange': 'Sur devis',
+        'address': {
+          '@type': 'PostalAddress',
+          'addressCountry': 'GN',
+          'addressLocality': 'Conakry'
+        },
+        'geo': {
+          '@type': 'GeoCoordinates',
+          'latitude': '9.6412',
+          'longitude': '-13.5784'
+        },
+        'url': 'https://jobguinee.com',
+        'telephone': '+224XXXXXXXXX',
+        'openingHoursSpecification': {
+          '@type': 'OpeningHoursSpecification',
+          'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+          'opens': '08:00',
+          'closes': '18:00'
+        }
       }
     ]
   });
