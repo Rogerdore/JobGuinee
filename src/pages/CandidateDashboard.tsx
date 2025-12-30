@@ -13,6 +13,7 @@ import { candidateApplicationTrackingService } from '../services/candidateApplic
 import { usePendingApplication } from '../hooks/usePendingApplication';
 import ExternalApplicationCTA from '../components/candidate/ExternalApplicationCTA';
 import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
+import { ProtectedPageWrapper } from '../components/common/AccessControlExample';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -485,11 +486,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   useEffect(() => {
     if (!user) {
       onNavigate('login');
-    } else if (profile && profile.user_type !== 'candidate') {
-      alert('Cet espace est réservé aux candidats');
-      onNavigate('home');
     }
-  }, [user, profile]);
+  }, [user]);
 
   if (loading) {
     return (
@@ -510,7 +508,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const aiScore = getAIScore();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <ProtectedPageWrapper
+      area="candidate-dashboard"
+      onNavigate={onNavigate}
+    >
+      <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
@@ -1918,5 +1920,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         />
       )}
     </div>
+    </ProtectedPageWrapper>
   );
 }

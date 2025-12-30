@@ -11,6 +11,7 @@ import AutoCompleteInput from '../forms/AutoCompleteInput';
 import AutoSaveIndicator from '../forms/AutoSaveIndicator';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { supabase } from '../../lib/supabase';
+import AccessRestrictionModal from '../common/AccessRestrictionModal';
 import {
   jobTitleSuggestions,
   companySuggestions,
@@ -44,6 +45,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [logoPreview, setLogoPreview] = useState<string>('');
@@ -328,7 +330,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
   const handleGenerateWithAI = async () => {
     if (!isPremium) {
-      alert('Cette fonctionnalité est réservée aux abonnés Premium. Souscrivez pour débloquer la génération IA !');
+      setShowPremiumModal(true);
       return;
     }
 
@@ -1224,6 +1226,13 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
           </div>
         </div>
       </div>
+
+      <AccessRestrictionModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        restrictionType="premium-only"
+        currentUserType={profile?.user_type}
+      />
     </div>
   );
 }
