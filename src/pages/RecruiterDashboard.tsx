@@ -911,6 +911,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                 <RecentJobsCard
                   jobs={recentJobs}
                   onJobClick={(jobId) => onNavigate('job-detail', jobId)}
+                  onNavigate={onNavigate}
                   loading={loadingDashboard}
                 />
 

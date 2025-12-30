@@ -1,13 +1,15 @@
 import { Briefcase, MapPin, Users, Eye, Calendar } from 'lucide-react';
 import { RecentJob } from '../../services/recruiterDashboardService';
+import TargetedDiffusionBadge from '../campaign/TargetedDiffusionBadge';
 
 interface RecentJobsCardProps {
   jobs: RecentJob[];
   onJobClick: (jobId: string) => void;
+  onNavigate: (path: string) => void;
   loading?: boolean;
 }
 
-export default function RecentJobsCard({ jobs, onJobClick, loading }: RecentJobsCardProps) {
+export default function RecentJobsCard({ jobs, onJobClick, onNavigate, loading }: RecentJobsCardProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published':
@@ -99,6 +101,15 @@ export default function RecentJobsCard({ jobs, onJobClick, loading }: RecentJobs
                 <Calendar className="w-4 h-4" />
                 <span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
               </div>
+            </div>
+
+            <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+              <TargetedDiffusionBadge
+                entityType="job"
+                entityId={job.id}
+                entityStatus={job.status}
+                onNavigate={onNavigate}
+              />
             </div>
           </button>
         ))}
