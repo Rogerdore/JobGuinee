@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CMSProvider } from './contexts/CMSContext';
@@ -6,9 +6,12 @@ import { ToastProvider } from './components/notifications/ToastContainer';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
+import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
 
 const Jobs = lazy(() => import('./pages/Jobs'));
 const JobDetail = lazy(() => import('./pages/JobDetail'));
+const JobMarketplacePage = lazy(() => import('./pages/JobMarketplacePage'));
+const CVthequeTeaserPage = lazy(() => import('./pages/CVthequeTeaserPage'));
 const CandidateDashboard = lazy(() => import('./pages/CandidateDashboard'));
 const RecruiterDashboard = lazy(() => import('./pages/RecruiterDashboard'));
 const TrainerDashboard = lazy(() => import('./pages/TrainerDashboard'));
@@ -55,20 +58,32 @@ const B2BSolutions = lazy(() => import('./pages/B2BSolutions'));
 const AdminB2BManagement = lazy(() => import('./pages/AdminB2BManagement'));
 const DownloadDocumentation = lazy(() => import('./pages/DownloadDocumentation'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'download-documentation';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'download-documentation';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [marketplaceSlug, setMarketplaceSlug] = useState<string>('');
+  const [cvthequeTeaserSlug, setCvthequeTeaserSlug] = useState<string>('');
   const [jobSearchParams, setJobSearchParams] = useState<string>('');
   const [formationSearchParams, setFormationSearchParams] = useState<string>('');
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const { loading } = useAuth();
 
+  useEffect(() => {
+    seoCoreWebVitalsService.initRUM();
+  }, []);
+
   const handleNavigate = (page: string, param?: string) => {
     setCurrentPage(page as Page);
     if (page === 'job-detail' && param) {
       setSelectedJobId(param);
+    }
+    if (page === 'job-marketplace' && param) {
+      setMarketplaceSlug(param);
+    }
+    if (page === 'cvtheque-teaser' && param) {
+      setCvthequeTeaserSlug(param);
     }
     if (page === 'jobs') {
       setJobSearchParams(param || '');
@@ -110,6 +125,8 @@ function AppContent() {
         {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
         {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
         {currentPage === 'job-detail' && <JobDetail jobId={selectedJobId} onNavigate={handleNavigate} />}
+        {currentPage === 'job-marketplace' && <JobMarketplacePage slug={marketplaceSlug} onNavigate={handleNavigate} />}
+        {currentPage === 'cvtheque-teaser' && <CVthequeTeaserPage slug={cvthequeTeaserSlug} onNavigate={handleNavigate} />}
         {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}
         {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
         {currentPage === 'trainer-dashboard' && <TrainerDashboard onNavigate={handleNavigate} />}
