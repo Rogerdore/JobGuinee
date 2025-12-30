@@ -136,7 +136,7 @@ class CVUploadParserService {
   }
 
   /**
-   * Extraction depuis PDF
+   * Extraction depuis PDF avec détection avancée de colonnes et layout
    */
   private async extractFromPDF(file: File): Promise<{
     success: boolean;
@@ -154,10 +154,11 @@ class CVUploadParserService {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
+
+        // Amélioration: détecter la structure à colonnes
+        const items = textContent.items as any[];
+        const structuredText = this.extractStructuredText(items);
+        fullText += structuredText + '\n';
       }
 
       return {
@@ -173,6 +174,105 @@ class CVUploadParserService {
         method: 'pdf'
       };
     }
+  }
+
+  /**
+   * Extraction intelligente de texte avec détection de colonnes
+   * Améliore l'extraction pour CV Canva et designs à colonnes
+   */
+  private extractStructuredText(items: any[]): string {
+    if (!items || items.length === 0) return '';
+
+    // Trier les items par position verticale puis horizontale
+    const sortedItems = [...items].sort((a, b) => {
+      const yDiff = Math.abs(a.transform[5] - b.transform[5]);
+      // Si sur la même ligne (marge de 5 pixels)
+      if (yDiff < 5) {
+        return a.transform[4] - b.transform[4]; // Trier par X
+      }
+      return b.transform[5] - a.transform[5]; // Trier par Y (haut en bas)
+    });
+
+    // Détecter les colonnes
+    const columns = this.detectColumns(sortedItems);
+
+    if (columns.length > 1) {
+      // CV à colonnes - traiter chaque colonne séparément
+      return columns.map(col =>
+        col.map(item => item.str).join(' ')
+      ).join('\n\n');
+    }
+
+    // CV simple - extraction linéaire
+    let currentY = sortedItems[0]?.transform[5] || 0;
+    let currentLine: string[] = [];
+    const lines: string[] = [];
+
+    sortedItems.forEach(item => {
+      const y = item.transform[5];
+      const text = item.str.trim();
+
+      if (!text) return;
+
+      // Nouvelle ligne si changement significatif de Y
+      if (Math.abs(y - currentY) > 5) {
+        if (currentLine.length > 0) {
+          lines.push(currentLine.join(' '));
+          currentLine = [];
+        }
+        currentY = y;
+      }
+
+      currentLine.push(text);
+    });
+
+    if (currentLine.length > 0) {
+      lines.push(currentLine.join(' '));
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Détecter les colonnes dans un PDF
+   * Utile pour CV Canva et designs modernes
+   */
+  private detectColumns(items: any[]): any[][] {
+    if (items.length === 0) return [[]];
+
+    // Analyser les positions X pour détecter les colonnes
+    const xPositions = items.map(item => item.transform[4]);
+    const minX = Math.min(...xPositions);
+    const maxX = Math.max(...xPositions);
+    const width = maxX - minX;
+
+    // Si la largeur est trop petite, pas de colonnes
+    if (width < 200) return [items];
+
+    // Détecter les clusters de positions X
+    const threshold = width / 3; // Seuil pour détecter une nouvelle colonne
+    const columns: any[][] = [];
+    let currentColumn: any[] = [];
+    let currentColumnX = items[0].transform[4];
+
+    items.forEach(item => {
+      const x = item.transform[4];
+
+      // Nouvelle colonne si écart significatif
+      if (Math.abs(x - currentColumnX) > threshold && currentColumn.length > 0) {
+        columns.push(currentColumn);
+        currentColumn = [];
+        currentColumnX = x;
+      }
+
+      currentColumn.push(item);
+    });
+
+    if (currentColumn.length > 0) {
+      columns.push(currentColumn);
+    }
+
+    return columns.length > 1 ? columns : [items];
   }
 
   /**
@@ -267,24 +367,61 @@ class CVUploadParserService {
 
   /**
    * Parser le texte extrait avec l'IA
+   * GRATUIT - Ne consomme AUCUN crédit IA
    */
   private async parseTextWithAI(text: string): Promise<ParsedCVData | null> {
     try {
       const result = await iaConfigService.executeService('ai_cv_parser', {
         cv_text: text
-      });
+      }, { skipCreditConsumption: true });
 
       if (!result.success || !result.data) {
         console.error('AI parsing failed:', result.error);
-        return null;
+        return this.parseTextFallback(text);
       }
 
       // Valider et nettoyer les données
       return this.validateAndCleanParsedData(result.data);
     } catch (error) {
       console.error('Error parsing with AI:', error);
-      return null;
+      return this.parseTextFallback(text);
     }
+  }
+
+  /**
+   * Parsing fallback avec règles heuristiques (sans IA)
+   * Utilisé si l'IA échoue
+   */
+  private parseTextFallback(text: string): ParsedCVData {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+
+    const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+    const phoneRegex = /(\+?[0-9]{2,4}[\s.-]?[0-9]{2,3}[\s.-]?[0-9]{2,3}[\s.-]?[0-9]{2,4})/g;
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+
+    const emails = text.match(emailRegex) || [];
+    const phones = text.match(phoneRegex) || [];
+    const urls = text.match(urlRegex) || [];
+
+    return {
+      full_name: lines[0] || '',
+      title: lines[1] || '',
+      email: emails[0] || '',
+      phone: phones[0] || '',
+      location: '',
+      nationality: '',
+      summary: lines.slice(0, 5).join(' ').substring(0, 200),
+      experiences: [],
+      education: [],
+      skills: [],
+      languages: [],
+      certifications: [],
+      driving_license: [],
+      linkedin_url: urls.find(u => u.includes('linkedin')) || '',
+      portfolio_url: '',
+      github_url: urls.find(u => u.includes('github')) || '',
+      other_urls: urls.filter(u => !u.includes('linkedin') && !u.includes('github'))
+    };
   }
 
   /**

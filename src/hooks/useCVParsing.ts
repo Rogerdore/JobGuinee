@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { cvUploadParserService, CVParseResult, ParsedCVData } from '../services/cvUploadParserService';
-import { useConsumeCredits } from './useCreditService';
 
 export interface CVParsingState {
   isParsing: boolean;
@@ -18,8 +17,6 @@ export function useCVParsing() {
     error: null,
     parsedData: null,
   });
-
-  const { checkSufficient } = useConsumeCredits();
 
   const parseCV = useCallback(async (file: File): Promise<boolean> => {
     try {
@@ -62,16 +59,6 @@ export function useCVParsing() {
         return false;
       }
 
-      // Vérifier les crédits disponibles (coût: 10 crédits pour ai_cv_parser)
-      const creditCheck = await checkSufficient('ai_cv_parser');
-      if (!creditCheck.sufficient) {
-        setState(prev => ({
-          ...prev,
-          error: `Crédits insuffisants pour analyser le CV. Requis: ${creditCheck.required}, Disponible: ${creditCheck.available}`,
-        }));
-        return false;
-      }
-
       // Démarrer le parsing
       setState({
         isParsing: true,
@@ -103,7 +90,7 @@ export function useCVParsing() {
         return false;
       }
 
-      // Succès - les crédits ont déjà été consommés dans iaConfigService
+      // Succès - parsing CV gratuit, aucun crédit consommé
       setState({
         isParsing: false,
         progress: 100,
@@ -124,7 +111,7 @@ export function useCVParsing() {
       });
       return false;
     }
-  }, [checkSufficient]);
+  }, []);
 
   /**
    * Mapper les données parsées vers le format du formulaire
