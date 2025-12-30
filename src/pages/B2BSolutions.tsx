@@ -39,10 +39,41 @@ export default function B2BSolutions() {
     }
   ];
 
+  useEffect(() => {
+    loadPageConfig();
+  }, []);
+
+  const loadPageConfig = async () => {
+    const result = await b2bLeadsService.getPageConfig();
+    if (result.success && result.data) {
+      setPageConfig(result.data);
+    }
+    setIsLoading(false);
+  };
+
+  const getConfigSection = (sectionName: string) => {
+    return pageConfig.find(section => section.section_name === sectionName);
+  };
+
+  const getIcon = (iconName: string) => {
+    const icons: Record<string, any> = {
+      building: Building2,
+      hammer: Hammer,
+      landmark: Landmark,
+      users: Users,
+      school: School,
+      user: User
+    };
+    return icons[iconName] || Building2;
+  };
+
+  const heroSection = getConfigSection('hero');
+  const seoConfig = (heroSection?.seo_config as any) || {};
+
   useSEO({
-    title: 'Solutions B2B RH en Guinée | Recrutement, Externalisation & IA – JobGuinée',
-    description: 'Solutions RH B2B complètes : externalisation du recrutement, ATS, matching IA, formation et conseil RH pour entreprises et institutions en Guinée et Afrique de l\'Ouest.',
-    keywords: 'solutions b2b rh guinée, externalisation recrutement, ATS digital, CVthèque intelligente, formation professionnelle, conseil RH, recrutement minier, recrutement PME, cabinet RH, matching IA recrutement',
+    title: seoConfig.title || 'Solutions B2B RH en Guinée | Recrutement, Externalisation & IA – JobGuinée',
+    description: seoConfig.description || 'Solutions RH B2B complètes : externalisation du recrutement, ATS, matching IA, formation et conseil RH pour entreprises et institutions en Guinée et Afrique de l\'Ouest.',
+    keywords: seoConfig.keywords || 'solutions b2b rh guinée, externalisation recrutement, ATS digital, CVthèque intelligente, formation professionnelle, conseil RH, recrutement minier, recrutement PME, cabinet RH, matching IA recrutement',
     schemas: [
       {
         '@context': 'https://schema.org',
@@ -87,36 +118,6 @@ export default function B2BSolutions() {
       }
     ]
   });
-
-  useEffect(() => {
-    loadPageConfig();
-  }, []);
-
-  const loadPageConfig = async () => {
-    const result = await b2bLeadsService.getPageConfig();
-    if (result.success && result.data) {
-      setPageConfig(result.data);
-    }
-    setIsLoading(false);
-  };
-
-  const getConfigSection = (sectionName: string) => {
-    return pageConfig.find(section => section.section_name === sectionName);
-  };
-
-  const getIcon = (iconName: string) => {
-    const icons: Record<string, any> = {
-      building: Building2,
-      hammer: Hammer,
-      landmark: Landmark,
-      users: Users,
-      school: School,
-      user: User
-    };
-    return icons[iconName] || Building2;
-  };
-
-  const heroSection = getConfigSection('hero');
   const targetAudienceSection = getConfigSection('target_audience');
   const outsourcingSection = getConfigSection('outsourcing');
   const digitalSolutionsSection = getConfigSection('digital_solutions');

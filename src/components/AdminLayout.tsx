@@ -164,6 +164,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               </button>
 
               <button
+                onClick={() => onNavigate('admin-b2b-seo-config')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-orange-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Globe className="w-4 h-4" />
+                <span>SEO B2B</span>
+              </button>
+
+              <button
                 onClick={() => onNavigate('home')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 neo-clay-button rounded-xl transition hover:shadow-md"
               >
