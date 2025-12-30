@@ -57,9 +57,10 @@ const AdminJobModeration = lazy(() => import('./pages/AdminJobModeration'));
 const B2BSolutions = lazy(() => import('./pages/B2BSolutions'));
 const AdminB2BManagement = lazy(() => import('./pages/AdminB2BManagement'));
 const AdminB2BSeoConfig = lazy(() => import('./pages/AdminB2BSeoConfig'));
+const AdminSEOLandingPages = lazy(() => import('./pages/AdminSEOLandingPages'));
 const DownloadDocumentation = lazy(() => import('./pages/DownloadDocumentation'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'download-documentation';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -173,6 +174,7 @@ function AppContent() {
         {currentPage === 'b2b-solutions' && <B2BSolutions />}
         {currentPage === 'admin-b2b-management' && <AdminB2BManagement />}
         {currentPage === 'admin-b2b-seo-config' && <AdminB2BSeoConfig />}
+        {currentPage === 'admin-seo-landing-pages' && <AdminSEOLandingPages />}
         {currentPage === 'download-documentation' && <DownloadDocumentation />}
       </Suspense>
     </Layout>

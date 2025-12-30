@@ -1,23 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, Mail, Phone, User, MessageSquare, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import { b2bLeadsService, B2BLead } from '../../services/b2bLeadsService';
+import { b2bPipelineService } from '../../services/b2bPipelineService';
+import { seoLandingPagesService } from '../../services/seoLandingPagesService';
 
 interface B2BLeadFormProps {
   onSuccess?: () => void;
+  sourcePage?: string;
+  landingPageId?: string;
+  prefilledData?: {
+    primary_need?: string;
+    message?: string;
+  };
 }
 
-export default function B2BLeadForm({ onSuccess }: B2BLeadFormProps) {
+export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, prefilledData }: B2BLeadFormProps) {
   const [formData, setFormData] = useState({
     organization_name: '',
     organization_type: '' as B2BLead['organization_type'],
     sector: '',
-    primary_need: '' as B2BLead['primary_need'],
+    primary_need: (prefilledData?.primary_need as B2BLead['primary_need']) || ('' as B2BLead['primary_need']),
     urgency: 'normale' as B2BLead['urgency'],
     contact_name: '',
     contact_email: '',
     contact_phone: '',
-    message: ''
+    message: prefilledData?.message || ''
   });
+
+  // Track session for conversion tracking
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random()}`);
+
+  useEffect(() => {
+    // Track landing on form (conversion funnel)
+    if (landingPageId) {
+      seoLandingPagesService.trackConversion({
+        session_id: sessionId,
+        landing_page_id: landingPageId,
+        landing_page_slug: sourcePage || window.location.pathname,
+        entry_url: window.location.href,
+        pages_visited: [window.location.pathname],
+        converted: false
+      });
+    }
+  }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -86,9 +111,37 @@ export default function B2BLeadForm({ onSuccess }: B2BLeadFormProps) {
     setSubmitStatus('idle');
     setErrorMessage('');
 
+    // 1. Create lead
     const result = await b2bLeadsService.createLead(formData);
 
-    if (result.success) {
+    if (result.success && result.data) {
+      // 2. Create pipeline entry with SEO tracking
+      await b2bPipelineService.createFromLead(result.data.id!, {
+        source_page: sourcePage || window.location.pathname,
+        source_type: landingPageId ? 'seo' : 'direct',
+        landing_page_id: landingPageId,
+        utm_params: {
+          utm_source: new URLSearchParams(window.location.search).get('utm_source'),
+          utm_medium: new URLSearchParams(window.location.search).get('utm_medium'),
+          utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign')
+        }
+      });
+
+      // 3. Track conversion
+      if (landingPageId) {
+        await seoLandingPagesService.trackConversion({
+          session_id: sessionId,
+          landing_page_id: landingPageId,
+          landing_page_slug: sourcePage || window.location.pathname,
+          entry_url: window.location.href,
+          pages_visited: [window.location.pathname],
+          converted: true,
+          conversion_type: 'lead_form',
+          lead_id: result.data.id,
+          converted_at: new Date().toISOString()
+        });
+      }
+
       setSubmitStatus('success');
       setFormData({
         organization_name: '',
@@ -101,6 +154,7 @@ export default function B2BLeadForm({ onSuccess }: B2BLeadFormProps) {
         contact_phone: '',
         message: ''
       });
+
       if (onSuccess) {
         setTimeout(() => onSuccess(), 2000);
       }
