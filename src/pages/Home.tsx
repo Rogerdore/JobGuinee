@@ -124,6 +124,12 @@ export default function Home({ onNavigate }: HomeProps) {
   const handleCreateProfile = () => {
     if (user && profile?.user_type === 'candidate') {
       onNavigate('candidate-dashboard');
+    } else if (user && profile?.user_type === 'recruiter') {
+      onNavigate('recruiter-dashboard');
+    } else if (user && profile?.user_type === 'trainer') {
+      onNavigate('trainer-dashboard');
+    } else if (user && profile?.user_type === 'admin') {
+      onNavigate('admin');
     } else if (user) {
       onNavigate('candidate-dashboard');
     } else {

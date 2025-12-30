@@ -17,16 +17,32 @@ export function ProtectedPageWrapper({
 }: ProtectedPageWrapperProps) {
   const {
     hasAccess,
+    checkAccess,
     showRestrictionModal,
     restrictionType,
     closeModal,
     currentUserType
   } = useAccessControl(area);
 
+  const [showModal, setShowModal] = React.useState(false);
+  const [localRestrictionType, setLocalRestrictionType] = React.useState<AccessRestrictionType>('candidate-only');
+
   React.useEffect(() => {
     if (!hasAccess) {
+      const result = checkAccess();
+      if (result.restrictionType) {
+        setLocalRestrictionType(result.restrictionType);
+        setShowModal(true);
+      }
     }
   }, [hasAccess]);
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    if (onNavigate) {
+      onNavigate('home');
+    }
+  };
 
   if (!hasAccess) {
     return (
@@ -46,9 +62,9 @@ export function ProtectedPageWrapper({
         )}
 
         <AccessRestrictionModal
-          isOpen={showRestrictionModal}
-          onClose={closeModal}
-          restrictionType={restrictionType}
+          isOpen={showModal}
+          onClose={handleCloseModal}
+          restrictionType={localRestrictionType}
           currentUserType={currentUserType}
           onNavigate={onNavigate}
         />
