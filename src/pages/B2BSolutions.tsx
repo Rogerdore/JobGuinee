@@ -3,7 +3,7 @@ import {
   Building2, Users, Landmark, Briefcase, GraduationCap, User,
   CheckCircle2, Sparkles, BarChart3, Database, FileText, TrendingUp,
   Award, Shield, Zap, Target, ArrowRight, Hammer, School, HelpCircle,
-  ChevronDown, ChevronUp, Cpu, Clock, Globe, UserCheck
+  ChevronDown, ChevronUp, Cpu, Clock, Globe, UserCheck, Phone, MessageCircle
 } from 'lucide-react';
 import { b2bLeadsService, B2BPageConfig } from '../services/b2bLeadsService';
 import B2BLeadForm from '../components/b2b/B2BLeadForm';
@@ -190,6 +190,60 @@ export default function B2BSolutions() {
             </div>
           </div>
         </section>
+
+      {/* Contact Admin Section - Distinct & Highlighted */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#FF8C00] to-[#FF8C00]/80">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              Besoin d'un accompagnement personnalisé ?
+            </h3>
+            <p className="text-white/90 text-lg">
+              Contactez directement notre équipe pour discuter de vos besoins RH
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <a
+              href="https://wa.me/224XXXXXXXXX"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition p-8 flex items-center gap-6"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition">
+                <MessageCircle className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold text-gray-600 mb-1">WhatsApp Admin</p>
+                <p className="text-2xl font-bold text-gray-900">+224 XXX XX XX XX</p>
+                <p className="text-sm text-gray-600 mt-1">Réponse rapide sous 1h</p>
+              </div>
+              <ArrowRight className="w-6 h-6 text-green-600 group-hover:translate-x-1 transition" />
+            </a>
+
+            <a
+              href="tel:+224XXXXXXXXX"
+              className="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition p-8 flex items-center gap-6"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition">
+                <Phone className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold text-gray-600 mb-1">Téléphone Admin</p>
+                <p className="text-2xl font-bold text-gray-900">+224 XXX XX XX XX</p>
+                <p className="text-sm text-gray-600 mt-1">Du lundi au vendredi, 8h-18h</p>
+              </div>
+              <ArrowRight className="w-6 h-6 text-blue-600 group-hover:translate-x-1 transition" />
+            </a>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-white/90 text-sm">
+              Ou remplissez le formulaire ci-dessous pour être recontacté sous 24h
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Target Audience Section - SEO Enhanced */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">

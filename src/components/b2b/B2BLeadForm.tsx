@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Building2, Mail, Phone, User, MessageSquare, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Building2, Mail, Phone, User, MessageSquare, Send, CheckCircle2, AlertCircle, Upload, DollarSign, Briefcase, Users as UsersIcon } from 'lucide-react';
 import { b2bLeadsService, B2BLead } from '../../services/b2bLeadsService';
 import { b2bPipelineService } from '../../services/b2bPipelineService';
 import { seoLandingPagesService } from '../../services/seoLandingPagesService';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface B2BLeadFormProps {
   onSuccess?: () => void;
@@ -15,6 +16,8 @@ interface B2BLeadFormProps {
 }
 
 export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, prefilledData }: B2BLeadFormProps) {
+  const { user, profile } = useAuth();
+
   const [formData, setFormData] = useState({
     organization_name: '',
     organization_type: '' as B2BLead['organization_type'],
@@ -24,11 +27,33 @@ export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, pref
     contact_name: '',
     contact_email: '',
     contact_phone: '',
-    message: prefilledData?.message || ''
+    message: prefilledData?.message || '',
+    mission_type: '',
+    positions_count: 1,
+    seniority_level: '',
+    estimated_budget: '',
+    budget_currency: 'GNF' as string,
+    preferred_contact_method: 'email',
+    preferred_contact_time: ''
   });
+
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   // Track session for conversion tracking
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random()}`);
+
+  // Auto-fill if user is logged in as recruiter
+  useEffect(() => {
+    if (user && profile && profile.user_type === 'recruiter') {
+      setFormData(prev => ({
+        ...prev,
+        organization_name: (profile as any).company_name || '',
+        contact_name: profile.full_name || '',
+        contact_email: user.email || '',
+        contact_phone: (profile as any).phone || ''
+      }));
+    }
+  }, [user, profile]);
 
   useEffect(() => {
     // Track landing on form (conversion funnel)
@@ -75,6 +100,32 @@ export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, pref
     { value: 'planifie', label: 'Planifié (ultérieur)' }
   ];
 
+  const missionTypes = [
+    { value: 'recrutement_poste_unique', label: 'Recrutement d\'un poste unique' },
+    { value: 'recrutement_multiple', label: 'Recrutement de plusieurs postes' },
+    { value: 'chasse_tete', label: 'Chasse de têtes' },
+    { value: 'evaluation_candidats', label: 'Évaluation de candidats' },
+    { value: 'interim_management', label: 'Intérim management' },
+    { value: 'audit_rh', label: 'Audit RH' },
+    { value: 'autre', label: 'Autre mission' }
+  ];
+
+  const seniorityLevels = [
+    { value: 'junior', label: 'Junior (0-3 ans)' },
+    { value: 'intermediaire', label: 'Intermédiaire (3-7 ans)' },
+    { value: 'senior', label: 'Senior (7-15 ans)' },
+    { value: 'expert', label: 'Expert (15+ ans)' },
+    { value: 'cadre', label: 'Cadre / Manager' },
+    { value: 'direction', label: 'Direction / Executive' }
+  ];
+
+  const contactMethods = [
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Téléphone' },
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'any', label: 'Tous moyens' }
+  ];
+
   const sectors = [
     'Mines & Ressources naturelles',
     'Banque & Finance',
@@ -96,6 +147,17 @@ export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, pref
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setUploadedFiles(prev => [...prev, ...filesArray]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
