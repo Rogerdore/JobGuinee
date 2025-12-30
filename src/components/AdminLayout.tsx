@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle, Building2 } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle, Building2, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -81,6 +81,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <FileText className="w-4 h-4" />
                 <span>Templates IA</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-email-templates')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Templates Emails</span>
               </button>
 
               <button

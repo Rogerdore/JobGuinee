@@ -19,9 +19,90 @@ interface EmailParams {
 
 class ExternalApplicationEmailService {
   /**
+   * Récupère le template actif depuis la base de données
+   */
+  private async getActiveTemplate() {
+    try {
+      const { data, error } = await supabase
+        .from('external_application_email_templates')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        const { data: defaultTemplate } = await supabase
+          .from('external_application_email_templates')
+          .select('*')
+          .eq('template_type', 'standard')
+          .maybeSingle();
+
+        return defaultTemplate;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching template:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Remplace les variables dans un template
+   */
+  private replaceVariables(template: string, variables: Record<string, any>): string {
+    let result = template;
+
+    Object.entries(variables).forEach(([key, value]) => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      result = result.replace(regex, value || '');
+    });
+
+    result = result.replace(/{{#if\s+(\w+)}}(.*?){{\/if}}/gs, (match, varName, content) => {
+      return variables[varName] ? content : '';
+    });
+
+    return result;
+  }
+
+  /**
    * Génère le contenu de l'email de candidature
    */
-  generateApplicationEmail(params: EmailParams): { subject: string; body: string } {
+  async generateApplicationEmail(params: EmailParams): Promise<{ subject: string; body: string }> {
+    const template = await this.getActiveTemplate();
+
+    if (!template) {
+      return this.generateFallbackEmail(params);
+    }
+
+    const profileURL = publicProfileTokenService.getPublicProfileURL(params.publicProfileToken);
+
+    const variables = {
+      candidate_name: params.candidateName,
+      candidate_email: params.candidateEmail,
+      candidate_phone: params.candidatePhone || '',
+      job_title: params.jobTitle,
+      company_name: params.companyName,
+      recruiter_name: params.recruiterName || '',
+      profile_url: profileURL,
+      platform_url: window.location.origin,
+      custom_message: params.customMessage || '',
+      has_cv: params.hasCV,
+      has_cover_letter: params.hasCoverLetter,
+      has_other_documents: params.hasOtherDocuments
+    };
+
+    const subject = this.replaceVariables(template.subject_template, variables);
+    const body = this.replaceVariables(template.body_template, variables);
+
+    return { subject, body };
+  }
+
+  /**
+   * Email de secours si pas de template
+   */
+  private generateFallbackEmail(params: EmailParams): { subject: string; body: string } {
     const profileURL = publicProfileTokenService.getPublicProfileURL(params.publicProfileToken);
 
     const subject = `Candidature – ${params.jobTitle} | ${params.candidateName}`;
@@ -197,7 +278,7 @@ ${window.location.origin}
       const profile = application.profiles as any;
       const candidateProfile = application.candidate_profiles as any;
 
-      const emailContent = this.generateApplicationEmail({
+      const emailContent = await this.generateApplicationEmail({
         applicationId,
         candidateName: profile.full_name,
         candidateEmail: profile.email,
