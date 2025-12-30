@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft,
   FileText, Users, GraduationCap, Globe, Mail, CheckCircle2,
-  Clock, Tag, Languages, X, BookmarkPlus
+  Clock, Tag, Languages, X, BookmarkPlus, Bookmark
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
@@ -12,6 +12,7 @@ import CompanyLogo from '../components/common/CompanyLogo';
 import AccessRestrictionModal from '../components/common/AccessRestrictionModal';
 import AuthRequiredModal from '../components/common/AuthRequiredModal';
 import ApplicationSuccessModal from '../components/common/ApplicationSuccessModal';
+import { useSavedJobs } from '../hooks/useSavedJobs';
 
 interface JobDetailProps {
   jobId: string;
@@ -31,7 +32,8 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const [nextSteps, setNextSteps] = useState<string[]>([]);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [profileCompletionPercentage, setProfileCompletionPercentage] = useState(0);
-  const [isSaved, setIsSaved] = useState(false);
+
+  const { isSaved, loading: savingJob, toggleSave } = useSavedJobs(jobId);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
@@ -146,14 +148,18 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     setShowApplicationModal(true);
   };
 
-  const handleSaveJob = () => {
+  const handleSaveJob = async () => {
     if (!user) {
       setAuthModalContext('save');
       setShowAuthModal(true);
       return;
     }
 
-    setIsSaved(!isSaved);
+    try {
+      await toggleSave();
+    } catch (error) {
+      console.error('Error toggling saved job:', error);
+    }
   };
 
   const handleApplicationSuccess = (appRef: string, steps: string[]) => {
@@ -507,13 +513,20 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     </button>
                     <button
                       onClick={handleSaveJob}
+                      disabled={savingJob}
                       className={`w-full py-3 border-2 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${
                         isSaved
                           ? 'bg-green-50 border-green-500 text-green-700'
                           : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
+                      } ${savingJob ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <BookmarkPlus className="w-5 h-5" />
+                      {savingJob ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+                      ) : isSaved ? (
+                        <Bookmark className="w-5 h-5 fill-current" />
+                      ) : (
+                        <BookmarkPlus className="w-5 h-5" />
+                      )}
                       {isSaved ? 'Offre enregistrée' : 'Enregistrer cette offre'}
                     </button>
                   </div>
