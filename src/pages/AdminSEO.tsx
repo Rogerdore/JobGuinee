@@ -3,7 +3,8 @@ import {
   Settings, Search, Link, BarChart3, FileText, Globe, Map,
   Save, RefreshCw, Download, TrendingUp, CheckCircle, AlertCircle,
   ArrowUp, ArrowDown, Minus, Activity, Eye, Zap, Brain, Award,
-  Lightbulb, Target, Sparkles, ExternalLink, Shield, AlertTriangle
+  Lightbulb, Target, Sparkles, ExternalLink, Shield, AlertTriangle,
+  LayoutDashboard, Briefcase, Users, Building2
 } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import { seoService, SEOConfig, SEOPageMeta } from '../services/seoService';
@@ -14,16 +15,19 @@ import { seoInternalLinkingService } from '../services/seoInternalLinkingService
 import { seoScoringService } from '../services/seoScoringService';
 import { seoExternalLinkingService } from '../services/seoExternalLinkingService';
 import { seoAnalyticsService } from '../services/seoAnalyticsService';
+import SEOOverviewTab from '../components/admin/seo/SEOOverviewTab';
+import SEOMarketplaceTab from '../components/admin/seo/SEOMarketplaceTab';
+import SEOPerformanceTab from '../components/admin/seo/SEOPerformanceTab';
 import { supabase } from '../lib/supabase';
 
 interface AdminSEOProps {
   onNavigate: (page: string) => void;
 }
 
-type Tab = 'config' | 'pages' | 'keywords' | 'generator' | 'sitemap' | 'analytics' | 'logs' | 'ai-content' | 'scoring' | 'links' | 'external-links' | 'quick-wins';
+type Tab = 'overview' | 'config' | 'pages' | 'marketplace' | 'cvtheque-seo' | 'b2b-seo' | 'performance' | 'keywords' | 'generator' | 'sitemap' | 'analytics' | 'logs' | 'ai-content' | 'scoring' | 'links' | 'external-links' | 'quick-wins';
 
 export default function AdminSEO({ onNavigate }: AdminSEOProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('config');
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [config, setConfig] = useState<SEOConfig | null>(null);
   const [pages, setPages] = useState<SEOPageMeta[]>([]);
   const [keywords, setKeywords] = useState<any[]>([]);
@@ -135,8 +139,13 @@ export default function AdminSEO({ onNavigate }: AdminSEOProps) {
   };
 
   const tabs = [
+    { id: 'overview' as Tab, label: 'Vue Globale', icon: LayoutDashboard, badge: 'Phase 2' },
     { id: 'config' as Tab, label: 'Configuration', icon: Settings },
-    { id: 'pages' as Tab, label: 'Pages SEO', icon: FileText },
+    { id: 'pages' as Tab, label: 'Pages & Méta', icon: FileText },
+    { id: 'marketplace' as Tab, label: 'SEO Marketplace', icon: Briefcase, badge: 'Phase 2' },
+    { id: 'cvtheque-seo' as Tab, label: 'SEO CVthèque', icon: Users, badge: 'Phase 2' },
+    { id: 'b2b-seo' as Tab, label: 'SEO B2B', icon: Building2, badge: 'Phase 2' },
+    { id: 'performance' as Tab, label: 'Performance & Mobile', icon: Activity, badge: 'Phase 2' },
     { id: 'keywords' as Tab, label: 'Mots-clés', icon: Search },
     { id: 'generator' as Tab, label: 'Générateur', icon: RefreshCw },
     { id: 'sitemap' as Tab, label: 'Sitemap', icon: Map },
@@ -156,13 +165,13 @@ export default function AdminSEO({ onNavigate }: AdminSEOProps) {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
               <Globe className="w-8 h-8 text-blue-600" />
-              Système SEO - Phase 3
-              <span className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-sm rounded-full font-semibold">
-                IA & Intelligence
+              Centre de Pilotage SEO
+              <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-green-100 text-blue-800 text-sm rounded-full font-semibold">
+                Phase 2 Active
               </span>
             </h1>
             <p className="text-gray-600">
-              IA sémantique, Scoring avancé, Maillage intelligent et Optimisation continue
+              Marketplace, CVthèque, B2B, Performance & IA Sémantique - Dominez le référencement RH en Afrique
             </p>
           </div>
 
@@ -212,6 +221,40 @@ export default function AdminSEO({ onNavigate }: AdminSEOProps) {
                 </div>
               ) : (
                 <>
+                  {activeTab === 'overview' && (
+                    <SEOOverviewTab onNavigate={(tab) => setActiveTab(tab as Tab)} />
+                  )}
+
+                  {activeTab === 'marketplace' && (
+                    <SEOMarketplaceTab />
+                  )}
+
+                  {activeTab === 'cvtheque-seo' && (
+                    <div className="p-6">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO CVthèque</h2>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                        <p className="text-yellow-800">
+                          Module de gestion des pages teaser CVthèque anonymisées - En cours de développement
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'b2b-seo' && (
+                    <div className="p-6">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO Solutions B2B</h2>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                        <p className="text-yellow-800">
+                          Module de gestion des pages B2B orientées conversion - En cours de développement
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'performance' && (
+                    <SEOPerformanceTab />
+                  )}
+
                   {activeTab === 'config' && config && (
                     <ConfigTab config={config} setConfig={setConfig} onSave={saveConfig} saving={saving} />
                   )}
