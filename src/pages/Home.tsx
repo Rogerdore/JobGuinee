@@ -570,20 +570,16 @@ export default function Home({ onNavigate }: HomeProps) {
                 ))}
               </ul>
 
-              <button
-                onClick={handleCreateProfile}
-                className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
-              >
-                {user && profile?.user_type === 'candidate'
-                  ? 'Accéder à mon espace candidat'
-                  : user && profile?.user_type === 'recruiter'
-                  ? 'Accéder à mon espace recruteur'
-                  : user && profile?.user_type === 'trainer'
-                  ? 'Accéder à mon espace formateur'
-                  : user && profile?.user_type === 'admin'
-                  ? 'Accéder au panel admin'
-                  : 'Créer mon profil gratuitement'}
-              </button>
+              {(!user || profile?.user_type === 'candidate') && (
+                <button
+                  onClick={handleCreateProfile}
+                  className="w-full py-4 bg-[#FF8C00] hover:bg-[#e67e00] text-white font-semibold rounded-xl transition shadow-lg"
+                >
+                  {user && profile?.user_type === 'candidate'
+                    ? 'Accéder à mon espace candidat'
+                    : 'Créer mon profil gratuitement'}
+                </button>
+              )}
             </div>
 
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-8 border border-white border-opacity-20">
@@ -614,16 +610,22 @@ export default function Home({ onNavigate }: HomeProps) {
 
               <button
                 onClick={() => {
-                  handleRecruiterNavigation({
-                    user,
-                    profile,
-                    onNavigate,
-                    onShowModal: () => setShowRecruiterLoginModal(true),
-                  });
+                  if (user && profile?.user_type === 'recruiter') {
+                    onNavigate('recruiter-dashboard');
+                  } else {
+                    handleRecruiterNavigation({
+                      user,
+                      profile,
+                      onNavigate,
+                      onShowModal: () => setShowRecruiterLoginModal(true),
+                    });
+                  }
                 }}
                 className="w-full py-4 bg-white hover:bg-gray-100 text-[#0E2F56] font-semibold rounded-xl transition shadow-lg"
               >
-                Publier une annonce maintenant
+                {user && profile?.user_type === 'recruiter'
+                  ? 'Accéder à mon espace recruteur'
+                  : 'Publier une annonce maintenant'}
               </button>
             </div>
           </div>
