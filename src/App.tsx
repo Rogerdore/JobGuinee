@@ -68,8 +68,12 @@ const AdminEmailTemplates = lazy(() => import('./pages/AdminEmailTemplates'));
 const CampaignCreate = lazy(() => import('./pages/CampaignCreate'));
 const AdminCampaignPayments = lazy(() => import('./pages/AdminCampaignPayments'));
 const AdminDiffusionSettings = lazy(() => import('./pages/AdminDiffusionSettings'));
+const AdminCommunications = lazy(() => import('./pages/AdminCommunications'));
+const AdminCommunicationCreate = lazy(() => import('./pages/AdminCommunicationCreate'));
+const AdminCommunicationTemplates = lazy(() => import('./pages/AdminCommunicationTemplates'));
+const AdminCommunicationLogs = lazy(() => import('./pages/AdminCommunicationLogs'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -198,6 +202,10 @@ function AppContent() {
         {currentPage === 'campaign-create' && <CampaignCreate onNavigate={handleNavigate} />}
         {currentPage === 'admin-campaign-payments' && <AdminCampaignPayments />}
         {currentPage === 'admin-diffusion-settings' && <AdminDiffusionSettings />}
+        {currentPage === 'admin-communications' && <AdminCommunications onNavigate={handleNavigate} />}
+        {currentPage === 'admin-communication-create' && <AdminCommunicationCreate onNavigate={handleNavigate} />}
+        {currentPage === 'admin-communication-templates' && <AdminCommunicationTemplates onNavigate={handleNavigate} />}
+        {currentPage === 'admin-communication-logs' && <AdminCommunicationLogs onNavigate={handleNavigate} />}
       </Suspense>
     </Layout>
   );

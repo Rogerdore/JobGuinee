@@ -124,6 +124,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               </button>
 
               <button
+                onClick={() => onNavigate('admin-communications')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Communications</span>
+              </button>
+
+              <button
                 onClick={() => onNavigate('admin-profile-purchases')}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-teal-700 neo-clay-button rounded-xl transition hover:shadow-md"
               >
