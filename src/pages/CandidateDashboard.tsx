@@ -13,6 +13,7 @@ import { candidateApplicationTrackingService } from '../services/candidateApplic
 import { usePendingApplication } from '../hooks/usePendingApplication';
 import ExternalApplicationCTA from '../components/candidate/ExternalApplicationCTA';
 import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
+import ProfileProgressBar from '../components/candidate/ProfileProgressBar';
 import { ProtectedPageWrapper } from '../components/common/AccessControlExample';
 
 interface CandidateDashboardProps {
@@ -614,10 +615,16 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           <div className="p-6">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
+                <ProfileProgressBar
+                  candidateProfileId={candidateProfile?.id}
+                  onNavigate={(section) => setActiveTab('profile')}
+                  compact={false}
+                />
+
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">Complétez votre profil</h3>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Complétion rapide</h3>
                       <p className="text-sm text-gray-600 mb-3">Votre profil est complété à <span className="font-bold text-orange-600">{profileCompletion}%</span></p>
                       <ProfileQualityBadge completion={profileCompletion} variant="compact" />
                     </div>

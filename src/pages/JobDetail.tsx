@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft,
   FileText, Users, GraduationCap, Globe, Mail, CheckCircle2,
-  Clock, Tag, Languages, X
+  Clock, Tag, Languages, X, BookmarkPlus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
@@ -10,6 +10,8 @@ import { sampleJobs } from '../utils/sampleJobsData';
 import JobApplicationModal from '../components/candidate/JobApplicationModal';
 import CompanyLogo from '../components/common/CompanyLogo';
 import AccessRestrictionModal from '../components/common/AccessRestrictionModal';
+import AuthRequiredModal from '../components/common/AuthRequiredModal';
+import ApplicationSuccessModal from '../components/common/ApplicationSuccessModal';
 
 interface JobDetailProps {
   jobId: string;
@@ -23,9 +25,13 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const [hasApplied, setHasApplied] = useState(false);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalContext, setAuthModalContext] = useState<'apply' | 'save'>('apply');
   const [applicationReference, setApplicationReference] = useState('');
   const [nextSteps, setNextSteps] = useState<string[]>([]);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [profileCompletionPercentage, setProfileCompletionPercentage] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
@@ -35,6 +41,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     if (user) {
       trackJobView();
       checkIfApplied();
+      loadProfileCompletion();
     }
   }, [jobId, user]);
 
@@ -110,9 +117,24 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     setHasApplied(!!data);
   };
 
+  const loadProfileCompletion = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('candidate_profiles')
+      .select('profile_completion_percentage')
+      .eq('profile_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      setProfileCompletionPercentage(data.profile_completion_percentage || 0);
+    }
+  };
+
   const handleApplyClick = () => {
     if (!user) {
-      onNavigate('login');
+      setAuthModalContext('apply');
+      setShowAuthModal(true);
       return;
     }
 
@@ -122,6 +144,16 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     }
 
     setShowApplicationModal(true);
+  };
+
+  const handleSaveJob = () => {
+    if (!user) {
+      setAuthModalContext('save');
+      setShowAuthModal(true);
+      return;
+    }
+
+    setIsSaved(!isSaved);
   };
 
   const handleApplicationSuccess = (appRef: string, steps: string[]) => {
@@ -466,12 +498,25 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleApplyClick}
-                    className="w-full py-5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg text-lg"
-                  >
-                    Postuler maintenant
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleApplyClick}
+                      className="w-full py-5 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition shadow-lg text-lg"
+                    >
+                      Postuler maintenant
+                    </button>
+                    <button
+                      onClick={handleSaveJob}
+                      className={`w-full py-3 border-2 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${
+                        isSaved
+                          ? 'bg-green-50 border-green-500 text-green-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <BookmarkPlus className="w-5 h-5" />
+                      {isSaved ? 'Offre enregistrée' : 'Enregistrer cette offre'}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -479,91 +524,36 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
         </div>
       </div>
 
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <CheckCircle2 className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Candidature envoyée !
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+      <ApplicationSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onCompleteProfile={() => {
+          setShowSuccessModal(false);
+          onNavigate('candidate-profile-form');
+        }}
+        onViewMoreJobs={() => {
+          setShowSuccessModal(false);
+          onNavigate('jobs');
+        }}
+        jobTitle={job?.title}
+        applicationReference={applicationReference}
+        profileCompletionPercentage={profileCompletionPercentage}
+      />
 
-              <div className="space-y-6">
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-blue-900 mb-1">
-                        Référence de candidature
-                      </p>
-                      <p className="text-2xl font-mono font-bold text-blue-700">
-                        {applicationReference}
-                      </p>
-                      <p className="text-sm text-blue-700 mt-2">
-                        Conservez précieusement ce numéro pour suivre votre candidature
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 mr-2" />
-                    Prochaines étapes
-                  </h3>
-                  <ul className="space-y-2">
-                    {nextSteps.map((step, index) => (
-                      <li key={index} className="flex items-start space-x-3">
-                        <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-sm font-semibold">
-                          {index + 1}
-                        </span>
-                        <span className="text-gray-700 flex-1">{step}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800">
-                    <Mail className="w-4 h-4 inline mr-2" />
-                    Un email de confirmation vous a été envoyé avec toutes les informations importantes.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => onNavigate('candidate-dashboard')}
-                  className="flex-1 px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
-                >
-                  Voir mes candidatures
-                </button>
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    onNavigate('jobs');
-                  }}
-                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition"
-                >
-                  Autres offres
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={() => {
+          setShowAuthModal(false);
+          onNavigate('login');
+        }}
+        onSignup={() => {
+          setShowAuthModal(false);
+          onNavigate('signup');
+        }}
+        context={authModalContext}
+        jobTitle={job?.title}
+      />
 
       {showApplicationModal && user && job && (
         <JobApplicationModal

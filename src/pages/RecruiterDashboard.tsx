@@ -38,6 +38,7 @@ import RecruiterMessaging from './RecruiterMessaging';
 import DirectionDashboard from '../components/recruiter/DirectionDashboard';
 import RecentJobsCard from '../components/recruiter/RecentJobsCard';
 import RecentApplicationsCard from '../components/recruiter/RecentApplicationsCard';
+import TargetedDiffusionProposalModal from '../components/recruiter/TargetedDiffusionProposalModal';
 import CompanyLogo from '../components/common/CompanyLogo';
 import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
 import ExportModal from '../components/recruiter/ExportModal';
@@ -119,6 +120,8 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [logoVersion, setLogoVersion] = useState(0);
   const [showModerationInfoModal, setShowModerationInfoModal] = useState(false);
   const [showModerationSuccessModal, setShowModerationSuccessModal] = useState(false);
+  const [showDiffusionProposalModal, setShowDiffusionProposalModal] = useState(false);
+  const [publishedJobTitle, setPublishedJobTitle] = useState('');
   const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
@@ -564,6 +567,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       await loadData();
       setActiveTab('projects');
       setShowModerationSuccessModal(true);
+
+      setPublishedJobTitle(data.title);
+      setTimeout(() => {
+        setShowDiffusionProposalModal(true);
+      }, 1500);
     } else {
       console.error('Error publishing job:', error);
       alert('❌ Erreur lors de la soumission de l\'offre');
@@ -1431,6 +1439,17 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           type="success"
         />
       )}
+
+      <TargetedDiffusionProposalModal
+        isOpen={showDiffusionProposalModal}
+        onClose={() => setShowDiffusionProposalModal(false)}
+        onStartDiffusion={() => {
+          setShowDiffusionProposalModal(false);
+          onNavigate('campaign-create');
+        }}
+        onLater={() => setShowDiffusionProposalModal(false)}
+        jobTitle={publishedJobTitle}
+      />
     </div>
   );
 }
