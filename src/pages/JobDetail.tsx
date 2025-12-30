@@ -9,6 +9,7 @@ import { supabase, Job, Company } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
 import JobApplicationModal from '../components/candidate/JobApplicationModal';
 import CompanyLogo from '../components/common/CompanyLogo';
+import AccessRestrictionModal from '../components/common/AccessRestrictionModal';
 
 interface JobDetailProps {
   jobId: string;
@@ -24,6 +25,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [applicationReference, setApplicationReference] = useState('');
   const [nextSteps, setNextSteps] = useState<string[]>([]);
+  const [showAccessModal, setShowAccessModal] = useState(false);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
@@ -115,7 +117,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
     }
 
     if (profile?.user_type !== 'candidate') {
-      alert('Seuls les candidats peuvent postuler aux offres');
+      setShowAccessModal(true);
       return;
     }
 
@@ -573,6 +575,14 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
           onSuccess={handleApplicationSuccess}
         />
       )}
+
+      <AccessRestrictionModal
+        isOpen={showAccessModal}
+        onClose={() => setShowAccessModal(false)}
+        restrictionType="candidate-only"
+        currentUserType={profile?.user_type}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }
