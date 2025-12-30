@@ -1,24 +1,108 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import AdminLayout from '../components/AdminLayout';
 import {
   Settings, DollarSign, Users, MessageSquare, Image as ImageIcon,
   CreditCard, Shield, Send, TrendingUp, Clock, Save, RefreshCw,
   Mail, Phone, CheckCircle, XCircle, Eye, Plus, Edit2, Trash2,
-  ToggleRight, ToggleLeft
+  ToggleRight, ToggleLeft, AlertCircle, Check
 } from 'lucide-react';
-import { diffusionConfigService, DiffusionSettings, ChannelPricing, MessageTemplate, AuditLog } from '../services/diffusionConfigService';
+import { supabase } from '../lib/supabase';
 
 type TabType = 'general' | 'channels' | 'audience' | 'templates' | 'images' | 'payment' | 'antispam' | 'whatsapp' | 'marketing' | 'logs';
+
+interface SystemSettings {
+  id: string;
+  module_enabled: boolean;
+  jobs_enabled: boolean;
+  trainings_enabled: boolean;
+  posts_enabled: boolean;
+  test_mode: boolean;
+  admin_info_message: string;
+  shortlink_domain: string;
+  tracking_enabled: boolean;
+}
+
+interface ChannelPricing {
+  id: string;
+  channel: string;
+  enabled: boolean;
+  unit_cost: number;
+  currency: string;
+  description: string;
+}
+
+interface AudienceRules {
+  id: string;
+  min_profile_completion: number;
+  max_inactive_days: number;
+  priority_by_completion: boolean;
+  priority_by_activity: boolean;
+  allow_multi_channel: boolean;
+  max_quantity_per_campaign: number;
+}
+
+interface PaymentSettings {
+  id: string;
+  orange_money_number: string;
+  beneficiary_name: string;
+  payment_message: string;
+  require_admin_validation: boolean;
+  allow_free_campaigns: boolean;
+}
+
+interface AntispamRules {
+  id: string;
+  max_per_candidate_24h: number;
+  max_per_candidate_7d: number;
+  respect_opt_out: boolean;
+  respect_blacklist: boolean;
+}
+
+interface WhatsAppConfig {
+  id: string;
+  admin_whatsapp_number: string;
+  api_enabled: boolean;
+  send_mode: string;
+  templates: any;
+}
+
+interface MarketingContent {
+  id: string;
+  show_on_b2b_page: boolean;
+  title: string;
+  subtitle: string;
+  description: string;
+  cta_text: string;
+  cta_url: string;
+}
+
+interface ImageSettings {
+  id: string;
+  generic_job_image_url: string;
+  generic_training_image_url: string;
+  generic_post_image_url: string;
+  default_logo_url: string;
+  default_cta_job: string;
+  default_cta_training: string;
+  default_cta_post: string;
+  enable_ai_images: boolean;
+}
 
 export default function AdminDiffusionSettings() {
   const [activeTab, setActiveTab] = useState<TabType>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState<DiffusionSettings | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
   const [channels, setChannels] = useState<ChannelPricing[]>([]);
-  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
+  const [audienceRules, setAudienceRules] = useState<AudienceRules | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
+  const [antispamRules, setAntispamRules] = useState<AntispamRules | null>(null);
+  const [whatsappConfig, setWhatsAppConfig] = useState<WhatsAppConfig | null>(null);
+  const [marketingContent, setMarketingContent] = useState<MarketingContent | null>(null);
+  const [imageSettings, setImageSettings] = useState<ImageSettings | null>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -27,61 +111,227 @@ export default function AdminDiffusionSettings() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [settingsData, channelsData, templatesData, logsData] = await Promise.all([
-        diffusionConfigService.getSettings(true),
-        diffusionConfigService.getChannelPricing(true),
-        diffusionConfigService.getMessageTemplates(),
-        diffusionConfigService.getAuditLogs(),
+      const [
+        { data: sysSettings },
+        { data: channelData },
+        { data: audRules },
+        { data: paySettings },
+        { data: antiSpam },
+        { data: whatsApp },
+        { data: marketing },
+        { data: images },
+        { data: logs }
+      ] = await Promise.all([
+        supabase.from('diffusion_system_settings').select('*').limit(1).single(),
+        supabase.from('diffusion_channel_pricing').select('*').order('channel'),
+        supabase.from('diffusion_audience_rules').select('*').limit(1).single(),
+        supabase.from('diffusion_payment_settings').select('*').limit(1).single(),
+        supabase.from('diffusion_antispam_rules').select('*').limit(1).single(),
+        supabase.from('diffusion_whatsapp_config').select('*').limit(1).single(),
+        supabase.from('diffusion_marketing_content').select('*').limit(1).single(),
+        supabase.from('diffusion_image_settings').select('*').limit(1).single(),
+        supabase.from('diffusion_config_audit').select('*').order('created_at', { ascending: false }).limit(50)
       ]);
 
-      setSettings(settingsData);
-      setChannels(channelsData);
-      setTemplates(templatesData);
-      setLogs(logsData);
+      setSystemSettings(sysSettings);
+      setChannels(channelData || []);
+      setAudienceRules(audRules);
+      setPaymentSettings(paySettings);
+      setAntispamRules(antiSpam);
+      setWhatsAppConfig(whatsApp);
+      setMarketingContent(marketing);
+      setImageSettings(images);
+      setAuditLogs(logs || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-      alert('Erreur lors du chargement des données');
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveSettings = async (updates: Partial<DiffusionSettings>) => {
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const updateSystemSettings = async (updates: Partial<SystemSettings>) => {
+    if (!systemSettings) return;
+
     setSaving(true);
     try {
-      const success = await diffusionConfigService.updateSettings(updates);
-      if (success) {
-        await loadData();
-      } else {
-        alert('Erreur lors de l\'enregistrement');
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_system_settings')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', systemSettings.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Paramètres enregistrés avec succès');
     } catch (error) {
-      console.error('Erreur lors de l\'enregistrement:', error);
+      console.error('Error updating settings:', error);
       alert('Erreur lors de l\'enregistrement');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleUpdateChannel = async (channelType: string, updates: Partial<ChannelPricing>) => {
+  const updateChannelPricing = async (channelId: string, updates: Partial<ChannelPricing>) => {
+    setSaving(true);
     try {
-      const success = await diffusionConfigService.updateChannelPricing(channelType, updates);
-      if (success) {
-        await loadData();
-      } else {
-        alert('Erreur lors de la mise à jour');
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_channel_pricing')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', channelId);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Tarification mise à jour');
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      console.error('Error updating channel:', error);
       alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAudienceRules = async (updates: Partial<AudienceRules>) => {
+    if (!audienceRules) return;
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_audience_rules')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', audienceRules.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Règles d\'audience mises à jour');
+    } catch (error) {
+      console.error('Error updating rules:', error);
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updatePaymentSettings = async (updates: Partial<PaymentSettings>) => {
+    if (!paymentSettings) return;
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_payment_settings')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', paymentSettings.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Paramètres de paiement mis à jour');
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAntispamRules = async (updates: Partial<AntispamRules>) => {
+    if (!antispamRules) return;
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_antispam_rules')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', antispamRules.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Règles anti-spam mises à jour');
+    } catch (error) {
+      console.error('Error updating antispam:', error);
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateWhatsAppConfig = async (updates: Partial<WhatsAppConfig>) => {
+    if (!whatsappConfig) return;
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_whatsapp_config')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', whatsappConfig.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Configuration WhatsApp mise à jour');
+    } catch (error) {
+      console.error('Error updating whatsapp:', error);
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateMarketingContent = async (updates: Partial<MarketingContent>) => {
+    if (!marketingContent) return;
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_marketing_content')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', marketingContent.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Contenu marketing mis à jour');
+    } catch (error) {
+      console.error('Error updating marketing:', error);
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateImageSettings = async (updates: Partial<ImageSettings>) => {
+    if (!imageSettings) return;
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('diffusion_image_settings')
+        .update({ ...updates, updated_by: user?.id, updated_at: new Date().toISOString() })
+        .eq('id', imageSettings.id);
+
+      if (error) throw error;
+      await loadData();
+      showSuccess('Paramètres d\'images mis à jour');
+    } catch (error) {
+      console.error('Error updating images:', error);
+      alert('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
     }
   };
 
   const tabs = [
     { id: 'general' as TabType, label: 'Général', icon: Settings },
     { id: 'channels' as TabType, label: 'Canaux & Tarifs', icon: DollarSign },
-    { id: 'audience' as TabType, label: 'Audience & Règles', icon: Users },
-    { id: 'templates' as TabType, label: 'Templates', icon: MessageSquare },
+    { id: 'audience' as TabType, label: 'Audience', icon: Users },
     { id: 'images' as TabType, label: 'Images & CTA', icon: ImageIcon },
     { id: 'payment' as TabType, label: 'Paiement', icon: CreditCard },
     { id: 'antispam' as TabType, label: 'Anti-spam', icon: Shield },
@@ -92,953 +342,968 @@ export default function AdminDiffusionSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-orange-500 mx-auto mb-4" />
-          <p className="text-gray-600">Chargement...</p>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-[#FF8C00] mx-auto mb-4" />
+            <p className="text-gray-600">Chargement des paramètres...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  if (!settings) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">Erreur lors du chargement des paramètres</p>
-        </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Configuration Diffusion Ciblée</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Pilotage complet du système de diffusion multicanal
-              </p>
-            </div>
-            <button
-              onClick={() => loadData()}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span>Actualiser</span>
-            </button>
-          </div>
-
-          <div className="mt-6 border-b border-gray-200">
-            <nav className="-mb-px flex space-x-4 overflow-x-auto">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      flex items-center space-x-2 py-4 px-3 border-b-2 font-medium text-sm whitespace-nowrap
-                      ${activeTab === tab.id
-                        ? 'border-orange-500 text-orange-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }
-                    `}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'general' && (
-          <GeneralTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'channels' && (
-          <ChannelsTab channels={channels} onUpdate={handleUpdateChannel} />
-        )}
-        {activeTab === 'audience' && (
-          <AudienceTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'templates' && (
-          <TemplatesTab templates={templates} onRefresh={loadData} />
-        )}
-        {activeTab === 'images' && (
-          <ImagesTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'payment' && (
-          <PaymentTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'antispam' && (
-          <AntiSpamTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'whatsapp' && (
-          <WhatsAppTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'marketing' && (
-          <MarketingTab settings={settings} onSave={handleSaveSettings} saving={saving} />
-        )}
-        {activeTab === 'logs' && (
-          <LogsTab logs={logs} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function GeneralTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
-
-  const handleToggle = (field: keyof DiffusionSettings) => {
-    const newValue = !localSettings[field];
-    setLocalSettings({ ...localSettings, [field]: newValue });
-    onSave({ [field]: newValue });
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Activation du Module</h3>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Module Global</h4>
-              <p className="text-sm text-gray-500">Active ou désactive le système complet</p>
-            </div>
-            <button
-              onClick={() => handleToggle('module_enabled')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.module_enabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Offres d'emploi</h4>
-              <p className="text-sm text-gray-500">Diffusion ciblée pour les jobs</p>
-            </div>
-            <button
-              onClick={() => handleToggle('jobs_enabled')}
-              disabled={!localSettings.module_enabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.jobs_enabled && localSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
-              } ${!localSettings.module_enabled && 'opacity-50 cursor-not-allowed'}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.jobs_enabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Formations</h4>
-              <p className="text-sm text-gray-500">Diffusion ciblée pour les formations</p>
-            </div>
-            <button
-              onClick={() => handleToggle('trainings_enabled')}
-              disabled={!localSettings.module_enabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.trainings_enabled && localSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
-              } ${!localSettings.module_enabled && 'opacity-50 cursor-not-allowed'}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.trainings_enabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Publications</h4>
-              <p className="text-sm text-gray-500">Diffusion ciblée pour les posts</p>
-            </div>
-            <button
-              onClick={() => handleToggle('posts_enabled')}
-              disabled={!localSettings.module_enabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.posts_enabled && localSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
-              } ${!localSettings.module_enabled && 'opacity-50 cursor-not-allowed'}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.posts_enabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Mode de Fonctionnement</h3>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900">Mode Test</h4>
-            <p className="text-sm text-gray-500">Les diffusions ne sont pas réellement envoyées</p>
+            <h1 className="text-3xl font-bold text-gray-900">Configuration Diffusion Ciblée</h1>
+            <p className="text-gray-600 mt-1">
+              {systemSettings?.admin_info_message || 'Gérez tous les paramètres de la diffusion multicanale'}
+            </p>
           </div>
           <button
-            onClick={() => handleToggle('test_mode')}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              localSettings.test_mode ? 'bg-yellow-500' : 'bg-gray-300'
-            }`}
+            onClick={() => loadData()}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
           >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                localSettings.test_mode ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+            <RefreshCw className="w-4 h-4" />
+            Actualiser
           </button>
         </div>
 
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Message informatif Admin
-          </label>
-          <textarea
-            value={localSettings.admin_info_message || ''}
-            onChange={(e) => setLocalSettings({ ...localSettings, admin_info_message: e.target.value })}
-            onBlur={() => onSave({ admin_info_message: localSettings.admin_info_message })}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            placeholder="Message affiché aux administrateurs..."
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <p className="text-green-800 font-medium">{successMessage}</p>
+          </div>
+        )}
 
-function ChannelsTab({ channels, onUpdate }: { channels: ChannelPricing[]; onUpdate: (channelType: string, updates: Partial<ChannelPricing>) => void }) {
-  const getIcon = (iconName?: string) => {
-    switch (iconName) {
-      case 'mail': return Mail;
-      case 'message-square': return MessageSquare;
-      case 'send': return Send;
-      default: return MessageSquare;
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {channels.map((channel) => {
-        const Icon = getIcon(channel.icon_name);
-        return (
-          <div key={channel.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className={`p-3 rounded-lg ${channel.enabled ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                  <Icon className={`h-6 w-6 ${channel.enabled ? 'text-orange-600' : 'text-gray-400'}`} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{channel.display_name}</h3>
-                  <p className="text-sm text-gray-500">{channel.description}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => onUpdate(channel.channel_type, { enabled: !channel.enabled })}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  channel.enabled ? 'bg-green-500' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    channel.enabled ? 'translate-x-6' : 'translate-x-1'
+        {/* Tabs Navigation */}
+        <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden">
+          <div className="flex overflow-x-auto">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-6 py-4 font-medium transition whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-50'
                   }`}
-                />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Coût unitaire ({channel.currency})
-                </label>
-                <input
-                  type="number"
-                  value={channel.unit_cost}
-                  onChange={(e) => onUpdate(channel.channel_type, { unit_cost: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantité minimum
-                </label>
-                <input
-                  type="number"
-                  value={channel.min_quantity}
-                  onChange={(e) => onUpdate(channel.channel_type, { min_quantity: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantité maximum
-                </label>
-                <input
-                  type="number"
-                  value={channel.max_quantity}
-                  onChange={(e) => onUpdate(channel.channel_type, { max_quantity: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function AudienceTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Critères de Sélection</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Profil minimum requis (%)
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={localSettings.min_profile_completion}
-              onChange={(e) => setLocalSettings({ ...localSettings, min_profile_completion: parseInt(e.target.value) })}
-              onBlur={() => onSave({ min_profile_completion: localSettings.min_profile_completion })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Seuls les candidats avec un profil complété à {localSettings.min_profile_completion}% minimum seront ciblés
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Activité maximum (jours)
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={localSettings.max_inactive_days}
-              onChange={(e) => setLocalSettings({ ...localSettings, max_inactive_days: parseInt(e.target.value) })}
-              onBlur={() => onSave({ max_inactive_days: localSettings.max_inactive_days })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Candidats actifs dans les {localSettings.max_inactive_days} derniers jours
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Limite maximum par campagne
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={localSettings.max_recipients_per_campaign}
-              onChange={(e) => setLocalSettings({ ...localSettings, max_recipients_per_campaign: parseInt(e.target.value) })}
-              onBlur={() => onSave({ max_recipients_per_campaign: localSettings.max_recipients_per_campaign })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Nombre maximum de destinataires par campagne
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Options de Diffusion</h3>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div>
-            <h4 className="font-medium text-gray-900">Autoriser multi-canaux</h4>
-            <p className="text-sm text-gray-500">Permettre l'utilisation de plusieurs canaux simultanément</p>
-          </div>
-          <button
-            onClick={() => {
-              const newValue = !localSettings.allow_multi_channels;
-              setLocalSettings({ ...localSettings, allow_multi_channels: newValue });
-              onSave({ allow_multi_channels: newValue });
-            }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              localSettings.allow_multi_channels ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                localSettings.allow_multi_channels ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TemplatesTab({ templates, onRefresh }: { templates: MessageTemplate[]; onRefresh: () => void }) {
-  const [filter, setFilter] = useState<string>('all');
-
-  const filteredTemplates = templates.filter(t =>
-    filter === 'all' || t.template_type === filter
-  );
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            Tous
-          </button>
-          <button
-            onClick={() => setFilter('email')}
-            className={`px-4 py-2 rounded-lg ${filter === 'email' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            Email
-          </button>
-          <button
-            onClick={() => setFilter('sms')}
-            className={`px-4 py-2 rounded-lg ${filter === 'sms' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            SMS
-          </button>
-          <button
-            onClick={() => setFilter('whatsapp')}
-            className={`px-4 py-2 rounded-lg ${filter === 'whatsapp' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            WhatsApp
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-4">
-        {filteredTemplates.map((template) => (
-          <div key={template.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h3 className="text-lg font-semibold">{template.template_name}</h3>
-                  {template.is_default && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                      Par défaut
-                    </span>
-                  )}
-                  {template.is_active ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 mb-2">{template.description}</p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span className="capitalize">{template.template_type}</span>
-                  <span>{template.language}</span>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                  <Eye className="h-5 w-5" />
+                >
+                  <Icon className="w-5 h-5" />
+                  {tab.label}
                 </button>
-                <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                  <Edit2 className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            {template.subject && (
-              <div className="mt-3 p-3 bg-gray-50 rounded">
-                <p className="text-sm font-medium text-gray-700">Sujet:</p>
-                <p className="text-sm text-gray-600">{template.subject}</p>
-              </div>
-            )}
-            <div className="mt-2 p-3 bg-gray-50 rounded">
-              <p className="text-sm font-medium text-gray-700 mb-1">Corps du message:</p>
-              <p className="text-sm text-gray-600 line-clamp-3">{template.body}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ImagesTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Images par Défaut</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Image par défaut - Offres d'emploi
-            </label>
-            <input
-              type="text"
-              value={localSettings.default_job_image_url || ''}
-              onChange={(e) => setLocalSettings({ ...localSettings, default_job_image_url: e.target.value })}
-              onBlur={() => onSave({ default_job_image_url: localSettings.default_job_image_url })}
-              placeholder="https://..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Image par défaut - Formations
-            </label>
-            <input
-              type="text"
-              value={localSettings.default_training_image_url || ''}
-              onChange={(e) => setLocalSettings({ ...localSettings, default_training_image_url: e.target.value })}
-              onBlur={() => onSave({ default_training_image_url: localSettings.default_training_image_url })}
-              placeholder="https://..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Logo par défaut
-            </label>
-            <input
-              type="text"
-              value={localSettings.default_logo_url || ''}
-              onChange={(e) => setLocalSettings({ ...localSettings, default_logo_url: e.target.value })}
-              onBlur={() => onSave({ default_logo_url: localSettings.default_logo_url })}
-              placeholder="https://..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
+              );
+            })}
           </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Call-to-Action par Défaut</h3>
+        {/* Tab Content */}
+        <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 p-8">
+          {/* GENERAL TAB */}
+          {activeTab === 'general' && systemSettings && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Paramètres Généraux</h2>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              CTA - Offres d'emploi
-            </label>
-            <input
-              type="text"
-              value={localSettings.default_cta_job}
-              onChange={(e) => setLocalSettings({ ...localSettings, default_cta_job: e.target.value })}
-              onBlur={() => onSave({ default_cta_job: localSettings.default_cta_job })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Activation du Module</h3>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              CTA - Formations
-            </label>
-            <input
-              type="text"
-              value={localSettings.default_cta_training}
-              onChange={(e) => setLocalSettings({ ...localSettings, default_cta_training: e.target.value })}
-              onBlur={() => onSave({ default_cta_training: localSettings.default_cta_training })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700 font-medium">Module actif</span>
+                      <button
+                        onClick={() => updateSystemSettings({ module_enabled: !systemSettings.module_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          systemSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          systemSettings.module_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              CTA - Publications
-            </label>
-            <input
-              type="text"
-              value={localSettings.default_cta_post}
-              onChange={(e) => setLocalSettings({ ...localSettings, default_cta_post: e.target.value })}
-              onBlur={() => onSave({ default_cta_post: localSettings.default_cta_post })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Offres d'emploi</span>
+                      <button
+                        onClick={() => updateSystemSettings({ jobs_enabled: !systemSettings.jobs_enabled })}
+                        disabled={!systemSettings.module_enabled}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          systemSettings.jobs_enabled && systemSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
+                        } ${!systemSettings.module_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          systemSettings.jobs_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
 
-function PaymentTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Formations</span>
+                      <button
+                        onClick={() => updateSystemSettings({ trainings_enabled: !systemSettings.trainings_enabled })}
+                        disabled={!systemSettings.module_enabled}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          systemSettings.trainings_enabled && systemSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
+                        } ${!systemSettings.module_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          systemSettings.trainings_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
 
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Configuration Orange Money</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Numéro Orange Money
-            </label>
-            <input
-              type="text"
-              value={localSettings.orange_money_number}
-              onChange={(e) => setLocalSettings({ ...localSettings, orange_money_number: e.target.value })}
-              onBlur={() => onSave({ orange_money_number: localSettings.orange_money_number })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nom du bénéficiaire
-            </label>
-            <input
-              type="text"
-              value={localSettings.orange_money_recipient_name}
-              onChange={(e) => setLocalSettings({ ...localSettings, orange_money_recipient_name: e.target.value })}
-              onBlur={() => onSave({ orange_money_recipient_name: localSettings.orange_money_recipient_name })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Instructions de paiement
-            </label>
-            <textarea
-              value={localSettings.payment_instructions || ''}
-              onChange={(e) => setLocalSettings({ ...localSettings, payment_instructions: e.target.value })}
-              onBlur={() => onSave({ payment_instructions: localSettings.payment_instructions })}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Instructions détaillées pour le paiement..."
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Validation</h3>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div>
-            <h4 className="font-medium text-gray-900">Validation obligatoire</h4>
-            <p className="text-sm text-gray-500">Exiger la validation admin avant diffusion</p>
-          </div>
-          <button
-            onClick={() => {
-              const newValue = !localSettings.require_payment_validation;
-              setLocalSettings({ ...localSettings, require_payment_validation: newValue });
-              onSave({ require_payment_validation: newValue });
-            }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              localSettings.require_payment_validation ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                localSettings.require_payment_validation ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AntiSpamTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Limites d'Envoi</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Maximum par candidat / 24h
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={localSettings.max_sends_per_24h}
-              onChange={(e) => setLocalSettings({ ...localSettings, max_sends_per_24h: parseInt(e.target.value) })}
-              onBlur={() => onSave({ max_sends_per_24h: localSettings.max_sends_per_24h })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Nombre maximum de messages qu'un candidat peut recevoir en 24h
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Maximum par candidat / 7 jours
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={localSettings.max_sends_per_7d}
-              onChange={(e) => setLocalSettings({ ...localSettings, max_sends_per_7d: parseInt(e.target.value) })}
-              onBlur={() => onSave({ max_sends_per_7d: localSettings.max_sends_per_7d })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Nombre maximum de messages qu'un candidat peut recevoir en 7 jours
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WhatsAppTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Configuration WhatsApp Admin</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Numéro WhatsApp Admin
-            </label>
-            <input
-              type="text"
-              value={localSettings.whatsapp_admin_number || ''}
-              onChange={(e) => setLocalSettings({ ...localSettings, whatsapp_admin_number: e.target.value })}
-              onBlur={() => onSave({ whatsapp_admin_number: localSettings.whatsapp_admin_number })}
-              placeholder="+224 ..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">API WhatsApp activée</h4>
-              <p className="text-sm text-gray-500">Utiliser l'API WhatsApp Business</p>
-            </div>
-            <button
-              onClick={() => {
-                const newValue = !localSettings.whatsapp_api_enabled;
-                setLocalSettings({ ...localSettings, whatsapp_api_enabled: newValue });
-                onSave({ whatsapp_api_enabled: newValue });
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.whatsapp_api_enabled ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.whatsapp_api_enabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Mode manuel</h4>
-              <p className="text-sm text-gray-500">Les messages sont copiés manuellement</p>
-            </div>
-            <button
-              onClick={() => {
-                const newValue = !localSettings.whatsapp_manual_mode;
-                setLocalSettings({ ...localSettings, whatsapp_manual_mode: newValue });
-                onSave({ whatsapp_manual_mode: newValue });
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.whatsapp_manual_mode ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.whatsapp_manual_mode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MarketingTab({ settings, onSave, saving }: { settings: DiffusionSettings; onSave: (updates: Partial<DiffusionSettings>) => void; saving: boolean }) {
-  const [localSettings, setLocalSettings] = useState(settings);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Marketing B2B</h3>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Afficher sur page B2B</h4>
-              <p className="text-sm text-gray-500">Montrer le bloc diffusion ciblée</p>
-            </div>
-            <button
-              onClick={() => {
-                const newValue = !localSettings.show_b2b_marketing;
-                setLocalSettings({ ...localSettings, show_b2b_marketing: newValue });
-                onSave({ show_b2b_marketing: newValue });
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.show_b2b_marketing ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.show_b2b_marketing ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Texte du CTA
-            </label>
-            <input
-              type="text"
-              value={localSettings.b2b_cta_text}
-              onChange={(e) => setLocalSettings({ ...localSettings, b2b_cta_text: e.target.value })}
-              onBlur={() => onSave({ b2b_cta_text: localSettings.b2b_cta_text })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Tracking</h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Domaine shortlink
-            </label>
-            <input
-              type="text"
-              value={localSettings.shortlink_domain}
-              onChange={(e) => setLocalSettings({ ...localSettings, shortlink_domain: e.target.value })}
-              onBlur={() => onSave({ shortlink_domain: localSettings.shortlink_domain })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Tracking des clics</h4>
-              <p className="text-sm text-gray-500">Suivre les clics sur les liens</p>
-            </div>
-            <button
-              onClick={() => {
-                const newValue = !localSettings.enable_click_tracking;
-                setLocalSettings({ ...localSettings, enable_click_tracking: newValue });
-                onSave({ enable_click_tracking: newValue });
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                localSettings.enable_click_tracking ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  localSettings.enable_click_tracking ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LogsTab({ logs }: { logs: AuditLog[] }) {
-  const getActionBadge = (actionType: string) => {
-    const colors: Record<string, string> = {
-      'settings_updated': 'bg-blue-100 text-blue-800',
-      'pricing_updated': 'bg-green-100 text-green-800',
-      'template_created': 'bg-purple-100 text-purple-800',
-      'template_updated': 'bg-yellow-100 text-yellow-800',
-      'template_deleted': 'bg-red-100 text-red-800',
-      'campaign_validated': 'bg-green-100 text-green-800',
-      'campaign_rejected': 'bg-red-100 text-red-800',
-      'payment_approved': 'bg-green-100 text-green-800',
-      'payment_rejected': 'bg-red-100 text-red-800',
-      'module_toggled': 'bg-orange-100 text-orange-800',
-      'channel_toggled': 'bg-orange-100 text-orange-800',
-    };
-
-    return colors[actionType] || 'bg-gray-100 text-gray-800';
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">Journal d'Audit</h3>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {logs.map((log) => (
-            <div key={log.id} className="px-6 py-4 hover:bg-gray-50">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getActionBadge(log.action_type)}`}>
-                      {log.action_type}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {new Date(log.created_at).toLocaleString('fr-FR')}
-                    </span>
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Publications</span>
+                      <button
+                        onClick={() => updateSystemSettings({ posts_enabled: !systemSettings.posts_enabled })}
+                        disabled={!systemSettings.module_enabled}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          systemSettings.posts_enabled && systemSettings.module_enabled ? 'bg-green-500' : 'bg-gray-300'
+                        } ${!systemSettings.module_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          systemSettings.posts_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
                   </div>
-                  <p className="text-sm text-gray-900">{log.description}</p>
-                  {log.entity_type && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {log.entity_type} {log.entity_id && `- ${log.entity_id}`}
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Mode & Tracking</h3>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700 font-medium">Mode Test</span>
+                      <button
+                        onClick={() => updateSystemSettings({ test_mode: !systemSettings.test_mode })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          systemSettings.test_mode ? 'bg-yellow-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          systemSettings.test_mode ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Tracking des clics</span>
+                      <button
+                        onClick={() => updateSystemSettings({ tracking_enabled: !systemSettings.tracking_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          systemSettings.tracking_enabled ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          systemSettings.tracking_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Domaine shortlink
+                      </label>
+                      <input
+                        type="text"
+                        value={systemSettings.shortlink_domain}
+                        onChange={(e) => setSystemSettings({ ...systemSettings, shortlink_domain: e.target.value })}
+                        onBlur={() => updateSystemSettings({ shortlink_domain: systemSettings.shortlink_domain })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message informatif Admin
+                </label>
+                <textarea
+                  value={systemSettings.admin_info_message}
+                  onChange={(e) => setSystemSettings({ ...systemSettings, admin_info_message: e.target.value })}
+                  onBlur={() => updateSystemSettings({ admin_info_message: systemSettings.admin_info_message })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                  placeholder="Message affiché en haut de cette page..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* CHANNELS TAB */}
+          {activeTab === 'channels' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Canaux & Tarification</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {channels.map((channel) => (
+                  <div key={channel.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 capitalize">
+                        {channel.channel}
+                      </h3>
+                      <button
+                        onClick={() => updateChannelPricing(channel.id, { enabled: !channel.enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          channel.enabled ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          channel.enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Coût unitaire ({channel.currency})
+                        </label>
+                        <input
+                          type="number"
+                          value={channel.unit_cost}
+                          onChange={(e) => {
+                            const newChannels = channels.map(c =>
+                              c.id === channel.id ? { ...c, unit_cost: parseInt(e.target.value) || 0 } : c
+                            );
+                            setChannels(newChannels);
+                          }}
+                          onBlur={() => updateChannelPricing(channel.id, { unit_cost: channel.unit_cost })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                          disabled={!channel.enabled}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <textarea
+                          value={channel.description || ''}
+                          onChange={(e) => {
+                            const newChannels = channels.map(c =>
+                              c.id === channel.id ? { ...c, description: e.target.value } : c
+                            );
+                            setChannels(newChannels);
+                          }}
+                          onBlur={() => updateChannelPricing(channel.id, { description: channel.description })}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                          disabled={!channel.enabled}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note :</strong> Les nouveaux tarifs s'appliquent uniquement aux nouvelles campagnes.
+                  Les campagnes en cours conservent leurs tarifs d'origine.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* AUDIENCE TAB */}
+          {activeTab === 'audience' && audienceRules && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Règles d'Audience</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Critères de Sélection</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Complétion minimale du profil (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={audienceRules.min_profile_completion}
+                        onChange={(e) => setAudienceRules({ ...audienceRules, min_profile_completion: parseInt(e.target.value) || 0 })}
+                        onBlur={() => updateAudienceRules({ min_profile_completion: audienceRules.min_profile_completion })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Inactivité maximale (jours)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={audienceRules.max_inactive_days}
+                        onChange={(e) => setAudienceRules({ ...audienceRules, max_inactive_days: parseInt(e.target.value) || 30 })}
+                        onBlur={() => updateAudienceRules({ max_inactive_days: audienceRules.max_inactive_days })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Quantité maximale par campagne
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={audienceRules.max_quantity_per_campaign}
+                        onChange={(e) => setAudienceRules({ ...audienceRules, max_quantity_per_campaign: parseInt(e.target.value) || 10000 })}
+                        onBlur={() => updateAudienceRules({ max_quantity_per_campaign: audienceRules.max_quantity_per_campaign })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Priorités & Options</h3>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Prioriser profils complétés</span>
+                      <button
+                        onClick={() => updateAudienceRules({ priority_by_completion: !audienceRules.priority_by_completion })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          audienceRules.priority_by_completion ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          audienceRules.priority_by_completion ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Prioriser actifs récents</span>
+                      <button
+                        onClick={() => updateAudienceRules({ priority_by_activity: !audienceRules.priority_by_activity })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          audienceRules.priority_by_activity ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          audienceRules.priority_by_activity ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Autoriser multi-canaux</span>
+                      <button
+                        onClick={() => updateAudienceRules({ allow_multi_channel: !audienceRules.allow_multi_channel })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          audienceRules.allow_multi_channel ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          audienceRules.allow_multi_channel ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+
+                  <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      Les règles d'audience s'appliquent au calcul de l'audience disponible lors de la création de campagnes.
                     </p>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
+          )}
+
+          {/* IMAGES TAB */}
+          {activeTab === 'images' && imageSettings && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Images & CTA</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Images Génériques</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Image emploi par défaut
+                      </label>
+                      <input
+                        type="url"
+                        value={imageSettings.generic_job_image_url || ''}
+                        onChange={(e) => setImageSettings({ ...imageSettings, generic_job_image_url: e.target.value })}
+                        onBlur={() => updateImageSettings({ generic_job_image_url: imageSettings.generic_job_image_url })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Image formation par défaut
+                      </label>
+                      <input
+                        type="url"
+                        value={imageSettings.generic_training_image_url || ''}
+                        onChange={(e) => setImageSettings({ ...imageSettings, generic_training_image_url: e.target.value })}
+                        onBlur={() => updateImageSettings({ generic_training_image_url: imageSettings.generic_training_image_url })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Image publication par défaut
+                      </label>
+                      <input
+                        type="url"
+                        value={imageSettings.generic_post_image_url || ''}
+                        onChange={(e) => setImageSettings({ ...imageSettings, generic_post_image_url: e.target.value })}
+                        onBlur={() => updateImageSettings({ generic_post_image_url: imageSettings.generic_post_image_url })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Logo par défaut
+                      </label>
+                      <input
+                        type="url"
+                        value={imageSettings.default_logo_url || ''}
+                        onChange={(e) => setImageSettings({ ...imageSettings, default_logo_url: e.target.value })}
+                        onBlur={() => updateImageSettings({ default_logo_url: imageSettings.default_logo_url })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Activer images IA</span>
+                      <button
+                        onClick={() => updateImageSettings({ enable_ai_images: !imageSettings.enable_ai_images })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          imageSettings.enable_ai_images ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          imageSettings.enable_ai_images ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Textes CTA</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CTA Emploi
+                      </label>
+                      <input
+                        type="text"
+                        value={imageSettings.default_cta_job}
+                        onChange={(e) => setImageSettings({ ...imageSettings, default_cta_job: e.target.value })}
+                        onBlur={() => updateImageSettings({ default_cta_job: imageSettings.default_cta_job })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CTA Formation
+                      </label>
+                      <input
+                        type="text"
+                        value={imageSettings.default_cta_training}
+                        onChange={(e) => setImageSettings({ ...imageSettings, default_cta_training: e.target.value })}
+                        onBlur={() => updateImageSettings({ default_cta_training: imageSettings.default_cta_training })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CTA Publication
+                      </label>
+                      <input
+                        type="text"
+                        value={imageSettings.default_cta_post}
+                        onChange={(e) => setImageSettings({ ...imageSettings, default_cta_post: e.target.value })}
+                        onBlur={() => updateImageSettings({ default_cta_post: imageSettings.default_cta_post })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Ordre de fallback :</strong>
+                      <br />1. Image de l'annonce
+                      <br />2. Logo entreprise
+                      <br />3. Image générique
+                      <br />4. Image IA (si activée)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PAYMENT TAB */}
+          {activeTab === 'payment' && paymentSettings && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Paiement Manuel</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Orange Money</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Numéro Orange Money Admin
+                      </label>
+                      <input
+                        type="tel"
+                        value={paymentSettings.orange_money_number}
+                        onChange={(e) => setPaymentSettings({ ...paymentSettings, orange_money_number: e.target.value })}
+                        onBlur={() => updatePaymentSettings({ orange_money_number: paymentSettings.orange_money_number })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="+224 ..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom du bénéficiaire
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentSettings.beneficiary_name}
+                        onChange={(e) => setPaymentSettings({ ...paymentSettings, beneficiary_name: e.target.value })}
+                        onBlur={() => updatePaymentSettings({ beneficiary_name: paymentSettings.beneficiary_name })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Message de paiement
+                      </label>
+                      <textarea
+                        value={paymentSettings.payment_message}
+                        onChange={(e) => setPaymentSettings({ ...paymentSettings, payment_message: e.target.value })}
+                        onBlur={() => updatePaymentSettings({ payment_message: paymentSettings.payment_message })}
+                        rows={4}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Variables : {'{{number}}'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Validation</h3>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700 font-medium">Validation Admin obligatoire</span>
+                      <button
+                        onClick={() => updatePaymentSettings({ require_admin_validation: !paymentSettings.require_admin_validation })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          paymentSettings.require_admin_validation ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          paymentSettings.require_admin_validation ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Autoriser campagnes gratuites</span>
+                      <button
+                        onClick={() => updatePaymentSettings({ allow_free_campaigns: !paymentSettings.allow_free_campaigns })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          paymentSettings.allow_free_campaigns ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          paymentSettings.allow_free_campaigns ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+
+                  <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Important :</strong> La validation Admin doit rester activée pour un contrôle total des paiements.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ANTISPAM TAB */}
+          {activeTab === 'antispam' && antispamRules && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Règles Anti-spam</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Limites Temporelles</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Max diffusions / candidat / 24h
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={antispamRules.max_per_candidate_24h}
+                        onChange={(e) => setAntispamRules({ ...antispamRules, max_per_candidate_24h: parseInt(e.target.value) || 1 })}
+                        onBlur={() => updateAntispamRules({ max_per_candidate_24h: antispamRules.max_per_candidate_24h })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Max diffusions / candidat / 7 jours
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={antispamRules.max_per_candidate_7d}
+                        onChange={(e) => setAntispamRules({ ...antispamRules, max_per_candidate_7d: parseInt(e.target.value) || 2 })}
+                        onBlur={() => updateAntispamRules({ max_per_candidate_7d: antispamRules.max_per_candidate_7d })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Consentements</h3>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Respecter les opt-out</span>
+                      <button
+                        onClick={() => updateAntispamRules({ respect_opt_out: !antispamRules.respect_opt_out })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          antispamRules.respect_opt_out ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          antispamRules.respect_opt_out ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">Respecter la blacklist</span>
+                      <button
+                        onClick={() => updateAntispamRules({ respect_blacklist: !antispamRules.respect_blacklist })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          antispamRules.respect_blacklist ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          antispamRules.respect_blacklist ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+
+                  <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      <strong>RGPD :</strong> Les règles anti-spam et le respect des consentements sont obligatoires pour la conformité légale.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* WHATSAPP TAB */}
+          {activeTab === 'whatsapp' && whatsappConfig && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Configuration WhatsApp</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Paramètres Généraux</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Numéro WhatsApp Admin
+                      </label>
+                      <input
+                        type="tel"
+                        value={whatsappConfig.admin_whatsapp_number}
+                        onChange={(e) => setWhatsAppConfig({ ...whatsappConfig, admin_whatsapp_number: e.target.value })}
+                        onBlur={() => updateWhatsAppConfig({ admin_whatsapp_number: whatsappConfig.admin_whatsapp_number })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="+224 ..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mode d'envoi
+                      </label>
+                      <select
+                        value={whatsappConfig.send_mode}
+                        onChange={(e) => updateWhatsAppConfig({ send_mode: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      >
+                        <option value="manual">Manuel (copie)</option>
+                        <option value="api">API automatique</option>
+                      </select>
+                    </div>
+
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700">API WhatsApp activée</span>
+                      <button
+                        onClick={() => updateWhatsAppConfig({ api_enabled: !whatsappConfig.api_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          whatsappConfig.api_enabled ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          whatsappConfig.api_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Templates Messages</h3>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="bg-white p-3 rounded border border-gray-200">
+                      <p className="font-medium text-gray-900">✓ Demande de paiement</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-gray-200">
+                      <p className="font-medium text-gray-900">✓ Paiement approuvé</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-gray-200">
+                      <p className="font-medium text-gray-900">✓ Paiement rejeté</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-gray-200">
+                      <p className="font-medium text-gray-900">✓ Campagne terminée</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      Les templates sont préconfigurés dans la base de données.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MARKETING TAB */}
+          {activeTab === 'marketing' && marketingContent && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Marketing B2B</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Contenu Marketing</h3>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-gray-700 font-medium">Afficher sur page B2B</span>
+                      <button
+                        onClick={() => updateMarketingContent({ show_on_b2b_page: !marketingContent.show_on_b2b_page })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          marketingContent.show_on_b2b_page ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          marketingContent.show_on_b2b_page ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Titre
+                      </label>
+                      <input
+                        type="text"
+                        value={marketingContent.title}
+                        onChange={(e) => setMarketingContent({ ...marketingContent, title: e.target.value })}
+                        onBlur={() => updateMarketingContent({ title: marketingContent.title })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sous-titre
+                      </label>
+                      <input
+                        type="text"
+                        value={marketingContent.subtitle}
+                        onChange={(e) => setMarketingContent({ ...marketingContent, subtitle: e.target.value })}
+                        onBlur={() => updateMarketingContent({ subtitle: marketingContent.subtitle })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={marketingContent.description}
+                        onChange={(e) => setMarketingContent({ ...marketingContent, description: e.target.value })}
+                        onBlur={() => updateMarketingContent({ description: marketingContent.description })}
+                        rows={3}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Call-to-Action</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Texte du CTA
+                      </label>
+                      <input
+                        type="text"
+                        value={marketingContent.cta_text}
+                        onChange={(e) => setMarketingContent({ ...marketingContent, cta_text: e.target.value })}
+                        onBlur={() => updateMarketingContent({ cta_text: marketingContent.cta_text })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        URL du CTA
+                      </label>
+                      <input
+                        type="text"
+                        value={marketingContent.cta_url}
+                        onChange={(e) => setMarketingContent({ ...marketingContent, cta_url: e.target.value })}
+                        onBlur={() => updateMarketingContent({ cta_url: marketingContent.cta_url })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                        placeholder="/contact"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      <strong>Prévisualisation :</strong> Les modifications s'affichent immédiatement sur la page B2B Solutions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* LOGS TAB */}
+          {activeTab === 'logs' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Journal d'Audit</h2>
+
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Table
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Admin
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {auditLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                          Aucun log disponible
+                        </td>
+                      </tr>
+                    ) : (
+                      auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(log.created_at).toLocaleString('fr-FR')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {log.table_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              log.action === 'INSERT' ? 'bg-green-100 text-green-800' :
+                              log.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {log.admin_email || log.admin_id}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Traçabilité :</strong> Toutes les modifications de configuration sont automatiquement journalisées avec l'identité de l'Admin responsable.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
