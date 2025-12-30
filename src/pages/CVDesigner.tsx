@@ -1,23 +1,27 @@
 import { useState } from 'react';
-import { FileText, Upload, Sparkles, CheckCircle, ArrowRight, Shield, Zap, Award } from 'lucide-react';
+import { FileText, Upload, Sparkles, CheckCircle, ArrowRight, Shield, Zap, Award, List } from 'lucide-react';
 import Layout from '../components/Layout';
 import CVUploadWithParser from '../components/profile/CVUploadWithParser';
-import EnhancedAICVGenerator from '../components/ai/EnhancedAICVGenerator';
+import CVManager from '../components/cv/CVManager';
+import CVWizard from '../components/cv/CVWizard';
+import CVTemplateMarketplace from '../components/cv/CVTemplateMarketplace';
 
 interface CVDesignerProps {
   onNavigate: (page: string) => void;
 }
 
-type ViewMode = 'entry' | 'create' | 'import';
+type ViewMode = 'entry' | 'manager' | 'wizard' | 'import' | 'templates';
 
 export default function CVDesigner({ onNavigate }: CVDesignerProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('entry');
+  const [selectedCVId, setSelectedCVId] = useState<string | undefined>(undefined);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
 
-  if (viewMode === 'create') {
+  if (viewMode === 'manager') {
     return (
       <Layout currentPage="cv-designer" onNavigate={onNavigate}>
         <div className="min-h-screen bg-gray-50 py-8">
-          <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-7xl mx-auto px-4">
             <button
               onClick={() => setViewMode('entry')}
               className="mb-6 text-blue-600 hover:text-blue-700 flex items-center gap-2 transition"
@@ -25,7 +29,56 @@ export default function CVDesigner({ onNavigate }: CVDesignerProps) {
               <ArrowRight className="w-5 h-5 rotate-180" />
               Retour
             </button>
-            <EnhancedAICVGenerator />
+            <CVManager
+              onCreateNew={() => setViewMode('templates')}
+              onEditCV={(cvId) => {
+                setSelectedCVId(cvId);
+                setViewMode('wizard');
+              }}
+              onViewCV={(cvId) => {
+                setSelectedCVId(cvId);
+                alert('Prévisualisation du CV à implémenter');
+              }}
+            />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (viewMode === 'wizard') {
+    return (
+      <CVWizard
+        cvId={selectedCVId}
+        onSave={(cvId) => {
+          alert('CV sauvegardé avec succès!');
+          setViewMode('manager');
+        }}
+        onCancel={() => setViewMode('manager')}
+      />
+    );
+  }
+
+  if (viewMode === 'templates') {
+    return (
+      <Layout currentPage="cv-designer" onNavigate={onNavigate}>
+        <div className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-7xl mx-auto px-4">
+            <button
+              onClick={() => setViewMode('manager')}
+              className="mb-6 text-blue-600 hover:text-blue-700 flex items-center gap-2 transition"
+            >
+              <ArrowRight className="w-5 h-5 rotate-180" />
+              Retour
+            </button>
+            <CVTemplateMarketplace
+              selectedTemplateId={selectedTemplateId}
+              onSelectTemplate={(templateId) => {
+                setSelectedTemplateId(templateId);
+                setSelectedCVId(undefined);
+                setViewMode('wizard');
+              }}
+            />
           </div>
         </div>
       </Layout>
@@ -118,9 +171,19 @@ export default function CVDesigner({ onNavigate }: CVDesignerProps) {
             </p>
           </div>
 
+          <div className="flex justify-center mb-8">
+            <button
+              onClick={() => setViewMode('manager')}
+              className="inline-flex items-center gap-2 px-6 py-3 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition font-medium"
+            >
+              <List className="w-5 h-5" />
+              Gérer mes CV existants
+            </button>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             <div
-              onClick={() => setViewMode('create')}
+              onClick={() => setViewMode('templates')}
               className="group bg-white rounded-2xl shadow-lg border-2 border-gray-200 hover:border-blue-500 p-8 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
             >
               <div className="flex items-start justify-between mb-6">
