@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle, Building2, Mail } from 'lucide-react';
+import { Briefcase, LogOut, Home, Settings, Users, Coins, DollarSign, FileText, Code, MessageCircle, Crown, Video, ShoppingCart, Smartphone, Zap, Bell, Globe, CheckCircle, Building2, Mail, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -129,6 +129,14 @@ export default function AdminLayout({ children, onNavigate }: AdminLayoutProps) 
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span>Achats Profils</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('admin-campaign-payments')}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-orange-700 neo-clay-button rounded-xl transition hover:shadow-md"
+              >
+                <Send className="w-4 h-4" />
+                <span>Diffusion Ciblée</span>
               </button>
 
               <button

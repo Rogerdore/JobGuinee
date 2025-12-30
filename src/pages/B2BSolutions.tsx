@@ -3,7 +3,8 @@ import {
   Building2, Users, Landmark, Briefcase, GraduationCap, User,
   CheckCircle2, Sparkles, BarChart3, Database, FileText, TrendingUp,
   Award, Shield, Zap, Target, ArrowRight, Hammer, School, HelpCircle,
-  ChevronDown, ChevronUp, Cpu, Clock, Globe, UserCheck, Phone, MessageCircle
+  ChevronDown, ChevronUp, Cpu, Clock, Globe, UserCheck, Phone, MessageCircle,
+  Send, Mail, MessageSquare
 } from 'lucide-react';
 import { b2bLeadsService, B2BPageConfig } from '../services/b2bLeadsService';
 import B2BLeadForm from '../components/b2b/B2BLeadForm';
@@ -867,6 +868,202 @@ export default function B2BSolutions() {
                 Le meilleur des deux mondes : intelligence artificielle pour l'efficacité et expertise humaine pour la pertinence
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Targeted Diffusion Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-orange-50 via-white to-blue-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white px-6 py-3 rounded-full mb-4">
+              <Send className="w-5 h-5" />
+              <span className="font-bold">Nouveau service</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Diffusion Ciblée Multicanale
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Maximisez la visibilité de vos annonces en touchant directement les candidats qualifiés via Email, SMS et WhatsApp
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-[#FF8C00]">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#FF8C00] to-orange-600 rounded-2xl flex items-center justify-center mb-6">
+                <Target className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                Principe de la diffusion ciblée
+              </h3>
+              <p className="text-gray-700 leading-relaxed mb-6">
+                Après validation de votre annonce d'emploi ou de formation, vous pouvez la diffuser à une audience précisément ciblée issue de notre CVthèque premium.
+                Filtrez par métier, secteur, localisation, expérience et niveau de profil pour atteindre uniquement les candidats qui correspondent vraiment à votre besoin.
+              </p>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="text-sm text-orange-900 font-medium">
+                  <CheckCircle2 className="w-4 h-4 inline mr-2" />
+                  Disponible uniquement pour les annonces validées
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                Avantages Business
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Gain de temps considérable</p>
+                    <p className="text-sm text-gray-600">Touchez des centaines de candidats en quelques clics</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Ciblage précis</p>
+                    <p className="text-sm text-gray-600">Filtres avancés pour atteindre les bons profils</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Taux de réponse élevé</p>
+                    <p className="text-sm text-gray-600">Messages enrichis avec image et CTA cliquable</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Tracking des performances</p>
+                    <p className="text-sm text-gray-600">Suivez les clics et l'engagement en temps réel</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-[#0E2F56] to-[#1a4275] rounded-2xl p-8 text-white mb-12">
+            <h3 className="text-2xl font-bold mb-6 text-center">Canaux de diffusion disponibles</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
+                  <Mail className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-xl font-bold mb-2">Email</h4>
+                <p className="text-blue-100 mb-3">
+                  Messages enrichis avec visuels professionnels et call-to-action direct
+                </p>
+                <p className="text-2xl font-bold">500 GNF</p>
+                <p className="text-sm text-blue-200">par candidat</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-xl font-bold mb-2">SMS</h4>
+                <p className="text-blue-100 mb-3">
+                  Messages courts et percutants avec lien tracké vers votre annonce
+                </p>
+                <p className="text-2xl font-bold">1 000 GNF</p>
+                <p className="text-sm text-blue-200">par candidat</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
+                  <Send className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-xl font-bold mb-2">WhatsApp</h4>
+                <p className="text-blue-100 mb-3">
+                  Messages multimédias avec image, texte riche et engagement maximal
+                </p>
+                <p className="text-2xl font-bold">3 000 GNF</p>
+                <p className="text-sm text-blue-200">par candidat</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              Comment ça fonctionne ?
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-[#FF8C00] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-xl">
+                  1
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">Publiez votre annonce</h4>
+                <p className="text-sm text-gray-600">
+                  Créez et publiez votre offre d'emploi ou formation
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-12 h-12 bg-[#FF8C00] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-xl">
+                  2
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">Validation Admin</h4>
+                <p className="text-sm text-gray-600">
+                  Attendez la validation de votre annonce par notre équipe
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-12 h-12 bg-[#FF8C00] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-xl">
+                  3
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">Configurez la diffusion</h4>
+                <p className="text-sm text-gray-600">
+                  Choisissez vos critères, canaux et quantités
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-12 h-12 bg-[#FF8C00] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-xl">
+                  4
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2">Paiement & Lancement</h4>
+                <p className="text-sm text-gray-600">
+                  Payez via Orange Money et la diffusion est lancée
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-xl p-6">
+            <div className="flex items-start space-x-4">
+              <Shield className="w-8 h-8 text-green-600 flex-shrink-0" />
+              <div>
+                <h4 className="text-xl font-bold text-gray-900 mb-2">
+                  Paiement sécurisé et simple
+                </h4>
+                <p className="text-gray-700 leading-relaxed">
+                  Payez facilement via Orange Money, envoyez la preuve de paiement par WhatsApp ou SMS,
+                  et votre diffusion est lancée dès validation par notre équipe.
+                  Vous gardez le contrôle total de votre budget avec des tarifs transparents.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-[#FF8C00] transition shadow-lg hover:shadow-xl font-bold text-lg"
+            >
+              <Send className="w-6 h-6" />
+              <span>Demander une démonstration</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <p className="text-sm text-gray-600 mt-3">
+              Contactez-nous pour en savoir plus sur la diffusion ciblée
+            </p>
           </div>
         </div>
       </section>
