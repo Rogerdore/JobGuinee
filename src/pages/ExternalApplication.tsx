@@ -739,6 +739,39 @@ export default function ExternalApplication({ onNavigate }: ExternalApplicationP
                 </h3>
 
                 <div className="space-y-6">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                      <Check className="w-5 h-5" />
+                      Checklist de validation
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">
+                          CV sélectionné ({cvOption === 'profile' ? 'Profil principal' : cvOption === 'document_center' ? 'Depuis mes documents' : 'Nouveau CV uploadé'})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">
+                          Lettre de motivation {letterOption === 'none' ? 'non requise' : letterOption === 'new' ? 'créée' : 'sélectionnée'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">Email recruteur valide: {formData.recruiter_email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">Profil complété à {profileCompletion}%</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">Taille des pièces jointes conforme</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-gray-900 mb-2">Offre</h4>
                     <p className="text-gray-700"><strong>{formData.job_title}</strong></p>

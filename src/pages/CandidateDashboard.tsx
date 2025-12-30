@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, BellOff, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, CheckCircle2, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity } from 'lucide-react';
+import { Briefcase, FileText, Bell, BellOff, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, CheckCircle2, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 import { isPremiumActive } from '../utils/premiumHelpers';
@@ -7,6 +7,7 @@ import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import CandidateMessaging from '../components/candidate/CandidateMessaging';
 import DocumentsHub from '../components/candidate/DocumentsHub';
 import ApplicationTrackingModal from '../components/candidate/ApplicationTrackingModal';
+import ProfileQualityBadge from '../components/profile/ProfileQualityBadge';
 import { candidateMessagingService } from '../services/candidateMessagingService';
 import { candidateApplicationTrackingService } from '../services/candidateApplicationTrackingService';
 import { usePendingApplication } from '../hooks/usePendingApplication';
@@ -611,9 +612,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
               <div className="space-y-6">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                   <div className="flex items-start justify-between mb-4">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-lg font-bold text-gray-900 mb-2">Complétez votre profil</h3>
-                      <p className="text-sm text-gray-600">Votre profil est complété à <span className="font-bold text-orange-600">{profileCompletion}%</span></p>
+                      <p className="text-sm text-gray-600 mb-3">Votre profil est complété à <span className="font-bold text-orange-600">{profileCompletion}%</span></p>
+                      <ProfileQualityBadge completion={profileCompletion} variant="compact" />
                     </div>
                     <button
                       onClick={() => setActiveTab('profile')}
@@ -740,6 +742,43 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             Abonnement Premium PRO+
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {profileCompletion >= 80 && (
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 border border-orange-400 shadow-lg hover:shadow-xl transition">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Send className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white mb-2">Postuler à une offre externe</h3>
+                        <p className="text-orange-100 mb-4 leading-relaxed">
+                          Utilisez votre profil JobGuinée pour candidater à des offres externes. Service 100% gratuit pour les profils qualifiés.
+                        </p>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-sm text-white">
+                            <CheckCircle className="w-4 h-4" />
+                            CV professionnel
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-sm text-white">
+                            <CheckCircle className="w-4 h-4" />
+                            Lettre personnalisée
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-sm text-white">
+                            <CheckCircle className="w-4 h-4" />
+                            Lien profil public
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => onNavigate('external-application')}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-orange-600 rounded-lg hover:bg-orange-50 transition shadow-md hover:shadow-lg font-semibold"
+                        >
+                          <Send className="w-5 h-5" />
+                          Postuler à une offre externe
+                        </button>
                       </div>
                     </div>
                   </div>
