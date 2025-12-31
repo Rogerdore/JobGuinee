@@ -47,6 +47,9 @@ import JobModerationModal from '../components/recruiter/JobModerationModal';
 import { sampleJobs, sampleApplications, sampleWorkflowStages } from '../utils/sampleJobsData';
 import { recruiterDashboardService, DashboardMetrics, RecentJob, RecentApplication } from '../services/recruiterDashboardService';
 import { calculateRecruiterCompletion } from '../utils/profileCompletion';
+import { generateJobDescription } from '../services/jobDescriptionService';
+import { validateJobData } from '../services/jobValidationService';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface RecruiterDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -93,6 +96,7 @@ type Tab = 'dashboard' | 'view-profile' | 'projects' | 'applications' | 'ai-gene
 
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { profile } = useAuth();
+  const { showNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -449,83 +453,68 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   const handlePublishJob = useCallback(async (data: JobFormData) => {
     if (!profile?.id) {
-      alert("Erreur: Profil utilisateur introuvable. Veuillez vous reconnecter.");
+      showNotification({
+        type: 'error',
+        title: 'Erreur d\'authentification',
+        message: 'Profil utilisateur introuvable. Veuillez vous reconnecter.',
+        duration: 5000
+      });
       return;
     }
 
     if (!company?.id) {
-      alert("Veuillez d'abord créer votre profil entreprise");
+      showNotification({
+        type: 'error',
+        title: 'Profil entreprise manquant',
+        message: 'Veuillez d\'abord créer votre profil entreprise dans l\'onglet Profil',
+        duration: 5000
+      });
       return;
     }
 
-    // Upload company logo if provided, otherwise keep existing URL
+    const validation = validateJobData(data, false);
+    if (!validation.isValid) {
+      showNotification({
+        type: 'error',
+        title: 'Erreur de validation',
+        message: validation.errors.join('\n'),
+        duration: 7000
+      });
+      return;
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('Avertissements validation:', validation.warnings);
+    }
+
     let logoUrl = data.company_logo_url || null;
     if (data.company_logo) {
-      const fileExt = data.company_logo.name.split('.').pop();
-      const fileName = `${company.id}-${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('company-logos')
-        .upload(fileName, data.company_logo, { upsert: true });
-
-      if (!uploadError && uploadData) {
-        const { data: urlData } = supabase.storage
+      try {
+        const fileExt = data.company_logo.name.split('.').pop();
+        const fileName = `${company.id}-${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('company-logos')
-          .getPublicUrl(fileName);
-        logoUrl = urlData.publicUrl;
+          .upload(fileName, data.company_logo, { upsert: true });
+
+        if (uploadError) {
+          showNotification({
+            type: 'warning',
+            title: 'Erreur upload logo',
+            message: 'Le logo n\'a pas pu être uploadé. L\'offre sera publiée sans logo.',
+            duration: 5000
+          });
+        } else if (uploadData) {
+          const { data: urlData } = supabase.storage
+            .from('company-logos')
+            .getPublicUrl(fileName);
+          logoUrl = urlData.publicUrl;
+        }
+      } catch (error) {
+        console.error('Upload logo error:', error);
       }
     }
 
-    let fullDescription = `# ${data.title}\n\n`;
-    fullDescription += `**Catégorie:** ${data.category} | **Contrat:** ${data.contract_type} | **Postes:** ${data.position_count}\n\n`;
-
-    fullDescription += `## Présentation du poste\n${data.description}\n\n`;
-
-    if (data.responsibilities) {
-      fullDescription += `## Missions principales\n${data.responsibilities}\n\n`;
-    }
-
-    if (data.profile) {
-      fullDescription += `## Profil recherché\n${data.profile}\n\n`;
-    }
-
-    if (data.skills.length > 0) {
-      fullDescription += `## Compétences clés\n${data.skills.join(' • ')}\n\n`;
-    }
-
-    fullDescription += `## Qualifications\n`;
-    fullDescription += `- **Niveau d'études:** ${data.education_level}\n`;
-    fullDescription += `- **Expérience:** ${data.experience_required}\n`;
-    if (data.languages.length > 0) {
-      fullDescription += `- **Langues:** ${data.languages.join(', ')}\n`;
-    }
-    fullDescription += `\n`;
-
-    if (data.salary_range) {
-      fullDescription += `## Rémunération\n`;
-      fullDescription += `- **Salaire:** ${data.salary_range}\n`;
-      fullDescription += `- **Type:** ${data.salary_type}\n`;
-      if (data.benefits.length > 0) {
-        fullDescription += `- **Avantages:** ${data.benefits.join(', ')}\n`;
-      }
-      fullDescription += `\n`;
-    }
-
-    if (data.company_description) {
-      fullDescription += `## À propos de l'entreprise\n${data.company_description}\n\n`;
-    }
-
-    fullDescription += `## Modalités de candidature\n`;
-    fullDescription += `- **Email:** ${data.application_email}\n`;
-    fullDescription += `- **Date limite:** ${data.deadline}\n`;
-    if (data.required_documents.length > 0) {
-      fullDescription += `- **Documents requis:** ${data.required_documents.join(', ')}\n`;
-    }
-    if (data.application_instructions) {
-      fullDescription += `\n${data.application_instructions}\n`;
-    }
-    fullDescription += `\n`;
-
-    fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
+    const fullDescription = generateJobDescription(data);
 
     const { data: insertedJob, error } = await supabase.from('jobs').insert({
       user_id: profile?.id,
@@ -534,17 +523,15 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       description: fullDescription,
       location: data.location,
       contract_type: data.contract_type,
-      department: data.company_name,
+      department: company.name || data.company_name,
       sector: data.sector,
       experience_level: data.experience_required,
       education_level: data.education_level,
-      deadline: data.deadline,
+      application_deadline: data.deadline,
       languages: data.languages,
       keywords: data.skills,
       status: 'pending',
       cover_letter_required: data.required_documents.includes('Lettre de motivation'),
-
-      // Nouveaux champs ajoutés
       category: data.category,
       position_count: data.position_count,
       position_level: data.position_level,
@@ -570,6 +557,13 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }).select('id, title').single();
 
     if (!error && insertedJob) {
+      showNotification({
+        type: 'success',
+        title: 'Offre soumise avec succès',
+        message: `Votre offre "${insertedJob.title}" est en attente de modération.`,
+        duration: 5000
+      });
+
       setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
@@ -582,9 +576,14 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       }, 1500);
     } else {
       console.error('Error publishing job:', error);
-      alert(`❌ Erreur lors de la soumission de l'offre\n\nDétails: ${error?.message || JSON.stringify(error)}`);
+      showNotification({
+        type: 'error',
+        title: 'Erreur de publication',
+        message: error?.message || 'Une erreur est survenue lors de la soumission de l\'offre',
+        duration: 7000
+      });
     }
-  }, [company, profile]);
+  }, [company, profile, showNotification]);
 
   const handleMoveApplication = async (applicationId: string, newStage: string) => {
     const { error } = await supabase

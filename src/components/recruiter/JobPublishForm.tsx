@@ -12,6 +12,8 @@ import AutoSaveIndicator from '../forms/AutoSaveIndicator';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { supabase } from '../../lib/supabase';
 import AccessRestrictionModal from '../common/AccessRestrictionModal';
+import JobPreviewModal from './JobPreviewModal';
+import { validateJobData } from '../../services/jobValidationService';
 import {
   jobTitleSuggestions,
   companySuggestions,
@@ -66,6 +68,8 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -1194,10 +1198,21 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
             >
               Annuler
             </button>
+
+            <button
+              type="button"
+              onClick={() => setShowPreview(true)}
+              disabled={!formData.title || !formData.description}
+              className="flex-1 px-6 py-3 bg-white border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+            >
+              <Eye className="w-5 h-5" />
+              Prévisualiser
+            </button>
+
             <button
               type="button"
               onClick={handlePublish}
@@ -1226,6 +1241,17 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
         restrictionType="premium-only"
         currentUserType={profile?.user_type}
       />
+
+      {showPreview && (
+        <JobPreviewModal
+          jobData={formData}
+          onClose={() => setShowPreview(false)}
+          onPublish={() => {
+            setShowPreview(false);
+            handlePublish();
+          }}
+        />
+      )}
     </div>
   );
 }
