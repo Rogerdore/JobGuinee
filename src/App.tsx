@@ -90,7 +90,8 @@ function AppContent() {
   const { loading } = useAuth();
 
   useEffect(() => {
-    seoCoreWebVitalsService.initRUM();
+    // Disabled temporarily - RLS permissions issue
+    // seoCoreWebVitalsService.initRUM();
   }, []);
 
   const handleNavigate = (page: string, paramOrState?: string | any) => {
