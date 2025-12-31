@@ -1,9 +1,9 @@
 export class AlphaMessages {
   static getWelcomeMessage(isPremium: boolean): string {
     if (isPremium) {
-      return "👋 Bonjour, je suis Alpha.\n\nVous êtes Premium PRO+. Profitez de tous vos services IA illimités !\n\nQue souhaitez-vous faire aujourd'hui ?";
+      return "Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee.\n\nVous êtes Premium PRO+. Profitez de tous vos services IA illimités !\n\nQue souhaitez-vous faire aujourd'hui ?";
     }
-    return "👋 Bonjour, je suis Alpha.\n\nJe peux vous aider à créer votre CV, trouver un emploi ou utiliser les services IA.\n\nQue souhaitez-vous faire aujourd'hui ?";
+    return "Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee. Besoin d'aide? Je suis là pour vous.\n\nQue souhaitez-vous faire aujourd'hui ?";
   }
 
   static getSubtitle(): string {
@@ -54,7 +54,7 @@ export class AlphaMessages {
   }
 
   static getRole(): string {
-    return "👋 Bonjour, je suis Alpha.\n\nAssistant intelligent pour l'emploi et la carrière en Guinée.\n\nQue souhaitez-vous faire aujourd'hui ?";
+    return "Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee. Besoin d'aide? Je suis là pour vous.\n\nQue souhaitez-vous faire aujourd'hui ?";
   }
 
   static getTone(): string {

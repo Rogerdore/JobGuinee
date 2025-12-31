@@ -118,9 +118,9 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       welcomeMsg = settings.welcome_message;
     } else {
       if (userContext?.is_premium) {
-        welcomeMsg = `Bienvenue 👑 Je suis Alpha, votre assistant Premium JobGuinée.\n\nVous bénéficiez d'un accès prioritaire à tous les services IA. Comment puis-je vous aider aujourd'hui ?`;
+        welcomeMsg = `Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee.\n\nVous bénéficiez d'un accès prioritaire à tous les services IA. Comment puis-je vous aider aujourd'hui ?`;
       } else {
-        welcomeMsg = `Bonjour 👋 Je suis Alpha, votre assistant professionnel JobGuinée.\n\nJe peux vous aider à :\n• Créer ou améliorer votre CV\n• Trouver un emploi\n• Accéder aux services IA\n• Répondre à vos questions\n\nQue puis-je faire pour vous ?`;
+        welcomeMsg = `Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee. Besoin d'aide? Je suis là pour vous.\n\nJe peux vous aider à :\n• Créer ou améliorer votre CV\n• Trouver un emploi\n• Accéder aux services IA\n• Répondre à vos questions\n\nQue puis-je faire pour vous ?`;
       }
     }
 
