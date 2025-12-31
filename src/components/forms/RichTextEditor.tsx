@@ -31,44 +31,15 @@ interface RichTextEditorProps {
   label?: string;
 }
 
-interface ImportedBlock {
-  id: string;
-  type: 'pdf' | 'docx' | 'image' | 'text';
-  content: string;
-  fileName: string;
-  timestamp: number;
-}
-
 const RichTextEditor = memo(function RichTextEditor({
   value,
   onChange,
   placeholder = 'Décrivez le poste en détail...',
   label = 'Description du poste',
 }: RichTextEditorProps) {
-  const [importedBlocks, setImportedBlocks] = useState<ImportedBlock[]>([]);
   const [isImporting, setIsImporting] = useState(false);
-  const [showBlocks, setShowBlocks] = useState(true);
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
-  const [editorContent, setEditorContent] = useState(value);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isManipulatingRef = useRef(false);
-  const changeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastContentRef = useRef(value);
-
-  const combineAllContent = useCallback(() => {
-    const quill = quillRef.current?.getEditor();
-    const currentContent = quill ? quill.root.innerHTML : editorContent;
-    const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-    const combined = blocksContent ? `${blocksContent}\n\n${currentContent}` : currentContent;
-
-    if (combined !== lastContentRef.current) {
-      lastContentRef.current = combined;
-      onChange(combined);
-    }
-  }, [editorContent, importedBlocks, onChange]);
 
   const handleUndo = () => {
     const quill = quillRef.current?.getEditor();
@@ -85,24 +56,17 @@ const RichTextEditor = memo(function RichTextEditor({
   };
 
   const handleSaveContent = useCallback(() => {
-    const quill = quillRef.current?.getEditor();
-    if (quill) {
-      setEditorContent(quill.root.innerHTML);
-    }
-    setHasUnsavedChanges(false);
-    combineAllContent();
-
     const notification = document.createElement('div');
     notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50 animate-slide-up';
     notification.innerHTML = `
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
       </svg>
-      <span>Modifications enregistrées avec succès !</span>
+      <span>Contenu sauvegardé !</span>
     `;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
-  }, [combineAllContent]);
+  }, []);
 
   const initialValueRef = useRef(value);
 
@@ -172,7 +136,7 @@ const RichTextEditor = memo(function RichTextEditor({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editorContent, importedBlocks]);
+  }, []);
 
   useEffect(() => {
     const makeImagesManipulable = () => {
@@ -242,12 +206,8 @@ const RichTextEditor = memo(function RichTextEditor({
         const onMouseUp = () => {
           if (isResizing) {
             isResizing = false;
-            setTimeout(() => {
-              isManipulatingRef.current = false;
-            }, 100);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
-            setHasUnsavedChanges(true);
           }
         };
 
@@ -357,22 +317,17 @@ const RichTextEditor = memo(function RichTextEditor({
         blockType = 'text';
       }
 
-      const newBlock: ImportedBlock = {
-        id: Date.now().toString(),
-        type: blockType,
-        content: extractedContent,
+      const separator = value.trim() ? '<p><br></p><hr><p><br></p>' : '';
+      const header = `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4"><p class="text-sm text-blue-700"><strong>📄 Importé depuis :</strong> ${file.name}</p></div>`;
+      const newContent = value + separator + header + extractedContent;
+
+      onChange(newContent);
+
+      console.log('[Import] Contenu inséré dans l\'éditeur:', {
         fileName: file.name,
-        timestamp: Date.now(),
-      };
-
-      setImportedBlocks((prev) => [...prev, newBlock]);
-
-      setTimeout(() => {
-        const allBlocks = [...importedBlocks, newBlock];
-        const blocksContent = allBlocks.map((block) => block.content).join('\n\n');
-        const combined = blocksContent ? `${blocksContent}\n\n${editorContent}` : editorContent;
-        onChange(combined);
-      }, 200);
+        type: blockType,
+        contentLength: extractedContent.length
+      });
     } catch (error) {
       console.error('Error importing file:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -567,58 +522,12 @@ const RichTextEditor = memo(function RichTextEditor({
     });
   };
 
-  const handleBlockEdit = (blockId: string, newContent: string) => {
-    setImportedBlocks((prev) =>
-      prev.map((block) =>
-        block.id === blockId ? { ...block, content: newContent } : block
-      )
-    );
-  };
-
-  const handleDeleteBlock = (blockId: string) => {
-    setImportedBlocks((prev) => prev.filter((block) => block.id !== blockId));
-    setTimeout(combineAllContent, 100);
-  };
-
-  const handleSaveBlock = (blockId: string) => {
-    setEditingBlockId(null);
-    setTimeout(combineAllContent, 100);
-  };
-
-  const handleEditorChange = useCallback((content: string, delta: any, source: any) => {
-    if (source !== 'user' || isManipulatingRef.current) {
-      return;
-    }
-
-    setEditorContent(content);
-
-    if (changeTimeoutRef.current) {
-      clearTimeout(changeTimeoutRef.current);
-    }
-
-    changeTimeoutRef.current = setTimeout(() => {
-      setHasUnsavedChanges(true);
-    }, 500);
-
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-    }
-
-    updateTimeoutRef.current = setTimeout(() => {
-      const blocksContent = importedBlocks.map((block) => block.content).join('\n\n');
-      const combined = blocksContent ? `${blocksContent}\n\n${content}` : content;
-
-      if (combined !== lastContentRef.current) {
-        lastContentRef.current = combined;
-        onChange(combined);
-      }
-    }, 2000);
-  }, [importedBlocks, onChange]);
+  const handleEditorChange = useCallback((content: string) => {
+    onChange(content);
+  }, [onChange]);
 
   const handleResetContent = () => {
     if (confirm('Êtes-vous sûr de vouloir réinitialiser tout le contenu ? Cette action est irréversible.')) {
-      setEditorContent('');
-      setHasUnsavedChanges(false);
       onChange('');
 
       const quill = quillRef.current?.getEditor();
@@ -645,7 +554,6 @@ const RichTextEditor = memo(function RichTextEditor({
       const selection = quill.getSelection();
       if (selection && selection.length > 0) {
         quill.deleteText(selection.index, selection.length);
-        setHasUnsavedChanges(true);
       } else {
         alert('Veuillez sélectionner du texte à supprimer');
       }
@@ -692,19 +600,6 @@ const RichTextEditor = memo(function RichTextEditor({
     } catch (error) {
       console.error('Error generating DOCX:', error);
       alert('Erreur lors de la génération du fichier Word');
-    }
-  };
-
-  const getBlockIcon = (type: string) => {
-    switch (type) {
-      case 'pdf':
-        return <FileText className="w-5 h-5 text-red-600" />;
-      case 'docx':
-        return <FileText className="w-5 h-5 text-blue-600" />;
-      case 'image':
-        return <ImageIcon className="w-5 h-5 text-green-600" />;
-      default:
-        return <File className="w-5 h-5 text-gray-600" />;
     }
   };
 
@@ -762,21 +657,11 @@ const RichTextEditor = memo(function RichTextEditor({
           <button
             type="button"
             onClick={handleSaveContent}
-            disabled={!hasUnsavedChanges}
-            className="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center gap-2"
             title="Enregistrer les modifications"
           >
             <Save className="w-4 h-4" />
             Enregistrer
-          </button>
-          <div className="w-px h-6 bg-gray-300"></div>
-          <button
-            type="button"
-            onClick={() => setShowBlocks(!showBlocks)}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            title={showBlocks ? 'Masquer les blocs' : 'Afficher les blocs'}
-          >
-            {showBlocks ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
           <button
             type="button"
@@ -824,89 +709,12 @@ const RichTextEditor = memo(function RichTextEditor({
         </label>
       </div>
 
-      {showBlocks && importedBlocks.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <File className="w-4 h-4" />
-            Blocs importés ({importedBlocks.length})
-          </h4>
-          {importedBlocks.map((block) => (
-            <div
-              key={block.id}
-              className="bg-white border-2 border-gray-200 rounded-xl p-4 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {getBlockIcon(block.type)}
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {block.fileName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(block.timestamp).toLocaleString('fr-FR')}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {editingBlockId === block.id ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSaveBlock(block.id)}
-                      className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
-                      title="Enregistrer"
-                    >
-                      <Save className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setEditingBlockId(block.id)}
-                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-                      title="Modifier"
-                    >
-                      <FileText className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteBlock(block.id)}
-                    className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {editingBlockId === block.id ? (
-                <div className="mt-3">
-                  <ReactQuill
-                    theme="snow"
-                    value={block.content}
-                    onChange={(content) => handleBlockEdit(block.id, content)}
-                    modules={modules}
-                    formats={formats}
-                    placeholder="Modifiez le contenu..."
-                    className="bg-white"
-                  />
-                </div>
-              ) : (
-                <div
-                  className="prose prose-sm max-w-none bg-gray-50 p-3 rounded-lg border border-gray-200 overflow-auto max-h-60"
-                  dangerouslySetInnerHTML={{ __html: block.content }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="border-2 border-gray-300 rounded-xl overflow-hidden" style={{ contain: 'layout' }}>
         <ReactQuill
           key="main-editor"
           ref={quillRef}
           theme="snow"
-          defaultValue={editorContent}
+          value={value}
           onChange={handleEditorChange}
           modules={modules}
           formats={formats}
