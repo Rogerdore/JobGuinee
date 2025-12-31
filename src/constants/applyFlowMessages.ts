@@ -54,9 +54,9 @@ export const APPLY_FLOW_MESSAGES = {
   },
 
   success: {
-    title: 'Candidature envoyée avec succès !',
-    subtitle: 'Votre candidature a bien été transmise au recruteur.',
-    reference: 'Référence de candidature',
+    title: 'Votre candidature a bien été envoyée 🎉',
+    subtitle: 'Un email de confirmation vous a été envoyé.',
+    reference: 'Référence',
     nextSteps: {
       title: 'Prochaines étapes',
       track: 'Suivez l\'évolution de votre candidature dans votre tableau de bord',
@@ -65,7 +65,7 @@ export const APPLY_FLOW_MESSAGES = {
     },
     profileCTA: {
       title: 'Augmentez vos chances de recrutement',
-      subtitle: 'Les profils complétés à 80% ou plus sont 3× plus visibles auprès des recruteurs',
+      subtitle: 'Complétez votre profil à 80% pour maximiser vos chances d\'être recruté.',
       benefits: [
         {
           icon: 'eye',
