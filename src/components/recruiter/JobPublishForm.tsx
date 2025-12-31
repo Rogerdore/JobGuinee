@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
@@ -36,6 +36,24 @@ interface JobPublishFormProps {
   existingJob?: any;
 }
 
+const FormSection = memo(({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+  <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-2xl p-6 border-2 border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex items-center gap-3 mb-5 pb-3 border-b-2 border-blue-100">
+      <div className="p-2 bg-gradient-to-br from-[#0E2F56] to-blue-600 rounded-lg">
+        <Icon className="w-5 h-5 text-white" />
+      </div>
+      <h3 className="text-xl font-bold text-gray-800">
+        {title}
+      </h3>
+    </div>
+    <div className="space-y-5">
+      {children}
+    </div>
+  </div>
+));
+
+FormSection.displayName = 'FormSection';
+
 export default function JobPublishForm({ onPublish, onClose, existingJob }: JobPublishFormProps) {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -47,12 +65,11 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [logoPreview, setLogoPreview] = useState<string>('');
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
-  const getInitialFormData = (): JobFormData => {
+  const getInitialFormData = useCallback((): JobFormData => {
     if (existingJob) {
       return {
         title: existingJob.title || '',
@@ -125,10 +142,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       auto_renewal: false,
       legal_compliance: false,
     };
-  };
+  }, [existingJob]);
 
   const [formData, setFormData] = useState<JobFormData>(getInitialFormData());
   const formDataRef = useRef(formData);
+  const validationErrorsRef = useRef<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     formDataRef.current = formData;
@@ -160,24 +179,22 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       }
     };
     checkDraft();
-  }, []);
+  }, [profile?.id, draftLoaded]);
 
-  const handleRecoverDraft = () => {
+  const handleRecoverDraft = useCallback(() => {
     const draft = loadDraft();
     if (draft) {
       setFormData(draft);
       setDraftLoaded(true);
       setShowDraftRecovery(false);
     }
-  };
+  }, [loadDraft]);
 
-  const handleDiscardDraft = () => {
+  const handleDiscardDraft = useCallback(() => {
     clearDraft();
     setShowDraftRecovery(false);
     setDraftLoaded(true);
-  };
-
-  const validationErrorsRef = useRef<Record<string, string>>({});
+  }, [clearDraft]);
 
   const updateFormField = useCallback((field: keyof JobFormData, value: any) => {
     setFormData(prev => {
@@ -190,22 +207,15 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     const currentError = validationErrorsRef.current[field];
 
     if (error !== currentError) {
-      if (error) {
-        validationErrorsRef.current = { ...validationErrorsRef.current, [field]: error };
-        setValidationErrors(prev => ({
-          ...prev,
-          [field]: error
-        }));
-      } else {
-        const newErrors = { ...validationErrorsRef.current };
-        delete newErrors[field];
-        validationErrorsRef.current = newErrors;
-        setValidationErrors(prev => {
-          const updated = { ...prev };
-          delete updated[field];
-          return updated;
-        });
-      }
+      validationErrorsRef.current = error
+        ? { ...validationErrorsRef.current, [field]: error }
+        : (() => {
+            const newErrors = { ...validationErrorsRef.current };
+            delete newErrors[field];
+            return newErrors;
+          })();
+
+      setValidationErrors(validationErrorsRef.current);
     }
   }, []);
 
@@ -275,14 +285,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     updateFormField('profile', value);
   }, [updateFormField]);
 
-  const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      action();
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -326,9 +329,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       alert('Erreur lors de l\'upload du logo');
       setUploadingLogo(false);
     }
-  };
+  }, [updateFormField]);
 
-  const handleGenerateWithAI = async () => {
+  const handleGenerateWithAI = useCallback(async () => {
     if (!isPremium) {
       setShowPremiumModal(true);
       return;
@@ -393,9 +396,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
     setIsGeneratingAI(false);
     alert('✨ Offre générée avec succès par l\'IA ! Vérifiez et ajustez les informations si nécessaire.');
-  };
+  }, [isPremium, formData.title, formData.location, formData.category, formData.sector]);
 
-  const handlePublish = async () => {
+  const handlePublish = useCallback(async () => {
     if (!formData.title || !formData.location || !formData.description || !formData.legal_compliance) {
       alert('Veuillez remplir tous les champs obligatoires et accepter la conformité légale.');
       return;
@@ -404,23 +407,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
     setLoading(true);
     await onPublish(formData);
     setLoading(false);
-  };
-
-  const FormSection = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-    <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-2xl p-6 border-2 border-blue-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-3 mb-5 pb-3 border-b-2 border-blue-100">
-        <div className="p-2 bg-gradient-to-br from-[#0E2F56] to-blue-600 rounded-lg">
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-800">
-          {title}
-        </h3>
-      </div>
-      <div className="space-y-5">
-        {children}
-      </div>
-    </div>
-  );
+  }, [formData, onPublish]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" style={{ contain: 'layout' }}>
@@ -437,6 +424,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
           </div>
           <button
             onClick={onClose}
+            type="button"
             className="p-2 hover:bg-white/20 rounded-lg transition"
           >
             <X className="w-5 h-5" />
@@ -648,8 +636,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <input
                   type="date"
+                  name="deadline"
                   value={formData.deadline}
-                  onChange={(e) => updateFormField('deadline', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   required
                 />
@@ -733,7 +722,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <div className="flex flex-wrap gap-2">
                   {formData.skills.map((skill, index) => (
                     <span
-                      key={index}
+                      key={`skill-${index}`}
                       className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2"
                     >
                       {skill}
@@ -923,8 +912,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <input
                   type="url"
+                  name="website"
                   value={formData.website}
-                  onChange={(e) => updateFormField('website', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="https://www.monentreprise.com"
                 />
@@ -995,7 +985,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 <div className="flex flex-wrap gap-2">
                   {formData.benefits.map((benefit, index) => (
                     <span
-                      key={index}
+                      key={`benefit-${index}`}
                       className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2"
                     >
                       {benefit}
@@ -1021,8 +1011,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </label>
                 <input
                   type="email"
+                  name="application_email"
                   value={formData.application_email}
-                  onChange={(e) => updateFormField('application_email', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
                   placeholder="Ex : rh@entreprise.com"
                   required
@@ -1201,12 +1192,14 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
           <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
             <button
+              type="button"
               onClick={onClose}
               className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
             >
               Annuler
             </button>
             <button
+              type="button"
               onClick={handlePublish}
               disabled={!formData.title || !formData.location || !formData.description || !formData.legal_compliance || loading}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
