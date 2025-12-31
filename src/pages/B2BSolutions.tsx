@@ -4,14 +4,18 @@ import {
   CheckCircle2, Sparkles, BarChart3, Database, FileText, TrendingUp,
   Award, Shield, Zap, Target, ArrowRight, Hammer, School, HelpCircle,
   ChevronDown, ChevronUp, Cpu, Clock, Globe, UserCheck, Phone, MessageCircle,
-  Send, Mail, MessageSquare
+  Send, Mail, MessageSquare, Handshake
 } from 'lucide-react';
 import { b2bLeadsService, B2BPageConfig } from '../services/b2bLeadsService';
 import B2BLeadForm from '../components/b2b/B2BLeadForm';
 import { useSEO } from '../hooks/useSEO';
 import { schemaService } from '../services/schemaService';
 
-export default function B2BSolutions() {
+interface B2BSolutionsProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProps) {
   const [pageConfig, setPageConfig] = useState<B2BPageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -867,6 +871,219 @@ export default function B2BSolutions() {
               <p className="text-gray-600">
                 Le meilleur des deux mondes : intelligence artificielle pour l'efficacité et expertise humaine pour la pertinence
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Partner Section - Integrated from PartnerHub */}
+      <section id="devenir-partenaire" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-full mb-4">
+              <Handshake className="w-5 h-5" />
+              <span className="font-bold">Partenariat Professionnel</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Devenir partenaire JobGuinée
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+              Publiez vos offres d'emploi et accédez à nos solutions RH professionnelles
+            </p>
+          </div>
+
+          {/* Important Notice - Business Rules */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="bg-white border-2 border-green-500 rounded-2xl shadow-xl p-8">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    Règles de publication pour les partenaires
+                  </h3>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-gray-800 leading-relaxed">
+                    <p>
+                      <strong>Pour publier une offre d'emploi sur JobGuinée</strong>, un partenaire doit soit{' '}
+                      <strong className="text-green-700">confier la publication à l'administrateur JobGuinée</strong>, soit{' '}
+                      <strong className="text-green-700">créer un compte recruteur</strong> afin de publier et gérer ses offres en toute autonomie.
+                    </p>
+                    <p className="mt-3">
+                      Aucune publication directe n'est autorisée sans compte ou validation administrative.
+                      Cette politique garantit la qualité des offres et la sécurité de tous nos utilisateurs.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Partner Options */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto mb-12">
+            {/* Option 1 - Admin Publication */}
+            <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-green-500 transition">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                <UserCheck className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  Option 1 : Confier la publication à JobGuinée
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Notre équipe prend en charge la publication complète de vos offres d'emploi avec accompagnement personnalisé
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Publication gérée par l'équipe JobGuinée</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Accompagnement personnalisé du début à la fin</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Optimisation et visibilité maximale garanties</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Traçabilité administrative complète</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowForm(true)}
+                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Contacter l'administrateur
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Option 2 - Create Account */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-xl p-8 border-2 border-green-500 relative">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold">
+                  RECOMMANDÉ
+                </span>
+              </div>
+              <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                <Briefcase className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  Option 2 : Créer un compte recruteur
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  Publiez en toute autonomie et accédez à tous nos outils RH professionnels
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Publication autonome de vos offres</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Accès ATS complet et pipeline de candidatures</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">CVthèque premium et matching IA</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">Packs Enterprise disponibles</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onNavigate('signup')}
+                className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg"
+              >
+                <User className="w-5 h-5" />
+                Créer un compte recruteur
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Partner Benefits */}
+          <div className="max-w-6xl mx-auto">
+            <h3 className="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-8">
+              Pourquoi devenir partenaire ?
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-2 border-transparent hover:border-green-500 transition">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Briefcase className="w-8 h-8 text-white" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  Publication simplifiée
+                </h4>
+                <p className="text-gray-600">
+                  Publiez vos offres en quelques clics. Nous nous occupons de la diffusion et de la qualité.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-2 border-transparent hover:border-blue-500 transition">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  Candidatures qualifiées
+                </h4>
+                <p className="text-gray-600">
+                  Recevez uniquement des candidatures correspondant précisément à vos critères.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-2 border-transparent hover:border-purple-500 transition">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-8 h-8 text-white" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
+                  Visibilité maximale
+                </h4>
+                <p className="text-gray-600">
+                  Bénéficiez de notre audience de +50,000 candidats actifs en Guinée.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="mt-12 text-center max-w-3xl mx-auto">
+            <div className="bg-gradient-to-r from-[#0E2F56] to-[#1a4275] rounded-2xl p-8 text-white">
+              <h3 className="text-2xl font-bold mb-4">
+                Prêt à devenir partenaire JobGuinée ?
+              </h3>
+              <p className="text-blue-100 mb-6">
+                Rejoignez les entreprises, cabinets RH et institutions qui nous font confiance pour leurs recrutements en Guinée
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="px-8 py-4 bg-white text-[#0E2F56] font-bold rounded-xl hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                >
+                  Démarrer maintenant
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <a
+                  href="https://wa.me/224XXXXXXXXX"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Parler à un expert
+                </a>
+              </div>
             </div>
           </div>
         </div>

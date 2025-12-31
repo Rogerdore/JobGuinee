@@ -191,7 +191,7 @@ function AppContent() {
         {currentPage === 'ai-chat' && <AIChat onNavigate={handleNavigate} />}
         {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
         {currentPage === 'credit-store' && <CreditStore onNavigate={handleNavigate} scrollTarget={scrollTarget} />}
-        {currentPage === 'b2b-solutions' && <B2BSolutions />}
+        {currentPage === 'b2b-solutions' && <B2BSolutions onNavigate={handleNavigate} />}
         {currentPage === 'admin-b2b-management' && <AdminB2BManagement />}
         {currentPage === 'admin-b2b-seo-config' && <AdminB2BSeoConfig />}
         {currentPage === 'admin-seo-landing-pages' && <AdminSEOLandingPages />}
