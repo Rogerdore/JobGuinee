@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { IAConfigService } from './iaConfigService';
 import { isPremiumActive } from '../utils/premiumHelpers';
+import { AlphaMessages } from './chatbotMessagesAlpha';
 
 export interface ChatbotSettings {
   id: string;
@@ -442,12 +443,7 @@ export class ChatbotService {
     const isPremium = userContext?.is_premium || false;
 
     if (kbSuggestions.length > 0) {
-      let answer = kbSuggestions[0].answer;
-      if (isPremium) {
-        answer += ' En tant que membre Premium PRO+, vous bénéficiez d\'un accès illimité à tous nos services IA!';
-      } else {
-        answer += ' N\'hésitez pas si vous avez d\'autres questions!';
-      }
+      const answer = AlphaMessages.limitResponse(kbSuggestions[0].answer, 2);
 
       return {
         answer,
@@ -458,84 +454,121 @@ export class ChatbotService {
     }
 
     if (questionLower.includes('cv')) {
-      if (isPremium) {
-        return {
-          answer: 'En tant que membre Premium PRO+, vous avez accès illimité à nos services de création et amélioration de CV! Vous pouvez créer autant de CV que vous le souhaitez sans consommer de crédits. Voulez-vous commencer maintenant?',
-          tokens_used: 60,
-          intent_detected: 'cv_help',
-          suggested_links: [{ label: 'Services Premium IA', page: 'premium-ai' }]
-        };
-      }
+      const response = isPremium
+        ? AlphaMessages.addActionAndAlternative(
+            'Vous êtes Premium PRO+. Services IA CV illimités !',
+            { label: 'Créer mon CV', route: 'premium-ai' }
+          )
+        : AlphaMessages.addActionAndAlternative(
+            'Je vous aide avec votre CV. Passez Premium pour un accès illimité !',
+            { label: 'Services IA', route: 'premium-ai' },
+            { label: 'Passer Premium', route: 'premium-subscribe' }
+          );
+
       return {
-        answer: 'Je peux vous aider avec votre CV! JobGuinée propose des services IA pour créer, améliorer ou adapter votre CV à une offre spécifique. Passez Premium PRO+ pour un accès illimité!',
+        answer: response.message,
         tokens_used: 60,
         intent_detected: 'cv_help',
-        suggested_links: [{ label: 'Services Premium IA', page: 'premium-ai' }, { label: 'Passer Premium', page: 'premium-subscribe' }]
+        suggested_links: response.suggested_links
       };
     }
 
     if (questionLower.includes('emploi') || questionLower.includes('offre') || questionLower.includes('job')) {
+      const response = AlphaMessages.addActionAndAlternative(
+        isPremium
+          ? 'Premium PRO+ : alertes prioritaires activées !'
+          : 'Découvrez nos offres ou créez des alertes personnalisées.',
+        { label: 'Voir les offres', route: 'jobs' }
+      );
+
       return {
-        answer: isPremium
-          ? 'En tant que membre Premium PRO+, vous recevez des alertes prioritaires pour les nouvelles offres! Consultez nos offres d\'emploi actuelles ou gérez vos alertes personnalisées.'
-          : 'Vous cherchez un emploi? Consultez nos offres d\'emploi actuelles ou créez des alertes personnalisées pour être notifié des nouvelles opportunités correspondant à votre profil.',
+        answer: response.message,
         tokens_used: 55,
         intent_detected: 'job_search',
-        suggested_links: [{ label: 'Voir les offres', page: 'jobs' }]
+        suggested_links: response.suggested_links
       };
     }
 
     if (questionLower.includes('crédit') || questionLower.includes('paiement') || questionLower.includes('acheter')) {
       if (isPremium) {
+        const response = AlphaMessages.addActionAndAlternative(
+          `Vous avez ${userContext?.credits_balance || 0} crédits. Services IA gratuits avec Premium PRO+ !`,
+          { label: 'Voir mes crédits', route: 'candidate-dashboard' }
+        );
+
         return {
-          answer: `Vous avez actuellement ${userContext?.credits_balance || 0} crédits disponibles. En tant que membre Premium PRO+, vous ne consommez aucun crédit pour les services IA! Vos crédits restent disponibles pour d'autres services.`,
+          answer: response.message,
           tokens_used: 58,
           intent_detected: 'credits',
-          suggested_links: [{ label: 'Voir mes crédits', page: 'candidate-dashboard' }]
+          suggested_links: response.suggested_links
         };
       }
+
+      const response = AlphaMessages.addActionAndAlternative(
+        'Les crédits débloquent nos services IA. Passez Premium pour un accès illimité !',
+        { label: 'Boutique', route: 'credit-store' },
+        { label: 'Passer Premium', route: 'premium-subscribe' }
+      );
+
       return {
-        answer: 'Les crédits IA vous permettent d\'utiliser nos services premium. Vous pouvez acheter des crédits dans la boutique ou passer Premium PRO+ pour un accès illimité!',
+        answer: response.message,
         tokens_used: 58,
         intent_detected: 'credits',
-        suggested_links: [{ label: 'Boutique de crédits', page: 'credit-store' }, { label: 'Passer Premium', page: 'premium-subscribe' }]
+        suggested_links: response.suggested_links
       };
     }
 
     if (questionLower.includes('profil') || questionLower.includes('compte')) {
+      const response = AlphaMessages.addActionAndAlternative(
+        isPremium
+          ? 'Premium PRO+ : visibilité maximale auprès des recruteurs !'
+          : 'Un profil complet attire les recruteurs. Complétez le vôtre !',
+        { label: 'Mon dashboard', route: 'candidate-dashboard' }
+      );
+
       return {
-        answer: isPremium
-          ? 'En tant que membre Premium PRO+, votre profil bénéficie d\'une visibilité accrue auprès des recruteurs! Complétez vos expériences, compétences et formations pour maximiser vos chances.'
-          : 'Un profil complet augmente vos chances d\'être remarqué par les recruteurs! Complétez vos expériences, compétences et formations dans votre dashboard.',
+        answer: response.message,
         tokens_used: 52,
         intent_detected: 'profile',
-        suggested_links: [{ label: 'Mon dashboard', page: 'candidate-dashboard' }]
+        suggested_links: response.suggested_links
       };
     }
 
     if (questionLower.includes('premium')) {
       if (isPremium) {
+        const daysText = userContext?.remaining_days ? ` ${userContext.remaining_days}j restants.` : '';
+        const response = AlphaMessages.addActionAndAlternative(
+          `Vous êtes Premium PRO+ !${daysText} Profitez de tous les services IA.`,
+          { label: 'Mes avantages', route: 'premium-subscribe' }
+        );
+
         return {
-          answer: `Vous êtes déjà membre Premium PRO+! ${userContext?.remaining_days ? `Il vous reste ${userContext.remaining_days} jours d'accès.` : ''} Profitez de tous nos services IA sans limite et de votre visibilité accrue auprès des recruteurs.`,
+          answer: response.message,
           tokens_used: 55,
           intent_detected: 'premium_status',
-          suggested_links: [{ label: 'Mes avantages Premium', page: 'premium-subscribe' }]
+          suggested_links: response.suggested_links
         };
       }
+
+      const response = AlphaMessages.addActionAndAlternative(
+        'Premium PRO+ : services IA illimités, 100 crédits bonus, 10GB cloud. 350,000 GNF/mois !',
+        { label: 'Découvrir Premium', route: 'premium-subscribe' }
+      );
+
       return {
-        answer: 'Premium PRO+ vous donne un accès illimité à tous les services IA (CV, lettres, simulations, coaching), 100 crédits bonus à l\'inscription, 10GB de stockage cloud, et un support prioritaire 24/7 pour seulement 350,000 GNF/mois!',
+        answer: response.message,
         tokens_used: 70,
         intent_detected: 'premium_info',
-        suggested_links: [{ label: 'Découvrir Premium', page: 'premium-subscribe' }]
+        suggested_links: response.suggested_links
       };
     }
 
     const greeting = isPremium
-      ? `Bonjour membre Premium PRO+! ${userContext?.remaining_days ? `(${userContext.remaining_days}j restants)` : ''} Je suis là pour vous aider!`
-      : 'Je suis là pour vous aider!';
+      ? `Premium PRO+ activé !${userContext?.remaining_days ? ` (${userContext.remaining_days}j)` : ''}`
+      : AlphaMessages.getRole();
 
     return {
-      answer: `${greeting} Vous pouvez me poser des questions sur la création de CV, la recherche d\'emploi, les services IA, ou la navigation sur JobGuinée. Comment puis-je vous assister?`,
+      answer: greeting,
       tokens_used: 45,
       intent_detected: 'general'
     };

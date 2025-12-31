@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { ChatbotService, ChatbotResponse, KnowledgeBaseEntry, ChatMessage, UserContext } from './chatbotService';
 import { ChatbotSanitizer, ChatbotRateLimit } from './chatbotSanitizer';
+import { AlphaMessages } from './chatbotMessagesAlpha';
 
 interface EnhancedChatContext {
   sessionId: string;
@@ -12,16 +13,6 @@ interface EnhancedChatContext {
 
 export class ChatbotEnhancedService {
   private static contextCache: Map<string, EnhancedChatContext> = new Map();
-  private static transitionMessages = [
-    "Je réfléchis à la meilleure réponse pour vous...",
-    "Laissez-moi un instant, je cherche l'information parfaite...",
-    "Un moment s'il vous plaît, je prépare une réponse complète...",
-    "Je consulte mes ressources pour vous aider au mieux..."
-  ];
-
-  static getTransitionMessage(): string {
-    return this.transitionMessages[Math.floor(Math.random() * this.transitionMessages.length)];
-  }
 
   static async askChatbotEnhanced(
     message: string,
@@ -134,14 +125,7 @@ export class ChatbotEnhancedService {
     message: string,
     context: EnhancedChatContext
   ): Promise<ChatbotResponse> {
-    const reformulations = [
-      "Je remarque que vous posez cette question à nouveau. Puis-je reformuler ma réponse différemment ou avez-vous besoin de précisions sur un point spécifique ?",
-      "Il semble que ma réponse précédente n'était pas tout à fait claire. Pourriez-vous me préciser ce qui vous manque ?",
-      "Je vois que vous revenez sur ce sujet. Y a-t-il un aspect particulier que je n'ai pas bien expliqué ?",
-      "Cette question vous préoccupe. Dites-moi exactement ce que vous cherchez à savoir et je vais adapter ma réponse."
-    ];
-
-    const answer = reformulations[Math.floor(Math.random() * reformulations.length)];
+    const answer = AlphaMessages.getClarificationMessage();
 
     return {
       success: true,
@@ -159,10 +143,7 @@ export class ChatbotEnhancedService {
     context: EnhancedChatContext,
     userContext: UserContext | null
   ): Promise<ChatbotResponse> {
-    let answer = kbEntry.answer;
-
-    answer = this.limitResponseLength(answer);
-    answer = this.makeResponseFriendly(answer, userContext);
+    let answer = AlphaMessages.limitResponse(kbEntry.answer, 2);
 
     context.lastIntent = kbEntry.intent_name;
     context.lastMessages.push({ user: message, bot: answer });
@@ -199,11 +180,7 @@ export class ChatbotEnhancedService {
     context: EnhancedChatContext,
     userContext: UserContext | null
   ): Promise<ChatbotResponse> {
-    const suggestions = kbResults.slice(0, 3).map((kb, idx) =>
-      `${idx + 1}. ${kb.question}`
-    ).join('\n');
-
-    const answer = `Je ne suis pas sûr d'avoir bien compris votre question. Vouliez-vous peut-être demander :\n\n${suggestions}\n\nOu pouvez-vous reformuler votre question ?`;
+    const answer = AlphaMessages.getClarificationMessage();
 
     if (userId) {
       await ChatbotService.logConversation({
@@ -223,52 +200,6 @@ export class ChatbotEnhancedService {
       answer,
       intent_detected: 'clarification_needed'
     };
-  }
-
-  private static limitResponseLength(answer: string): string {
-    const sentences = answer.match(/[^.!?]+[.!?]+/g) || [answer];
-
-    if (sentences.length <= 3) {
-      return answer;
-    }
-
-    const firstThree = sentences.slice(0, 3).join(' ');
-
-    if (firstThree.length > 500) {
-      return firstThree.substring(0, 497) + '...';
-    }
-
-    return firstThree;
-  }
-
-  private static makeResponseFriendly(answer: string, userContext: UserContext | null): string {
-    if (!answer.endsWith('.') && !answer.endsWith('!') && !answer.endsWith('?')) {
-      answer += '.';
-    }
-
-    if (userContext?.is_premium) {
-      const premiumSuffixes = [
-        " En tant que membre Premium PRO+, n'hésitez pas à utiliser nos services IA illimités !",
-        " Profitez de votre accès Premium pour aller plus loin !",
-        " Votre statut Premium vous donne accès à toutes nos fonctionnalités avancées."
-      ];
-
-      if (Math.random() > 0.7) {
-        answer += premiumSuffixes[Math.floor(Math.random() * premiumSuffixes.length)];
-      }
-    } else {
-      const generalSuffixes = [
-        " N'hésitez pas si vous avez d'autres questions !",
-        " Je reste à votre disposition pour plus d'informations.",
-        " Que puis-je faire d'autre pour vous ?"
-      ];
-
-      if (Math.random() > 0.7) {
-        answer += generalSuffixes[Math.floor(Math.random() * generalSuffixes.length)];
-      }
-    }
-
-    return answer;
   }
 
   static clearContext(sessionId: string): void {

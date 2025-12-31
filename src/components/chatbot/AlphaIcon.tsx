@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export type AlphaIconState = 'idle' | 'greeting' | 'thinking' | 'happy' | 'speaking' | 'impatient';
+export type AlphaIconState = 'idle' | 'greeting' | 'thinking' | 'happy' | 'speaking' | 'impatient' | 'success' | 'blocked';
 
 interface AlphaIconProps {
   state?: AlphaIconState;
@@ -32,6 +32,10 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
         return 'animate-chatbot-excited';
       case 'impatient':
         return 'animate-chatbot-excited';
+      case 'success':
+        return 'animate-chatbot-success';
+      case 'blocked':
+        return '';
       default:
         return '';
     }
@@ -61,33 +65,36 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
       style={{ transformOrigin: 'center' }}
     >
       <g id="alpha-avatar">
-        <circle cx="50" cy="40" r="20" fill="#3B82F6" />
+        <circle cx="50" cy="40" r="20" fill="#1E293B" />
 
-        <circle cx="50" cy="40" r="18" fill="#60A5FA" />
+        <circle cx="50" cy="40" r="18" fill="#334155" />
 
-        <rect x="35" y="50" width="30" height="35" rx="4" fill="#1E40AF" />
+        <rect x="35" y="50" width="30" height="35" rx="4" fill="#0F172A" />
 
-        <rect x="38" y="54" width="24" height="28" rx="2" fill="#2563EB" />
+        <rect x="38" y="54" width="24" height="28" rx="2" fill="#1E293B" />
 
         <line x1="50" y1="54" x2="50" y2="78" stroke="#1E40AF" strokeWidth="1" />
 
         <g id="left-arm" className={`transition-transform duration-300 ${getArmRotation()}`} style={{ transformOrigin: '35px 58px' }}>
-          <line x1="35" y1="58" x2="28" y2="70" stroke="#2563EB" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="28" cy="72" r="3" fill="#60A5FA" />
+          <line x1="35" y1="58" x2="28" y2="70" stroke="#1E293B" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="28" cy="72" r="3" fill="#334155" />
         </g>
 
-        <g id="right-arm" className="transition-transform duration-300" style={{ transformOrigin: '65px 58px' }}>
-          <line x1="65" y1="58" x2="72" y2="70" stroke="#2563EB" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="72" cy="72" r="3" fill="#60A5FA" />
+        <g id="right-arm" className={`transition-transform duration-300 ${state === 'success' ? 'rotate-45' : ''}`} style={{ transformOrigin: '65px 58px' }}>
+          <line x1="65" y1="58" x2="72" y2="70" stroke="#1E293B" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="72" cy="72" r="3" fill="#334155" />
+          {state === 'success' && (
+            <text x="74" y="68" fontSize="12" fill="#06B6D4">👍</text>
+          )}
         </g>
 
         <g id="legs">
-          <line x1="44" y1="85" x2="42" y2="95" stroke="#1E40AF" strokeWidth="3" strokeLinecap="round" />
-          <line x1="56" y1="85" x2="58" y2="95" stroke="#1E40AF" strokeWidth="3" strokeLinecap="round" />
+          <line x1="44" y1="85" x2="42" y2="95" stroke="#0F172A" strokeWidth="3" strokeLinecap="round" />
+          <line x1="56" y1="85" x2="58" y2="95" stroke="#0F172A" strokeWidth="3" strokeLinecap="round" />
         </g>
 
         <g id="tie">
-          <polygon points="50,54 46,60 50,68 54,60" fill="#DC2626" />
+          <polygon points="50,54 46,60 50,68 54,60" fill="#06B6D4" />
         </g>
 
         <g id="eyes">
@@ -130,15 +137,22 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
 
         {state === 'speaking' && (
           <g id="speech-indicators" className="animate-pulse">
-            <circle cx="72" cy="35" r="2" fill="#3B82F6" opacity="0.8">
+            <circle cx="72" cy="35" r="2" fill="#06B6D4" opacity="0.8">
               <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1s" repeatCount="indefinite" />
             </circle>
-            <circle cx="77" cy="32" r="2" fill="#3B82F6" opacity="0.6">
+            <circle cx="77" cy="32" r="2" fill="#06B6D4" opacity="0.6">
               <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1s" begin="0.2s" repeatCount="indefinite" />
             </circle>
-            <circle cx="82" cy="29" r="2" fill="#3B82F6" opacity="0.4">
+            <circle cx="82" cy="29" r="2" fill="#06B6D4" opacity="0.4">
               <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1s" begin="0.4s" repeatCount="indefinite" />
             </circle>
+          </g>
+        )}
+
+        {state === 'blocked' && (
+          <g id="pause-gesture">
+            <line x1="60" y1="55" x2="65" y2="65" stroke="#06B6D4" strokeWidth="2" strokeLinecap="round" />
+            <text x="68" y="62" fontSize="10" fill="#06B6D4">✋</text>
           </g>
         )}
       </g>
