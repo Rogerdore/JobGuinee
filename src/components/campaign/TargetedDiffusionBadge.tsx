@@ -49,8 +49,12 @@ export default function TargetedDiffusionBadge({
       return;
     }
 
-    const url = `/campaigns/new?entity_type=${entityType}&entity_id=${entityId}`;
-    onNavigate(url);
+    const params = new URLSearchParams({
+      entity_type: entityType,
+      entity_id: entityId
+    });
+    window.history.pushState({}, '', `?page=campaign-create&${params.toString()}`);
+    onNavigate('campaign-create');
   };
 
   if (loading) {

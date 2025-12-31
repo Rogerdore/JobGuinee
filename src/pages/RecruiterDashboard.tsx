@@ -122,6 +122,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [showModerationSuccessModal, setShowModerationSuccessModal] = useState(false);
   const [showDiffusionProposalModal, setShowDiffusionProposalModal] = useState(false);
   const [publishedJobTitle, setPublishedJobTitle] = useState('');
+  const [publishedJobId, setPublishedJobId] = useState('');
   const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
@@ -526,7 +527,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
     fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
 
-    const { error } = await supabase.from('jobs').insert({
+    const { data: insertedJob, error } = await supabase.from('jobs').insert({
       user_id: profile?.id,
       company_id: company.id,
       title: data.title,
@@ -566,21 +567,22 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       legal_compliance: data.legal_compliance,
       responsibilities: data.responsibilities,
       benefits: data.benefits.join(', '),
-    });
+    }).select('id, title').single();
 
-    if (!error) {
+    if (!error && insertedJob) {
       setShowJobForm(false);
       await loadData();
       setActiveTab('projects');
       setShowModerationSuccessModal(true);
 
-      setPublishedJobTitle(data.title);
+      setPublishedJobTitle(insertedJob.title);
+      setPublishedJobId(insertedJob.id);
       setTimeout(() => {
         setShowDiffusionProposalModal(true);
       }, 1500);
     } else {
       console.error('Error publishing job:', error);
-      alert(`❌ Erreur lors de la soumission de l'offre\n\nDétails: ${error.message || JSON.stringify(error)}`);
+      alert(`❌ Erreur lors de la soumission de l'offre\n\nDétails: ${error?.message || JSON.stringify(error)}`);
     }
   }, [company, profile]);
 
@@ -1451,6 +1453,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
         onClose={() => setShowDiffusionProposalModal(false)}
         onStartDiffusion={() => {
           setShowDiffusionProposalModal(false);
+          const params = new URLSearchParams({
+            entity_type: 'job',
+            entity_id: publishedJobId
+          });
+          window.history.pushState({}, '', `?page=campaign-create&${params.toString()}`);
           onNavigate('campaign-create');
         }}
         onLater={() => setShowDiffusionProposalModal(false)}
