@@ -447,6 +447,11 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   };
 
   const handlePublishJob = useCallback(async (data: JobFormData) => {
+    if (!profile?.id) {
+      alert("Erreur: Profil utilisateur introuvable. Veuillez vous reconnecter.");
+      return;
+    }
+
     if (!company?.id) {
       alert("Veuillez d'abord créer votre profil entreprise");
       return;
@@ -522,6 +527,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     fullDescription += `## Conformité légale\nPoste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).\nNous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
 
     const { error } = await supabase.from('jobs').insert({
+      user_id: profile?.id,
       company_id: company.id,
       title: data.title,
       description: fullDescription,
@@ -574,9 +580,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       }, 1500);
     } else {
       console.error('Error publishing job:', error);
-      alert('❌ Erreur lors de la soumission de l\'offre');
+      alert(`❌ Erreur lors de la soumission de l'offre\n\nDétails: ${error.message || JSON.stringify(error)}`);
     }
-  }, [company]);
+  }, [company, profile]);
 
   const handleMoveApplication = async (applicationId: string, newStage: string) => {
     const { error } = await supabase
