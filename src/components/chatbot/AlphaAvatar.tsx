@@ -282,11 +282,11 @@ export default function AlphaAvatar({
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            <div className="relative bg-white border-2 border-[#0E2F56] rounded-2xl px-4 py-3 shadow-xl">
+            <div className="relative bg-white/50 backdrop-blur-sm border-2 border-[#0E2F56]/50 rounded-2xl px-4 py-3 shadow-xl">
               <p className="text-sm text-slate-800 font-medium leading-relaxed">
                 {proactiveMessage}
               </p>
-              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white border-r-2 border-b-2 border-[#0E2F56] rotate-45" />
+              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white/50 border-r-2 border-b-2 border-[#0E2F56]/50 rotate-45" />
             </div>
           </motion.div>
         )}
