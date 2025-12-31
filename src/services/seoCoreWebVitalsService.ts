@@ -50,30 +50,31 @@ class SEOCoreWebVitalsService {
 
   async recordMetrics(metrics: Partial<CoreWebVitalsMetrics>): Promise<boolean> {
     try {
-      const { data: pageMeta } = await supabase
-        .from('seo_page_meta')
-        .select('id')
-        .eq('page_path', metrics.page_path)
-        .maybeSingle();
+      if (!metrics.page_path) {
+        console.warn('[Core Web Vitals] page_path is required');
+        return false;
+      }
 
-      if (pageMeta) {
-        const currentMetrics = {
-          lcp: metrics.lcp,
-          fid: metrics.fid,
-          cls: metrics.cls,
-          fcp: metrics.fcp,
-          ttfb: metrics.ttfb
-        };
+      const today = new Date().toISOString().split('T')[0];
 
-        const { error } = await supabase
-          .from('seo_page_analytics')
-          .upsert({
-            page_meta_id: pageMeta.id,
-            ...currentMetrics,
-            recorded_at: new Date().toISOString()
-          });
+      const { error } = await supabase
+        .from('seo_page_analytics')
+        .upsert({
+          page_path: metrics.page_path,
+          lcp: metrics.lcp || null,
+          fid: metrics.fid || null,
+          cls: metrics.cls || null,
+          fcp: metrics.fcp || null,
+          ttfb: metrics.ttfb || null,
+          date: today,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'page_path,date'
+        });
 
-        if (error) throw error;
+      if (error) {
+        console.error('[Core Web Vitals] Error upserting:', error);
+        throw error;
       }
 
       const logEntry = {
@@ -81,12 +82,8 @@ class SEOCoreWebVitalsService {
         lcp: metrics.lcp,
         fid: metrics.fid,
         cls: metrics.cls,
-        fcp: metrics.fcp,
-        ttfb: metrics.ttfb,
-        inp: metrics.inp,
         device_type: metrics.device_type || 'desktop',
         connection_type: metrics.connection_type,
-        user_agent: metrics.user_agent,
         timestamp: new Date().toISOString()
       };
 
@@ -134,32 +131,38 @@ class SEOCoreWebVitalsService {
 
   async getPagePerformanceReport(pagePath: string, days: number = 30): Promise<PagePerformanceReport | null> {
     try {
-      const { data: pageMeta } = await supabase
-        .from('seo_page_meta')
-        .select('id')
-        .eq('page_path', pagePath)
-        .maybeSingle();
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      const cutoffDateString = cutoffDate.toISOString().split('T')[0];
 
-      if (!pageMeta) {
-        return null;
-      }
-
-      const { data: analytics } = await supabase
+      const { data: analytics, error } = await supabase
         .from('seo_page_analytics')
         .select('*')
-        .eq('page_meta_id', pageMeta.id)
-        .order('recorded_at', { ascending: false })
+        .eq('page_path', pagePath)
+        .gte('date', cutoffDateString)
+        .order('date', { ascending: false })
         .limit(100);
+
+      if (error) {
+        console.error('[Core Web Vitals] Error fetching analytics:', error);
+        return this.generateMockReport(pagePath);
+      }
 
       if (!analytics || analytics.length === 0) {
         return this.generateMockReport(pagePath);
       }
 
-      const avgLcp = this.average(analytics.map(a => a.lcp).filter(Boolean));
-      const avgFid = this.average(analytics.map(a => a.fid).filter(Boolean));
-      const avgCls = this.average(analytics.map(a => a.cls).filter(Boolean));
-      const avgFcp = this.average(analytics.map(a => a.fcp).filter(Boolean));
-      const avgTtfb = this.average(analytics.map(a => a.ttfb).filter(Boolean));
+      const lcpValues = analytics.map(a => a.lcp).filter(v => v != null && v > 0);
+      const fidValues = analytics.map(a => a.fid).filter(v => v != null && v > 0);
+      const clsValues = analytics.map(a => a.cls).filter(v => v != null && v >= 0);
+      const fcpValues = analytics.map(a => a.fcp).filter(v => v != null && v > 0);
+      const ttfbValues = analytics.map(a => a.ttfb).filter(v => v != null && v > 0);
+
+      const avgLcp = lcpValues.length > 0 ? this.average(lcpValues) : 2200;
+      const avgFid = fidValues.length > 0 ? this.average(fidValues) : 80;
+      const avgCls = clsValues.length > 0 ? this.average(clsValues) : 0.08;
+      const avgFcp = fcpValues.length > 0 ? this.average(fcpValues) : 1500;
+      const avgTtfb = ttfbValues.length > 0 ? this.average(ttfbValues) : 600;
 
       const lcpScore: WebVitalsScore = {
         metric: 'LCP',
