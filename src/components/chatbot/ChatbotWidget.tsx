@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { ChatbotService, ChatbotSettings, ChatbotStyle } from '../../services/chatbotService';
 import ChatbotWindow from './ChatbotWindow';
+import AlphaIcon from './AlphaIcon';
 
 interface ChatbotWidgetProps {
   onNavigate?: (page: string) => void;
@@ -67,18 +68,27 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         }}
       >
         {!isOpen ? (
-          <div className="relative">
+          <div className="relative group">
             <button
               onClick={() => setIsOpen(true)}
-              className={`${widgetSize} rounded-full ${shadow} hover:scale-110 transition-transform duration-300 flex items-center justify-center ${widgetAnimation}`}
+              className={`${widgetSize} rounded-full ${shadow} hover:scale-110 transition-all duration-300 flex items-center justify-center ${widgetAnimation} backdrop-blur-sm relative overflow-hidden`}
               style={{
-                backgroundColor: style?.primary_color || '#3B82F6'
+                background: `linear-gradient(135deg, ${style?.primary_color || '#3B82F6'} 0%, ${style?.secondary_color || '#1E40AF'} 100%)`,
+                boxShadow: '0 10px 40px rgba(59, 130, 246, 0.4)'
               }}
-              aria-label="Ouvrir le chatbot"
+              aria-label="Discuter avec Alpha"
             >
-              <MessageCircle className="w-1/2 h-1/2 text-white" />
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <AlphaIcon state="greeting" size={parseInt(widgetSize.split('-')[1]) * 0.6 || 32} className="relative z-10" />
             </button>
-            <div className="absolute top-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-status-pulse"></div>
+            <div className="absolute top-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-status-pulse shadow-lg z-20"></div>
+
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+              <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap shadow-xl">
+                Besoin d'aide ? 💬
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+              </div>
+            </div>
           </div>
         ) : (
           <button

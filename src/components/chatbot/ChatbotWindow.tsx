@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickActions from './QuickActions';
+import AlphaIcon, { AlphaIconState } from './AlphaIcon';
 
 interface Message {
   id: string;
@@ -41,6 +42,8 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   const [userContext, setUserContext] = useState<UserContext | null>(null);
   const [enhancedUserContext, setEnhancedUserContext] = useState<EnhancedUserContext | null>(null);
   const [iconAnimation, setIconAnimation] = useState<string>('animate-chatbot-wave');
+  const [alphaState, setAlphaState] = useState<AlphaIconState>('greeting');
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,15 +56,29 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
 
   useEffect(() => {
     const animations = ['animate-chatbot-wave', 'animate-chatbot-bounce', 'animate-chatbot-excited'];
+    const alphaStates: AlphaIconState[] = ['idle', 'happy', 'greeting'];
     let currentIndex = 0;
 
     const animationInterval = setInterval(() => {
       currentIndex = (currentIndex + 1) % animations.length;
       setIconAnimation(animations[currentIndex]);
+      setAlphaState(alphaStates[currentIndex]);
     }, 4000);
+
+    setTimeout(() => setAlphaState('idle'), 2000);
 
     return () => clearInterval(animationInterval);
   }, []);
+
+  useEffect(() => {
+    if (loading) {
+      setAlphaState('thinking');
+    } else if (messages.length > 0 && messages[messages.length - 1].type === 'bot') {
+      setAlphaState('speaking');
+      setTimeout(() => setAlphaState('happy'), 2000);
+      setTimeout(() => setAlphaState('idle'), 4000);
+    }
+  }, [loading, messages]);
 
   useEffect(() => {
     if (userContext !== null || !user || !settings.enable_premium_detection) {
@@ -93,11 +110,23 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   };
 
   const displayWelcomeMessage = () => {
+    let welcomeMsg = '';
+
     if (userContext?.is_premium && settings.premium_welcome_message) {
-      addBotMessage(settings.premium_welcome_message);
+      welcomeMsg = settings.premium_welcome_message;
+    } else if (settings.welcome_message) {
+      welcomeMsg = settings.welcome_message;
     } else {
-      addBotMessage(settings.welcome_message);
+      if (userContext?.is_premium) {
+        welcomeMsg = `Bienvenue 👑 Je suis Alpha, votre assistant Premium JobGuinée.\n\nVous bénéficiez d'un accès prioritaire à tous les services IA. Comment puis-je vous aider aujourd'hui ?`;
+      } else {
+        welcomeMsg = `Bonjour 👋 Je suis Alpha, votre assistant professionnel JobGuinée.\n\nJe peux vous aider à :\n• Créer ou améliorer votre CV\n• Trouver un emploi\n• Accéder aux services IA\n• Répondre à vos questions\n\nQue puis-je faire pour vous ?`;
+      }
     }
+
+    addBotMessage(welcomeMsg);
+    setAlphaState('greeting');
+    setTimeout(() => setAlphaState('idle'), 3000);
   };
 
   const loadQuickActions = async () => {
@@ -268,10 +297,11 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
 
   return (
     <div
-      className={`fixed bottom-24 ${position} w-96 h-[600px] bg-white rounded-2xl ${shadow} flex flex-col overflow-hidden z-40 animate-slide-up`}
+      className={`fixed bottom-24 ${position} w-96 h-[600px] rounded-2xl ${shadow} flex flex-col overflow-hidden z-40 animate-slide-up backdrop-blur-xl bg-white/95 border border-white/20`}
       style={{
-        backgroundColor: style?.background_color || '#FFFFFF',
-        borderRadius: `${style?.border_radius || 12}px`
+        background: `linear-gradient(135deg, ${style?.background_color || '#FFFFFF'}f5 0%, ${style?.background_color || '#FFFFFF'}e5 100%)`,
+        borderRadius: `${style?.border_radius || 16}px`,
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}
     >
       <div
@@ -283,14 +313,15 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       >
         <div className="flex items-center gap-3 flex-1">
           <div className="relative">
-            <div className={`w-10 h-10 rounded-full bg-white/20 flex items-center justify-center ${iconAnimation}`}>
-              <span className="text-xl">🤖</span>
+            <div className={`w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center p-1`}>
+              <AlphaIcon state={alphaState} size={40} />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-status-pulse"></div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-status-pulse shadow-lg"></div>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-white">Assistant JobGuinée</h3>
+              <h3 className="font-bold text-white text-lg">Alpha</h3>
+              <span className="text-xs text-white/60 font-normal">Assistant IA</span>
               {userContext?.is_premium && settings.enable_premium_detection && (
                 <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500 text-yellow-900 text-xs font-bold rounded-full">
                   <Crown className="w-3 h-3" />

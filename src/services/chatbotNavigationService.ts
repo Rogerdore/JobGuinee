@@ -204,6 +204,7 @@ export class ChatbotNavigationService {
     showConfirmation: boolean;
     intent: NavigationIntent | null;
     alternatives?: NavigationIntent[];
+    autoNavigateDelay?: number;
   } {
     if (!detectionResult.intent || detectionResult.confidence < 0.3) {
       return {
@@ -238,6 +239,15 @@ export class ChatbotNavigationService {
 
     const suggestion = this.generateNavigationSuggestion(intent, userContext);
 
+    if (detectionResult.confidence >= 0.6 && detectionResult.confidence < 0.75) {
+      return {
+        message: `${suggestion}\n\n✨ Souhaitez-vous que je vous y amène maintenant ?`,
+        showConfirmation: true,
+        intent,
+        autoNavigateDelay: undefined
+      };
+    }
+
     if (detectionResult.confidence < 0.6 && detectionResult.alternativeIntents) {
       const alternativesText = detectionResult.alternativeIntents
         .map(alt => `- ${alt.displayName}`)
@@ -248,6 +258,15 @@ export class ChatbotNavigationService {
         showConfirmation: true,
         intent,
         alternatives: detectionResult.alternativeIntents
+      };
+    }
+
+    if (detectionResult.confidence >= 0.75) {
+      return {
+        message: `${suggestion}\n\n🚀 Je vous redirige dans 3 secondes... (Cliquez sur "Annuler" si vous ne souhaitez pas y aller)`,
+        showConfirmation: true,
+        intent,
+        autoNavigateDelay: 3000
       };
     }
 
