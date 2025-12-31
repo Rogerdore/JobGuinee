@@ -86,17 +86,44 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         ChatbotService.getDefaultStyle()
       ]);
 
+      console.log('🤖 Alpha Avatar - Configuration chargée:', {
+        settings: settingsData,
+        style: styleData,
+        enabled: settingsData?.is_enabled
+      });
+
       setSettings(settingsData);
       setStyle(styleData);
     } catch (error) {
-      console.error('Error loading chatbot configuration:', error);
+      console.error('❌ Alpha Avatar - Erreur chargement configuration:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading || !settings || !settings.is_enabled) {
-    return null;
+  // Mode debug : afficher l'état pour diagnostic
+  if (loading) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">
+        Chargement...
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
+        Aucun paramètre
+      </div>
+    );
+  }
+
+  if (!settings.is_enabled) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm">
+        Chatbot désactivé
+      </div>
+    );
   }
 
   const avatarSize = style?.widget_size === 'small' ? 'small' : style?.widget_size === 'large' ? 'large' : 'medium';
