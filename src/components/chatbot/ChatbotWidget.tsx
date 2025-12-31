@@ -12,10 +12,25 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
   const [style, setStyle] = useState<ChatbotStyle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [widgetAnimation, setWidgetAnimation] = useState<string>('animate-chatbot-bounce');
 
   useEffect(() => {
     loadConfiguration();
   }, []);
+
+  useEffect(() => {
+    if (isOpen) return;
+
+    const animations = ['animate-chatbot-bounce', 'animate-chatbot-wave', 'animate-chatbot-excited'];
+    let currentIndex = 0;
+
+    const animationInterval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % animations.length;
+      setWidgetAnimation(animations[currentIndex]);
+    }, 3500);
+
+    return () => clearInterval(animationInterval);
+  }, [isOpen]);
 
   const loadConfiguration = async () => {
     setLoading(true);
@@ -52,16 +67,19 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         }}
       >
         {!isOpen ? (
-          <button
-            onClick={() => setIsOpen(true)}
-            className={`${widgetSize} rounded-full ${shadow} hover:scale-110 transition-transform duration-300 flex items-center justify-center`}
-            style={{
-              backgroundColor: style?.primary_color || '#3B82F6'
-            }}
-            aria-label="Ouvrir le chatbot"
-          >
-            <MessageCircle className="w-1/2 h-1/2 text-white" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsOpen(true)}
+              className={`${widgetSize} rounded-full ${shadow} hover:scale-110 transition-transform duration-300 flex items-center justify-center ${widgetAnimation}`}
+              style={{
+                backgroundColor: style?.primary_color || '#3B82F6'
+              }}
+              aria-label="Ouvrir le chatbot"
+            >
+              <MessageCircle className="w-1/2 h-1/2 text-white" />
+            </button>
+            <div className="absolute top-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-status-pulse"></div>
+          </div>
         ) : (
           <button
             onClick={() => setIsOpen(false)}

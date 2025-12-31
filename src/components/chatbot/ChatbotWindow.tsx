@@ -40,6 +40,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random()}`);
   const [userContext, setUserContext] = useState<UserContext | null>(null);
   const [enhancedUserContext, setEnhancedUserContext] = useState<EnhancedUserContext | null>(null);
+  const [iconAnimation, setIconAnimation] = useState<string>('animate-chatbot-wave');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,6 +50,18 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     };
     init();
   }, [user, profile]);
+
+  useEffect(() => {
+    const animations = ['animate-chatbot-wave', 'animate-chatbot-bounce', 'animate-chatbot-excited'];
+    let currentIndex = 0;
+
+    const animationInterval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % animations.length;
+      setIconAnimation(animations[currentIndex]);
+    }, 4000);
+
+    return () => clearInterval(animationInterval);
+  }, []);
 
   useEffect(() => {
     if (userContext !== null || !user || !settings.enable_premium_detection) {
@@ -269,8 +282,11 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
         }}
       >
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-            <span className="text-xl">🤖</span>
+          <div className="relative">
+            <div className={`w-10 h-10 rounded-full bg-white/20 flex items-center justify-center ${iconAnimation}`}>
+              <span className="text-xl">🤖</span>
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-status-pulse"></div>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -282,7 +298,10 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
                 </span>
               )}
             </div>
-            <p className="text-xs text-white/80">En ligne</p>
+            <p className="text-xs text-white/80 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+              En ligne
+            </p>
             {userContext && settings.enable_premium_detection && (
               <div className="flex items-center gap-3 mt-1 text-xs text-white/70">
                 {settings.show_credits_balance && (
