@@ -185,6 +185,72 @@
     }
   }
 
+  @keyframes chatbot-zoom-in {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes chatbot-nod {
+    0%, 100% {
+      transform: rotateX(0deg);
+    }
+    25% {
+      transform: rotateX(10deg);
+    }
+    50% {
+      transform: rotateX(0deg);
+    }
+    75% {
+      transform: rotateX(10deg);
+    }
+  }
+
+  @keyframes chatbot-fade-out {
+    0% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.95) rotate(-10deg);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(0.7) rotate(-20deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes typing-dot {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    30% {
+      transform: translateY(-8px);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .animate-fade-in {
     animation: fade-in 0.6s ease-out;
   }
@@ -215,6 +281,22 @@
 
   .animate-chatbot-success {
     animation: chatbot-success 1s ease-out;
+  }
+
+  .animate-chatbot-zoom-in {
+    animation: chatbot-zoom-in 0.6s ease-out;
+  }
+
+  .animate-chatbot-nod {
+    animation: chatbot-nod 1.5s ease-in-out infinite;
+  }
+
+  .animate-chatbot-fade-out {
+    animation: chatbot-fade-out 0.8s ease-in forwards;
+  }
+
+  .animate-typing-dot {
+    animation: typing-dot 1.4s ease-in-out infinite;
   }
 
   .animate-status-pulse {
@@ -505,4 +587,33 @@
 .ql-toolbar button:focus .ql-fill,
 .ql-toolbar button.ql-active .ql-fill {
   fill: #FF8C00;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-chatbot-wave,
+  .animate-chatbot-bounce,
+  .animate-chatbot-excited,
+  .animate-chatbot-nod,
+  .animate-chatbot-zoom-in,
+  .animate-chatbot-fade-out,
+  .animate-typing-dot,
+  .animate-status-pulse,
+  .animate-float,
+  .animate-shimmer {
+    animation: none !important;
+  }
+
+  .neo-clay:hover,
+  button:hover {
+    transform: none !important;
+  }
 }

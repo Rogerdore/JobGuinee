@@ -20,6 +20,17 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   }, []);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) return;
 
     const animations = ['animate-chatbot-bounce', 'animate-chatbot-wave', 'animate-chatbot-excited'];
@@ -71,12 +82,20 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
           <div className="relative group">
             <button
               onClick={() => setIsOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsOpen(true);
+                }
+              }}
               className={`${widgetSize} rounded-full hover:scale-110 transition-all duration-300 flex items-center justify-center ${widgetAnimation} neo-clay relative overflow-hidden`}
               style={{
                 background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
                 boxShadow: '0 10px 40px rgba(6, 182, 212, 0.3)'
               }}
-              aria-label="Discuter avec Alpha"
+              aria-label="Ouvrir le chatbot Alpha - Assistant intelligent pour l'emploi et la carrière en Guinée"
+              aria-expanded="false"
+              title="Besoin d'aide ? Discutez avec Alpha"
             >
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <AlphaIcon state="greeting" size={parseInt(widgetSize.split('-')[1]) * 0.6 || 32} className="relative z-10" />
@@ -93,11 +112,19 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         ) : (
           <button
             onClick={() => setIsOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+                e.preventDefault();
+                setIsOpen(false);
+              }
+            }}
             className={`${widgetSize} rounded-full ${shadow} hover:scale-110 transition-transform duration-300 flex items-center justify-center`}
             style={{
               backgroundColor: style?.secondary_color || '#1E40AF'
             }}
-            aria-label="Fermer le chatbot"
+            aria-label="Fermer le chatbot Alpha"
+            aria-expanded="true"
+            title="Fermer (Échap)"
           >
             <X className="w-1/2 h-1/2 text-white" />
           </button>

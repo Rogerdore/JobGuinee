@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export type AlphaIconState = 'idle' | 'greeting' | 'thinking' | 'happy' | 'speaking' | 'impatient' | 'success' | 'blocked';
+export type AlphaIconState = 'idle' | 'hover' | 'open' | 'greeting' | 'thinking' | 'responding' | 'speaking' | 'waiting' | 'impatient' | 'happy' | 'success' | 'blocked' | 'closing';
 
 interface AlphaIconProps {
   state?: AlphaIconState;
@@ -10,32 +10,46 @@ interface AlphaIconProps {
 
 export default function AlphaIcon({ state = 'idle', size = 48, className = '' }: AlphaIconProps) {
   const [eyesBlink, setEyesBlink] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
     const blinkInterval = setInterval(() => {
       setEyesBlink(true);
       setTimeout(() => setEyesBlink(false), 150);
     }, 3000 + Math.random() * 2000);
 
     return () => clearInterval(blinkInterval);
-  }, []);
+  }, [isLoaded]);
 
   const getAnimationClass = () => {
     switch (state) {
+      case 'hover':
       case 'greeting':
         return 'animate-chatbot-wave';
+      case 'open':
+        return 'animate-chatbot-zoom-in';
       case 'thinking':
         return 'animate-pulse';
-      case 'happy':
-        return 'animate-chatbot-bounce';
+      case 'responding':
+        return 'animate-chatbot-nod';
       case 'speaking':
         return 'animate-chatbot-excited';
+      case 'waiting':
       case 'impatient':
         return 'animate-chatbot-excited';
+      case 'happy':
+        return 'animate-chatbot-bounce';
       case 'success':
         return 'animate-chatbot-success';
+      case 'closing':
+        return 'animate-chatbot-fade-out';
       case 'blocked':
-        return '';
       default:
         return '';
     }
@@ -43,16 +57,33 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
 
   const getArmRotation = () => {
     switch (state) {
+      case 'hover':
       case 'greeting':
+      case 'open':
         return 'rotate-12';
       case 'happy':
         return 'rotate-6';
+      case 'waiting':
       case 'impatient':
         return '-rotate-6';
+      case 'closing':
+        return 'rotate-45';
       default:
         return 'rotate-0';
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <div
+        className={`flex items-center justify-center ${className}`}
+        style={{ width: size, height: size }}
+        aria-label="Alpha loading..."
+      >
+        <div className="w-8 h-8 rounded-full bg-cyan-500 animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
     <svg
@@ -63,6 +94,8 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
       xmlns="http://www.w3.org/2000/svg"
       className={`${getAnimationClass()} ${className}`}
       style={{ transformOrigin: 'center' }}
+      role="img"
+      aria-label={`Alpha - ${state}`}
     >
       <g id="alpha-avatar">
         <circle cx="50" cy="40" r="20" fill="#1E293B" />
@@ -114,14 +147,16 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
         </g>
 
         <g id="mouth">
-          {state === 'happy' || state === 'greeting' ? (
+          {state === 'happy' || state === 'greeting' || state === 'hover' || state === 'open' ? (
             <path d="M 42 45 Q 50 50 58 45" stroke="#1E293B" strokeWidth="2" fill="none" strokeLinecap="round" />
           ) : state === 'thinking' ? (
             <ellipse cx="50" cy="46" rx="4" ry="2" fill="#1E293B" />
-          ) : state === 'speaking' ? (
+          ) : state === 'speaking' || state === 'responding' ? (
             <ellipse cx="50" cy="46" rx="5" ry="4" fill="#1E293B" />
-          ) : state === 'impatient' ? (
+          ) : state === 'impatient' || state === 'waiting' ? (
             <line x1="42" y1="46" x2="58" y2="46" stroke="#1E293B" strokeWidth="2" strokeLinecap="round" />
+          ) : state === 'closing' ? (
+            <path d="M 42 45 Q 50 50 58 45" stroke="#1E293B" strokeWidth="2" fill="none" strokeLinecap="round" />
           ) : (
             <path d="M 44 46 Q 50 48 56 46" stroke="#1E293B" strokeWidth="2" fill="none" strokeLinecap="round" />
           )}
@@ -135,7 +170,7 @@ export default function AlphaIcon({ state = 'idle', size = 48, className = '' }:
           </g>
         )}
 
-        {state === 'speaking' && (
+        {(state === 'speaking' || state === 'responding') && (
           <g id="speech-indicators" className="animate-pulse">
             <circle cx="72" cy="35" r="2" fill="#06B6D4" opacity="0.8">
               <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1s" repeatCount="indefinite" />

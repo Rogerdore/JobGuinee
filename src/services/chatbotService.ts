@@ -204,6 +204,16 @@ export class ChatbotService {
 
   static async searchKnowledgeBase(query: string): Promise<KnowledgeBaseEntry[]> {
     try {
+      const stopwords = new Set([
+        'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'à', 'au', 'aux',
+        'et', 'ou', 'mais', 'donc', 'car', 'ni', 'or',
+        'je', 'tu', 'il', 'elle', 'on', 'nous', 'vous', 'ils', 'elles',
+        'ce', 'cet', 'cette', 'ces', 'mon', 'ton', 'son', 'ma', 'ta', 'sa',
+        'mes', 'tes', 'ses', 'notre', 'votre', 'leur', 'nos', 'vos', 'leurs',
+        'qui', 'que', 'quoi', 'dont', 'où', 'pour', 'par', 'avec', 'sans',
+        'dans', 'sur', 'sous', 'vers', 'chez', 'en', 'y'
+      ]);
+
       const searchTerms = query.toLowerCase().split(' ').filter(Boolean);
 
       const { data, error } = await supabase
@@ -225,9 +235,12 @@ export class ChatbotService {
         const answerLower = entry.answer.toLowerCase();
 
         searchTerms.forEach((term) => {
-          if (questionLower.includes(term)) score += 10;
-          if (answerLower.includes(term)) score += 5;
-          if (entry.tags.some(tag => tag.toLowerCase().includes(term))) score += 7;
+          const isStopword = stopwords.has(term);
+          const penalty = isStopword ? 0.3 : 1;
+
+          if (questionLower.includes(term)) score += 10 * penalty;
+          if (answerLower.includes(term)) score += 5 * penalty;
+          if (entry.tags.some(tag => tag.toLowerCase().includes(term))) score += 7 * penalty;
         });
 
         score += entry.priority_level;

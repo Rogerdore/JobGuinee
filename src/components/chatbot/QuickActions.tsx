@@ -40,15 +40,18 @@ export default function QuickActions({ actions, onAction }: QuickActionsProps) {
             <button
               key={action.id}
               onClick={() => onAction(action)}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 hover:shadow-sm transition-all text-left group"
+              className="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-xl hover:from-cyan-100 hover:to-blue-100 hover:border-cyan-300 hover:shadow-md hover:scale-105 transition-all duration-300 text-left group"
+              style={{
+                animation: `fadeInUp 0.4s ease-out ${actions.indexOf(action) * 0.1}s both`
+              }}
             >
-              <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                <Icon className="w-4 h-4 text-blue-600" />
+              <div className="p-2 bg-white rounded-lg group-hover:bg-cyan-50 transition-colors shadow-sm">
+                <Icon className="w-4 h-4 text-cyan-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{action.label}</p>
+                <p className="text-sm font-medium text-slate-800 truncate group-hover:text-cyan-900 transition-colors">{action.label}</p>
                 {action.description && (
-                  <p className="text-xs text-gray-500 truncate">{action.description}</p>
+                  <p className="text-xs text-slate-500 truncate group-hover:text-cyan-700 transition-colors">{action.description}</p>
                 )}
               </div>
             </button>

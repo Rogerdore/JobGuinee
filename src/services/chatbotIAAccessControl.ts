@@ -72,7 +72,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: false,
         reason: 'not_authenticated',
-        message: 'Vous devez être connecté pour utiliser ce service IA.',
+        message: 'Oups ! Connectez-vous d\'abord pour accéder à ce service. 😊',
         suggestedAction: 'login'
       };
     }
@@ -83,7 +83,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: false,
         reason: 'service_not_found',
-        message: 'Ce service IA n\'est pas disponible pour le moment.'
+        message: 'Ce service n\'est pas encore disponible. Revenez bientôt ! 🚀'
       };
     }
 
@@ -91,7 +91,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: false,
         reason: 'service_inactive',
-        message: `Le service "${serviceConfig.service_name}" est temporairement désactivé.`
+        message: `Le service "${serviceConfig.service_name}" est en pause. On le réactive très vite ! ⚙️`
       };
     }
 
@@ -117,7 +117,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: false,
         reason: 'premium_expired',
-        message: 'Votre abonnement Premium a expiré. Veuillez le renouveler pour continuer à utiliser les services IA sans crédits.',
+        message: 'Votre Premium a expiré. Renouvelez-le pour profiter des services IA ! 👑',
         suggestedAction: 'renew_premium'
       };
     }
@@ -128,7 +128,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: true,
         reason: 'access_granted',
-        message: `Accès autorisé au service gratuit "${serviceConfig.service_name}".`
+        message: `✓ Service "${serviceConfig.service_name}" gratuit. C'est parti !`
       };
     }
 
@@ -136,7 +136,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: false,
         reason: 'insufficient_credits',
-        message: `Crédits insuffisants. Ce service nécessite ${creditsCost} crédits, vous en avez ${userContext.creditsBalance}.`,
+        message: `Il vous manque quelques crédits. Ce service coûte ${creditsCost} crédits (vous en avez ${userContext.creditsBalance}). 💰`,
         requiredCredits: creditsCost,
         currentCredits: userContext.creditsBalance,
         suggestedAction: 'buy_credits'
@@ -146,7 +146,7 @@ export class ChatbotIAAccessControl {
     return {
       allowed: true,
       reason: 'access_granted',
-      message: `Accès autorisé. ${creditsCost} crédits seront débités lors de l'utilisation.`,
+      message: `✓ Prêt ! ${creditsCost} crédit${creditsCost > 1 ? 's' : ''} sera${creditsCost > 1 ? 'ont' : ''} utilisé${creditsCost > 1 ? 's' : ''}.`,
       requiredCredits: creditsCost,
       currentCredits: userContext.creditsBalance
     };
@@ -182,7 +182,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: true,
         reason: 'access_granted',
-        message: `Accès Premium illimité au service "${serviceConfig.service_name}".`
+        message: `✓ Accès illimité ! Service "${serviceConfig.service_name}" inclus dans votre Premium. 🎉`
       };
     }
 
@@ -192,7 +192,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: true,
         reason: 'access_granted',
-        message: `Accès Premium illimité au service "${serviceConfig.service_name}".`
+        message: `✓ Accès illimité ! Service "${serviceConfig.service_name}" inclus dans votre Premium. 🎉`
       };
     }
 
@@ -202,7 +202,7 @@ export class ChatbotIAAccessControl {
       return {
         allowed: false,
         reason: 'premium_quota_reached',
-        message: `Limite quotidienne atteinte pour ce service (${dailyLimit} utilisations par jour). Réinitialisée à minuit.`,
+        message: `Vous avez atteint votre quota quotidien (${dailyLimit} utilisations). Ça se réinitialise à minuit ! ⏰`,
         dailyActionsUsed: usageToday,
         dailyLimit: dailyLimit,
         suggestedAction: 'wait_reset'
@@ -212,7 +212,7 @@ export class ChatbotIAAccessControl {
     return {
       allowed: true,
       reason: 'access_granted',
-      message: `Accès Premium autorisé. Vous avez utilisé ${usageToday}/${dailyLimit} utilisations aujourd'hui.`,
+      message: `✓ C'est parti ! ${usageToday}/${dailyLimit} utilisations aujourd'hui.`,
       dailyActionsUsed: usageToday,
       dailyLimit: dailyLimit
     };
@@ -289,17 +289,7 @@ export class ChatbotIAAccessControl {
   }
 
   static formatAccessMessage(result: IAAccessResult): string {
-    const messages: Record<string, string> = {
-      access_granted: `✓ ${result.message}`,
-      not_authenticated: `🔒 ${result.message}\n\nConnectez-vous pour accéder aux services IA.`,
-      insufficient_credits: `💰 ${result.message}\n\nAchetez des crédits pour continuer à utiliser les services IA.`,
-      premium_quota_reached: `⏰ ${result.message}\n\nVotre quota sera réinitialisé à minuit.`,
-      service_inactive: `⚠️ ${result.message}\n\nNous travaillons à le rétablir au plus vite.`,
-      premium_expired: `👑 ${result.message}\n\nRenouvelez votre abonnement Premium PRO+ pour un accès illimité.`,
-      service_not_found: `❌ ${result.message}`
-    };
-
-    return messages[result.reason] || result.message;
+    return result.message;
   }
 
   static getActionButtons(result: IAAccessResult): Array<{
