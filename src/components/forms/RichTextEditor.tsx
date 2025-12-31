@@ -68,14 +68,6 @@ const RichTextEditor = memo(function RichTextEditor({
     setTimeout(() => notification.remove(), 3000);
   }, []);
 
-  const initialValueRef = useRef(value);
-
-  useEffect(() => {
-    if (!initialValueRef.current) {
-      initialValueRef.current = value;
-      setEditorContent(value);
-    }
-  }, []);
 
   useEffect(() => {
     const quill = quillRef.current?.getEditor();
