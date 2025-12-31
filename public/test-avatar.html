@@ -185,15 +185,15 @@
       <p style="font-size: 13px; color: #6b7280;">
         <strong>Instructions :</strong><br>
         1. Regardez en bas à droite de l'écran<br>
-        2. Vous devriez voir l'avatar Alpha (costume bleu)<br>
+        2. Vous devriez voir l'avatar Alpha animé (GIF en boucle)<br>
         3. Survolez-le pour voir l'effet hover<br>
-        4. Si vous voyez un icône 👤 à la place, l'image n'est pas chargée
+        4. Si vous voyez un icône 👤 à la place, le GIF n'est pas chargé
       </p>
     </div>
   </div>
 
   <div id="avatar-container" class="breathing">
-    <img id="avatar-img" src="/alpha-avatar.png" alt="Alpha Avatar">
+    <img id="avatar-img" src="/video_avatar_alpha_gif.gif" alt="Alpha Avatar">
     <span id="fallback-icon">👤</span>
   </div>
 
@@ -255,9 +255,9 @@
 
       // Test 1: Vérifier que l'image existe
       try {
-        const response = await fetch('/alpha-avatar.png', { method: 'HEAD' });
+        const response = await fetch('/video_avatar_alpha_gif.gif', { method: 'HEAD' });
         if (response.ok) {
-          addResult('success', '✅ Test 1: Fichier alpha-avatar.png trouvé');
+          addResult('success', '✅ Test 1: Fichier video_avatar_alpha_gif.gif trouvé');
         } else {
           addResult('error', `❌ Test 1: Fichier non trouvé (Status: ${response.status})`);
         }

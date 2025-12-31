@@ -207,7 +207,7 @@ export default function AlphaAvatar({
       >
         <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
           <img
-            src="/alpha-avatar.png"
+            src="/video_avatar_alpha_gif.gif"
             alt="Alpha - Assistant intelligent"
             className="w-full h-full object-cover"
             onError={(e) => {
