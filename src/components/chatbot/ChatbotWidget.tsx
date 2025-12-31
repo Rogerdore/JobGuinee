@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { ChatbotService, ChatbotSettings, ChatbotStyle } from '../../services/chatbotService';
 import ChatbotWindow from './ChatbotWindow';
-import AlphaIcon from './AlphaIcon';
+import AlphaAvatar, { AlphaAvatarState } from './AlphaAvatar';
 
 interface ChatbotWidgetProps {
   onNavigate?: (page: string) => void;
@@ -13,7 +13,9 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
   const [style, setStyle] = useState<ChatbotStyle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [widgetAnimation, setWidgetAnimation] = useState<string>('animate-chatbot-bounce');
+  const [avatarState, setAvatarState] = useState<AlphaAvatarState>('idle');
+  const [showProactiveMessage, setShowProactiveMessage] = useState(false);
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
 
   useEffect(() => {
     loadConfiguration();
@@ -23,6 +25,7 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         setIsOpen(false);
+        setAvatarState('idle');
       }
     };
 
@@ -31,18 +34,49 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (isOpen) {
+      setShowProactiveMessage(false);
+      setAvatarState('opening');
+      setTimeout(() => setAvatarState('listening'), 600);
+      return;
+    }
+
+    const handleActivity = () => {
+      setLastActivityTime(Date.now());
+      setShowProactiveMessage(false);
+      if (!isOpen) setAvatarState('idle');
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('keypress', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('keypress', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) return;
 
-    const animations = ['animate-chatbot-bounce', 'animate-chatbot-wave', 'animate-chatbot-excited'];
-    let currentIndex = 0;
+    const checkInactivity = setInterval(() => {
+      const timeSinceActivity = Date.now() - lastActivityTime;
 
-    const animationInterval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % animations.length;
-      setWidgetAnimation(animations[currentIndex]);
-    }, 3500);
+      if (timeSinceActivity > 8000 && !showProactiveMessage) {
+        setAvatarState('attention');
+        setShowProactiveMessage(true);
+      } else if (timeSinceActivity <= 8000) {
+        setAvatarState('idle');
+        setShowProactiveMessage(false);
+      }
+    }, 1000);
 
-    return () => clearInterval(animationInterval);
-  }, [isOpen]);
+    return () => clearInterval(checkInactivity);
+  }, [isOpen, lastActivityTime, showProactiveMessage]);
 
   const loadConfiguration = async () => {
     setLoading(true);
@@ -65,68 +99,52 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
     return null;
   }
 
-  const widgetSize = style?.widget_size === 'small' ? 'w-14 h-14' : style?.widget_size === 'large' ? 'w-20 h-20' : 'w-16 h-16';
-  const position = settings.position === 'bottom-left' ? 'left-4' : 'right-4';
+  const avatarSize = style?.widget_size === 'small' ? 'small' : style?.widget_size === 'large' ? 'large' : 'medium';
+  const position = settings.position === 'bottom-left' ? 'left-6' : 'right-6';
   const animation = style?.animation_type === 'fade' ? 'animate-fade-in' : style?.animation_type === 'scale' ? 'animate-scale-in' : 'animate-slide-up';
-  const shadow = style?.shadow_strength === 'strong' ? 'shadow-2xl' : style?.shadow_strength === 'soft' ? 'shadow-lg' : '';
+
+  const handleAvatarClick = () => {
+    setIsOpen(true);
+    setAvatarState('opening');
+    setTimeout(() => setAvatarState('listening'), 600);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setAvatarState('idle');
+  };
 
   return (
     <>
       <div
-        className={`fixed bottom-4 ${position} z-50 ${animation}`}
+        className={`fixed bottom-6 ${position} z-50 ${animation}`}
         style={{
           animationDelay: '0.5s'
         }}
       >
         {!isOpen ? (
-          <div className="relative group">
-            <button
-              onClick={() => setIsOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setIsOpen(true);
-                }
-              }}
-              className={`${widgetSize} rounded-full hover:scale-110 transition-all duration-300 flex items-center justify-center ${widgetAnimation} neo-clay relative overflow-hidden`}
-              style={{
-                background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
-                boxShadow: '0 10px 40px rgba(6, 182, 212, 0.3)'
-              }}
-              aria-label="Ouvrir le chatbot Alpha - Assistant intelligent pour l'emploi et la carrière en Guinée"
-              aria-expanded="false"
-              title="Besoin d'aide ? Discutez avec Alpha"
-            >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <AlphaIcon state="greeting" size={parseInt(widgetSize.split('-')[1]) * 0.6 || 32} className="relative z-10" />
-            </button>
-            <div className="absolute top-0 right-0 w-4 h-4 rounded-full border-2 border-white animate-status-pulse shadow-lg z-20" style={{ backgroundColor: '#06B6D4' }}></div>
-
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-              <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap shadow-xl">
-                Besoin d'aide ? 💬
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-              </div>
-            </div>
-          </div>
+          <AlphaAvatar
+            state={avatarState}
+            size={avatarSize}
+            onClick={handleAvatarClick}
+            showProactiveMessage={showProactiveMessage}
+            proactiveMessage="👋 Bonjour ! Je suis Alpha. Besoin d'aide pour un CV, un emploi ou un service IA ?"
+          />
         ) : (
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
                 e.preventDefault();
-                setIsOpen(false);
+                handleClose();
               }
             }}
-            className={`${widgetSize} rounded-full ${shadow} hover:scale-110 transition-transform duration-300 flex items-center justify-center`}
-            style={{
-              backgroundColor: style?.secondary_color || '#1E40AF'
-            }}
+            className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] hover:scale-110 transition-transform duration-300 flex items-center justify-center shadow-2xl hover:shadow-[#FF8C00]/30"
             aria-label="Fermer le chatbot Alpha"
             aria-expanded="true"
             title="Fermer (Échap)"
           >
-            <X className="w-1/2 h-1/2 text-white" />
+            <X className="w-8 h-8 text-white" />
           </button>
         )}
       </div>
@@ -135,7 +153,7 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         <ChatbotWindow
           settings={settings}
           style={style}
-          onClose={() => setIsOpen(false)}
+          onClose={handleClose}
           onNavigate={onNavigate}
         />
       )}
