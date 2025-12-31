@@ -184,6 +184,32 @@ export const applicationSubmissionService = {
     };
   },
 
+  async calculateAIScore(
+    candidateSkills: string[],
+    candidateExperienceYears: number,
+    jobKeywords: string[],
+    jobExperienceLevel: string
+  ): Promise<number> {
+    try {
+      const { data, error } = await supabase.rpc('calculate_simple_ai_score', {
+        candidate_skills: candidateSkills,
+        candidate_experience_years: candidateExperienceYears,
+        job_keywords: jobKeywords,
+        job_experience_level: jobExperienceLevel
+      });
+
+      if (error) {
+        console.error('Error calculating AI score:', error);
+        return 50;
+      }
+
+      return data || 50;
+    } catch (error) {
+      console.error('Exception calculating AI score:', error);
+      return 50;
+    }
+  },
+
   async submitApplication(
     submissionData: ApplicationSubmissionData
   ): Promise<ApplicationSubmissionResult> {
@@ -208,6 +234,19 @@ export const applicationSubmissionService = {
         };
       }
 
+      const { data: candidateProfile } = await supabase
+        .from('candidate_profiles')
+        .select('skills, experience_years')
+        .eq('profile_id', candidateId)
+        .maybeSingle();
+
+      const aiScore = await this.calculateAIScore(
+        candidateProfile?.skills || [],
+        candidateProfile?.experience_years || 0,
+        job.keywords || [],
+        job.experience_level || ''
+      );
+
       const { data: application, error: insertError } = await supabase
         .from('applications')
         .insert({
@@ -216,9 +255,10 @@ export const applicationSubmissionService = {
           cover_letter: coverLetter,
           cv_url: cvUrl,
           status: 'pending',
-          workflow_stage: 'Candidature reçue'
+          workflow_stage: 'Candidature reçue',
+          ai_matching_score: aiScore
         })
-        .select('id, application_reference')
+        .select('id, application_reference, ai_matching_score')
         .single();
 
       if (insertError) {
@@ -259,7 +299,7 @@ export const applicationSubmissionService = {
         jobId: job.id,
         applicationId: application.id,
         applicationReference: application.application_reference,
-        aiScore: 0,
+        aiScore: application.ai_matching_score || 0,
         appliedDate
       });
 

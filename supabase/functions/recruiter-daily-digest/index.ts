@@ -30,7 +30,7 @@ interface Application {
   application_reference: string;
   candidate_id: string;
   job_id: string;
-  ai_match_score: number;
+  ai_matching_score: number;
   applied_at: string;
   candidate: {
     full_name: string;
@@ -83,8 +83,8 @@ Consultez votre espace recruteur pour gérer vos offres en cours.
         body += `   📍 ${app.job.location || 'Non spécifié'}\n`;
         body += `   🔖 Réf : ${app.application_reference}\n`;
 
-        if (settings.include_candidate_scores) {
-          body += `   🎯 Score IA : ${app.ai_match_score}/100\n`;
+        if (settings.include_candidate_scores && app.ai_matching_score) {
+          body += `   🎯 Score IA : ${Math.round(app.ai_matching_score)}/100\n`;
         }
 
         if (settings.include_direct_links) {
@@ -209,7 +209,7 @@ Deno.serve(async (req: Request) => {
             application_reference,
             candidate_id,
             job_id,
-            ai_match_score,
+            ai_matching_score,
             applied_at,
             candidate:profiles!applications_candidate_id_fkey(
               full_name,
