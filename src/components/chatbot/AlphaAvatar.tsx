@@ -25,7 +25,7 @@ export default function AlphaAvatar({
   state = 'idle',
   onClick,
   showProactiveMessage = false,
-  proactiveMessage = "👋 Bonjour ! Je suis Alpha. Besoin d'aide pour un CV, un emploi ou un service IA ?",
+  proactiveMessage = "Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee. Besoin d'aide? Je suis là pour vous.",
   size = 'large',
   className = ''
 }: AlphaAvatarProps) {
