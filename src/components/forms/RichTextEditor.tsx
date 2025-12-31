@@ -333,9 +333,12 @@ const RichTextEditor = memo(function RichTextEditor({
       if (fileType === 'pdf') {
         extractedContent = await extractPDFContent(file);
         blockType = 'pdf';
-      } else if (fileType === 'docx' || fileType === 'doc') {
+      } else if (fileType === 'docx') {
         extractedContent = await extractDOCXContent(file);
         blockType = 'docx';
+      } else if (fileType === 'doc') {
+        alert('⚠️ Format .doc non supporté\n\nLes anciens fichiers Word (.doc) ne sont pas supportés.\n\nSolutions:\n1. Convertissez votre fichier en .docx avec Microsoft Word\n2. Copiez-collez le contenu directement dans l\'éditeur\n3. Exportez en PDF depuis Word');
+        throw new Error('Format .doc non supporté. Utilisez .docx');
       } else if (file.type.startsWith('image/')) {
         extractedContent = await extractImageAsBase64(file);
         blockType = 'image';
@@ -374,9 +377,31 @@ const RichTextEditor = memo(function RichTextEditor({
 
   const extractPDFContent = async (file: File): Promise<string> => {
     try {
+      if (file.size === 0) {
+        throw new Error('Le fichier PDF est vide');
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        throw new Error('Le fichier PDF est trop volumineux (max 15 MB)');
+      }
+
       const arrayBuffer = await file.arrayBuffer();
+
+      const signature = new Uint8Array(arrayBuffer.slice(0, 5));
+      const isPDF = signature[0] === 0x25 && signature[1] === 0x50 &&
+                    signature[2] === 0x44 && signature[3] === 0x46 &&
+                    signature[4] === 0x2D;
+
+      if (!isPDF) {
+        throw new Error('Le fichier n\'est pas un PDF valide');
+      }
+
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let fullText = '';
+
+      if (pdf.numPages === 0) {
+        throw new Error('Le PDF ne contient aucune page');
+      }
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -387,32 +412,91 @@ const RichTextEditor = memo(function RichTextEditor({
         fullText += `<h3>Page ${i}</h3><p>${pageText}</p>\n\n`;
       }
 
+      if (!fullText.trim()) {
+        throw new Error('Aucun texte n\'a pu être extrait du PDF. Il s\'agit peut-être d\'un PDF image.');
+      }
+
       return fullText;
     } catch (error) {
       console.error('PDF extraction error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Le fichier PDF ne peut pas être lu. Il est peut-être corrompu ou protégé par mot de passe.');
     }
   };
 
   const extractDOCXContent = async (file: File): Promise<string> => {
     try {
+      if (file.size === 0) {
+        throw new Error('Le fichier est vide');
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Le fichier est trop volumineux (max 10 MB)');
+      }
+
+      const validMimeTypes = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-word.document.macroEnabled.12',
+      ];
+
+      if (file.type && !validMimeTypes.includes(file.type) && !file.name.endsWith('.docx')) {
+        throw new Error('Format de fichier non valide. Utilisez uniquement des fichiers .docx');
+      }
+
       const arrayBuffer = await file.arrayBuffer();
+
+      const signature = new Uint8Array(arrayBuffer.slice(0, 4));
+      const isPKZip = signature[0] === 0x50 && signature[1] === 0x4B &&
+                      signature[2] === 0x03 && signature[3] === 0x04;
+
+      if (!isPKZip) {
+        throw new Error('Le fichier n\'est pas un document Word valide (.docx). Si vous avez un ancien fichier .doc, convertissez-le d\'abord en .docx');
+      }
+
       const result = await mammoth.convertToHtml({ arrayBuffer });
+
+      if (!result.value || result.value.trim().length === 0) {
+        throw new Error('Aucun contenu n\'a pu être extrait du document');
+      }
+
       return result.value;
     } catch (error) {
       console.error('DOCX extraction error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Le fichier Word ne peut pas être lu. Il est peut-être corrompu ou dans un format non supporté.');
     }
   };
 
   const extractImageAsBase64 = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
+      if (file.size === 0) {
+        reject(new Error('Le fichier image est vide'));
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        reject(new Error('L\'image est trop volumineuse (max 5 MB)'));
+        return;
+      }
+
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validImageTypes.includes(file.type)) {
+        reject(new Error(`Format d'image non supporté: ${file.type}. Utilisez JPG, PNG, GIF ou WebP`));
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
         resolve(`<img src="${base64}" alt="${file.name}" style="max-width: 100%; height: auto;" />`);
       };
-      reader.onerror = reject;
+      reader.onerror = () => {
+        reject(new Error('Erreur lors de la lecture de l\'image'));
+      };
       reader.readAsDataURL(file);
     });
   };
@@ -653,7 +737,7 @@ const RichTextEditor = memo(function RichTextEditor({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,.doc,image/*,.txt"
+          accept=".pdf,.docx,image/*,.txt"
           onChange={handleFileImport}
           className="hidden"
           id="file-import-rich"
@@ -668,7 +752,7 @@ const RichTextEditor = memo(function RichTextEditor({
               {isImporting ? 'Import en cours...' : 'Importer depuis PDF/DOCX/Image'}
             </p>
             <p className="text-xs text-gray-500">
-              Cliquez pour sélectionner un fichier
+              Formats acceptés: PDF, DOCX (pas .doc), JPG, PNG, TXT
             </p>
           </div>
         </label>
