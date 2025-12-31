@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Mail, Phone, User, MessageSquare, Send, CheckCircle2, AlertCircle, Upload, DollarSign, Briefcase, Users as UsersIcon } from 'lucide-react';
+import { Building2, Mail, Phone, User, MessageSquare, Send, CheckCircle2, AlertCircle, Upload, DollarSign, Briefcase, Users as UsersIcon, X } from 'lucide-react';
 import { b2bLeadsService, B2BLead } from '../../services/b2bLeadsService';
 import { b2bPipelineService } from '../../services/b2bPipelineService';
 import { seoLandingPagesService } from '../../services/seoLandingPagesService';
@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 interface B2BLeadFormProps {
   onSuccess?: () => void;
+  onCancel?: () => void;
   sourcePage?: string;
   landingPageId?: string;
   prefilledData?: {
@@ -15,7 +16,7 @@ interface B2BLeadFormProps {
   };
 }
 
-export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, prefilledData }: B2BLeadFormProps) {
+export default function B2BLeadForm({ onSuccess, onCancel, sourcePage, landingPageId, prefilledData }: B2BLeadFormProps) {
   const { user, profile } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -238,7 +239,7 @@ export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, pref
           Demande envoyée avec succès !
         </h3>
         <p className="text-gray-600 mb-4">
-          Merci pour votre intérêt. Un expert JobGuinée vous contactera dans les plus brefs délais.
+          Merci pour votre intérêt. Un spécialiste JobGuinée vous contactera dans les plus brefs délais.
         </p>
         <button
           onClick={() => setSubmitStatus('idle')}
@@ -251,10 +252,21 @@ export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, pref
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 space-y-6 relative">
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+          aria-label="Fermer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
+
       <div className="text-center mb-6">
         <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Parlez à un expert JobGuinée
+          Parlez à un spécialiste JobGuinée
         </h3>
         <p className="text-gray-600">
           Remplissez ce formulaire et un conseiller vous contactera sous 24h
@@ -418,23 +430,35 @@ export default function B2BLeadForm({ onSuccess, sourcePage, landingPageId, pref
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full py-4 bg-[#FF8C00] hover:bg-[#FF8C00]/90 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isSubmitting ? (
-          <>
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Envoi en cours...
-          </>
-        ) : (
-          <>
-            <Send className="w-5 h-5" />
-            Envoyer ma demande
-          </>
+      <div className="flex gap-4">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition flex items-center justify-center gap-2"
+          >
+            <X className="w-5 h-5" />
+            Annuler
+          </button>
         )}
-      </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`${onCancel ? 'flex-1' : 'w-full'} py-4 bg-[#FF8C00] hover:bg-[#FF8C00]/90 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          {isSubmitting ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Envoi en cours...
+            </>
+          ) : (
+            <>
+              <Send className="w-5 h-5" />
+              Envoyer ma demande
+            </>
+          )}
+        </button>
+      </div>
 
       <p className="text-xs text-gray-500 text-center">
         En envoyant ce formulaire, vous acceptez d'être contacté par JobGuinée concernant vos besoins RH.

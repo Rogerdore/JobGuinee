@@ -1351,7 +1351,10 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
       {showForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <B2BLeadForm onSuccess={() => setShowForm(false)} />
+            <B2BLeadForm
+              onSuccess={() => setShowForm(false)}
+              onCancel={() => setShowForm(false)}
+            />
           </div>
         </div>
       )}
