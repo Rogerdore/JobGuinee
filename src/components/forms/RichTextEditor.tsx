@@ -56,6 +56,7 @@ const RichTextEditor = memo(function RichTextEditor({
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isManipulatingRef = useRef(false);
   const changeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastContentRef = useRef(value);
 
   const combineAllContent = useCallback(() => {
     const quill = quillRef.current?.getEditor();
@@ -361,7 +362,8 @@ const RichTextEditor = memo(function RichTextEditor({
       }, 200);
     } catch (error) {
       console.error('Error importing file:', error);
-      alert('Erreur lors de l\'import du fichier. Veuillez réessayer.');
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      alert(`Erreur lors de l'import du fichier: ${errorMessage}\n\nAssurez-vous que le fichier n'est pas corrompu et qu'il est dans un format supporté (PDF, DOCX, images).`);
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -371,26 +373,36 @@ const RichTextEditor = memo(function RichTextEditor({
   };
 
   const extractPDFContent = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += `<h3>Page ${i}</h3><p>${pageText}</p>\n\n`;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += `<h3>Page ${i}</h3><p>${pageText}</p>\n\n`;
+      }
+
+      return fullText;
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      throw new Error('Le fichier PDF ne peut pas être lu. Il est peut-être corrompu ou protégé par mot de passe.');
     }
-
-    return fullText;
   };
 
   const extractDOCXContent = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.convertToHtml({ arrayBuffer });
-    return result.value;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      return result.value;
+    } catch (error) {
+      console.error('DOCX extraction error:', error);
+      throw new Error('Le fichier Word ne peut pas être lu. Il est peut-être corrompu ou dans un format non supporté.');
+    }
   };
 
   const extractImageAsBase64 = async (file: File): Promise<string> => {
@@ -422,8 +434,6 @@ const RichTextEditor = memo(function RichTextEditor({
     setEditingBlockId(null);
     setTimeout(combineAllContent, 100);
   };
-
-  const lastContentRef = useRef(value);
 
   const handleEditorChange = useCallback((content: string, delta: any, source: any) => {
     if (source !== 'user' || isManipulatingRef.current) {
