@@ -10,6 +10,7 @@ import {
   CheckCircle,
   AlertCircle,
   Loader,
+  Sparkles,
 } from 'lucide-react';
 import { targetedDiffusionService, AudienceFilters } from '../services/targetedDiffusionService';
 import { useAuth } from '../contexts/AuthContext';
@@ -221,20 +222,96 @@ export default function CampaignCreate({ onNavigate }: CampaignCreateProps) {
   };
 
   if (error && !entityApproved) {
+    const isParamsMissing = error === 'Paramètres manquants';
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-600" />
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <AlertCircle className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {isParamsMissing ? 'Un instant !' : 'Votre annonce est en cours de validation'}
+              </h2>
+              <p className="text-gray-600 leading-relaxed">
+                {isParamsMissing
+                  ? "Il semble qu'il manque des informations pour accéder à cette page. Pas d'inquiétude, nous allons vous guider !"
+                  : "Votre annonce doit être approuvée par notre équipe avant de pouvoir lancer une campagne de diffusion ciblée. Ce processus garantit la qualité et la conformité de toutes les annonces sur la plateforme."
+                }
+              </p>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Annonce non validée</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => onNavigate('recruiter-dashboard')}
-            className="px-6 py-3 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition"
-          >
-            Retour
-          </button>
+
+          {!isParamsMissing && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
+              <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Étapes à suivre
+              </h3>
+              <ul className="space-y-2 text-sm text-blue-800">
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span>Votre annonce est en cours d'examen par notre équipe de modération</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span>Vous recevrez une notification dès qu'elle sera approuvée (généralement sous 24h)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span>Une fois approuvée, vous pourrez lancer votre campagne de diffusion</span>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-amber-900 mb-1">Conseil pro</h4>
+                <p className="text-sm text-amber-800">
+                  {isParamsMissing
+                    ? "Pour créer une campagne de diffusion, commencez par sélectionner une annonce depuis votre tableau de bord."
+                    : "En attendant la validation, vous pouvez consulter les statistiques de vos autres annonces et préparer votre stratégie de diffusion."
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => onNavigate('recruiter-dashboard')}
+              className="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 font-semibold flex items-center justify-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Retour au tableau de bord
+            </button>
+            <button
+              onClick={() => onNavigate('jobs')}
+              className="flex-1 px-6 py-3.5 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#0E2F56] hover:text-[#0E2F56] hover:shadow-md transition-all duration-200 font-semibold flex items-center justify-center gap-2"
+            >
+              <Briefcase className="w-5 h-5" />
+              Voir les offres d'emploi
+            </button>
+          </div>
+
+          {!isParamsMissing && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-500">
+                Besoin d'aide ?{' '}
+                <button
+                  onClick={() => onNavigate('partner-hub')}
+                  className="text-[#0E2F56] hover:text-blue-700 font-semibold underline"
+                >
+                  Contactez notre support
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
