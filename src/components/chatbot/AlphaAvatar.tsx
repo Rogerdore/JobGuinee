@@ -210,6 +210,7 @@ export default function AlphaAvatar({
             src="/video_avatar_alpha_gif.gif"
             alt="Alpha - Assistant intelligent"
             className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 25%' }}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon');
