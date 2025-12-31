@@ -606,19 +606,9 @@ const RichTextEditor = memo(function RichTextEditor({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 min-h-[32px]">
-          <label className="block text-sm font-semibold text-gray-700">
-            {label}
-          </label>
-          <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 transition-opacity duration-200 ${
-            hasUnsavedChanges
-              ? 'opacity-100 bg-orange-100 text-orange-700'
-              : 'opacity-0 bg-transparent text-transparent pointer-events-none'
-          }`}>
-            <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-            Non enregistré
-          </span>
-        </div>
+        <label className="block text-sm font-semibold text-gray-700">
+          {label}
+        </label>
         <div className="flex items-center gap-2">
           <button
             type="button"
