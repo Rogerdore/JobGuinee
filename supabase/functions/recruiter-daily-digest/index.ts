@@ -202,6 +202,18 @@ Deno.serve(async (req: Request) => {
         const startOfDay = `${today}T00:00:00Z`;
         const endOfDay = `${today}T23:59:59Z`;
 
+        const { data: recruiterJobs, error: jobsError } = await supabase
+          .from('jobs')
+          .select('id')
+          .eq('user_id', setting.recruiter_id);
+
+        if (jobsError || !recruiterJobs || recruiterJobs.length === 0) {
+          console.log(`[SKIP] No jobs found for recruiter ${setting.recruiter_id}`);
+          continue;
+        }
+
+        const jobIds = recruiterJobs.map(job => job.id);
+
         const { data: applications, error: appsError } = await supabase
           .from('applications')
           .select(`
@@ -220,7 +232,7 @@ Deno.serve(async (req: Request) => {
               location
             )
           `)
-          .eq('job.user_id', setting.recruiter_id)
+          .in('job_id', jobIds)
           .gte('applied_at', startOfDay)
           .lte('applied_at', endOfDay);
 
