@@ -1,16 +1,19 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, Profile, UserRole } from '../lib/supabase';
+import { AuthRedirectIntent, getAuthRedirectIntent, clearAuthRedirectIntent } from '../hooks/useAuthRedirect';
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
+  redirectIntent: AuthRedirectIntent | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  getAndClearRedirectIntent: () => AuthRedirectIntent | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectIntent, setRedirectIntent] = useState<AuthRedirectIntent | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -162,7 +166,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setProfile(null);
+    clearAuthRedirectIntent();
+    setRedirectIntent(null);
   };
+
+  const getAndClearRedirectIntent = (): AuthRedirectIntent | null => {
+    const intent = getAuthRedirectIntent();
+    if (intent) {
+      clearAuthRedirectIntent();
+      setRedirectIntent(null);
+    }
+    return intent;
+  };
+
+  useEffect(() => {
+    const intent = getAuthRedirectIntent();
+    if (intent) {
+      setRedirectIntent(intent);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !loading) {
+      const intent = getAuthRedirectIntent();
+      if (intent) {
+        setRedirectIntent(intent);
+      }
+    }
+  }, [user, loading]);
 
   const isAdmin = profile?.user_type === 'admin';
 
@@ -171,10 +202,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     loading,
     isAdmin,
+    redirectIntent,
     signIn,
     signUp,
     signOut,
     refreshProfile,
+    getAndClearRedirectIntent,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

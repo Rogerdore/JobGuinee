@@ -80,6 +80,7 @@ type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketpla
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [jobDetailState, setJobDetailState] = useState<any>(null);
   const [marketplaceSlug, setMarketplaceSlug] = useState<string>('');
   const [cvthequeTeaserSlug, setCvthequeTeaserSlug] = useState<string>('');
   const [jobSearchParams, setJobSearchParams] = useState<string>('');
@@ -92,28 +93,34 @@ function AppContent() {
     seoCoreWebVitalsService.initRUM();
   }, []);
 
-  const handleNavigate = (page: string, param?: string) => {
+  const handleNavigate = (page: string, paramOrState?: string | any) => {
     setCurrentPage(page as Page);
-    if (page === 'job-detail' && param) {
-      setSelectedJobId(param);
+    if (page === 'job-detail') {
+      if (typeof paramOrState === 'string') {
+        setSelectedJobId(paramOrState);
+        setJobDetailState(null);
+      } else if (paramOrState && typeof paramOrState === 'object') {
+        setSelectedJobId(paramOrState.jobId || '');
+        setJobDetailState(paramOrState);
+      }
     }
-    if (page === 'job-marketplace' && param) {
-      setMarketplaceSlug(param);
+    if (page === 'job-marketplace' && paramOrState) {
+      setMarketplaceSlug(paramOrState as string);
     }
-    if (page === 'cvtheque-teaser' && param) {
-      setCvthequeTeaserSlug(param);
+    if (page === 'cvtheque-teaser' && paramOrState) {
+      setCvthequeTeaserSlug(paramOrState as string);
     }
     if (page === 'jobs') {
-      setJobSearchParams(param || '');
+      setJobSearchParams((paramOrState as string) || '');
     }
     if (page === 'formations') {
-      setFormationSearchParams(param || '');
+      setFormationSearchParams((paramOrState as string) || '');
     }
-    if ((page === 'credit-store' || page === 'premium-ai') && param) {
-      setScrollTarget(param);
+    if ((page === 'credit-store' || page === 'premium-ai') && paramOrState) {
+      setScrollTarget(paramOrState as string);
     }
-    if (page === 'public-profile' && param) {
-      setPublicProfileToken(param);
+    if (page === 'public-profile' && paramOrState) {
+      setPublicProfileToken(paramOrState as string);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -145,7 +152,14 @@ function AppContent() {
       }>
         {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
         {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
-        {currentPage === 'job-detail' && <JobDetail jobId={selectedJobId} onNavigate={handleNavigate} />}
+        {currentPage === 'job-detail' && (
+          <JobDetail
+            jobId={selectedJobId}
+            onNavigate={handleNavigate}
+            autoOpenApply={jobDetailState?.autoOpenApply}
+            metadata={jobDetailState?.metadata}
+          />
+        )}
         {currentPage === 'job-marketplace' && <JobMarketplacePage slug={marketplaceSlug} onNavigate={handleNavigate} />}
         {currentPage === 'cvtheque-teaser' && <CVthequeTeaserPage slug={cvthequeTeaserSlug} onNavigate={handleNavigate} />}
         {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}

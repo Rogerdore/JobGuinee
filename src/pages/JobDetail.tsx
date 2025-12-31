@@ -11,15 +11,18 @@ import JobApplicationModal from '../components/candidate/JobApplicationModal';
 import CompanyLogo from '../components/common/CompanyLogo';
 import AccessRestrictionModal from '../components/common/AccessRestrictionModal';
 import AuthRequiredModal from '../components/common/AuthRequiredModal';
-import ApplicationSuccessModal from '../components/common/ApplicationSuccessModal';
+import ApplicationSuccessModal from '../components/candidate/ApplicationSuccessModal';
 import { useSavedJobs } from '../hooks/useSavedJobs';
+import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 
 interface JobDetailProps {
   jobId: string;
   onNavigate: (page: string) => void;
+  autoOpenApply?: boolean;
+  metadata?: Record<string, any>;
 }
 
-export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
+export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }: JobDetailProps) {
   const { user, profile } = useAuth();
   const [job, setJob] = useState<(Job & { companies: Company }) | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +40,12 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
+
+  useEffect(() => {
+    if (autoOpenApply && user && profile?.user_type === 'candidate' && !loading && job) {
+      setShowApplicationModal(true);
+    }
+  }, [autoOpenApply, user, profile, loading, job]);
 
   useEffect(() => {
     loadJob();
@@ -135,6 +144,13 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   const handleApplyClick = () => {
     if (!user) {
+      saveAuthRedirectIntent({
+        type: 'apply_job',
+        jobId,
+        returnPage: 'job-detail',
+        autoAction: true,
+        metadata: { jobTitle: job?.title }
+      });
       setAuthModalContext('apply');
       setShowAuthModal(true);
       return;
@@ -150,6 +166,12 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
 
   const handleSaveJob = async () => {
     if (!user) {
+      saveAuthRedirectIntent({
+        type: 'save_job',
+        jobId,
+        returnPage: 'job-detail',
+        autoAction: false
+      });
       setAuthModalContext('save');
       setShowAuthModal(true);
       return;
@@ -538,17 +560,11 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
       <ApplicationSuccessModal
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
-        onCompleteProfile={() => {
-          setShowSuccessModal(false);
-          onNavigate('candidate-profile-form');
-        }}
-        onViewMoreJobs={() => {
-          setShowSuccessModal(false);
-          onNavigate('jobs');
-        }}
-        jobTitle={job?.title}
         applicationReference={applicationReference}
+        nextSteps={nextSteps}
         profileCompletionPercentage={profileCompletionPercentage}
+        jobTitle={job?.title}
+        onNavigate={onNavigate}
       />
 
       <AuthRequiredModal

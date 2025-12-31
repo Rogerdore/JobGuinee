@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, User, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../lib/supabase';
+import { getAuthRedirectIntent } from '../hooks/useAuthRedirect';
 
 interface AuthProps {
   mode: 'login' | 'signup';
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, state?: any) => void;
 }
 
 export default function Auth({ mode, onNavigate }: AuthProps) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, getAndClearRedirectIntent } = useAuth();
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +27,6 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
     try {
       if (isLogin) {
         await signIn(email, password);
-        onNavigate('home');
       } else {
         if (!fullName.trim()) {
           setError('Veuillez entrer votre nom complet');
@@ -34,6 +34,29 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
           return;
         }
         await signUp(email, password, fullName, role);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const intent = getAndClearRedirectIntent();
+
+      if (intent) {
+        if (intent.type === 'apply_job' && intent.jobId) {
+          onNavigate('job-detail', {
+            jobId: intent.jobId,
+            autoOpenApply: true,
+            metadata: intent.metadata
+          });
+        } else if (intent.type === 'save_job' && intent.jobId) {
+          onNavigate('job-detail', { jobId: intent.jobId });
+        } else if (intent.returnPath) {
+          onNavigate(intent.returnPath);
+        } else if (intent.returnPage) {
+          onNavigate(intent.returnPage);
+        } else {
+          onNavigate('home');
+        }
+      } else {
         onNavigate('home');
       }
     } catch (err: any) {
