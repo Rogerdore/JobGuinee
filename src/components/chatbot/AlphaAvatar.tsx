@@ -210,7 +210,7 @@ export default function AlphaAvatar({
             src="/video_avatar_alpha_gif.gif"
             alt="Alpha - Assistant intelligent"
             className="w-full h-full object-cover"
-            style={{ objectPosition: 'center 25%' }}
+            style={{ objectPosition: 'center 20%' }}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon');
@@ -276,7 +276,7 @@ export default function AlphaAvatar({
       <AnimatePresence>
         {showProactiveMessage && (state === 'attention' || state === 'idle') && (
           <motion.div
-            className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 z-50"
+            className="absolute -top-24 right-0 w-64 z-50"
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
@@ -286,7 +286,7 @@ export default function AlphaAvatar({
               <p className="text-sm text-slate-800 font-medium leading-relaxed">
                 {proactiveMessage}
               </p>
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-r-2 border-b-2 border-[#0E2F56] rotate-45" />
+              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white border-r-2 border-b-2 border-[#0E2F56] rotate-45" />
             </div>
           </motion.div>
         )}
