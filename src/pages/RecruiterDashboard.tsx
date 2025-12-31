@@ -538,7 +538,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       sector: data.sector,
       experience_level: data.experience_required,
       education_level: data.education_level,
-      application_deadline: data.deadline,
+      deadline: data.deadline,
       languages: data.languages,
       keywords: data.skills,
       status: 'pending',

@@ -46,7 +46,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
     description: '',
     requirements: '',
     benefits: '',
-    application_deadline: '',
+    deadline: '',
     published_by_admin: true,
     publication_source: 'jobguinee' as 'jobguinee' | 'partenaire',
     application_mode: 'internal_admin' as ApplicationMode,
@@ -153,7 +153,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
         description: formData.description,
         requirements: formData.requirements,
         benefits: formData.benefits,
-        application_deadline: formData.application_deadline,
+        deadline: formData.deadline,
         published_by_admin: true,
         admin_publisher_id: user.id,
         publication_source: formData.publication_source,
@@ -294,8 +294,8 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
                   </label>
                   <input
                     type="date"
-                    value={formData.application_deadline}
-                    onChange={(e) => handleChange('application_deadline', e.target.value)}
+                    value={formData.deadline}
+                    onChange={(e) => handleChange('deadline', e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

@@ -346,7 +346,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                 </div>
               </div>
 
-              {job.application_deadline && (
+              {(job.deadline || job.application_deadline) && (
                 <div className="flex items-center space-x-3 bg-red-50 p-4 rounded-xl border-2 border-red-100">
                   <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                     <Clock className="w-5 h-5 text-white" />
@@ -354,7 +354,7 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                   <div>
                     <div className="text-xs text-gray-500 font-medium">Date limite</div>
                     <div className="font-bold text-gray-900 text-sm">
-                      {new Date(job.application_deadline).toLocaleDateString('fr-FR', {
+                      {new Date(job.deadline || job.application_deadline!).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric'
@@ -376,27 +376,25 @@ export default function JobDetail({ jobId, onNavigate }: JobDetailProps) {
                 </div>
               )}
 
-              {job.view_count !== undefined && (
-                <div className="flex items-center space-x-3 bg-yellow-50 p-4 rounded-xl border-2 border-yellow-100">
-                  <div className="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 font-medium">Vues</div>
-                    <div className="font-bold text-gray-900">{job.view_count || 0}</div>
-                  </div>
+              <div className="flex items-center space-x-3 bg-yellow-50 p-4 rounded-xl border-2 border-yellow-100">
+                <div className="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
                 </div>
-              )}
+                <div>
+                  <div className="text-xs text-gray-500 font-medium">Vues</div>
+                  <div className="font-bold text-gray-900">{job.views_count || 0}</div>
+                </div>
+              </div>
             </div>
 
-            {job.required_skills && job.required_skills.length > 0 && (
+            {job.keywords && job.keywords.length > 0 && (
               <div className="mb-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                   <Tag className="w-5 h-5 text-[#0E2F56]" />
                   <h3 className="text-lg font-bold text-gray-900">Compétences requises</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {job.required_skills.map((skill, index) => (
+                  {job.keywords.map((skill, index) => (
                     <span
                       key={index}
                       className="px-4 py-2 bg-[#0E2F56] text-white rounded-full text-sm font-medium"
