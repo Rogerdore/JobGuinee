@@ -101,29 +101,8 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
     }
   };
 
-  // Mode debug : afficher l'état pour diagnostic
-  if (loading) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">
-        Chargement...
-      </div>
-    );
-  }
-
-  if (!settings) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50 bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
-        Aucun paramètre
-      </div>
-    );
-  }
-
-  if (!settings.is_enabled) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm">
-        Chatbot désactivé
-      </div>
-    );
+  if (loading || !settings) {
+    return null;
   }
 
   const avatarSize = style?.widget_size === 'small' ? 'small' : style?.widget_size === 'large' ? 'large' : 'medium';
@@ -131,6 +110,7 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   const animation = style?.animation_type === 'fade' ? 'animate-fade-in' : style?.animation_type === 'scale' ? 'animate-scale-in' : 'animate-slide-up';
 
   const handleAvatarClick = () => {
+    if (!settings.is_enabled) return;
     setIsOpen(true);
     setAvatarState('opening');
     setTimeout(() => setAvatarState('listening'), 600);
@@ -141,22 +121,37 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
     setAvatarState('idle');
   };
 
+  const isEnabled = settings.is_enabled;
+
   return (
     <>
       <div
-        className={`fixed bottom-6 ${position} z-50 ${animation}`}
+        className={`fixed bottom-6 ${position} z-50 ${animation} relative`}
         style={{
           animationDelay: '0.5s'
         }}
       >
         {!isOpen ? (
-          <AlphaAvatar
-            state={avatarState}
-            size={avatarSize}
-            onClick={handleAvatarClick}
-            showProactiveMessage={showProactiveMessage}
-            proactiveMessage="Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee. Besoin d'aide? Je suis là pour vous."
-          />
+          <div className="relative">
+            <AlphaAvatar
+              state={avatarState}
+              size={avatarSize}
+              onClick={handleAvatarClick}
+              showProactiveMessage={showProactiveMessage && isEnabled}
+              proactiveMessage="Bonjour! Je suis Alpha, l'assistant virtuel JobGuinee. Besoin d'aide? Je suis là pour vous."
+            />
+            <div
+              className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${
+                isEnabled ? 'bg-green-500' : 'bg-red-500'
+              }`}
+              style={{
+                animation: isEnabled
+                  ? 'status-pulse-green 2s ease-in-out infinite'
+                  : 'status-pulse-red 2s ease-in-out infinite'
+              }}
+              title={isEnabled ? 'Alpha est en ligne' : 'Alpha est hors ligne'}
+            />
+          </div>
         ) : (
           <button
             onClick={handleClose}
@@ -176,7 +171,7 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         )}
       </div>
 
-      {isOpen && (
+      {isOpen && isEnabled && (
         <ChatbotWindow
           settings={settings}
           style={style}
