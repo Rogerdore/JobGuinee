@@ -54,6 +54,7 @@ const AdminAutomationRules = lazy(() => import('./pages/AdminAutomationRules'));
 const AdminRecruiterNotifications = lazy(() => import('./pages/AdminRecruiterNotifications'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
 const AdminJobModeration = lazy(() => import('./pages/AdminJobModeration'));
+const AdminJobBadges = lazy(() => import('./pages/AdminJobBadges'));
 const B2BSolutions = lazy(() => import('./pages/B2BSolutions'));
 const AdminB2BManagement = lazy(() => import('./pages/AdminB2BManagement'));
 const AdminB2BSeoConfig = lazy(() => import('./pages/AdminB2BSeoConfig'));
@@ -190,6 +191,7 @@ function AppContent() {
         {currentPage === 'admin-recruiter-notifications' && <AdminRecruiterNotifications />}
         {currentPage === 'admin-seo' && <AdminSEO onNavigate={handleNavigate} />}
         {currentPage === 'admin-job-moderation' && <AdminJobModeration onNavigate={handleNavigate} />}
+        {currentPage === 'admin-job-badges' && <AdminJobBadges />}
         {currentPage === 'admin-job-create' && <AdminJobCreate onNavigate={handleNavigate} />}
         {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
         {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
