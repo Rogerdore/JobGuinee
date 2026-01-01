@@ -178,44 +178,64 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
 
     return (
       <div key={item.id}>
-        <button
-          onClick={() => {
-            if (hasChildren) {
-              toggleMenu(item.id);
-            } else if (item.route && onNavigate) {
-              onNavigate(item.route);
-            }
-          }}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group
-            ${active
-              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
-              : 'text-gray-700 hover:bg-gray-100'
-            }
-            ${level > 0 ? 'ml-4' : ''}
-          `}
-        >
-          <div className="flex items-center gap-3">
-            <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'}`} />
-            {sidebarOpen && (
-              <span className={`font-medium text-sm ${active ? 'text-white' : ''}`}>
-                {item.label}
-              </span>
+        <div className="relative group/menu">
+          <button
+            onClick={() => {
+              if (hasChildren) {
+                toggleMenu(item.id);
+              } else if (item.route && onNavigate) {
+                onNavigate(item.route);
+              }
+            }}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group relative
+              ${active
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-200'
+                : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-md'
+              }
+              ${level > 0 ? 'ml-4' : ''}
+              ${!sidebarOpen ? 'justify-center' : ''}
+            `}
+            title={!sidebarOpen ? item.label : ''}
+          >
+            <div className={`flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'}`}>
+              <Icon className={`w-5 h-5 transition-all duration-200 ${
+                active
+                  ? 'text-white'
+                  : 'text-gray-600 group-hover:text-blue-600 group-hover:scale-110'
+              }`} />
+              {sidebarOpen && (
+                <span className={`font-medium text-sm transition-colors ${active ? 'text-white' : 'text-gray-700'}`}>
+                  {item.label}
+                </span>
+              )}
+              {item.badge && sidebarOpen && (
+                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
+                  {item.badge}
+                </span>
+              )}
+            </div>
+            {hasChildren && sidebarOpen && (
+              <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                <ChevronDown className={`w-4 h-4 ${active ? 'text-white' : 'text-gray-400 group-hover:text-blue-600'}`} />
+              </div>
             )}
-            {item.badge && sidebarOpen && (
-              <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                {item.badge}
-              </span>
+            {hasChildren && !sidebarOpen && (
+              <div className="absolute right-1 top-1">
+                <ChevronRight className="w-3 h-3 text-gray-400" />
+              </div>
             )}
-          </div>
-          {hasChildren && sidebarOpen && (
-            <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
-              <ChevronDown className={`w-4 h-4 ${active ? 'text-white' : 'text-gray-400'}`} />
+          </button>
+
+          {!sidebarOpen && (
+            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+              {item.label}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
             </div>
           )}
-        </button>
+        </div>
 
         {hasChildren && isExpanded && sidebarOpen && (
-          <div className="ml-2 mt-1 space-y-1">
+          <div className="ml-2 mt-1 space-y-1 animate-slideDown">
             {item.children!.map(child => renderMenuItem(child, level + 1))}
           </div>
         )}
