@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   CheckCircle, XCircle, Clock, Eye, Calendar, MapPin, Briefcase,
   Building, DollarSign, Users, AlertCircle, FileText, ChevronDown,
   ChevronUp, History, Search, RefreshCw, Zap, BarChart3,
-  Filter, CheckSquare, Square, TrendingUp, AlertTriangle, Star, Flame, Tag
+  Filter, CheckSquare, Square, TrendingUp, AlertTriangle, Star, Flame, Tag,
+  Download, Keyboard, TrendingDown, Activity, FileSpreadsheet, FileText as FilePdf
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
@@ -80,10 +82,44 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
   const [statusFilter, setStatusFilter] = useState<'pending' | 'all' | 'published' | 'closed' | 'rejected'>('pending');
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sectorFilter, setSectorFilter] = useState<string>('all');
+  const [contractFilter, setContractFilter] = useState<string>('all');
+  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [badgeFilter, setBadgeFilter] = useState<string>('all');
+  const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [jobHistory, setJobHistory] = useState<any[]>([]);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   useEffect(() => {
     loadData();
   }, [statusFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+      }
+      if (e.key === '?' && !showShortcuts) {
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showShortcuts]);
 
   const loadData = async () => {
     setLoading(true);
@@ -406,16 +442,109 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
     setModerationNotes('');
   };
 
-  const filteredJobs = jobs.filter(job => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      job.title.toLowerCase().includes(query) ||
-      job.company_name.toLowerCase().includes(query) ||
-      job.recruiter_name.toLowerCase().includes(query) ||
-      job.location.toLowerCase().includes(query)
-    );
-  });
+  const loadJobHistory = async (jobId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('job_moderation_history')
+        .select(`
+          *,
+          profiles!job_moderation_history_moderator_id_fkey(full_name)
+        `)
+        .eq('job_id', jobId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setJobHistory(data || []);
+      setShowHistory(jobId);
+    } catch (error: any) {
+      console.error('Error loading history:', error);
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Titre', 'Entreprise', 'Localisation', 'Status', 'Date soumission', 'Recruteur'];
+    const rows = filteredJobs.map(job => [
+      job.title,
+      job.company_name,
+      job.location,
+      job.status,
+      new Date(job.submitted_at).toLocaleDateString('fr-FR'),
+      job.recruiter_name
+    ]);
+
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `moderation_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const exportStats = () => {
+    if (!stats) return;
+    const content = `Rapport de Modération - ${new Date().toLocaleDateString('fr-FR')}
+
+En attente: ${stats.pending_count}
+Publiées: ${stats.published_count}
+Rejetées: ${stats.rejected_count}
+Fermées: ${stats.closed_count}
+Expire sous 7j: ${stats.expiring_soon_count}
+Expire sous 3j: ${stats.expiring_urgent_count}
+Temps moyen: ${stats.avg_moderation_hours.toFixed(1)}h
+Modérées aujourd'hui: ${stats.moderated_today}
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `stats_${new Date().toISOString().split('T')[0]}.txt`;
+    link.click();
+  };
+
+  const filteredJobs = useMemo(() => {
+    return jobs.filter(job => {
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
+        const matchesSearch = (
+          job.title.toLowerCase().includes(query) ||
+          job.company_name.toLowerCase().includes(query) ||
+          job.recruiter_name.toLowerCase().includes(query) ||
+          job.location.toLowerCase().includes(query)
+        );
+        if (!matchesSearch) return false;
+      }
+
+      if (sectorFilter !== 'all' && job.sector !== sectorFilter) return false;
+      if (contractFilter !== 'all' && job.contract_type !== contractFilter) return false;
+      if (locationFilter !== 'all' && !job.location.includes(locationFilter)) return false;
+
+      if (badgeFilter === 'urgent' && !job.is_urgent) return false;
+      if (badgeFilter === 'featured' && !job.is_featured) return false;
+      if (badgeFilter === 'both' && (!job.is_urgent || !job.is_featured)) return false;
+
+      return true;
+    });
+  }, [jobs, debouncedSearch, sectorFilter, contractFilter, locationFilter, badgeFilter]);
+
+  const paginatedJobs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredJobs.slice(startIndex, endIndex);
+  }, [filteredJobs, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+
+  const uniqueSectors = useMemo(() => {
+    return Array.from(new Set(jobs.map(j => j.sector).filter(Boolean)));
+  }, [jobs]);
+
+  const uniqueContracts = useMemo(() => {
+    return Array.from(new Set(jobs.map(j => j.contract_type).filter(Boolean)));
+  }, [jobs]);
+
+  const uniqueLocations = useMemo(() => {
+    return Array.from(new Set(jobs.map(j => j.location).filter(Boolean)));
+  }, [jobs]);
 
   const getStatusBadge = (job: PendingJob) => {
     const isExpiring = job.expires_at && new Date(job.expires_at) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -482,19 +611,47 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
     <AdminLayout onNavigate={onNavigate}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between"
+        >
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Modération des Offres d'Emploi</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Modération des Offres d'Emploi
+            </h1>
             <p className="text-gray-600 mt-1">Validation rapide avec gestion des badges et durée de validité</p>
           </div>
-          <button
-            onClick={loadData}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            title="Actualiser"
-          >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-        </div>
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowShortcuts(true)}
+              className="p-2 text-gray-600 hover:bg-blue-50 rounded-lg transition border border-transparent hover:border-blue-200"
+              title="Raccourcis clavier (?)"
+            >
+              <Keyboard className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowExportModal(true)}
+              className="p-2 text-gray-600 hover:bg-green-50 rounded-lg transition border border-transparent hover:border-green-200"
+              title="Exporter"
+            >
+              <Download className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05, rotate: 180 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={loadData}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              title="Actualiser"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </motion.button>
+          </div>
+        </motion.div>
 
         {/* Statistics */}
         {stats && (
@@ -594,17 +751,31 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-          <div className="flex gap-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-white rounded-lg shadow-sm p-4 border border-gray-200"
+        >
+          <div className="flex gap-4 mb-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
+                id="search-input"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher par titre, entreprise, recruteur, localisation..."
+                placeholder="Rechercher (Ctrl+K)..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {searchQuery && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500"
+                >
+                  {filteredJobs.length} résultat{filteredJobs.length > 1 ? 's' : ''}
+                </motion.span>
+              )}
             </div>
             <select
               value={statusFilter}
@@ -617,29 +788,142 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
               <option value="rejected">Rejetées uniquement</option>
               <option value="all">Tous les statuts</option>
             </select>
-            {statusFilter === 'pending' && filteredJobs.filter(j => j.status === 'pending').length > 0 && (
-              <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
+                showFilters
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filtres {showFilters ? 'avancés' : ''}
+            </motion.button>
+            {statusFilter === 'pending' && paginatedJobs.filter(j => j.status === 'pending').length > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={selectAllVisible}
                 className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium rounded-lg transition flex items-center gap-2"
               >
                 <CheckSquare className="w-4 h-4" />
                 Tout sélectionner
-              </button>
+              </motion.button>
             )}
           </div>
-        </div>
+
+          {/* Advanced Filters */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="pt-4 border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Secteur</label>
+                    <select
+                      value={sectorFilter}
+                      onChange={(e) => setSectorFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Tous les secteurs</option>
+                      {uniqueSectors.map(sector => (
+                        <option key={sector} value={sector}>{sector}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Type de contrat</label>
+                    <select
+                      value={contractFilter}
+                      onChange={(e) => setContractFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Tous les contrats</option>
+                      {uniqueContracts.map(contract => (
+                        <option key={contract} value={contract}>{contract}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Localisation</label>
+                    <select
+                      value={locationFilter}
+                      onChange={(e) => setLocationFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Toutes les localisations</option>
+                      {uniqueLocations.map(location => (
+                        <option key={location} value={location}>{location}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Badges</label>
+                    <select
+                      value={badgeFilter}
+                      onChange={(e) => setBadgeFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">Tous les badges</option>
+                      <option value="urgent">URGENT uniquement</option>
+                      <option value="featured">À LA UNE uniquement</option>
+                      <option value="both">Les deux badges</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => {
+                      setSectorFilter('all');
+                      setContractFilter('all');
+                      setLocationFilter('all');
+                      setBadgeFilter('all');
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Réinitialiser les filtres
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* Jobs List */}
         {filteredJobs.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200"
+          >
             <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600 text-lg">Aucune offre trouvée</p>
             <p className="text-gray-500 text-sm mt-2">Les offres apparaîtront ici selon le filtre sélectionné</p>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
-            {filteredJobs.map((job) => (
-              <div key={job.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
+          <>
+            <div className="flex items-center justify-between text-sm text-gray-600 px-2">
+              <span>
+                Affichage {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredJobs.length)} sur {filteredJobs.length} offre{filteredJobs.length > 1 ? 's' : ''}
+              </span>
+              <span>Page {currentPage} / {totalPages}</span>
+            </div>
+            <div className="space-y-4">
+            {paginatedJobs.map((job, index) => (
+              <motion.div
+                key={job.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition"
+              >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-3 flex-1">
@@ -712,12 +996,23 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      {expandedJob === job.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </button>
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => loadJobHistory(job.id)}
+                        className="p-2 text-gray-600 hover:bg-blue-50 rounded-lg transition"
+                        title="Voir l'historique"
+                      >
+                        <History className="w-5 h-5" />
+                      </motion.button>
+                      <button
+                        onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                      >
+                        {expandedJob === job.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Quick Actions */}
@@ -885,9 +1180,70 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center gap-2 mt-6"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Précédent
+              </motion.button>
+
+              <div className="flex gap-2">
+                {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <motion.button
+                      key={pageNum}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-4 py-2 rounded-lg font-medium transition ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Suivant
+              </motion.button>
+            </motion.div>
+          )}
+          </>
         )}
 
         {/* Custom Approve Modal with Badges */}
@@ -1245,6 +1601,257 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
             </div>
           </div>
         )}
+
+        {/* Shortcuts Modal */}
+        <AnimatePresence>
+          {showShortcuts && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowShortcuts(false)}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Keyboard className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">Raccourcis Clavier</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowShortcuts(false)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-700">Recherche</span>
+                      <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">Ctrl+K</kbd>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-700">Aide (ce modal)</span>
+                      <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">?</kbd>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-3">Astuces</h4>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span>Utilisez la recherche pour filtrer rapidement les offres</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span>Les filtres avancés permettent des recherches précises</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span>Sélectionnez plusieurs offres pour des actions en masse</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span>Cliquez sur l'icône historique pour voir l'historique de modération</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Export Modal */}
+        <AnimatePresence>
+          {showExportModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowExportModal(false)}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Download className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">Exporter les Données</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowExportModal(false)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      exportToCSV();
+                      setShowExportModal(false);
+                    }}
+                    className="w-full p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg hover:from-green-100 hover:to-emerald-100 transition text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileSpreadsheet className="w-8 h-8 text-green-600" />
+                      <div>
+                        <div className="font-semibold text-gray-900">Exporter en CSV</div>
+                        <div className="text-sm text-gray-600">
+                          Liste des {filteredJobs.length} offre{filteredJobs.length > 1 ? 's' : ''} filtrée{filteredJobs.length > 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      exportStats();
+                      setShowExportModal(false);
+                    }}
+                    className="w-full p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-lg hover:from-blue-100 hover:to-cyan-100 transition text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="w-8 h-8 text-blue-600" />
+                      <div>
+                        <div className="font-semibold text-gray-900">Exporter les Statistiques</div>
+                        <div className="text-sm text-gray-600">
+                          Rapport complet des statistiques de modération
+                        </div>
+                      </div>
+                    </div>
+                  </motion.button>
+                </div>
+
+                <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex gap-2 text-sm text-yellow-800">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <p>Les exports respectent les filtres actuellement appliqués</p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* History Modal */}
+        <AnimatePresence>
+          {showHistory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistory(null)}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <History className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">Historique de Modération</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowHistory(null)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {jobHistory.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p>Aucun historique disponible</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {jobHistory.map((entry, index) => (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex-shrink-0">
+                          <div className={`p-2 rounded-full ${
+                            entry.action === 'approved' ? 'bg-green-100' :
+                            entry.action === 'rejected' ? 'bg-red-100' :
+                            entry.action === 'republished' ? 'bg-purple-100' :
+                            'bg-gray-100'
+                          }`}>
+                            {entry.action === 'approved' && <CheckCircle className="w-5 h-5 text-green-600" />}
+                            {entry.action === 'rejected' && <XCircle className="w-5 h-5 text-red-600" />}
+                            {entry.action === 'republished' && <RefreshCw className="w-5 h-5 text-purple-600" />}
+                            {entry.action === 'badge_updated' && <Tag className="w-5 h-5 text-blue-600" />}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-1">
+                            <span className="font-semibold text-gray-900">
+                              {entry.action === 'approved' && 'Offre approuvée'}
+                              {entry.action === 'rejected' && 'Offre rejetée'}
+                              {entry.action === 'republished' && 'Offre republiée'}
+                              {entry.action === 'badge_updated' && 'Badges mis à jour'}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {new Date(entry.created_at).toLocaleString('fr-FR')}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Par: <span className="font-medium">{entry.profiles?.full_name || 'Système'}</span>
+                          </div>
+                          {entry.reason && (
+                            <div className="mt-2 text-sm text-gray-700 bg-white p-2 rounded border border-gray-200">
+                              <span className="font-medium">Raison:</span> {entry.reason}
+                            </div>
+                          )}
+                          {entry.notes && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              <span className="font-medium">Notes:</span> {entry.notes}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AdminLayout>
   );
