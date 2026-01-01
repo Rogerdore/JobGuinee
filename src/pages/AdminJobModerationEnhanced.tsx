@@ -224,19 +224,28 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
   const quickApprove = async (jobId: string, days: number = 30) => {
     setProcessing(jobId);
     try {
+      console.log('Appel de approve_job_with_validity:', { jobId, days });
+
       const { data, error } = await supabase.rpc('approve_job_with_validity', {
         p_job_id: jobId,
         p_validity_days: days,
         p_notes: `Approbation rapide - ${days} jours`
       });
 
-      if (error) throw error;
+      console.log('Résultat RPC:', { data, error });
+
+      if (error) {
+        console.error('Erreur Supabase RPC:', error);
+        throw new Error(`Erreur RPC: ${error.message}`);
+      }
 
       if (data?.success) {
         showMessage('success', `Offre approuvée avec succès pour ${days} jours`);
         await loadData();
       } else {
-        throw new Error(data?.error || 'Erreur inconnue');
+        const errorMsg = data?.error || data?.message || 'Erreur inconnue';
+        console.error('Échec de l\'approbation:', data);
+        throw new Error(errorMsg);
       }
     } catch (error: any) {
       console.error('Error approving job:', error);
@@ -1021,11 +1030,20 @@ Modérées aujourd'hui: ${stats.moderated_today}
                       <button
                         onClick={() => quickApprove(job.id, 30)}
                         disabled={processing === job.id}
-                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         title="Approbation rapide pour 30 jours"
                       >
-                        <Zap className="w-4 h-4" />
-                        Approuver 30j
+                        {processing === job.id ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Approbation...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            <span>Approuver 30j</span>
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => {
@@ -1124,10 +1142,19 @@ Modérées aujourd'hui: ${stats.moderated_today}
                             <button
                               onClick={() => quickApprove(job.id, 30)}
                               disabled={processing === job.id}
-                              className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                              className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                              <Zap className="w-5 h-5" />
-                              Approuver 30j
+                              {processing === job.id ? (
+                                <>
+                                  <RefreshCw className="w-5 h-5 animate-spin" />
+                                  <span>Approbation...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="w-5 h-5" />
+                                  <span>Approuver 30j</span>
+                                </>
+                              )}
                             </button>
                             <button
                               onClick={() => {
