@@ -53,7 +53,7 @@ const RecruiterMessaging = lazy(() => import('./pages/RecruiterMessaging'));
 const AdminAutomationRules = lazy(() => import('./pages/AdminAutomationRules'));
 const AdminRecruiterNotifications = lazy(() => import('./pages/AdminRecruiterNotifications'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
-const AdminJobModeration = lazy(() => import('./pages/AdminJobModeration'));
+const AdminJobModeration = lazy(() => import('./pages/AdminJobModerationEnhanced'));
 const AdminJobBadges = lazy(() => import('./pages/AdminJobBadges'));
 const B2BSolutions = lazy(() => import('./pages/B2BSolutions'));
 const AdminB2BManagement = lazy(() => import('./pages/AdminB2BManagement'));
