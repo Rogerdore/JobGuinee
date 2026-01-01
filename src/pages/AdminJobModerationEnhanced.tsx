@@ -3,7 +3,7 @@ import {
   CheckCircle, XCircle, Clock, Eye, Calendar, MapPin, Briefcase,
   Building, DollarSign, Users, AlertCircle, FileText, ChevronDown,
   ChevronUp, History, Search, RefreshCw, Zap, BarChart3,
-  Filter, CheckSquare, Square, TrendingUp, AlertTriangle
+  Filter, CheckSquare, Square, TrendingUp, AlertTriangle, Star, Flame, Tag
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,6 +32,8 @@ interface PendingJob {
   expires_at?: string;
   validity_days?: number;
   renewal_count?: number;
+  is_urgent: boolean;
+  is_featured: boolean;
 }
 
 interface ModerationStats {
@@ -45,6 +47,13 @@ interface ModerationStats {
   moderated_today: number;
 }
 
+interface BadgeStats {
+  urgent_count: number;
+  featured_count: number;
+  both_count: number;
+  total_published: number;
+}
+
 interface AdminJobModerationProps {
   onNavigate: (page: string) => void;
 }
@@ -53,6 +62,7 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
   const { user } = useAuth();
   const [jobs, setJobs] = useState<PendingJob[]>([]);
   const [stats, setStats] = useState<ModerationStats | null>(null);
+  const [badgeStats, setBadgeStats] = useState<BadgeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
@@ -61,7 +71,10 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
   const [showApproveModal, setShowApproveModal] = useState<string | null>(null);
   const [showRepublishModal, setShowRepublishModal] = useState<string | null>(null);
+  const [showBadgeModal, setShowBadgeModal] = useState<string | null>(null);
   const [validityDays, setValidityDays] = useState(30);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'pending' | 'all' | 'published' | 'closed' | 'rejected'>('pending');
@@ -75,7 +88,7 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
   const loadData = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadJobs(), loadStats()]);
+      await Promise.all([loadJobs(), loadStats(), loadBadgeStats()]);
     } catch (error: any) {
       console.error('Error loading data:', error);
       showMessage('error', 'Erreur lors du chargement des données');
@@ -95,6 +108,16 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
       setStats(data);
     } catch (error: any) {
       console.error('Error loading stats:', error);
+    }
+  };
+
+  const loadBadgeStats = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_badge_stats');
+      if (error) throw error;
+      setBadgeStats(data);
+    } catch (error: any) {
+      console.error('Error loading badge stats:', error);
     }
   };
 
@@ -122,7 +145,9 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
           published_at,
           expires_at,
           validity_days,
-          renewal_count
+          renewal_count,
+          is_urgent,
+          is_featured
         `)
         .order('submitted_at', { ascending: false });
 
@@ -190,19 +215,27 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
 
     setProcessing(showApproveModal);
     try {
-      const { data, error } = await supabase.rpc('approve_job_with_validity', {
+      const { data, error } = await supabase.rpc('approve_job_with_badges_and_validity', {
         p_job_id: showApproveModal,
         p_validity_days: validityDays,
+        p_is_urgent: isUrgent,
+        p_is_featured: isFeatured,
         p_notes: moderationNotes || null
       });
 
       if (error) throw error;
 
       if (data?.success) {
-        showMessage('success', `Offre approuvée pour ${validityDays} jours`);
+        const badgeMsg = [];
+        if (isUrgent) badgeMsg.push('URGENT');
+        if (isFeatured) badgeMsg.push('À LA UNE');
+        const badgeText = badgeMsg.length > 0 ? ` avec badges: ${badgeMsg.join(', ')}` : '';
+        showMessage('success', `Offre approuvée pour ${validityDays} jours${badgeText}`);
         setShowApproveModal(null);
         setModerationNotes('');
         setValidityDays(30);
+        setIsUrgent(false);
+        setIsFeatured(false);
         await loadData();
       } else {
         throw new Error(data?.error || 'Erreur inconnue');
@@ -210,6 +243,38 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
     } catch (error: any) {
       console.error('Error approving job:', error);
       showMessage('error', error.message || 'Erreur lors de l\'approbation');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const updateBadges = async () => {
+    if (!showBadgeModal) return;
+
+    setProcessing(showBadgeModal);
+    try {
+      const { data, error } = await supabase.rpc('update_job_badges', {
+        p_job_id: showBadgeModal,
+        p_is_urgent: isUrgent,
+        p_is_featured: isFeatured,
+        p_notes: moderationNotes || null
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        showMessage('success', 'Badges mis à jour avec succès');
+        setShowBadgeModal(null);
+        setModerationNotes('');
+        setIsUrgent(false);
+        setIsFeatured(false);
+        await loadData();
+      } else {
+        throw new Error(data?.error || 'Erreur inconnue');
+      }
+    } catch (error: any) {
+      console.error('Error updating badges:', error);
+      showMessage('error', error.message || 'Erreur lors de la mise à jour');
     } finally {
       setProcessing(null);
     }
@@ -334,6 +399,13 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
     setProcessing(null);
   };
 
+  const openBadgeModal = (job: PendingJob) => {
+    setShowBadgeModal(job.id);
+    setIsUrgent(job.is_urgent);
+    setIsFeatured(job.is_featured);
+    setModerationNotes('');
+  };
+
   const filteredJobs = jobs.filter(job => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -413,7 +485,7 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Modération des Offres d'Emploi</h1>
-            <p className="text-gray-600 mt-1">Validation rapide et gestion des offres avec durée de validité configurable</p>
+            <p className="text-gray-600 mt-1">Validation rapide avec gestion des badges et durée de validité</p>
           </div>
           <button
             onClick={loadData}
@@ -426,7 +498,7 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
 
         {/* Statistics */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-4">
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
               <div className="text-2xl font-bold text-yellow-800">{stats.pending_count}</div>
               <div className="text-xs text-yellow-700">En attente</div>
@@ -435,13 +507,31 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
               <div className="text-2xl font-bold text-green-800">{stats.published_count}</div>
               <div className="text-xs text-green-700">Publiées</div>
             </div>
+            {badgeStats && (
+              <>
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-red-800">{badgeStats.urgent_count}</div>
+                  <div className="text-xs text-red-700 flex items-center gap-1">
+                    <Flame className="w-3 h-3" />
+                    URGENT
+                  </div>
+                </div>
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-800">{badgeStats.featured_count}</div>
+                  <div className="text-xs text-blue-700 flex items-center gap-1">
+                    <Star className="w-3 h-3" />
+                    À LA UNE
+                  </div>
+                </div>
+              </>
+            )}
             <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
               <div className="text-2xl font-bold text-orange-800">{stats.expiring_soon_count}</div>
-              <div className="text-xs text-orange-700">Expirent 7j</div>
+              <div className="text-xs text-orange-700">Expire 7j</div>
             </div>
             <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
               <div className="text-2xl font-bold text-red-800">{stats.expiring_urgent_count}</div>
-              <div className="text-xs text-red-700">Expirent 3j</div>
+              <div className="text-xs text-red-700">Expire 3j</div>
             </div>
             <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
               <div className="text-2xl font-bold text-gray-800">{stats.closed_count}</div>
@@ -568,9 +658,24 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                       )}
 
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-xl font-bold text-gray-900">{job.title}</h3>
                           {getStatusBadge(job)}
+
+                          {/* Display current badges */}
+                          {job.is_urgent && (
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white border-2 border-red-600 flex items-center gap-1">
+                              <Flame className="w-3 h-3" />
+                              URGENT
+                            </span>
+                          )}
+                          {job.is_featured && (
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white border-2 border-blue-600 flex items-center gap-1">
+                              <Star className="w-3 h-3" />
+                              À LA UNE
+                            </span>
+                          )}
+
                           {job.renewal_count > 0 && (
                             <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 font-medium">
                               🔄 Renouvellement #{job.renewal_count}
@@ -628,12 +733,17 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                         Approuver 30j
                       </button>
                       <button
-                        onClick={() => setShowApproveModal(job.id)}
+                        onClick={() => {
+                          setShowApproveModal(job.id);
+                          setValidityDays(30);
+                          setIsUrgent(false);
+                          setIsFeatured(false);
+                        }}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition flex items-center gap-2"
-                        title="Configurer la durée de validité"
+                        title="Configurer durée et badges"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        Personnaliser
+                        Avec badges
                       </button>
                       <button
                         onClick={() => setShowRejectModal(job.id)}
@@ -645,8 +755,21 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                     </div>
                   )}
 
-                  {/* Republish Button for closed/published jobs */}
-                  {(job.status === 'closed' || (job.status === 'published' && job.expires_at)) && !expandedJob && (
+                  {/* Badge management for published jobs */}
+                  {job.status === 'published' && !expandedJob && (
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={() => openBadgeModal(job)}
+                        className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition flex items-center justify-center gap-2"
+                      >
+                        <Tag className="w-4 h-4" />
+                        Gérer les badges
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Republish Button for closed jobs */}
+                  {job.status === 'closed' && !expandedJob && (
                     <div className="flex gap-2 mt-4">
                       <button
                         onClick={() => setShowRepublishModal(job.id)}
@@ -712,12 +835,17 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                               Approuver 30j
                             </button>
                             <button
-                              onClick={() => setShowApproveModal(job.id)}
+                              onClick={() => {
+                                setShowApproveModal(job.id);
+                                setValidityDays(30);
+                                setIsUrgent(false);
+                                setIsFeatured(false);
+                              }}
                               disabled={processing === job.id}
                               className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                               <CheckCircle className="w-5 h-5" />
-                              Personnaliser
+                              Avec badges
                             </button>
                             <button
                               onClick={() => setShowRejectModal(job.id)}
@@ -731,7 +859,19 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                         </div>
                       )}
 
-                      {(job.status === 'closed' || (job.status === 'published' && job.expires_at)) && (
+                      {job.status === 'published' && (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => openBadgeModal(job)}
+                            className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                          >
+                            <Tag className="w-5 h-5" />
+                            Gérer les badges
+                          </button>
+                        </div>
+                      )}
+
+                      {job.status === 'closed' && (
                         <div className="flex gap-3">
                           <button
                             onClick={() => setShowRepublishModal(job.id)}
@@ -750,18 +890,55 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
           </div>
         )}
 
-        {/* Custom Approve Modal */}
+        {/* Custom Approve Modal with Badges */}
         {showApproveModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Approuver l'offre</h3>
+                <h3 className="text-xl font-bold text-gray-900">Approuver l'offre avec badges</h3>
               </div>
 
               <div className="space-y-4">
+                {/* Badge Selection */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-indigo-600" />
+                    Badges de visibilité
+                  </h4>
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isUrgent}
+                        onChange={(e) => setIsUrgent(e.target.checked)}
+                        className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-red-600" />
+                        <span className="font-medium text-gray-900">URGENT</span>
+                        <span className="text-xs text-gray-500">(affichage prioritaire en rouge)</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isFeatured}
+                        onChange={(e) => setIsFeatured(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Star className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium text-gray-900">À LA UNE</span>
+                        <span className="text-xs text-gray-500">(mise en avant sur la page d'accueil)</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Validity Duration */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Durée de validité <span className="text-red-500">*</span>
@@ -792,6 +969,7 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                   />
                 </div>
 
+                {/* Notes */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Notes (optionnel)
@@ -805,18 +983,30 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                   />
                 </div>
 
+                {/* Summary */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <p className="text-sm text-green-800">
-                    L'offre sera visible pendant <strong>{validityDays} jours</strong> et expirera automatiquement le{' '}
+                    L'offre sera visible pendant <strong>{validityDays} jours</strong> jusqu'au{' '}
                     <strong>{new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</strong>
+                    {(isUrgent || isFeatured) && (
+                      <>
+                        {' '}avec les badges:{' '}
+                        <strong>
+                          {[isUrgent && 'URGENT', isFeatured && 'À LA UNE'].filter(Boolean).join(', ')}
+                        </strong>
+                      </>
+                    )}
                   </p>
                 </div>
 
+                {/* Actions */}
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
                       setShowApproveModal(null);
                       setValidityDays(30);
+                      setIsUrgent(false);
+                      setIsFeatured(false);
                       setModerationNotes('');
                     }}
                     className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition"
@@ -829,6 +1019,90 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
                     className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition disabled:opacity-50"
                   >
                     {processing === showApproveModal ? 'Approbation...' : 'Confirmer'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Badge Management Modal */}
+        {showBadgeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <Tag className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Gérer les badges de visibilité</h3>
+              </div>
+
+              <div className="space-y-4">
+                {/* Badge Selection */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isUrgent}
+                        onChange={(e) => setIsUrgent(e.target.checked)}
+                        className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-red-600" />
+                        <span className="font-medium text-gray-900">URGENT</span>
+                        <span className="text-xs text-gray-500">(affichage prioritaire en rouge)</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isFeatured}
+                        onChange={(e) => setIsFeatured(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Star className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium text-gray-900">À LA UNE</span>
+                        <span className="text-xs text-gray-500">(mise en avant sur la page d'accueil)</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (optionnel)
+                  </label>
+                  <textarea
+                    value={moderationNotes}
+                    onChange={(e) => setModerationNotes(e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Raison du changement..."
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowBadgeModal(null);
+                      setIsUrgent(false);
+                      setIsFeatured(false);
+                      setModerationNotes('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={updateBadges}
+                    disabled={processing === showBadgeModal}
+                    className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition disabled:opacity-50"
+                  >
+                    {processing === showBadgeModal ? 'Mise à jour...' : 'Enregistrer'}
                   </button>
                 </div>
               </div>
