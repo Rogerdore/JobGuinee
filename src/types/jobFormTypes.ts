@@ -1,3 +1,8 @@
+export interface LanguageRequirement {
+  language: string;
+  level: string;
+}
+
 export interface JobFormData {
   title: string;
   category: string;
@@ -12,9 +17,11 @@ export interface JobFormData {
   education_level: string;
   experience_required: string;
   languages: string[];
+  language_requirements: LanguageRequirement[];
   company_name: string;
   company_logo?: File;
   company_logo_url?: string;
+  use_profile_logo: boolean;
   sector: string;
   location: string;
   company_description: string;
@@ -32,5 +39,6 @@ export interface JobFormData {
   auto_share: boolean;
   publication_duration: string;
   auto_renewal: boolean;
+  auto_renewal_pending_admin: boolean;
   legal_compliance: boolean;
 }

@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import AccessRestrictionModal from '../common/AccessRestrictionModal';
 import JobPreviewModal from './JobPreviewModal';
 import { validateJobData } from '../../services/jobValidationService';
+import LanguageLevelSelector from '../forms/LanguageLevelSelector';
 import {
   jobTitleSuggestions,
   companySuggestions,
@@ -89,8 +90,10 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
         education_level: existingJob.education_level || 'Licence',
         experience_required: existingJob.experience_level || '3–5 ans',
         languages: existingJob.languages || [],
+        language_requirements: [],
         company_name: existingJob.department || '',
         company_logo_url: existingJob.company_logo_url || '',
+        use_profile_logo: false,
         sector: existingJob.sector || 'Mines',
         location: existingJob.location || '',
         company_description: existingJob.company_description || '',
@@ -108,6 +111,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
         auto_share: existingJob.auto_share || false,
         publication_duration: existingJob.publication_duration || '30 jours',
         auto_renewal: existingJob.auto_renewal || false,
+        auto_renewal_pending_admin: existingJob.auto_renewal_pending_admin || false,
         legal_compliance: existingJob.legal_compliance || false,
       };
     }
@@ -126,7 +130,9 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       education_level: 'Licence',
       experience_required: '3–5 ans',
       languages: [],
+      language_requirements: [],
       company_name: '',
+      use_profile_logo: false,
       sector: 'Mines',
       location: '',
       company_description: '',
@@ -144,6 +150,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       auto_share: false,
       publication_duration: '30 jours',
       auto_renewal: false,
+      auto_renewal_pending_admin: false,
       legal_compliance: false,
     };
   }, [existingJob]);
@@ -781,23 +788,11 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Langues exigées
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {['Français', 'Anglais', 'Chinois'].map((lang) => (
-                    <label key={lang} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.languages.includes(lang)}
-                        onChange={() => toggleLanguage(lang)}
-                        className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                      />
-                      <span className="text-sm font-medium text-gray-700">{lang}</span>
-                    </label>
-                  ))}
-                </div>
+              <div className="md:col-span-2">
+                <LanguageLevelSelector
+                  languageRequirements={formData.language_requirements}
+                  onChange={(requirements) => updateFormField('language_requirements', requirements)}
+                />
               </div>
             </div>
           </FormSection>
@@ -809,42 +804,83 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 Logo de l'entreprise (optionnel)
               </label>
 
-              <div className="flex items-start gap-4">
-                {(logoPreview || formData.company_logo_url) && (
-                  <div className="relative">
-                    <img
-                      src={logoPreview || formData.company_logo_url}
-                      alt="Logo entreprise"
-                      className="w-24 h-24 object-cover rounded-xl border-2 border-blue-300 shadow-md"
-                    />
-                    {uploadingLogo && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
-                        <Loader className="w-6 h-6 text-white animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex-1">
-                  <label htmlFor="logo-upload" className="cursor-pointer">
-                    <div className="flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border-2 border-dashed border-blue-300 rounded-xl transition-all hover:border-blue-500 group">
-                      <UploadIcon className="w-5 h-5 text-[#0E2F56] group-hover:text-blue-600 transition" />
-                      <span className="text-sm font-semibold text-gray-700 group-hover:text-[#0E2F56] transition">
-                        {uploadingLogo ? 'Upload en cours...' : 'Télécharger un logo'}
-                      </span>
-                    </div>
-                  </label>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                    disabled={uploadingLogo}
-                  />
-                  <p className="text-xs text-gray-600 mt-2">PNG, JPG ou GIF (max 5 MB)</p>
-                </div>
+              <div className="mb-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => updateFormField('use_profile_logo', true)}
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition ${
+                    formData.use_profile_logo
+                      ? 'bg-[#0E2F56] text-white border-2 border-[#0E2F56]'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#0E2F56]'
+                  }`}
+                >
+                  Utiliser logo du profil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateFormField('use_profile_logo', false)}
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition ${
+                    !formData.use_profile_logo
+                      ? 'bg-[#0E2F56] text-white border-2 border-[#0E2F56]'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#0E2F56]'
+                  }`}
+                >
+                  Télécharger nouveau logo
+                </button>
               </div>
+
+              {formData.use_profile_logo ? (
+                <div className="flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-blue-200">
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center border-2 border-blue-300">
+                    <Building2 className="w-12 h-12 text-[#0E2F56]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900 mb-1">
+                      Logo du profil entreprise
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Le logo enregistré dans votre profil recruteur sera utilisé automatiquement
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-4">
+                  {(logoPreview || formData.company_logo_url) && (
+                    <div className="relative">
+                      <img
+                        src={logoPreview || formData.company_logo_url}
+                        alt="Logo entreprise"
+                        className="w-24 h-24 object-cover rounded-xl border-2 border-blue-300 shadow-md"
+                      />
+                      {uploadingLogo && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
+                          <Loader className="w-6 h-6 text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <label htmlFor="logo-upload" className="cursor-pointer">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border-2 border-dashed border-blue-300 rounded-xl transition-all hover:border-blue-500 group">
+                        <UploadIcon className="w-5 h-5 text-[#0E2F56] group-hover:text-blue-600 transition" />
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-[#0E2F56] transition">
+                          {uploadingLogo ? 'Upload en cours...' : 'Télécharger un logo'}
+                        </span>
+                      </div>
+                    </label>
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      disabled={uploadingLogo}
+                    />
+                    <p className="text-xs text-gray-600 mt-2">PNG, JPG ou GIF (max 5 MB)</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -883,7 +919,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   value={formData.location}
                   onChange={(value) => updateFormField('location', value)}
                   suggestions={locationSuggestions}
-                  placeholder="Ex : Kinshasa, Lubumbashi..."
+                  placeholder="Ex : Conakry, Kankan, Labé..."
                   label="Localisation du poste"
                   required
                   minChars={2}
@@ -1163,17 +1199,41 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </select>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <label className="flex items-start gap-2 cursor-pointer mb-2">
                   <input
                     type="checkbox"
                     name="auto_renewal"
                     checked={formData.auto_renewal}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (e.target.checked) {
+                        updateFormField('auto_renewal_pending_admin', true);
+                      }
+                    }}
+                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56] mt-0.5"
                   />
-                  <span className="text-sm font-medium text-gray-700">Renouvellement automatique après expiration</span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-900 block">
+                      Renouvellement automatique après expiration
+                    </span>
+                    <span className="text-xs text-gray-600 block mt-1">
+                      L'offre sera automatiquement republiée après expiration
+                    </span>
+                  </div>
                 </label>
+                {formData.auto_renewal && (
+                  <div className="mt-3 flex items-start gap-2 p-3 bg-[#FF8C00] bg-opacity-10 rounded-lg border border-[#FF8C00]">
+                    <AlertCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
+                    <div className="text-xs text-gray-900">
+                      <strong className="font-bold">Validation admin requise</strong>
+                      <p className="mt-1">
+                        Le renouvellement automatique sera soumis à validation par l'administrateur.
+                        Vous recevrez une notification une fois validé.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4">

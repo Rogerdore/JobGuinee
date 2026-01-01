@@ -21,7 +21,12 @@ export function generateJobDescription(data: JobFormData): string {
   fullDescription += `## Qualifications\n`;
   fullDescription += `- **Niveau d'études:** ${data.education_level}\n`;
   fullDescription += `- **Expérience:** ${data.experience_required}\n`;
-  if (data.languages.length > 0) {
+  if (data.language_requirements && data.language_requirements.length > 0) {
+    fullDescription += `- **Langues exigées:**\n`;
+    data.language_requirements.forEach(req => {
+      fullDescription += `  • ${req.language}: ${req.level}\n`;
+    });
+  } else if (data.languages.length > 0) {
     fullDescription += `- **Langues:** ${data.languages.join(', ')}\n`;
   }
   fullDescription += `\n`;
