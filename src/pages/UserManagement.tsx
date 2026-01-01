@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Shield, UserCog, Search, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Users, Shield, UserCog, Search, AlertCircle, CheckCircle, X, ArrowLeft, Home, ChevronRight, GraduationCap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
@@ -12,7 +12,7 @@ interface Profile {
   id: string;
   email: string;
   full_name: string;
-  user_type: 'candidate' | 'recruiter' | 'admin';
+  user_type: 'candidate' | 'recruiter' | 'admin' | 'trainer';
   created_at: string;
 }
 
@@ -21,7 +21,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
   const [users, setUsers] = useState<Profile[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'candidate' | 'recruiter' | 'admin'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'candidate' | 'recruiter' | 'admin' | 'trainer'>('all');
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -70,7 +70,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
     setFilteredUsers(filtered);
   };
 
-  const handleChangeUserType = async (userId: string, newType: 'candidate' | 'recruiter' | 'admin') => {
+  const handleChangeUserType = async (userId: string, newType: 'candidate' | 'recruiter' | 'admin' | 'trainer') => {
     setUpdatingUserId(userId);
     try {
       const { error } = await supabase
@@ -102,7 +102,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
     const labels = {
       candidate: 'Candidat',
       recruiter: 'Recruteur',
-      admin: 'Administrateur'
+      admin: 'Administrateur',
+      trainer: 'Formateur'
     };
     return labels[type as keyof typeof labels] || type;
   };
@@ -111,7 +112,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
     const classes = {
       candidate: 'bg-blue-100 text-blue-700',
       recruiter: 'bg-green-100 text-green-700',
-      admin: 'bg-red-100 text-red-700'
+      admin: 'bg-red-100 text-red-700',
+      trainer: 'bg-purple-100 text-purple-700'
     };
     return classes[type as keyof typeof classes] || 'bg-gray-100 text-gray-700';
   };
@@ -142,6 +144,31 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
     <AdminLayout onNavigate={onNavigate}>
       <div className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb et Navigation */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 text-sm text-gray-600 mb-4">
+              <button
+                onClick={() => onNavigate('home')}
+                className="flex items-center gap-1 hover:text-primary-600 transition"
+              >
+                <Home className="w-4 h-4" />
+                <span>Accueil</span>
+              </button>
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-gray-900 font-medium">Administration</span>
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-primary-600 font-medium">Gestion des utilisateurs</span>
+            </div>
+
+            <button
+              onClick={() => onNavigate('cms-admin')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition group"
+            >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Retour au CMS</span>
+            </button>
+          </div>
+
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestion des utilisateurs</h1>
             <p className="text-gray-600">Gérez les comptes et les rôles des utilisateurs</p>
@@ -183,8 +210,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                {['all', 'candidate', 'recruiter', 'admin'].map((type) => (
+              <div className="flex gap-2 flex-wrap">
+                {['all', 'candidate', 'recruiter', 'trainer', 'admin'].map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type as any)}
@@ -275,6 +302,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                             >
                               <option value="candidate">Candidat</option>
                               <option value="recruiter">Recruteur</option>
+                              <option value="trainer">Formateur</option>
                               <option value="admin">Administrateur</option>
                             </select>
                             {updatingUserId === user.id && (
