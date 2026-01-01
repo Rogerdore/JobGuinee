@@ -39,6 +39,11 @@ export default function AdminJobList() {
   const [showModal, setShowModal] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
 
+  useEffect(() => {
+    console.log('🚀 AdminJobList montée - Premier chargement');
+    loadJobs();
+  }, []);
+
   const statusLabels = {
     all: 'Tous les statuts',
     published: 'Publiées',
@@ -63,7 +68,35 @@ export default function AdminJobList() {
   const loadJobs = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Chargement des offres - Filtre:', statusFilter);
+      console.log('🔍 [AdminJobList] Début chargement des offres');
+      console.log('📋 [AdminJobList] Filtre actuel:', statusFilter);
+
+      // Vérifier l'utilisateur connecté
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('👤 [AdminJobList] Utilisateur:', {
+        id: user?.id,
+        email: user?.email,
+        error: authError
+      });
+
+      if (authError || !user) {
+        console.error('❌ [AdminJobList] Pas d\'utilisateur connecté');
+        setJobs([]);
+        setLoading(false);
+        return;
+      }
+
+      // Vérifier le profil admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .single();
+
+      console.log('🔐 [AdminJobList] Profil:', {
+        user_type: profile?.user_type,
+        error: profileError
+      });
 
       let query = supabase
         .from('jobs')
@@ -74,11 +107,34 @@ export default function AdminJobList() {
         query = query.eq('status', statusFilter);
       }
 
+      console.log('⚡ [AdminJobList] Exécution requête jobs...');
       const { data: jobsData, error } = await query;
 
-      if (error) throw error;
+      console.log('📊 [AdminJobList] Résultat requête:', {
+        count: jobsData?.length || 0,
+        error: error,
+        errorDetails: error ? {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        } : null
+      });
 
-      console.log('📊 Offres chargées:', jobsData?.length || 0);
+      if (error) {
+        console.error('❌ [AdminJobList] Erreur SQL:', error);
+        alert('Erreur de chargement: ' + error.message);
+        throw error;
+      }
+
+      if (!jobsData || jobsData.length === 0) {
+        console.warn('⚠️ [AdminJobList] Aucune offre retournée');
+        setJobs([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ [AdminJobList] Offres récupérées:', jobsData.length);
 
       const jobsWithRecruiter = await Promise.all(
         (jobsData || []).map(async (job) => {
@@ -97,9 +153,11 @@ export default function AdminJobList() {
         })
       );
 
+      console.log('✅ [AdminJobList] Offres avec recruteurs:', jobsWithRecruiter.length);
       setJobs(jobsWithRecruiter);
-    } catch (error) {
-      console.error('❌ Erreur chargement offres:', error);
+    } catch (error: any) {
+      console.error('❌ [AdminJobList] Erreur chargement offres:', error);
+      alert('Erreur: ' + (error?.message || 'Erreur inconnue'));
     } finally {
       setLoading(false);
     }
