@@ -7,4 +7,24 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'supabase': ['@supabase/supabase-js'],
+          'pdf-vendor': ['jspdf', 'html2canvas'],
+          'editor': ['quill', 'react-quill'],
+          'docx-vendor': ['docx', 'docx-preview', 'mammoth', 'jszip', 'file-saver'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false,
+    minify: 'esbuild',
+  },
+  server: {
+    port: 5173,
+    strictPort: false,
+  },
 });
