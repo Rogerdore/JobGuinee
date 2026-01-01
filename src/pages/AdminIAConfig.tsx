@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Settings, Plus, Edit, History, Eye, EyeOff, Save, X, Code, FileText, Sparkles, ArrowLeft } from 'lucide-react';
 import { IAConfigService, IAServiceConfig, IAConfigHistory } from '../services/iaConfigService';
+import { PromptValidationPanel } from '../components/admin/PromptValidationPanel';
+import { CacheStatsPanel } from '../components/admin/CacheStatsPanel';
+import { ConfigHistoryWithRollback } from '../components/admin/ConfigHistoryWithRollback';
+import { IAConfigCacheService } from '../services/iaConfigCacheService';
 
 interface ConfigEditorProps {
   config: IAServiceConfig | null;
@@ -32,6 +36,7 @@ function ConfigEditor({ config, onClose, onSave }: ConfigEditorProps) {
       );
 
       if (result.success) {
+        IAConfigCacheService.clearCache(config.service_code);
         alert(`Configuration mise a jour! Nouvelle version: ${result.newVersion}`);
         onSave();
         onClose();
@@ -110,6 +115,8 @@ function ConfigEditor({ config, onClose, onSave }: ConfigEditorProps) {
                   placeholder="Prompt principal du service IA..."
                 />
               </div>
+
+              <PromptValidationPanel prompt={formData.base_prompt || ''} />
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -321,99 +328,6 @@ function ConfigEditor({ config, onClose, onSave }: ConfigEditorProps) {
   );
 }
 
-interface HistoryModalProps {
-  config: IAServiceConfig | null;
-  onClose: () => void;
-}
-
-function HistoryModal({ config, onClose }: HistoryModalProps) {
-  const [history, setHistory] = useState<IAConfigHistory[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (config) {
-      loadHistory();
-    }
-  }, [config]);
-
-  const loadHistory = async () => {
-    if (!config) return;
-
-    setLoading(true);
-    try {
-      const data = await IAConfigService.getConfigHistory(config.service_code);
-      setHistory(data);
-    } catch (error) {
-      console.error('Error loading history:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!config) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Historique des Versions</h2>
-            <p className="text-purple-100 text-sm">{config.service_name}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-gray-600 mt-4">Chargement historique...</p>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="text-center py-12 text-gray-600">
-              <History className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p>Aucun historique disponible</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {history.map((entry) => (
-                <div key={entry.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 transition">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-bold">
-                        v{entry.previous_version} → v{entry.new_version}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {new Date(entry.created_at).toLocaleString('fr-FR')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {entry.change_reason && (
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Raison:</strong> {entry.change_reason}
-                    </p>
-                  )}
-
-                  {entry.field_changes && (
-                    <div className="bg-gray-50 rounded p-3 text-xs font-mono">
-                      <strong className="text-gray-700">Champs modifies:</strong>
-                      <pre className="mt-2 text-gray-600 overflow-x-auto">
-                        {JSON.stringify(entry.field_changes, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 interface PageProps {
   onNavigate: (page: string) => void;
@@ -482,11 +396,15 @@ export default function AdminIAConfig({ onNavigate }: PageProps) {
       <div className="max-w-7xl mx-auto px-4">
         <button
           onClick={() => onNavigate('home')}
-          className="mb-8 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
+          className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition group"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           Retour à l'accueil
         </button>
+
+        <div className="mb-6">
+          <CacheStatsPanel />
+        </div>
 
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-6">
@@ -628,14 +546,36 @@ export default function AdminIAConfig({ onNavigate }: PageProps) {
         />
       )}
 
-      {showHistory && (
-        <HistoryModal
-          config={selectedConfig}
-          onClose={() => {
-            setShowHistory(false);
-            setSelectedConfig(null);
-          }}
-        />
+      {showHistory && selectedConfig && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Historique des Versions</h2>
+                <p className="text-purple-100 text-sm">{selectedConfig.service_name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowHistory(false);
+                  setSelectedConfig(null);
+                }}
+                className="p-2 hover:bg-white/20 rounded-lg"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <ConfigHistoryWithRollback
+                serviceCode={selectedConfig.service_code}
+                onRollbackSuccess={() => {
+                  loadConfigs();
+                  setShowHistory(false);
+                  setSelectedConfig(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
