@@ -3,7 +3,8 @@ import {
   Briefcase, Search, Filter, Eye, Edit, Trash2, CheckCircle, XCircle,
   Clock, Archive, RefreshCw, Calendar, MapPin, Building2, Mail, User,
   Zap, Star, AlertTriangle, Settings, BarChart3, TrendingUp, Download,
-  X, Save, Plus, Minus
+  X, Save, Plus, Minus, ChevronDown, ChevronUp, SlidersHorizontal,
+  FileText, Users, CheckSquare, Square, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -33,7 +34,9 @@ interface Job {
 }
 
 type StatusFilter = 'all' | 'published' | 'pending' | 'closed' | 'rejected' | 'draft';
-type TabType = 'list' | 'stats' | 'badges';
+type TabType = 'list' | 'stats' | 'badges' | 'settings';
+type SortField = 'title' | 'submitted_at' | 'expires_at' | 'status' | 'location' | 'sector' | 'company_name';
+type SortDirection = 'asc' | 'desc';
 
 interface JobStats {
   total: number;
@@ -44,6 +47,29 @@ interface JobStats {
   urgent: number;
   featured: number;
   expiring_soon: number;
+}
+
+interface AdvancedFilters {
+  sectors: string[];
+  locations: string[];
+  contractTypes: string[];
+  badges: ('urgent' | 'featured')[];
+  expiringWithin: number | null;
+  dateRange: { start: string; end: string } | null;
+}
+
+interface ColumnSettings {
+  title: boolean;
+  company: boolean;
+  location: boolean;
+  sector: boolean;
+  contract: boolean;
+  recruiter: boolean;
+  submittedDate: boolean;
+  expiryDate: boolean;
+  validity: boolean;
+  badges: boolean;
+  stats: boolean;
 }
 
 export default function AdminJobList() {
@@ -59,10 +85,46 @@ export default function AdminJobList() {
   const [stats, setStats] = useState<JobStats | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
 
+  // Nouveaux états pour les fonctionnalités avancées
+  const [sortField, setSortField] = useState<SortField>('submitted_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    sectors: [],
+    locations: [],
+    contractTypes: [],
+    badges: [],
+    expiringWithin: null,
+    dateRange: null
+  });
+  const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [columnSettings, setColumnSettings] = useState<ColumnSettings>({
+    title: true,
+    company: true,
+    location: true,
+    sector: true,
+    contract: true,
+    recruiter: true,
+    submittedDate: true,
+    expiryDate: true,
+    validity: true,
+    badges: true,
+    stats: true
+  });
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Options disponibles pour les filtres
+  const [availableSectors, setAvailableSectors] = useState<string[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+  const [availableContractTypes, setAvailableContractTypes] = useState<string[]>([]);
+
   useEffect(() => {
     console.log('🚀 AdminJobList montée - Premier chargement');
     loadJobs();
     loadStats();
+    loadFilterOptions();
   }, []);
 
   const statusLabels = {
@@ -85,6 +147,26 @@ export default function AdminJobList() {
   useEffect(() => {
     loadJobs();
   }, [statusFilter]);
+
+  const loadFilterOptions = async () => {
+    try {
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('sector, location, contract_type');
+
+      if (jobsData) {
+        const sectors = [...new Set(jobsData.map(j => j.sector).filter(Boolean))].sort();
+        const locations = [...new Set(jobsData.map(j => j.location).filter(Boolean))].sort();
+        const contracts = [...new Set(jobsData.map(j => j.contract_type).filter(Boolean))].sort();
+
+        setAvailableSectors(sectors);
+        setAvailableLocations(locations);
+        setAvailableContractTypes(contracts);
+      }
+    } catch (error) {
+      console.error('Erreur chargement options:', error);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -176,6 +258,24 @@ export default function AdminJobList() {
     }
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    return sortDirection === 'asc'
+      ? <ArrowUp className="w-4 h-4 text-blue-600" />
+      : <ArrowDown className="w-4 h-4 text-blue-600" />;
+  };
+
   const handleToggleBadge = async (jobId: string, badgeType: 'urgent' | 'featured') => {
     setProcessing(jobId);
     try {
@@ -202,6 +302,112 @@ export default function AdminJobList() {
       alert('Erreur lors de la mise à jour du badge');
     } finally {
       setProcessing(null);
+    }
+  };
+
+  const handleBulkAction = async (action: 'approve' | 'reject' | 'close' | 'delete' | 'urgent' | 'featured') => {
+    if (selectedJobs.size === 0) {
+      alert('Aucune offre sélectionnée');
+      return;
+    }
+
+    const confirmMsg = `Êtes-vous sûr de vouloir ${action === 'delete' ? 'supprimer' : 'modifier'} ${selectedJobs.size} offre(s) ?`;
+    if (!confirm(confirmMsg)) return;
+
+    setProcessing('bulk');
+    try {
+      for (const jobId of Array.from(selectedJobs)) {
+        switch (action) {
+          case 'approve':
+            await supabase.rpc('approve_job_with_validity', {
+              p_job_id: jobId,
+              p_validity_days: 30,
+              p_notes: 'Approbation en masse'
+            });
+            break;
+          case 'reject':
+            await supabase
+              .from('jobs')
+              .update({ status: 'rejected', rejection_reason: 'Rejet en masse' })
+              .eq('id', jobId);
+            break;
+          case 'close':
+            await supabase
+              .from('jobs')
+              .update({ status: 'closed' })
+              .eq('id', jobId);
+            break;
+          case 'delete':
+            await supabase
+              .from('jobs')
+              .delete()
+              .eq('id', jobId);
+            break;
+          case 'urgent':
+          case 'featured':
+            await supabase
+              .from('jobs')
+              .update({ [`is_${action}`]: true })
+              .eq('id', jobId);
+            break;
+        }
+      }
+
+      await loadJobs();
+      await loadStats();
+      setSelectedJobs(new Set());
+      alert('Action effectuée avec succès!');
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors de l\'action en masse');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    try {
+      const dataToExport = filteredAndSortedJobs.map(job => ({
+        Titre: job.title,
+        Entreprise: job.company_name,
+        Localisation: job.location,
+        Secteur: job.sector,
+        Contrat: job.contract_type,
+        Statut: statusLabels[job.status],
+        Recruteur: job.recruiter_name,
+        Email: job.recruiter_email,
+        'Date soumission': new Date(job.submitted_at).toLocaleDateString('fr-FR'),
+        'Date expiration': job.expires_at ? new Date(job.expires_at).toLocaleDateString('fr-FR') : 'N/A',
+        'Validité (jours)': job.validity_days || 'N/A',
+        URGENT: job.is_urgent ? 'Oui' : 'Non',
+        'À LA UNE': job.is_featured ? 'Oui' : 'Non'
+      }));
+
+      if (format === 'csv') {
+        const headers = Object.keys(dataToExport[0]);
+        const csv = [
+          headers.join(','),
+          ...dataToExport.map(row => headers.map(h => `"${row[h as keyof typeof row]}"`).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `offres-emploi-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+      } else {
+        const json = JSON.stringify(dataToExport, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `offres-emploi-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+      }
+    } catch (error) {
+      console.error('Erreur export:', error);
+      alert('Erreur lors de l\'export');
     }
   };
 
@@ -396,12 +602,83 @@ export default function AdminJobList() {
     }
   };
 
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.recruiter_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.sector?.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleSelectAll = () => {
+    if (selectedJobs.size === paginatedJobs.length) {
+      setSelectedJobs(new Set());
+    } else {
+      setSelectedJobs(new Set(paginatedJobs.map(j => j.id)));
+    }
+  };
+
+  const handleSelectJob = (jobId: string) => {
+    const newSelection = new Set(selectedJobs);
+    if (newSelection.has(jobId)) {
+      newSelection.delete(jobId);
+    } else {
+      newSelection.add(jobId);
+    }
+    setSelectedJobs(newSelection);
+  };
+
+  // Filtrage avancé
+  const filteredAndSortedJobs = jobs
+    .filter(job => {
+      // Recherche textuelle
+      const matchesSearch = !searchQuery || (
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.recruiter_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.sector?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+      // Filtres avancés
+      const matchesSector = advancedFilters.sectors.length === 0 ||
+        advancedFilters.sectors.includes(job.sector);
+
+      const matchesLocation = advancedFilters.locations.length === 0 ||
+        advancedFilters.locations.includes(job.location);
+
+      const matchesContract = advancedFilters.contractTypes.length === 0 ||
+        advancedFilters.contractTypes.includes(job.contract_type);
+
+      const matchesBadges = advancedFilters.badges.length === 0 ||
+        (advancedFilters.badges.includes('urgent') && job.is_urgent) ||
+        (advancedFilters.badges.includes('featured') && job.is_featured);
+
+      const matchesExpiring = !advancedFilters.expiringWithin ||
+        (job.expires_at &&
+          new Date(job.expires_at) <= new Date(Date.now() + advancedFilters.expiringWithin * 24 * 60 * 60 * 1000));
+
+      const matchesDateRange = !advancedFilters.dateRange ||
+        (new Date(job.submitted_at) >= new Date(advancedFilters.dateRange.start) &&
+         new Date(job.submitted_at) <= new Date(advancedFilters.dateRange.end));
+
+      return matchesSearch && matchesSector && matchesLocation &&
+             matchesContract && matchesBadges && matchesExpiring && matchesDateRange;
+    })
+    .sort((a, b) => {
+      let compareA: any = a[sortField];
+      let compareB: any = b[sortField];
+
+      if (sortField === 'submitted_at' || sortField === 'expires_at') {
+        compareA = new Date(compareA || 0).getTime();
+        compareB = new Date(compareB || 0).getTime();
+      } else if (typeof compareA === 'string') {
+        compareA = compareA.toLowerCase();
+        compareB = compareB.toLowerCase();
+      }
+
+      if (compareA < compareB) return sortDirection === 'asc' ? -1 : 1;
+      if (compareA > compareB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedJobs.length / itemsPerPage);
+  const paginatedJobs = filteredAndSortedJobs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const getActionButtons = (job: Job) => {
@@ -545,16 +822,16 @@ export default function AdminJobList() {
             Gestion Complète des Offres d'Emploi
           </h1>
           <p className="text-gray-600 mt-2">
-            Gestion centralisée: statuts, visibilité, badges, durées et paramètres
+            Gestion centralisée: statuts, visibilité, badges, durées et paramètres avancés
           </p>
         </div>
 
         {/* Onglets */}
         <div className="bg-white rounded-xl shadow-sm mb-6">
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-gray-200 overflow-x-auto">
             <button
               onClick={() => setActiveTab('list')}
-              className={`px-6 py-4 font-medium flex items-center gap-2 ${
+              className={`px-6 py-4 font-medium flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'list'
                   ? 'border-b-2 border-blue-600 text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -565,7 +842,7 @@ export default function AdminJobList() {
             </button>
             <button
               onClick={() => setActiveTab('stats')}
-              className={`px-6 py-4 font-medium flex items-center gap-2 ${
+              className={`px-6 py-4 font-medium flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'stats'
                   ? 'border-b-2 border-blue-600 text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -576,7 +853,7 @@ export default function AdminJobList() {
             </button>
             <button
               onClick={() => setActiveTab('badges')}
-              className={`px-6 py-4 font-medium flex items-center gap-2 ${
+              className={`px-6 py-4 font-medium flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'badges'
                   ? 'border-b-2 border-blue-600 text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -584,6 +861,17 @@ export default function AdminJobList() {
             >
               <Zap className="w-5 h-5" />
               Gestion Badges
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-6 py-4 font-medium flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'settings'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              Paramètres d'Affichage
             </button>
           </div>
         </div>
@@ -703,51 +991,338 @@ export default function AdminJobList() {
           </div>
         )}
 
+        {/* Onglet Paramètres */}
+        {activeTab === 'settings' && (
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Paramètres d'Affichage</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Colonnes visibles
+                </label>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Object.entries(columnSettings).map(([key, value]) => (
+                    <label key={key} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(e) => setColumnSettings({
+                          ...columnSettings,
+                          [key]: e.target.checked
+                        })}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        {key === 'title' && 'Titre'}
+                        {key === 'company' && 'Entreprise'}
+                        {key === 'location' && 'Localisation'}
+                        {key === 'sector' && 'Secteur'}
+                        {key === 'contract' && 'Type de contrat'}
+                        {key === 'recruiter' && 'Recruteur'}
+                        {key === 'submittedDate' && 'Date soumission'}
+                        {key === 'expiryDate' && 'Date expiration'}
+                        {key === 'validity' && 'Validité'}
+                        {key === 'badges' && 'Badges'}
+                        {key === 'stats' && 'Statistiques'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Offres par page
+                </label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(parseInt(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Liste des offres */}
         {activeTab === 'list' && (
           <>
             {/* Barre de recherche et filtres */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher par titre, entreprise, recruteur, ville, secteur..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+            <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Rechercher par titre, entreprise, recruteur, ville, secteur..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {Object.entries(statusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                      showAdvancedFilters
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Filter className="w-5 h-5" />
+                    Filtres
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      loadJobs();
+                      loadStats();
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    Actualiser
+                  </button>
                 </div>
 
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {Object.entries(statusLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                {/* Filtres avancés */}
+                {showAdvancedFilters && (
+                  <div className="border-t pt-4 space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {/* Secteurs */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Secteurs
+                        </label>
+                        <select
+                          multiple
+                          value={advancedFilters.sectors}
+                          onChange={(e) => setAdvancedFilters({
+                            ...advancedFilters,
+                            sectors: Array.from(e.target.selectedOptions, option => option.value)
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          size={3}
+                        >
+                          {availableSectors.map(sector => (
+                            <option key={sector} value={sector}>{sector}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                <button
-                  onClick={() => {
-                    loadJobs();
-                    loadStats();
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                  Actualiser
-                </button>
+                      {/* Localisations */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Localisations
+                        </label>
+                        <select
+                          multiple
+                          value={advancedFilters.locations}
+                          onChange={(e) => setAdvancedFilters({
+                            ...advancedFilters,
+                            locations: Array.from(e.target.selectedOptions, option => option.value)
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          size={3}
+                        >
+                          {availableLocations.map(location => (
+                            <option key={location} value={location}>{location}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Types de contrat */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Types de contrat
+                        </label>
+                        <select
+                          multiple
+                          value={advancedFilters.contractTypes}
+                          onChange={(e) => setAdvancedFilters({
+                            ...advancedFilters,
+                            contractTypes: Array.from(e.target.selectedOptions, option => option.value)
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          size={3}
+                        >
+                          {availableContractTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {/* Badges */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Badges
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.badges.includes('urgent')}
+                              onChange={(e) => {
+                                const newBadges = e.target.checked
+                                  ? [...advancedFilters.badges, 'urgent' as const]
+                                  : advancedFilters.badges.filter(b => b !== 'urgent');
+                                setAdvancedFilters({ ...advancedFilters, badges: newBadges });
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <span className="text-sm">URGENT</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.badges.includes('featured')}
+                              onChange={(e) => {
+                                const newBadges = e.target.checked
+                                  ? [...advancedFilters.badges, 'featured' as const]
+                                  : advancedFilters.badges.filter(b => b !== 'featured');
+                                setAdvancedFilters({ ...advancedFilters, badges: newBadges });
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <span className="text-sm">À LA UNE</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Expiration */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expire dans (jours)
+                        </label>
+                        <input
+                          type="number"
+                          value={advancedFilters.expiringWithin || ''}
+                          onChange={(e) => setAdvancedFilters({
+                            ...advancedFilters,
+                            expiringWithin: e.target.value ? parseInt(e.target.value) : null
+                          })}
+                          placeholder="Ex: 7 pour 7 jours"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Actions filtres */}
+                      <div className="flex items-end gap-2">
+                        <button
+                          onClick={() => setAdvancedFilters({
+                            sectors: [],
+                            locations: [],
+                            contractTypes: [],
+                            badges: [],
+                            expiringWithin: null,
+                            dateRange: null
+                          })}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex-1"
+                        >
+                          Réinitialiser
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Compteur */}
+            {/* Barre d'actions */}
             <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-              <p className="text-sm text-gray-600">
-                <strong>{filteredJobs.length}</strong> offre(s) trouvée(s)
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-gray-600">
+                    <strong>{filteredAndSortedJobs.length}</strong> offre(s) trouvée(s)
+                    {selectedJobs.size > 0 && (
+                      <span className="ml-2 text-blue-600">
+                        ({selectedJobs.size} sélectionnée(s))
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedJobs.size > 0 && (
+                    <>
+                      <button
+                        onClick={() => handleBulkAction('approve')}
+                        disabled={processing === 'bulk'}
+                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50"
+                      >
+                        Approuver
+                      </button>
+                      <button
+                        onClick={() => handleBulkAction('reject')}
+                        disabled={processing === 'bulk'}
+                        className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm disabled:opacity-50"
+                      >
+                        Rejeter
+                      </button>
+                      <button
+                        onClick={() => handleBulkAction('close')}
+                        disabled={processing === 'bulk'}
+                        className="px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm disabled:opacity-50"
+                      >
+                        Fermer
+                      </button>
+                      <button
+                        onClick={() => handleBulkAction('urgent')}
+                        disabled={processing === 'bulk'}
+                        className="px-3 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm disabled:opacity-50"
+                      >
+                        + URGENT
+                      </button>
+                      <button
+                        onClick={() => handleBulkAction('featured')}
+                        disabled={processing === 'bulk'}
+                        className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm disabled:opacity-50"
+                      >
+                        + À LA UNE
+                      </button>
+                      <div className="border-l h-6 mx-2"></div>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => handleExport('csv')}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center gap-1"
+                  >
+                    <Download className="w-4 h-4" />
+                    CSV
+                  </button>
+                  <button
+                    onClick={() => handleExport('json')}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center gap-1"
+                  >
+                    <Download className="w-4 h-4" />
+                    JSON
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Loader */}
@@ -757,14 +1332,21 @@ export default function AdminJobList() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredJobs.map((job) => (
+                {paginatedJobs.map((job) => (
                   <div
                     key={job.id}
                     className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
                   >
                     <div className="space-y-4">
-                      {/* En-tête */}
-                      <div className="flex items-start justify-between gap-4">
+                      {/* En-tête avec checkbox */}
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedJobs.has(job.id)}
+                          onChange={() => handleSelectJob(job.id)}
+                          className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="text-xl font-semibold text-gray-900">
@@ -788,31 +1370,39 @@ export default function AdminJobList() {
                           </div>
 
                           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <Building2 className="w-4 h-4" />
-                              <span>{job.company_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4" />
-                              <span>{job.location}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4" />
-                              <span>{job.recruiter_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              <span>{new Date(job.submitted_at).toLocaleDateString('fr-FR')}</span>
-                            </div>
+                            {columnSettings.company && (
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4" />
+                                <span>{job.company_name}</span>
+                              </div>
+                            )}
+                            {columnSettings.location && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4" />
+                                <span>{job.location}</span>
+                              </div>
+                            )}
+                            {columnSettings.recruiter && (
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                <span>{job.recruiter_name}</span>
+                              </div>
+                            )}
+                            {columnSettings.submittedDate && (
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                <span>{new Date(job.submitted_at).toLocaleDateString('fr-FR')}</span>
+                              </div>
+                            )}
                           </div>
 
-                          {job.expires_at && (
+                          {job.expires_at && columnSettings.expiryDate && (
                             <div className="mt-2 flex items-center gap-4 text-sm">
                               <div className="flex items-center gap-1 text-gray-500">
                                 <Clock className="w-4 h-4" />
                                 Expire le: {new Date(job.expires_at).toLocaleDateString('fr-FR')}
                               </div>
-                              {job.validity_days && (
+                              {job.validity_days && columnSettings.validity && (
                                 <div className="text-gray-500">
                                   Validité: {job.validity_days} jours
                                 </div>
@@ -830,7 +1420,7 @@ export default function AdminJobList() {
                   </div>
                 ))}
 
-                {filteredJobs.length === 0 && (
+                {filteredAndSortedJobs.length === 0 && (
                   <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                     <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -839,6 +1429,33 @@ export default function AdminJobList() {
                     <p className="text-gray-600">
                       Essayez de modifier vos filtres ou votre recherche
                     </p>
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="bg-white rounded-xl shadow-sm p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        Page {currentPage} sur {totalPages}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Précédent
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Suivant
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
