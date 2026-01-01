@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File } from 'lucide-react';
+import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File, ArrowLeft, Home, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
+import SectionManager from '../components/cms/SectionManager';
+import PageManager from '../components/cms/PageManager';
+import NavigationManager from '../components/cms/NavigationManager';
+import cmsService, { CMSPage } from '../services/cmsService';
 
 interface CMSAdminProps {
   onNavigate: (page: string) => void;
@@ -49,11 +53,14 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const [resourceThumbnailPreview, setResourceThumbnailPreview] = useState<string>('');
   const [uploadingResource, setUploadingResource] = useState(false);
 
+  const [pages, setPages] = useState<CMSPage[]>([]);
+
   useEffect(() => {
     loadAllSettings();
     loadAllSections();
     loadBlogPosts();
     loadResources();
+    loadPages();
   }, []);
 
   const loadAllSettings = async () => {
@@ -230,6 +237,15 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       .order('created_at', { ascending: false });
 
     if (data) setResources(data);
+  };
+
+  const loadPages = async () => {
+    try {
+      const data = await cmsService.getPages();
+      setPages(data);
+    } catch (error) {
+      console.error('Error loading pages:', error);
+    }
   };
 
   const uploadResourceFile = async (): Promise<string | null> => {
@@ -492,22 +508,65 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     );
   }
 
+  const getActiveTabLabel = () => {
+    const labels = {
+      general: 'Paramètres généraux',
+      sections: 'Sections',
+      pages: 'Pages',
+      navigation: 'Navigation',
+      blog: 'Blog & Actualités',
+      resources: 'Ressources',
+    };
+    return labels[activeTab] || 'Administration';
+  };
+
   return (
     <AdminLayout onNavigate={onNavigate}>
       <div className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb et Navigation */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 text-sm text-gray-600 mb-4">
+              <button
+                onClick={() => onNavigate('home')}
+                className="flex items-center gap-1 hover:text-primary-600 transition"
+              >
+                <Home className="w-4 h-4" />
+                <span>Accueil</span>
+              </button>
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-gray-900 font-medium">Administration CMS</span>
+              {activeTab && (
+                <>
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="text-primary-600 font-medium">{getActiveTabLabel()}</span>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={() => onNavigate('home')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition group"
+            >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Retour à l'accueil</span>
+            </button>
+          </div>
+
           <div className="mb-8 flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Administration CMS</h1>
               <p className="text-gray-600">Gérez le contenu et les paramètres de votre site</p>
             </div>
-            <button
-              onClick={handleNavigateToUserManagement}
-              className="flex items-center gap-2 px-6 py-3 neo-clay-button rounded-xl font-medium text-primary-700 hover:shadow-lg transition"
-            >
-              <Users className="w-5 h-5" />
-              <span>Gérer les utilisateurs</span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleNavigateToUserManagement}
+                className="flex items-center gap-2 px-6 py-3 neo-clay-button rounded-xl font-medium text-primary-700 hover:shadow-lg transition"
+              >
+                <Users className="w-5 h-5" />
+                <span>Gérer les utilisateurs</span>
+              </button>
+            </div>
           </div>
 
         <div className="neo-clay-card rounded-2xl overflow-hidden">
@@ -585,87 +644,15 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
             )}
 
             {activeTab === 'sections' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Sections de contenu</h2>
-                  <button
-                    onClick={() => alert('Fonctionnalité de création de section disponible prochainement')}
-                    className="flex items-center gap-2 px-4 py-2 neo-clay-button rounded-xl text-primary-700 font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Nouvelle section
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                  {allSections.map((section) => (
-                    <div key={section.id} className="neo-clay-card rounded-xl p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{section.section_name}</h3>
-                          <p className="text-sm text-gray-500">Clé: {section.section_key}</p>
-                          <span className={`inline-block mt-2 px-3 py-1 text-xs font-medium rounded-full ${
-                            section.status === 'active' ? 'soft-gradient-green text-green-700' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {section.status === 'active' ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => alert('Fonctionnalité d\'édition disponible prochainement')}
-                            className="p-2 neo-clay-button rounded-lg text-gray-600"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('Voulez-vous vraiment supprimer cette section ?')) {
-                                alert('Fonctionnalité de suppression disponible prochainement');
-                              }
-                            }}
-                            className="p-2 neo-clay-button rounded-lg text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
-                        <pre className="whitespace-pre-wrap overflow-auto max-h-40">
-                          {JSON.stringify(section.content, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <SectionManager sections={allSections} onRefresh={loadAllSections} />
             )}
 
             {activeTab === 'pages' && (
-              <div className="text-center py-12">
-                <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestion des pages</h3>
-                <p className="text-gray-600 mb-6">Créez et gérez vos pages personnalisées</p>
-                <button
-                  onClick={() => alert('Fonctionnalité de création de page disponible prochainement')}
-                  className="neo-clay-button px-6 py-3 rounded-xl font-medium text-primary-700"
-                >
-                  Créer une nouvelle page
-                </button>
-              </div>
+              <PageManager pages={pages} onRefresh={loadPages} />
             )}
 
             {activeTab === 'navigation' && (
-              <div className="text-center py-12">
-                <Menu className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestion de la navigation</h3>
-                <p className="text-gray-600 mb-6">Configurez les menus de votre site</p>
-                <button
-                  onClick={() => alert('Fonctionnalité de gestion des menus disponible prochainement')}
-                  className="neo-clay-button px-6 py-3 rounded-xl font-medium text-primary-700"
-                >
-                  Gérer les menus
-                </button>
-              </div>
+              <NavigationManager onRefresh={refreshSettings} />
             )}
 
             {activeTab === 'blog' && (
