@@ -51,7 +51,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       label: 'Offres d\'emploi',
       icon: Briefcase,
       children: [
-        { id: 'all-jobs', label: 'Toutes les offres', icon: Briefcase, route: 'cms-admin' },
+        { id: 'all-jobs', label: 'Toutes les offres', icon: Briefcase, route: 'admin-job-list' },
         { id: 'job-moderation', label: 'Validation des offres', icon: FileCheck, route: 'admin-job-moderation' },
         { id: 'job-create', label: 'Créer une offre', icon: FileText, route: 'admin-job-create' },
         {

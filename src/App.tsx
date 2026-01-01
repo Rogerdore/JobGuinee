@@ -54,6 +54,7 @@ const AdminAutomationRules = lazy(() => import('./pages/AdminAutomationRules'));
 const AdminRecruiterNotifications = lazy(() => import('./pages/AdminRecruiterNotifications'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
 const AdminJobModeration = lazy(() => import('./pages/AdminJobModerationEnhanced'));
+const AdminJobList = lazy(() => import('./pages/AdminJobList'));
 const AdminJobBadges = lazy(() => import('./pages/AdminJobBadges'));
 const B2BSolutions = lazy(() => import('./pages/B2BSolutions'));
 const AdminB2BManagement = lazy(() => import('./pages/AdminB2BManagement'));
@@ -76,7 +77,7 @@ const AdminCommunicationLogs = lazy(() => import('./pages/AdminCommunicationLogs
 const AdminJobCreate = lazy(() => import('./pages/AdminJobCreate'));
 const PartnerHub = lazy(() => import('./pages/PartnerHub'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-create' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs';
+type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -191,6 +192,7 @@ function AppContent() {
         {currentPage === 'admin-recruiter-notifications' && <AdminRecruiterNotifications />}
         {currentPage === 'admin-seo' && <AdminSEO onNavigate={handleNavigate} />}
         {currentPage === 'admin-job-moderation' && <AdminJobModeration onNavigate={handleNavigate} />}
+        {currentPage === 'admin-job-list' && <AdminJobList />}
         {currentPage === 'admin-job-badges' && <AdminJobBadges />}
         {currentPage === 'admin-job-create' && <AdminJobCreate onNavigate={handleNavigate} />}
         {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
