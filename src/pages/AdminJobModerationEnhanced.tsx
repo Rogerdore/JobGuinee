@@ -96,8 +96,13 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   useEffect(() => {
+    console.log('👤 Utilisateur connecté:', {
+      id: user?.id,
+      email: user?.email,
+      role: user?.user_metadata?.user_type
+    });
     loadData();
-  }, [statusFilter]);
+  }, [statusFilter, user]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -159,6 +164,8 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
 
   const loadJobs = async () => {
     try {
+      console.log('🔍 Chargement des offres avec filtre:', statusFilter);
+
       let query = supabase
         .from('jobs')
         .select(`
@@ -195,7 +202,22 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
 
       const { data: jobsData, error: jobsError } = await query;
 
-      if (jobsError) throw jobsError;
+      console.log('📊 Résultat requête jobs:', {
+        count: jobsData?.length || 0,
+        error: jobsError,
+        data: jobsData
+      });
+
+      if (jobsError) {
+        console.error('❌ Erreur lors de la requête jobs:', jobsError);
+        throw jobsError;
+      }
+
+      if (!jobsData || jobsData.length === 0) {
+        console.warn('⚠️ Aucune offre trouvée dans la base de données');
+        setJobs([]);
+        return;
+      }
 
       const jobsWithRecruiter = await Promise.all(
         (jobsData || []).map(async (job) => {
@@ -214,10 +236,11 @@ export default function AdminJobModerationEnhanced({ onNavigate }: AdminJobModer
         })
       );
 
+      console.log('✅ Offres chargées avec succès:', jobsWithRecruiter.length);
       setJobs(jobsWithRecruiter);
     } catch (error: any) {
-      console.error('Error loading jobs:', error);
-      showMessage('error', 'Erreur lors du chargement des offres');
+      console.error('❌ Error loading jobs:', error);
+      showMessage('error', 'Erreur lors du chargement des offres: ' + error.message);
     }
   };
 
