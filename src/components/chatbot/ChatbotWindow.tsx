@@ -335,7 +335,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
               En ligne
             </p>
             {userContext && settings.enable_premium_detection && (
-              <div className="flex items-center gap-3 mt-1 text-xs text-white/70">
+              <div className="flex items-center gap-3 mt-1 text-xs text-white/70 ml-5">
                 {settings.show_credits_balance && (
                   <span className="flex items-center gap-1">
                     <Zap className="w-3 h-3" />
