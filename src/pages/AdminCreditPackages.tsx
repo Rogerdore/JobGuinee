@@ -3,6 +3,8 @@ import { Save, Plus, Edit2, Trash2, DollarSign, Zap, AlertCircle } from 'lucide-
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
+import ModernModal from '../components/modals/ModernModal';
+import { useModal } from '../hooks/useModal';
 
 interface CreditPackage {
   id: string;
@@ -29,6 +31,7 @@ interface AdminCreditPackagesProps {
 
 export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesProps) {
   const { profile } = useAuth();
+  const { modalState, showSuccess, showError, showConfirm, closeModal } = useModal();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,11 +80,17 @@ export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesP
 
       if (error) throw error;
 
-      alert('Prix unitaire mis à jour avec succès!');
+      showSuccess(
+        'Mise à jour réussie',
+        'Le prix unitaire du crédit a été mis à jour avec succès!'
+      );
       loadData();
     } catch (error) {
       console.error('Error updating unit price:', error);
-      alert('Erreur lors de la mise à jour');
+      showError(
+        'Erreur de mise à jour',
+        'Une erreur est survenue lors de la mise à jour du prix unitaire. Veuillez réessayer.'
+      );
     } finally {
       setSaving(false);
     }
@@ -111,63 +120,91 @@ export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesP
 
       if (error) throw error;
 
-      alert('Pack mis à jour avec succès!');
+      showSuccess(
+        'Pack mis à jour',
+        'Le pack de crédits a été mis à jour avec succès!'
+      );
       setShowEditModal(false);
       setEditingPackage(null);
       loadData();
     } catch (error) {
       console.error('Error updating package:', error);
-      alert('Erreur lors de la mise à jour');
+      showError(
+        'Erreur de mise à jour',
+        'Une erreur est survenue lors de la mise à jour du pack. Veuillez réessayer.'
+      );
     } finally {
       setSaving(false);
     }
   };
 
   const deletePackage = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce pack?')) return;
+    showConfirm(
+      'Confirmer la suppression',
+      'Êtes-vous sûr de vouloir supprimer ce pack de crédits? Cette action est irréversible.',
+      async () => {
+        try {
+          const { error } = await supabase
+            .from('credit_packages')
+            .delete()
+            .eq('id', id);
 
-    try {
-      const { error } = await supabase
-        .from('credit_packages')
-        .delete()
-        .eq('id', id);
+          if (error) throw error;
 
-      if (error) throw error;
-
-      alert('Pack supprimé avec succès!');
-      loadData();
-    } catch (error) {
-      console.error('Error deleting package:', error);
-      alert('Erreur lors de la suppression');
-    }
+          showSuccess(
+            'Pack supprimé',
+            'Le pack de crédits a été supprimé avec succès!'
+          );
+          loadData();
+        } catch (error) {
+          console.error('Error deleting package:', error);
+          showError(
+            'Erreur de suppression',
+            'Une erreur est survenue lors de la suppression du pack. Veuillez réessayer.'
+          );
+        }
+      },
+      'warning'
+    );
   };
 
   const recalculateAllPrices = async () => {
-    if (!confirm('Recalculer tous les prix selon le prix unitaire actuel?')) return;
+    showConfirm(
+      'Recalculer les prix',
+      'Voulez-vous recalculer tous les prix des packs selon le prix unitaire actuel? Cette opération modifiera tous les packs existants.',
+      async () => {
+        setSaving(true);
+        try {
+          for (const pkg of packages) {
+            const newPrice = recalculatePackagePrice(
+              pkg.credits_amount,
+              pkg.bonus_credits,
+              newUnitPrice
+            );
 
-    setSaving(true);
-    try {
-      for (const pkg of packages) {
-        const newPrice = recalculatePackagePrice(
-          pkg.credits_amount,
-          pkg.bonus_credits,
-          newUnitPrice
-        );
+            await supabase
+              .from('credit_packages')
+              .update({ price_amount: newPrice })
+              .eq('id', pkg.id);
+          }
 
-        await supabase
-          .from('credit_packages')
-          .update({ price_amount: newPrice })
-          .eq('id', pkg.id);
-      }
-
-      alert('Tous les prix ont été recalculés!');
-      loadData();
-    } catch (error) {
-      console.error('Error recalculating prices:', error);
-      alert('Erreur lors du recalcul');
-    } finally {
-      setSaving(false);
-    }
+          showSuccess(
+            'Recalcul terminé',
+            'Tous les prix ont été recalculés avec succès!'
+          );
+          loadData();
+        } catch (error) {
+          console.error('Error recalculating prices:', error);
+          showError(
+            'Erreur de recalcul',
+            'Une erreur est survenue lors du recalcul des prix. Veuillez réessayer.'
+          );
+        } finally {
+          setSaving(false);
+        }
+      },
+      'warning'
+    );
   };
 
   if (loading) {
@@ -504,6 +541,19 @@ export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesP
           </div>
         </div>
       )}
+
+      <ModernModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        onConfirm={modalState.onConfirm}
+        showCancel={modalState.showCancel}
+        pedagogical={modalState.pedagogical}
+      />
       </div>
     </AdminLayout>
   );

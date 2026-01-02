@@ -2,6 +2,7 @@ import { useState, lazy, Suspense, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CMSProvider } from './contexts/CMSContext';
+import { ModalProvider } from './contexts/ModalContext';
 import { ToastProvider } from './components/notifications/ToastContainer';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -253,9 +254,11 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <CMSProvider>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
+          <ModalProvider>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </ModalProvider>
         </CMSProvider>
       </NotificationProvider>
     </AuthProvider>
