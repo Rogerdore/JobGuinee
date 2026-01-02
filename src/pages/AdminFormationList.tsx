@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Search, Filter, Download, Eye, CreditCard as Edit, Trash2, CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical, MapPin, Calendar, DollarSign, Users, TrendingUp, ChevronDown, RefreshCw, Plus } from 'lucide-react';
+import { GraduationCap, Search, Filter, Download, Eye, CreditCard as Edit, Trash2, CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical, MapPin, Calendar, DollarSign, Users, TrendingUp, ChevronDown, RefreshCw, Plus, Zap, Shield, Settings, AlertTriangle } from 'lucide-react';
 import { supabase, TrainerProfile } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import FormationPublishForm from '../components/forms/FormationPublishForm';
+import FormationModeration from '../components/admin/FormationModeration';
+import FormationBoostModal from '../components/admin/FormationBoostModal';
+import TrainerAccountManagement from '../components/admin/TrainerAccountManagement';
 
 interface Formation {
   id: string;
@@ -23,6 +26,7 @@ interface Formation {
 
 type SortField = 'title' | 'created_at' | 'price' | 'status';
 type SortDirection = 'asc' | 'desc';
+type ActiveTab = 'formations' | 'moderation' | 'trainers' | 'account_management';
 
 export default function AdminFormationList() {
   const { user } = useAuth();
@@ -42,6 +46,9 @@ export default function AdminFormationList() {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [adminTrainerProfile, setAdminTrainerProfile] = useState<TrainerProfile | null>(null);
   const [editingFormationId, setEditingFormationId] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('formations');
+  const [showBoostModal, setShowBoostModal] = useState(false);
+  const [selectedFormationForBoost, setSelectedFormationForBoost] = useState<string | null>(null);
 
   const categories = ['Informatique', 'Management', 'Marketing', 'Finance', 'RH', 'Autre'];
   const levels = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
@@ -324,20 +331,93 @@ export default function AdminFormationList() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Formations</h1>
-          <p className="mt-2 text-gray-600">Liste complète de toutes les formations disponibles</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des Formations et Formateurs</h1>
+          <p className="mt-2 text-gray-600">Gestion complète, modération, services boost et contrôle des comptes</p>
         </div>
-        <button
-          onClick={handlePublishNew}
-          disabled={!adminTrainerProfile}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-5 h-5" />
-          Publier une formation
-        </button>
+        {activeTab === 'formations' && (
+          <button
+            onClick={handlePublishNew}
+            disabled={!adminTrainerProfile}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-5 h-5" />
+            Publier une formation
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="mb-6 border-b border-gray-200">
+        <div className="flex gap-1 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('formations')}
+            className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'formations'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            <GraduationCap className="w-5 h-5" />
+            Formations
+            <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+              {stats.total}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('moderation')}
+            className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'moderation'
+                ? 'border-orange-600 text-orange-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            <AlertTriangle className="w-5 h-5" />
+            Modération
+          </button>
+
+          <button
+            onClick={() => setActiveTab('trainers')}
+            className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'trainers'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            Formateurs
+          </button>
+
+          <button
+            onClick={() => setActiveTab('account_management')}
+            className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'account_management'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            Gestion des comptes
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'moderation' && (
+        <FormationModeration />
+      )}
+
+      {activeTab === 'trainers' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <AdminTrainerManagement />
+        </div>
+      )}
+
+      {activeTab === 'account_management' && (
+        <TrainerAccountManagement />
+      )}
+
+      {activeTab === 'formations' && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -593,6 +673,16 @@ export default function AdminFormationList() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        onClick={() => {
+                          setSelectedFormationForBoost(formation.id);
+                          setShowBoostModal(true);
+                        }}
+                        className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+                        title="Services Boost"
+                      >
+                        <Zap className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleEditFormation(formation.id)}
                         className="p-1 text-green-600 hover:bg-green-50 rounded"
                         title="Modifier"
@@ -674,6 +764,22 @@ export default function AdminFormationList() {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {showBoostModal && selectedFormationForBoost && (
+        <FormationBoostModal
+          formationId={selectedFormationForBoost}
+          formationTitle={formations.find(f => f.id === selectedFormationForBoost)?.title || ''}
+          onClose={() => {
+            setShowBoostModal(false);
+            setSelectedFormationForBoost(null);
+          }}
+          onSuccess={() => {
+            loadFormations();
+          }}
+        />
+      )}
 
       {showPublishModal && adminTrainerProfile && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
