@@ -139,11 +139,20 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       ]
     },
     {
+      id: 'trainers',
+      label: 'Formations & Formateurs',
+      icon: GraduationCap,
+      children: [
+        { id: 'formation-list', label: 'Toutes les Formations', icon: GraduationCap, route: 'admin-formation-list' },
+        { id: 'trainer-management', label: 'Tous les Formateurs', icon: Users, route: 'admin-trainer-management' },
+        { id: 'formation-config', label: 'Config Formations', icon: Settings, route: 'admin-formation-config' }
+      ]
+    },
+    {
       id: 'modules',
       label: 'Modules Système',
       icon: Activity,
       children: [
-        { id: 'formation-config', label: 'Formations', icon: GraduationCap, route: 'admin-formation-config' },
         { id: 'cv-builder-config', label: 'CV Builder', icon: FileText, route: 'admin-cv-builder-config' },
         { id: 'job-alerts-config', label: 'Alertes Emploi', icon: AlertCircle, route: 'admin-job-alerts-config' },
         { id: 'interview-config', label: 'Entretiens', icon: Video, route: 'admin-interview-config' }
