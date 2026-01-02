@@ -321,10 +321,17 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         `}
         style={{
           transition: 'none',
-          width: sidebarOpen ? '18rem' : '5rem'
+          width: sidebarOpen ? '18rem' : '5rem',
+          willChange: 'auto',
+          transform: 'translate3d(0, 0, 0)',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          perspective: 1000,
+          WebkitPerspective: 1000,
+          contain: 'layout style paint'
         }}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200" style={{ minHeight: '80px' }}>
           {sidebarOpen ? (
             <div className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg">
@@ -352,11 +359,18 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scroll-smooth overscroll-contain">
+        <div
+          className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scroll-smooth overscroll-contain"
+          style={{
+            willChange: 'scroll-position',
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden'
+          }}
+        >
           {menuStructure.map(item => renderMenuItem(item))}
         </div>
 
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-gray-200 p-4" style={{ minHeight: sidebarOpen ? '180px' : '120px' }}>
           {sidebarOpen ? (
             <div className="space-y-2">
               <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
@@ -412,7 +426,12 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         className={`flex-1 ${sidebarOpen ? 'ml-72' : 'ml-20'}`}
         style={{
           transition: 'none',
-          marginLeft: sidebarOpen ? '18rem' : '5rem'
+          marginLeft: sidebarOpen ? '18rem' : '5rem',
+          willChange: 'auto',
+          transform: 'translate3d(0, 0, 0)',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          isolation: 'isolate'
         }}
       >
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
