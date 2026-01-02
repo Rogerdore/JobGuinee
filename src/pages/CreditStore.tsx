@@ -85,12 +85,12 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail, showSuccess,
 
     setProcessing(true);
     try {
-      const success = await CreditStoreService.markAsWaitingProof(purchaseId);
+      const result = await CreditStoreService.markAsWaitingProof(purchaseId);
 
-      if (success) {
+      if (result.success) {
         setStep('confirm');
       } else {
-        showError('Erreur', 'Erreur lors de la finalisation de l\'achat');
+        showError('Erreur lors de la finalisation', result.message);
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
@@ -387,12 +387,12 @@ function PremiumPaymentModal({ isOpen, onClose, settings, userEmail, showSuccess
 
     setProcessing(true);
     try {
-      const success = await PremiumSubscriptionService.markAsWaitingProof(subscriptionId);
+      const result = await PremiumSubscriptionService.markAsWaitingProof(subscriptionId);
 
-      if (success) {
+      if (result.success) {
         setStep('confirm');
       } else {
-        showError('Erreur', 'Erreur lors de la finalisation de l\'achat');
+        showError('Erreur lors de la finalisation', result.message);
       }
     } catch (error) {
       console.error('Error marking as paid:', error);

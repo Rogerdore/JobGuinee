@@ -126,21 +126,37 @@ export class PremiumSubscriptionService {
     };
   }
 
-  static async markAsWaitingProof(subscriptionId: string): Promise<boolean> {
-    const { error } = await supabase
+  static async markAsWaitingProof(subscriptionId: string): Promise<{ success: boolean; message: string; error?: any }> {
+    const { data, error } = await supabase
       .from('premium_subscriptions')
       .update({
         payment_status: 'waiting_proof',
         updated_at: new Date().toISOString()
       })
-      .eq('id', subscriptionId);
+      .eq('id', subscriptionId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Error updating subscription status:', error);
-      return false;
+      return {
+        success: false,
+        message: error.message || 'Erreur lors de la mise à jour',
+        error: error
+      };
     }
 
-    return true;
+    if (!data) {
+      return {
+        success: false,
+        message: 'Abonnement introuvable ou non modifiable'
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Statut mis à jour avec succès'
+    };
   }
 
   static async getAllSubscriptions(filters?: {

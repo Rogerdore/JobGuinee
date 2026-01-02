@@ -177,22 +177,42 @@ export class CreditStoreService {
     }
   }
 
-  static async markAsWaitingProof(purchaseId: string): Promise<boolean> {
+  static async markAsWaitingProof(purchaseId: string): Promise<{ success: boolean; message: string; error?: any }> {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('credit_purchases')
         .update({ payment_status: 'waiting_proof' })
-        .eq('id', purchaseId);
+        .eq('id', purchaseId)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error updating purchase status:', error);
-        return false;
+        return {
+          success: false,
+          message: error.message || 'Erreur lors de la mise à jour',
+          error: error
+        };
       }
 
-      return true;
-    } catch (error) {
+      if (!data) {
+        return {
+          success: false,
+          message: 'Achat introuvable ou non modifiable'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Statut mis à jour avec succès'
+      };
+    } catch (error: any) {
       console.error('Error in markAsWaitingProof:', error);
-      return false;
+      return {
+        success: false,
+        message: error?.message || 'Erreur inattendue',
+        error: error
+      };
     }
   }
 
