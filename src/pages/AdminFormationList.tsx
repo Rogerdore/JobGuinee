@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  GraduationCap, Search, Filter, Download, Eye, Edit, Trash2,
-  CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical,
-  MapPin, Calendar, DollarSign, Users, TrendingUp, ChevronDown, RefreshCw, Plus
-} from 'lucide-react';
+import { GraduationCap, Search, Filter, Download, Eye, CreditCard as Edit, Trash2, CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical, MapPin, Calendar, DollarSign, Users, TrendingUp, ChevronDown, RefreshCw, Plus } from 'lucide-react';
 import { supabase, TrainerProfile } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import FormationPublishForm from '../components/forms/FormationPublishForm';
