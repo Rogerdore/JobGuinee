@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart, Check, X, Clock, AlertCircle, Filter, RefreshCw, Eye, ArrowLeft } from 'lucide-react';
 import { CreditStoreService, CreditPurchase, CreditStoreSettings } from '../services/creditStoreService';
 import { useModalContext } from '../contexts/ModalContext';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 type StatusFilter = 'all' | 'pending' | 'waiting_proof' | 'completed' | 'cancelled';
 
@@ -11,6 +13,7 @@ interface PageProps {
 
 export default function AdminCreditPurchases({ onNavigate }: PageProps) {
   const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
+  const { user, profile, isAdmin } = useAuth();
   const [purchases, setPurchases] = useState<CreditPurchase[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,10 +21,18 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
   const [selectedPurchase, setSelectedPurchase] = useState<CreditPurchase | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [statusFilter]);
+    if (user && profile) {
+      if (!isAdmin) {
+        setAuthError('Vous devez être administrateur pour accéder à cette page');
+      } else {
+        setAuthError(null);
+        loadData();
+      }
+    }
+  }, [statusFilter, user, profile, isAdmin]);
 
   const loadData = async () => {
     setLoading(true);
@@ -43,19 +54,36 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
   const handleValidate = async (purchaseId: string, notes?: string) => {
     setProcessing(purchaseId);
     try {
+      console.log('[AdminCreditPurchases] Validating purchase:', purchaseId);
+      console.log('[AdminCreditPurchases] Current user:', user?.email);
+      console.log('[AdminCreditPurchases] Profile type:', profile?.user_type);
+      console.log('[AdminCreditPurchases] Is admin:', isAdmin);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[AdminCreditPurchases] Session exists:', !!session);
+      console.log('[AdminCreditPurchases] Session user:', session?.user?.email);
+
+      if (!session) {
+        showError('Erreur', 'Session expirée. Veuillez vous reconnecter.');
+        return;
+      }
+
       const result = await CreditStoreService.completePurchase(purchaseId, notes);
 
+      console.log('[AdminCreditPurchases] Result:', result);
+
       if (result.success) {
-        alert(`Paiement validé! ${result.data.credits_added} crédits ajoutés.`);
+        showSuccess('Succès', `Paiement validé! ${result.data.credits_added} crédits ajoutés.`);
         await loadData();
         setShowModal(false);
         setSelectedPurchase(null);
       } else {
-        alert(result.message);
+        showError('Erreur', result.message || 'Erreur lors de la validation');
+        console.error('[AdminCreditPurchases] Validation failed:', result);
       }
     } catch (error) {
-      console.error('Error validating purchase:', error);
-      alert('Une erreur est survenue');
+      console.error('[AdminCreditPurchases] Error validating purchase:', error);
+      showError('Erreur', 'Une erreur est survenue lors de la validation');
     } finally {
       setProcessing(null);
     }
@@ -112,6 +140,46 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
       minute: '2-digit'
     }).format(new Date(dateString));
   };
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-red-800 mb-2">Accès refusé</h2>
+            <p className="text-red-600 mb-6">{authError}</p>
+            <button
+              onClick={() => onNavigate('home')}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-8 text-center">
+            <Clock className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-yellow-800 mb-2">Authentification requise</h2>
+            <p className="text-yellow-600 mb-6">Veuillez vous connecter pour accéder à cette page</p>
+            <button
+              onClick={() => onNavigate('auth')}
+              className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition"
+            >
+              Se connecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
