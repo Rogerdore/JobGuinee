@@ -206,7 +206,7 @@ export default function AlphaAvatar({
           <img
             src="/avatar_alpha_gif.gif"
             alt="Alpha Avatar"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain rounded-full"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
