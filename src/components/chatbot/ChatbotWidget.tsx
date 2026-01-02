@@ -125,12 +125,21 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
 
   const isEnabled = settings.is_enabled;
 
+  console.log('🎯 ChatBot Widget Render:', {
+    isEnabled,
+    position,
+    animation,
+    settingsExists: !!settings,
+    styleExists: !!style
+  });
+
   return (
     <>
       <div
-        className={`fixed bottom-6 ${position} z-50 ${animation} relative`}
+        className={`fixed bottom-6 ${position} z-50 ${animation}`}
         style={{
-          animationDelay: '0.5s'
+          animationDelay: '0.5s',
+          pointerEvents: 'auto'
         }}
       >
         {!isOpen ? (
