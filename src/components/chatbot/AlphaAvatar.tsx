@@ -202,12 +202,11 @@ export default function AlphaAvatar({
           filter: `drop-shadow(0 0 ${isHovered ? '20px' : '10px'} ${getGlowColor()})`
         }}
       >
-        <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-1" style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}>
+        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-1">
           <img
             src="/avatar_alpha_gif.gif"
             alt="Alpha Avatar"
-            className="w-full h-full object-contain"
-            style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+            className="w-full h-full object-contain rounded-full"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
