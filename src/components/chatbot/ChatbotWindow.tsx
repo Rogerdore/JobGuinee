@@ -9,6 +9,7 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickActions from './QuickActions';
 import AlphaIcon, { AlphaIconState } from './AlphaIcon';
+import AlphaAvatar from './AlphaAvatar';
 
 interface Message {
   id: string;
@@ -313,8 +314,8 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       >
         <div className="flex items-center gap-3 flex-1">
           <div className="relative">
-            <div className={`w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center p-1`}>
-              <AlphaIcon state={alphaState} size={40} />
+            <div className="w-12 h-12">
+              <AlphaAvatar size={48} state={alphaState} />
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-status-pulse shadow-lg"></div>
           </div>
