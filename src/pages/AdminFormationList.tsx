@@ -6,6 +6,7 @@ import FormationPublishForm from '../components/forms/FormationPublishForm';
 import FormationModeration from '../components/admin/FormationModeration';
 import FormationBoostModal from '../components/admin/FormationBoostModal';
 import TrainerAccountManagement from '../components/admin/TrainerAccountManagement';
+import AdminTrainerManagement from '../components/admin/AdminTrainerManagement';
 
 interface Formation {
   id: string;
