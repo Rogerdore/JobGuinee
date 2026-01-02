@@ -145,6 +145,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       children: [
         { id: 'formation-list', label: 'Toutes les Formations', icon: GraduationCap, route: 'admin-formation-list' },
         { id: 'trainer-management', label: 'Tous les Formateurs', icon: Users, route: 'admin-trainer-management' },
+        { id: 'formation-boost', label: 'Packs Boost & Badges', icon: Zap, route: 'admin-formation-boost' },
         { id: 'formation-config', label: 'Config Formations', icon: Settings, route: 'admin-formation-config' }
       ]
     },
