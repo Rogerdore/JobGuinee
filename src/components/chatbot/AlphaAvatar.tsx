@@ -202,6 +202,19 @@ export default function AlphaAvatar({
           filter: `drop-shadow(0 0 ${isHovered ? '20px' : '10px'} ${getGlowColor()})`
         }}
       >
+        {/* Orange glowing ring */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            padding: '4px',
+            background: 'linear-gradient(45deg, rgba(255, 140, 0, 0.6), rgba(255, 165, 0, 0.4), rgba(255, 140, 0, 0.6))',
+            animation: 'orange-pulse 3s ease-in-out infinite',
+            boxShadow: '0 0 20px rgba(255, 140, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.3)',
+          }}
+        >
+          <div className="w-full h-full rounded-full bg-transparent" />
+        </div>
+
         <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-1">
           <img
             src="/avatar_alpha_gif.gif"
