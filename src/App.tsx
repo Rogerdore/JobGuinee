@@ -191,7 +191,7 @@ function AppContent() {
         {currentPage === 'admin-ia-center' && <AdminIACenter onNavigate={handleNavigate} />}
         {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings onNavigate={handleNavigate} />}
         {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases onNavigate={handleNavigate} />}
-        {currentPage === 'admin-credit-packages' && <AdminCreditPackages />}
+        {currentPage === 'admin-credit-packages' && <AdminCreditPackages onNavigate={handleNavigate} />}
         {currentPage === 'admin-security-logs' && <AdminSecurityLogs onNavigate={handleNavigate} />}
         {currentPage === 'admin-premium-subscriptions' && <AdminPremiumSubscriptions onNavigate={handleNavigate} />}
         {currentPage === 'admin-enterprise-subscriptions' && <AdminEnterpriseSubscriptions onNavigate={handleNavigate} />}

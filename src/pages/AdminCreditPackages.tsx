@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, Plus, Edit2, Trash2, DollarSign, Zap, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import AdminLayout from '../components/AdminLayout';
 
 interface CreditPackage {
   id: string;
@@ -22,7 +23,11 @@ interface PricingConfig {
   currency: string;
 }
 
-export default function AdminCreditPackages() {
+interface AdminCreditPackagesProps {
+  onNavigate?: (page: string) => void;
+}
+
+export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesProps) {
   const { profile } = useAuth();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig | null>(null);
@@ -167,14 +172,17 @@ export default function AdminCreditPackages() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Chargement...</div>
-      </div>
+      <AdminLayout onNavigate={onNavigate} currentPage="admin-credit-packages">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Chargement...</div>
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <AdminLayout onNavigate={onNavigate} currentPage="admin-credit-packages">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestion des Packs de Crédits IA</h1>
@@ -496,6 +504,7 @@ export default function AdminCreditPackages() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
