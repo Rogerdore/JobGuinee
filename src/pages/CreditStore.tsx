@@ -12,6 +12,8 @@ interface PaymentModalProps {
   onClose: () => void;
   settings: CreditStoreSettings | null;
   userEmail: string;
+  showSuccess: (title: string, message: string) => void;
+  showError: (title: string, message: string) => void;
 }
 
 interface PremiumPaymentModalProps {
@@ -19,9 +21,11 @@ interface PremiumPaymentModalProps {
   onClose: () => void;
   settings: CreditStoreSettings | null;
   userEmail: string;
+  showSuccess: (title: string, message: string) => void;
+  showError: (title: string, message: string) => void;
 }
 
-function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentModalProps) {
+function PaymentModal({ pack, isOpen, onClose, settings, userEmail, showSuccess, showError }: PaymentModalProps) {
   const [purchaseId, setPurchaseId] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
   const [step, setStep] = useState<'info' | 'payment' | 'confirm'>('info');
@@ -50,11 +54,11 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
         setReference(result.data.payment_reference);
         setStep('payment');
       } else {
-        alert(result.message);
+        showError('Erreur', result.message || 'Erreur lors de la création de l\'achat');
       }
     } catch (error) {
       console.error('Error creating purchase:', error);
-      alert('Une erreur est survenue');
+      showError('Erreur', 'Une erreur est survenue lors de la création de l\'achat');
     } finally {
       setProcessing(false);
     }
@@ -86,11 +90,11 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
       if (success) {
         setStep('confirm');
       } else {
-        showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
+        showError('Erreur', 'Erreur lors de la finalisation de l\'achat');
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
-      alert('Une erreur est survenue');
+      showError('Erreur', 'Une erreur est survenue lors de la finalisation');
     } finally {
       setProcessing(false);
     }
@@ -321,7 +325,7 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
   );
 }
 
-function PremiumPaymentModal({ isOpen, onClose, settings, userEmail }: PremiumPaymentModalProps) {
+function PremiumPaymentModal({ isOpen, onClose, settings, userEmail, showSuccess, showError }: PremiumPaymentModalProps) {
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
   const [step, setStep] = useState<'info' | 'payment' | 'confirm'>('info');
@@ -352,11 +356,11 @@ function PremiumPaymentModal({ isOpen, onClose, settings, userEmail }: PremiumPa
         setReference(result.payment_reference || null);
         setStep('payment');
       } else {
-        alert(result.message);
+        showError('Erreur', result.message || 'Erreur lors de la création de l\'abonnement');
       }
     } catch (error) {
       console.error('Error creating subscription:', error);
-      alert('Une erreur est survenue');
+      showError('Erreur', 'Une erreur est survenue lors de la création de l\'abonnement');
     } finally {
       setProcessing(false);
     }
@@ -388,11 +392,11 @@ function PremiumPaymentModal({ isOpen, onClose, settings, userEmail }: PremiumPa
       if (success) {
         setStep('confirm');
       } else {
-        showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
+        showError('Erreur', 'Erreur lors de la finalisation de l\'achat');
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
-      alert('Une erreur est survenue');
+      showError('Erreur', 'Une erreur est survenue lors de la finalisation');
     } finally {
       setProcessing(false);
     }
@@ -956,6 +960,8 @@ export default function CreditStore({ onNavigate, scrollTarget }: CreditStorePro
         onClose={() => setModalOpen(false)}
         settings={settings}
         userEmail={profile?.email || user?.email || ''}
+        showSuccess={showSuccess}
+        showError={showError}
       />
 
       <PremiumPaymentModal
@@ -963,6 +969,8 @@ export default function CreditStore({ onNavigate, scrollTarget }: CreditStorePro
         onClose={() => setPremiumModalOpen(false)}
         settings={settings}
         userEmail={profile?.email || user?.email || ''}
+        showSuccess={showSuccess}
+        showError={showError}
       />
     </div>
   );
