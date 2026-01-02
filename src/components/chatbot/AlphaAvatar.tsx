@@ -202,11 +202,11 @@ export default function AlphaAvatar({
           filter: `drop-shadow(0 0 ${isHovered ? '20px' : '10px'} ${getGlowColor()})`
         }}
       >
-        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg">
+        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-2">
           <img
-            src="/video_avatar_alpha_gif.gif"
+            src="/avatar_alpha_gif.gif"
             alt="Alpha Avatar"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
@@ -216,7 +216,7 @@ export default function AlphaAvatar({
               }
             }}
           />
-          <MessageCircle className="fallback-icon w-10 h-10 text-white hidden" strokeWidth={2} />
+          <MessageCircle className="fallback-icon w-10 h-10 text-white hidden absolute" strokeWidth={2} />
 
           {blinkEyes && (
             <div className="absolute inset-0 bg-[#0E2F56] opacity-30" />
