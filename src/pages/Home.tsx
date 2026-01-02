@@ -13,7 +13,6 @@ import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
 import VideoGuidesSection from '../components/home/VideoGuidesSection';
-import ChatbotWidget from '../components/chatbot/ChatbotWidget';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -1148,8 +1147,6 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       )}
-
-      <ChatbotWidget onNavigate={onNavigate} />
     </div>
   );
 }
