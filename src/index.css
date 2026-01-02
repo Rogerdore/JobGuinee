@@ -550,17 +550,28 @@
     scroll-behavior: smooth;
   }
 
-  /* Optimisation GPU pour le scroll */
+  /* Optimisation GPU pour le scroll et stabilité */
   aside {
     transform: translateZ(0);
     backface-visibility: hidden;
     perspective: 1000px;
+    position: fixed !important;
+    contain: layout style paint;
   }
 
-  /* Empêcher le mouvement/saut pendant le scroll */
+  /* Empêcher le mouvement/saut pendant le scroll et la navigation */
   aside > div {
     will-change: transform;
     transform: translateZ(0);
+  }
+
+  /* Stabilité pendant les transitions de navigation */
+  aside,
+  aside * {
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
   }
 }
 

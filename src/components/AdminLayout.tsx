@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import {
   LayoutDashboard, Users, Briefcase, FileCheck, Sparkles, CreditCard,
   Bell, MessageCircle, Shield, Settings, ChevronDown, ChevronRight,
@@ -26,8 +26,22 @@ interface MenuItem {
 
 export default function AdminLayout({ children, onNavigate, currentPage = '' }: AdminLayoutProps) {
   const { profile, signOut } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['dashboard']);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('admin-sidebar-open');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
+    const saved = localStorage.getItem('admin-expanded-menus');
+    return saved !== null ? JSON.parse(saved) : ['dashboard'];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin-sidebar-open', JSON.stringify(sidebarOpen));
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('admin-expanded-menus', JSON.stringify(expandedMenus));
+  }, [expandedMenus]);
 
   const menuStructure: MenuItem[] = [
     {
