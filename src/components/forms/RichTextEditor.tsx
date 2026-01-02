@@ -38,8 +38,10 @@ const RichTextEditor = memo(function RichTextEditor({
   label = 'Description du poste',
 }: RichTextEditorProps) {
   const [isImporting, setIsImporting] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isManipulatingRef = useRef<boolean>(false);
 
   const handleUndo = () => {
     const quill = quillRef.current?.getEditor();
