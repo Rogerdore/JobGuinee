@@ -9,7 +9,9 @@ export type NotificationType =
   | 'interview_rescheduled'
   | 'application_status_update'
   | 'message_received'
-  | 'job_closed';
+  | 'job_closed'
+  | 'credits_validated'
+  | 'credits_rejected';
 
 export interface NotificationPayload {
   recipientId: string;
@@ -177,6 +179,53 @@ Nous vous remercions de l'intérêt porté à notre entreprise et vous souhaiton
 
 Cordialement,
 {{company_name}}`,
+    channels: ['notification', 'email']
+  },
+
+  credits_validated: {
+    type: 'credits_validated',
+    subject: 'Paiement validé - {{credits_amount}} crédits IA ajoutés',
+    body: `Bonjour,
+
+Excellente nouvelle! Votre paiement a été validé avec succès.
+
+💳 Référence : {{payment_reference}}
+💰 Montant : {{price_amount}}
+✨ Crédits ajoutés : {{credits_amount}} crédits IA
+📊 Nouveau solde : {{new_balance}} crédits
+
+Vos crédits sont maintenant disponibles et vous pouvez les utiliser pour accéder aux services IA premium de JobGuinée.
+
+{{#if_notes}}
+📝 Note de l'administrateur :
+{{admin_notes}}
+{{/if_notes}}
+
+Merci pour votre confiance!
+
+L'équipe JobGuinée`,
+    channels: ['notification', 'email']
+  },
+
+  credits_rejected: {
+    type: 'credits_rejected',
+    subject: 'Paiement non validé - {{payment_reference}}',
+    body: `Bonjour,
+
+Nous avons examiné votre demande d'achat de crédits mais nous ne pouvons malheureusement pas la valider.
+
+💳 Référence : {{payment_reference}}
+💰 Montant : {{price_amount}}
+❌ Crédits : {{credits_amount}} crédits IA
+
+{{#if_reason}}
+📝 Raison :
+{{rejection_reason}}
+{{/if_reason}}
+
+Si vous pensez qu'il s'agit d'une erreur, veuillez nous contacter via WhatsApp avec votre preuve de paiement.
+
+L'équipe JobGuinée`,
     channels: ['notification', 'email']
   }
 };
@@ -485,5 +534,70 @@ export const notificationService = {
       whatsapp: 'WhatsApp'
     };
     return labels[channel];
+  },
+
+  async sendCreditNotification(
+    userId: string,
+    type: 'credits_validated' | 'credits_rejected',
+    purchaseData: {
+      payment_reference: string;
+      price_amount: number;
+      currency: string;
+      credits_amount: number;
+      new_balance?: number;
+      admin_notes?: string;
+      rejection_reason?: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const template = DEFAULT_TEMPLATES[type];
+
+      const variables = {
+        payment_reference: purchaseData.payment_reference,
+        price_amount: this.formatPrice(purchaseData.price_amount, purchaseData.currency),
+        credits_amount: purchaseData.credits_amount.toLocaleString('fr-FR'),
+        new_balance: purchaseData.new_balance ? purchaseData.new_balance.toLocaleString('fr-FR') : '',
+        admin_notes: purchaseData.admin_notes || '',
+        rejection_reason: purchaseData.rejection_reason || '',
+        if_notes: !!purchaseData.admin_notes,
+        if_reason: !!purchaseData.rejection_reason
+      };
+
+      const subject = this.processTemplate(template.subject, variables);
+      const body = this.processTemplate(template.body, variables);
+
+      return await this.sendNotification({
+        recipientId: userId,
+        type,
+        title: subject,
+        message: body,
+        channels: template.channels,
+        metadata: {
+          payment_reference: purchaseData.payment_reference,
+          credits_amount: purchaseData.credits_amount,
+          new_balance: purchaseData.new_balance
+        }
+      });
+    } catch (error: any) {
+      console.error('Error sending credit notification:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  formatPrice(amount: number, currency: string = 'GNF'): string {
+    if (currency === 'GNF') {
+      return new Intl.NumberFormat('fr-GN', {
+        style: 'currency',
+        currency: 'GNF',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount);
+    }
+
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2
+    }).format(amount);
   }
 };
