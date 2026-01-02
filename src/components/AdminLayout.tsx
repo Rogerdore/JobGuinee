@@ -223,7 +223,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
                 onNavigate(item.route);
               }
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group relative
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl group relative
               ${active
                 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-200'
                 : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-md'
@@ -231,27 +231,28 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
               ${level > 0 ? 'ml-4' : ''}
               ${!sidebarOpen ? 'justify-center' : ''}
             `}
+            style={{ transition: 'none' }}
             title={!sidebarOpen ? item.label : ''}
           >
             <div className={`flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'}`}>
-              <Icon className={`w-5 h-5 transition-all duration-200 ${
+              <Icon className={`w-5 h-5 ${
                 active
                   ? 'text-white'
-                  : 'text-gray-600 group-hover:text-blue-600 group-hover:scale-110'
-              }`} />
+                  : 'text-gray-600 group-hover:text-blue-600'
+              }`} style={{ transition: 'none' }} />
               {sidebarOpen && (
-                <span className={`font-medium text-sm transition-colors ${active ? 'text-white' : 'text-gray-700'}`}>
+                <span className={`font-medium text-sm ${active ? 'text-white' : 'text-gray-700'}`}>
                   {item.label}
                 </span>
               )}
               {item.badge && sidebarOpen && (
-                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
+                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
                   {item.badge}
                 </span>
               )}
             </div>
             {hasChildren && sidebarOpen && (
-              <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+              <div className={`${isExpanded ? 'rotate-0' : '-rotate-90'}`} style={{ transition: 'none' }}>
                 <ChevronDown className={`w-4 h-4 ${active ? 'text-white' : 'text-gray-400 group-hover:text-blue-600'}`} />
               </div>
             )}
@@ -263,7 +264,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           </button>
 
           {!sidebarOpen && (
-            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible whitespace-nowrap z-50 shadow-xl">
               {item.label}
               <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
             </div>
@@ -271,7 +272,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         </div>
 
         {hasChildren && isExpanded && sidebarOpen && (
-          <div className="ml-2 mt-1 space-y-1 animate-slideDown">
+          <div className="ml-2 mt-1 space-y-1">
             {item.children!.map(child => renderMenuItem(child, level + 1))}
           </div>
         )}
@@ -315,9 +316,13 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 z-50 flex flex-col shadow-xl
+        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 z-50 flex flex-col shadow-xl
           ${sidebarOpen ? 'w-72' : 'w-20'}
         `}
+        style={{
+          transition: 'none',
+          width: sidebarOpen ? '18rem' : '5rem'
+        }}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           {sidebarOpen ? (
@@ -337,7 +342,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 rounded-lg"
           >
             {sidebarOpen ? (
               <X className="w-5 h-5 text-gray-600" />
@@ -368,7 +373,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
 
               <button
                 onClick={() => onNavigate && onNavigate('home')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
               >
                 <Home className="w-4 h-4" />
                 <span className="text-sm">Voir le site</span>
@@ -376,7 +381,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
 
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Déconnexion</span>
@@ -386,14 +391,14 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
             <div className="space-y-2">
               <button
                 onClick={() => onNavigate && onNavigate('home')}
-                className="w-full p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition flex items-center justify-center"
+                className="w-full p-3 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center justify-center"
                 title="Voir le site"
               >
                 <Home className="w-5 h-5 text-gray-700" />
               </button>
               <button
                 onClick={handleSignOut}
-                className="w-full p-3 bg-red-50 rounded-lg hover:bg-red-100 transition flex items-center justify-center"
+                className="w-full p-3 bg-red-50 rounded-lg hover:bg-red-100 flex items-center justify-center"
                 title="Déconnexion"
               >
                 <LogOut className="w-5 h-5 text-red-600" />
@@ -403,7 +408,13 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         </div>
       </aside>
 
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-72' : 'ml-20'}`}>
+      <div
+        className={`flex-1 ${sidebarOpen ? 'ml-72' : 'ml-20'}`}
+        style={{
+          transition: 'none',
+          marginLeft: sidebarOpen ? '18rem' : '5rem'
+        }}
+      >
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
@@ -421,11 +432,11 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
               </div>
 
               <div className="flex items-center gap-3">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition relative">
+                <button className="p-2 hover:bg-gray-100 rounded-lg relative">
                   <Bell className="w-5 h-5 text-gray-600" />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                <button className="p-2 hover:bg-gray-100 rounded-lg">
                   <Search className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
