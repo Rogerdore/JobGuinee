@@ -406,9 +406,7 @@ export default function AdminFormationList() {
       )}
 
       {activeTab === 'trainers' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <AdminTrainerManagement />
-        </div>
+        <AdminTrainerManagement />
       )}
 
       {activeTab === 'account_management' && (
