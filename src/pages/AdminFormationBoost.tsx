@@ -42,8 +42,8 @@ interface AdminFormationBoostProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminFormationBoost({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminFormationBoostProps) {
+export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
   const [badges, setBadges] = useState<FormationBadge[]>([]);
   const [filteredBadges, setFilteredBadges] = useState<FormationBadge[]>([]);

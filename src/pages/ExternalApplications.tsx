@@ -39,8 +39,8 @@ interface ExternalApplicationsProps {
   onNavigate?: (page: string, param?: string) => void;
 }
 
-export default function ExternalApplications({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: ExternalApplicationsProps) {
+export default function ExternalApplications({ onNavigate }: ExternalApplicationsProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user } = useAuth();
 
   const [applications, setApplications] = useState<ExternalApplication[]>([]);

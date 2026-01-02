@@ -9,8 +9,8 @@ interface AdminEnterpriseSubscriptionsProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminEnterpriseSubscriptions({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminEnterpriseSubscriptionsProps) {
+export default function AdminEnterpriseSubscriptions({ onNavigate }: AdminEnterpriseSubscriptionsProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
   const [subscriptions, setSubscriptions] = useState<EnterpriseSubscription[]>([]);
   const [loading, setLoading] = useState(true);

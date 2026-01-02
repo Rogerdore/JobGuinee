@@ -13,8 +13,8 @@ interface CVDesignerProps {
 
 type ViewMode = 'entry' | 'manager' | 'wizard' | 'import' | 'templates';
 
-export default function CVDesigner({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: CVDesignerProps) {
+export default function CVDesigner({ onNavigate }: CVDesignerProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [viewMode, setViewMode] = useState<ViewMode>('entry');
   const [selectedCVId, setSelectedCVId] = useState<string | undefined>(undefined);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);

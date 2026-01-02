@@ -38,8 +38,8 @@ interface PageProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminSecurityLogs({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PageProps) {
+export default function AdminSecurityLogs({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [logs, setLogs] = useState<SecurityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventFilter, setEventFilter] = useState<EventFilter>('all');

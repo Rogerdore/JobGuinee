@@ -8,8 +8,8 @@ interface AdminCommunicationTemplatesProps {
   onNavigate: (page: string, param?: string) => void;
 }
 
-export default function AdminCommunicationTemplates({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCommunicationTemplatesProps) {
+export default function AdminCommunicationTemplates({ onNavigate }: AdminCommunicationTemplatesProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [templates, setTemplates] = useState<CommunicationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);

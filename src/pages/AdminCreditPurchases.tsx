@@ -9,8 +9,8 @@ interface PageProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminCreditPurchases({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PageProps) {
+export default function AdminCreditPurchases({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [purchases, setPurchases] = useState<CreditPurchase[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);

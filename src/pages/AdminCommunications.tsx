@@ -25,8 +25,8 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
   failed: { label: 'Échec', color: 'red', icon: XCircle },
 };
 
-export default function AdminCommunications({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCommunicationsProps) {
+export default function AdminCommunications({ onNavigate }: AdminCommunicationsProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [communications, setCommunications] = useState<AdminCommunication[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);

@@ -151,10 +151,6 @@ export default function AdminDiffusionSettings() {
     }
   };
 
-  const showSuccess = (message: string) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
 
   const updateSystemSettings = async (updates: Partial<SystemSettings>) => {
     if (!systemSettings) return;

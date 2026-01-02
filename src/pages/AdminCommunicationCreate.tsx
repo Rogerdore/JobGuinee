@@ -8,8 +8,8 @@ interface AdminCommunicationCreateProps {
   onNavigate: (page: string, param?: string) => void;
 }
 
-export default function AdminCommunicationCreate({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCommunicationCreateProps) {
+export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicationCreateProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
 

@@ -66,8 +66,8 @@ interface PurchasedProfilesProps {
 type SortField = 'name' | 'date' | 'experience' | 'score' | 'salary' | 'city';
 type SortDirection = 'asc' | 'desc';
 
-export default function PurchasedProfiles({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); profile }: PurchasedProfilesProps) {
+export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [purchases, setPurchases] = useState<PurchasedProfile[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<PurchasedProfile[]>([]);
   const [loading, setLoading] = useState(true);

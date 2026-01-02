@@ -300,8 +300,8 @@ interface PremiumSubscribeProps {
   onNavigate: (page: string) => void;
 }
 
-export default function PremiumSubscribe({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PremiumSubscribeProps) {
+export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);

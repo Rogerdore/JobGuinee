@@ -304,8 +304,8 @@ interface PageProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminPremiumSubscriptions({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PageProps) {
+export default function AdminPremiumSubscriptions({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [subscriptions, setSubscriptions] = useState<SubscriptionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithUser | null>(null);

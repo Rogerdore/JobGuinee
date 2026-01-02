@@ -7,8 +7,8 @@ interface AdminCVThequePricingProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminCVThequePricing({
-  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCVThequePricingProps) {
+export default function AdminCVThequePricing({ onNavigate }: AdminCVThequePricingProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [packs, setPacks] = useState<CVThequePack[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPack, setEditingPack] = useState<CVThequePack | null>(null);
