@@ -81,20 +81,28 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail, showSuccess,
   };
 
   const handleMarkAsPaid = async () => {
-    if (!purchaseId) return;
+    if (!purchaseId) {
+      console.error('No purchaseId available');
+      showError('Erreur', 'Identifiant d\'achat manquant');
+      return;
+    }
 
+    console.log('Marking purchase as paid:', purchaseId);
     setProcessing(true);
     try {
       const result = await CreditStoreService.markAsWaitingProof(purchaseId);
+      console.log('markAsWaitingProof result:', result);
 
       if (result.success) {
+        console.log('Success! Moving to confirm step');
         setStep('confirm');
       } else {
-        showError('Erreur lors de la finalisation', result.message);
+        console.error('Failed to mark as paid:', result);
+        showError('Erreur lors de la finalisation', result.message || 'Erreur inconnue');
       }
-    } catch (error) {
-      console.error('Error marking as paid:', error);
-      showError('Erreur', 'Une erreur est survenue lors de la finalisation');
+    } catch (error: any) {
+      console.error('Exception in handleMarkAsPaid:', error);
+      showError('Erreur', error?.message || 'Une erreur est survenue lors de la finalisation');
     } finally {
       setProcessing(false);
     }

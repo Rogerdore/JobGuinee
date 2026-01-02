@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Credit Purchase Flow</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    .error { background: #ffebee; color: #c62828; }
+    .success { background: #e8f5e9; color: #2e7d32; }
+    .info { background: #e3f2fd; color: #1565c0; }
+    input { padding: 8px; margin: 5px; width: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Test Credit Purchase Flow</h1>
+
+  <div>
+    <h2>1. Login</h2>
+    <input type="email" id="email" placeholder="Email" value="">
+    <input type="password" id="password" placeholder="Password" value="">
+    <button onclick="login()">Login</button>
+    <div id="auth-status" class="log info">Not logged in</div>
+  </div>
+
+  <div>
+    <h2>2. Create Purchase</h2>
+    <select id="package-select">
+      <option value="">Select a package...</option>
+    </select>
+    <button onclick="createPurchase()">Create Purchase</button>
+    <div id="purchase-status" class="log info">No purchase created</div>
+  </div>
+
+  <div>
+    <h2>3. Mark as Paid</h2>
+    <button onclick="markAsPaid()">Mark as Paid</button>
+    <div id="mark-status" class="log info">Waiting...</div>
+  </div>
+
+  <div>
+    <h2>Console Logs</h2>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    // Load env variables
+    const SUPABASE_URL = 'https://hhhjzgeidjqctuveopso.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoaGp6Z2VpZGpxY3R1dmVvcHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NDc5NjUsImV4cCI6MjA4MDMyMzk2NX0.kaxpdgyYyGXiN93bThIceJ_p0j6hZQr5yz7obTtRSqA';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentPurchaseId = null;
+
+    function addLog(message, type = 'info') {
+      const logs = document.getElementById('logs');
+      const log = document.createElement('div');
+      log.className = `log ${type}`;
+      log.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logs.insertBefore(log, logs.firstChild);
+      console.log(message);
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      addLog('Attempting login...', 'info');
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        addLog(`Login failed: ${error.message}`, 'error');
+        document.getElementById('auth-status').textContent = `Error: ${error.message}`;
+        document.getElementById('auth-status').className = 'log error';
+      } else {
+        addLog('Login successful!', 'success');
+        document.getElementById('auth-status').textContent = `Logged in as: ${data.user.email}`;
+        document.getElementById('auth-status').className = 'log success';
+        await loadPackages();
+      }
+    }
+
+    async function loadPackages() {
+      addLog('Loading packages...', 'info');
+
+      const { data, error } = await supabase
+        .from('credit_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('credits_amount');
+
+      if (error) {
+        addLog(`Failed to load packages: ${error.message}`, 'error');
+        return;
+      }
+
+      const select = document.getElementById('package-select');
+      select.innerHTML = '<option value="">Select a package...</option>';
+
+      data.forEach(pkg => {
+        const option = document.createElement('option');
+        option.value = pkg.id;
+        option.textContent = `${pkg.package_name} - ${pkg.credits_amount} credits - ${pkg.price_amount} ${pkg.currency}`;
+        select.appendChild(option);
+      });
+
+      addLog(`Loaded ${data.length} packages`, 'success');
+    }
+
+    async function createPurchase() {
+      const packageId = document.getElementById('package-select').value;
+      if (!packageId) {
+        addLog('Please select a package', 'error');
+        return;
+      }
+
+      addLog(`Creating purchase for package: ${packageId}`, 'info');
+
+      const { data, error } = await supabase.rpc('create_credit_purchase', {
+        p_package_id: packageId,
+        p_payment_method: 'orange_money'
+      });
+
+      if (error) {
+        addLog(`Failed to create purchase: ${error.message}`, 'error');
+        document.getElementById('purchase-status').textContent = `Error: ${error.message}`;
+        document.getElementById('purchase-status').className = 'log error';
+        return;
+      }
+
+      if (!data.success) {
+        addLog(`Purchase creation failed: ${data.message}`, 'error');
+        document.getElementById('purchase-status').textContent = `Error: ${data.message}`;
+        document.getElementById('purchase-status').className = 'log error';
+        return;
+      }
+
+      currentPurchaseId = data.purchase_id;
+      addLog(`Purchase created! ID: ${currentPurchaseId}`, 'success');
+      addLog(`Payment reference: ${data.payment_reference}`, 'info');
+      document.getElementById('purchase-status').textContent = `Purchase ID: ${currentPurchaseId}\nReference: ${data.payment_reference}`;
+      document.getElementById('purchase-status').className = 'log success';
+    }
+
+    async function markAsPaid() {
+      if (!currentPurchaseId) {
+        addLog('No purchase ID available', 'error');
+        return;
+      }
+
+      addLog(`Marking purchase as paid: ${currentPurchaseId}`, 'info');
+
+      // First check if we can read the purchase
+      addLog('Step 1: Checking if purchase exists...', 'info');
+      const { data: existingPurchase, error: checkError } = await supabase
+        .from('credit_purchases')
+        .select('id, user_id, payment_status')
+        .eq('id', currentPurchaseId)
+        .single();
+
+      if (checkError) {
+        addLog(`Cannot find purchase: ${checkError.message}`, 'error');
+        addLog(`Error details: ${JSON.stringify(checkError)}`, 'error');
+        document.getElementById('mark-status').textContent = `Error: ${checkError.message}`;
+        document.getElementById('mark-status').className = 'log error';
+        return;
+      }
+
+      addLog(`Purchase found! Status: ${existingPurchase.payment_status}`, 'success');
+
+      // Now try to update
+      addLog('Step 2: Updating payment status...', 'info');
+      const { error: updateError } = await supabase
+        .from('credit_purchases')
+        .update({
+          payment_status: 'waiting_proof',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentPurchaseId);
+
+      if (updateError) {
+        addLog(`Update failed: ${updateError.message}`, 'error');
+        addLog(`Error details: ${JSON.stringify(updateError)}`, 'error');
+        document.getElementById('mark-status').textContent = `Error: ${updateError.message}`;
+        document.getElementById('mark-status').className = 'log error';
+        return;
+      }
+
+      addLog('Successfully marked as paid!', 'success');
+      document.getElementById('mark-status').textContent = 'Success! Purchase marked as paid';
+      document.getElementById('mark-status').className = 'log success';
+    }
+
+    // Check initial auth status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        document.getElementById('auth-status').textContent = `Logged in as: ${session.user.email}`;
+        document.getElementById('auth-status').className = 'log success';
+        loadPackages();
+      }
+    });
+  </script>
+</body>
+</html>

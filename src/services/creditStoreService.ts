@@ -179,35 +179,53 @@ export class CreditStoreService {
 
   static async markAsWaitingProof(purchaseId: string): Promise<{ success: boolean; message: string; error?: any }> {
     try {
-      const { data, error } = await supabase
+      console.log('[CreditStore] Updating purchase to waiting_proof:', purchaseId);
+
+      // First, check if the purchase exists and belongs to the user
+      const { data: existingPurchase, error: checkError } = await supabase
         .from('credit_purchases')
-        .update({ payment_status: 'waiting_proof' })
+        .select('id, user_id, payment_status')
         .eq('id', purchaseId)
-        .select()
         .single();
 
-      if (error) {
-        console.error('Error updating purchase status:', error);
+      console.log('[CreditStore] Existing purchase check:', { existingPurchase, checkError });
+
+      if (checkError) {
+        console.error('[CreditStore] Cannot find purchase:', checkError);
         return {
           success: false,
-          message: error.message || 'Erreur lors de la mise à jour',
-          error: error
+          message: 'Achat introuvable ou accès non autorisé',
+          error: checkError
         };
       }
 
-      if (!data) {
+      // Now update it
+      const { error: updateError } = await supabase
+        .from('credit_purchases')
+        .update({
+          payment_status: 'waiting_proof',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', purchaseId);
+
+      console.log('[CreditStore] Update error:', updateError);
+
+      if (updateError) {
+        console.error('[CreditStore] Error updating purchase status:', updateError);
         return {
           success: false,
-          message: 'Achat introuvable ou non modifiable'
+          message: updateError.message || 'Erreur lors de la mise à jour',
+          error: updateError
         };
       }
 
+      console.log('[CreditStore] Successfully updated purchase');
       return {
         success: true,
         message: 'Statut mis à jour avec succès'
       };
     } catch (error: any) {
-      console.error('Error in markAsWaitingProof:', error);
+      console.error('[CreditStore] Exception in markAsWaitingProof:', error);
       return {
         success: false,
         message: error?.message || 'Erreur inattendue',
