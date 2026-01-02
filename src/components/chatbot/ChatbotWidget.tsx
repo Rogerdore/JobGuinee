@@ -80,6 +80,7 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
 
   const loadConfiguration = async () => {
     setLoading(true);
+    console.log('🔄 Alpha Avatar - Début du chargement de la configuration...');
     try {
       const [settingsData, styleData] = await Promise.all([
         ChatbotService.getSettings(),
@@ -98,12 +99,21 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
       console.error('❌ Alpha Avatar - Erreur chargement configuration:', error);
     } finally {
       setLoading(false);
+      console.log('✅ Alpha Avatar - Fin du chargement');
     }
   };
 
-  if (loading || !settings) {
+  if (loading) {
+    console.log('⏳ Alpha Avatar - En cours de chargement...');
     return null;
   }
+
+  if (!settings) {
+    console.log('⚠️ Alpha Avatar - Pas de settings disponibles');
+    return null;
+  }
+
+  console.log('✨ Alpha Avatar - Rendu du composant');
 
   const avatarSize = style?.widget_size === 'small' ? 'small' : style?.widget_size === 'large' ? 'large' : 'medium';
   const position = settings.position === 'bottom-left' ? 'left-6' : 'right-6';
