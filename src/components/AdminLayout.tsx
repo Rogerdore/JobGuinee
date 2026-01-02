@@ -333,7 +333,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scroll-smooth overscroll-contain">
           {menuStructure.map(item => renderMenuItem(item))}
         </div>
 

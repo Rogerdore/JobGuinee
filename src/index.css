@@ -540,6 +540,28 @@
   .scrollbar-track-transparent::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  /* Amélioration du scroll de la sidebar admin */
+  .overscroll-contain {
+    overscroll-behavior-y: contain;
+  }
+
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  /* Optimisation GPU pour le scroll */
+  aside {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* Empêcher le mouvement/saut pendant le scroll */
+  aside > div {
+    will-change: transform;
+    transform: translateZ(0);
+  }
 }
 
 .ql-editor {
