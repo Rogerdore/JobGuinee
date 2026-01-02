@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   GraduationCap, Search, Filter, Download, Eye, Edit, Trash2,
   CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical,
-  MapPin, Calendar, DollarSign, Users, TrendingUp, ChevronDown, RefreshCw
+  MapPin, Calendar, DollarSign, Users, TrendingUp, ChevronDown, RefreshCw, Plus
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, TrainerProfile } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import FormationPublishForm from '../components/forms/FormationPublishForm';
 
 interface Formation {
   id: string;
@@ -27,6 +29,7 @@ type SortField = 'title' | 'created_at' | 'price' | 'status';
 type SortDirection = 'asc' | 'desc';
 
 export default function AdminFormationList() {
+  const { user } = useAuth();
   const [formations, setFormations] = useState<Formation[]>([]);
   const [filteredFormations, setFilteredFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,17 +43,73 @@ export default function AdminFormationList() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [adminTrainerProfile, setAdminTrainerProfile] = useState<TrainerProfile | null>(null);
+  const [editingFormationId, setEditingFormationId] = useState<string | undefined>(undefined);
 
   const categories = ['Informatique', 'Management', 'Marketing', 'Finance', 'RH', 'Autre'];
   const levels = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert'];
 
   useEffect(() => {
     loadFormations();
+    loadOrCreateAdminTrainerProfile();
   }, []);
 
   useEffect(() => {
     applyFilters();
   }, [formations, searchTerm, statusFilter, categoryFilter, levelFilter, sortField, sortDirection]);
+
+  const loadOrCreateAdminTrainerProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('trainer_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        setAdminTrainerProfile(existingProfile);
+        return;
+      }
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const newTrainerProfile = {
+        user_id: user.id,
+        profile_id: user.id,
+        entity_type: 'organization' as const,
+        organization_name: 'JobGuinee - Administration',
+        organization_type: 'Plateforme',
+        bio: 'Formations publiées par l\'administration de JobGuinee',
+        is_verified: true,
+        verified_at: new Date().toISOString(),
+        location: 'Conakry, Guinée',
+        website_url: 'https://jobguinee.com',
+        domaines: ['Tous domaines']
+      };
+
+      const { data: newProfile, error: insertError } = await supabase
+        .from('trainer_profiles')
+        .insert(newTrainerProfile)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating admin trainer profile:', insertError);
+        return;
+      }
+
+      setAdminTrainerProfile(newProfile);
+    } catch (error) {
+      console.error('Error loading/creating admin trainer profile:', error);
+    }
+  };
 
   const loadFormations = async () => {
     setLoading(true);
@@ -198,6 +257,26 @@ export default function AdminFormationList() {
     loadFormations();
   };
 
+  const handlePublishNew = () => {
+    setEditingFormationId(undefined);
+    setShowPublishModal(true);
+  };
+
+  const handleEditFormation = (formationId: string) => {
+    setEditingFormationId(formationId);
+    setShowPublishModal(true);
+  };
+
+  const handleClosePublishModal = () => {
+    setShowPublishModal(false);
+    setEditingFormationId(undefined);
+  };
+
+  const handlePublishSuccess = () => {
+    loadFormations();
+    handleClosePublishModal();
+  };
+
   const exportToCSV = () => {
     const csv = [
       ['Titre', 'Formateur', 'Catégorie', 'Niveau', 'Durée', 'Prix', 'Statut', 'Date création'],
@@ -247,9 +326,19 @@ export default function AdminFormationList() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Gestion des Formations</h1>
-        <p className="mt-2 text-gray-600">Liste complète de toutes les formations disponibles</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des Formations</h1>
+          <p className="mt-2 text-gray-600">Liste complète de toutes les formations disponibles</p>
+        </div>
+        <button
+          onClick={handlePublishNew}
+          disabled={!adminTrainerProfile}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus className="w-5 h-5" />
+          Publier une formation
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -508,6 +597,13 @@ export default function AdminFormationList() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        onClick={() => handleEditFormation(formation.id)}
+                        className="p-1 text-green-600 hover:bg-green-50 rounded"
+                        title="Modifier"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => updateFormationStatus(
                           formation.id,
                           formation.status === 'active' ? 'archived' : 'active'
@@ -582,6 +678,32 @@ export default function AdminFormationList() {
           </div>
         )}
       </div>
+
+      {showPublishModal && adminTrainerProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {editingFormationId ? 'Modifier la formation' : 'Publier une nouvelle formation'}
+              </h2>
+              <button
+                onClick={handleClosePublishModal}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <XCircle className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <FormationPublishForm
+                trainerProfile={adminTrainerProfile}
+                formationId={editingFormationId}
+                onClose={handleClosePublishModal}
+                onSuccess={handlePublishSuccess}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
