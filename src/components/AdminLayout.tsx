@@ -316,10 +316,11 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 z-50 flex flex-col shadow-xl
+        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 flex flex-col shadow-xl
           ${sidebarOpen ? 'w-72' : 'w-20'}
         `}
         style={{
+          zIndex: 9999,
           transition: 'none',
           width: sidebarOpen ? '18rem' : '5rem',
           willChange: 'auto',
@@ -328,10 +329,11 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           WebkitBackfaceVisibility: 'hidden',
           perspective: 1000,
           WebkitPerspective: 1000,
-          contain: 'layout style paint'
+          contain: 'layout style paint',
+          pointerEvents: 'auto'
         }}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200" style={{ minHeight: '80px' }}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200" style={{ minHeight: '80px', position: 'relative', zIndex: 1 }}>
           {sidebarOpen ? (
             <div className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg">
@@ -431,10 +433,12 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           transform: 'translate3d(0, 0, 0)',
           backfaceVisibility: 'hidden',
           WebkitBackfaceVisibility: 'hidden',
-          isolation: 'isolate'
+          isolation: 'isolate',
+          position: 'relative',
+          zIndex: 1
         }}
       >
-        <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <header className="sticky top-0 bg-white border-b border-gray-200 shadow-sm" style={{ zIndex: 30 }}>
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-gray-600">
