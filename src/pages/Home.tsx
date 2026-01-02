@@ -277,7 +277,7 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
         <div className="absolute inset-0 bg-[url('/i_2_gif_reel%20copy%20copy%20copy%20copy%20copy.gif')] bg-cover bg-center opacity-30"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-20">
+        <div className="relative max-w-7xl mx-auto px-4 py-8 md:py-16">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
