@@ -4,7 +4,8 @@ import {
   Bell, MessageCircle, Shield, Settings, ChevronDown, ChevronRight,
   LogOut, Home, Menu, X, AlertTriangle, Zap, DollarSign, Code,
   FileText, Mail, Crown, Building2, Globe, ShoppingCart, Send,
-  TrendingUp, Database, Lock, Download, Palette, Search, Activity
+  TrendingUp, Database, Lock, Download, Palette, Search, Activity,
+  GraduationCap, AlertCircle, Calendar, Video
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -135,6 +136,17 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         { id: 'security-logs', label: 'Logs Système', icon: Database, route: 'admin-security-logs' },
         { id: 'rls-access', label: 'Accès & RLS', icon: Lock, route: 'admin-security-logs' },
         { id: 'downloads', label: 'Téléchargements', icon: Download, route: 'download-documentation' }
+      ]
+    },
+    {
+      id: 'modules',
+      label: 'Modules Système',
+      icon: Activity,
+      children: [
+        { id: 'formation-config', label: 'Formations', icon: GraduationCap, route: 'admin-formation-config' },
+        { id: 'cv-builder-config', label: 'CV Builder', icon: FileText, route: 'admin-cv-builder-config' },
+        { id: 'job-alerts-config', label: 'Alertes Emploi', icon: AlertCircle, route: 'admin-job-alerts-config' },
+        { id: 'interview-config', label: 'Entretiens', icon: Video, route: 'admin-interview-config' }
       ]
     },
     {
