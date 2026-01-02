@@ -7,6 +7,7 @@ import {
   FileText, Users, CheckSquare, Square, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface Job {
   id: string;
@@ -73,6 +74,7 @@ interface ColumnSettings {
 }
 
 export default function AdminJobList() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -296,10 +298,16 @@ export default function AdminJobList() {
 
       await loadJobs();
       await loadStats();
-      alert(`Badge ${badgeType === 'urgent' ? 'URGENT' : 'À LA UNE'} ${newValue ? 'activé' : 'désactivé'}`);
+      showSuccess(
+        'Badge mis à jour',
+        `Badge ${badgeType === 'urgent' ? 'URGENT' : 'À LA UNE'} ${newValue ? 'activé' : 'désactivé'} avec succès!`
+      );
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la mise à jour du badge');
+      showError(
+        'Erreur de mise à jour',
+        'Une erreur est survenue lors de la mise à jour du badge. Veuillez réessayer.'
+      );
     } finally {
       setProcessing(null);
     }
@@ -307,12 +315,12 @@ export default function AdminJobList() {
 
   const handleBulkAction = async (action: 'approve' | 'reject' | 'close' | 'delete' | 'urgent' | 'featured') => {
     if (selectedJobs.size === 0) {
-      alert('Aucune offre sélectionnée');
+      showWarning('Aucune sélection', 'Veuillez sélectionner au moins une offre pour effectuer cette action.');
       return;
     }
 
     const confirmMsg = `Êtes-vous sûr de vouloir ${action === 'delete' ? 'supprimer' : 'modifier'} ${selectedJobs.size} offre(s) ?`;
-    if (!confirm(confirmMsg)) return;
+    showConfirm('Confirmer l\'action', confirmMsg, async () => {
 
     setProcessing('bulk');
     try {
@@ -356,13 +364,14 @@ export default function AdminJobList() {
       await loadJobs();
       await loadStats();
       setSelectedJobs(new Set());
-      alert('Action effectuée avec succès!');
+      showSuccess('Action effectuée', 'L\'action en masse a été effectuée avec succès sur les offres sélectionnées!');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'action en masse');
+      showError('Erreur d\'action', 'Une erreur est survenue lors de l\'action en masse. Veuillez réessayer.');
     } finally {
       setProcessing(null);
     }
+    }, 'warning');
   };
 
   const handleExport = async (format: 'csv' | 'json') => {
@@ -407,7 +416,7 @@ export default function AdminJobList() {
       }
     } catch (error) {
       console.error('Erreur export:', error);
-      alert('Erreur lors de l\'export');
+      showError('Erreur d\'export', 'Une erreur est survenue lors de l\'export des données. Veuillez réessayer.');
     }
   };
 
@@ -436,10 +445,10 @@ export default function AdminJobList() {
 
       await loadJobs();
       await loadStats();
-      alert(`Validité prolongée de ${days} jours`);
+      showSuccess('Validité prolongée', `La validité de l'offre a été prolongée de ${days} jours avec succès!`);
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la prolongation');
+      showError('Erreur de prolongation', 'Une erreur est survenue lors de la prolongation de la validité. Veuillez réessayer.');
     } finally {
       setProcessing(null);
     }
@@ -461,10 +470,10 @@ export default function AdminJobList() {
 
       await loadJobs();
       await loadStats();
-      alert('Offre approuvée avec succès!');
+      showSuccess('Offre approuvée', 'L\'offre d\'emploi a été approuvée avec succès!');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'approbation');
+      showError('Erreur d\'approbation', 'Une erreur est survenue lors de l\'approbation. Veuillez réessayer.');
     } finally {
       setProcessing(null);
     }
@@ -486,36 +495,36 @@ export default function AdminJobList() {
 
       await loadJobs();
       await loadStats();
-      alert('Offre republiée avec succès!');
+      showSuccess('Offre republiée', 'L\'offre d\'emploi a été republiée avec succès!');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la republication');
+      showError('Erreur de republication', 'Une erreur est survenue lors de la republication. Veuillez réessayer.');
     } finally {
       setProcessing(null);
     }
   };
 
   const handleClose = async (jobId: string) => {
-    if (!confirm('Fermer cette offre ?')) return;
+    showConfirm('Confirmer la fermeture', 'Êtes-vous sûr de vouloir fermer cette offre d\'emploi?', async () => {
+      setProcessing(jobId);
+      try {
+        const { error } = await supabase
+          .from('jobs')
+          .update({ status: 'closed', updated_at: new Date().toISOString() })
+          .eq('id', jobId);
 
-    setProcessing(jobId);
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ status: 'closed', updated_at: new Date().toISOString() })
-        .eq('id', jobId);
+        if (error) throw error;
 
-      if (error) throw error;
-
-      await loadJobs();
-      await loadStats();
-      alert('Offre fermée avec succès!');
-    } catch (error) {
-      console.error('Erreur:', error);
-      alert('Erreur lors de la fermeture');
-    } finally {
-      setProcessing(null);
-    }
+        await loadJobs();
+        await loadStats();
+        showSuccess('Offre fermée', 'L\'offre d\'emploi a été fermée avec succès!');
+      } catch (error) {
+        console.error('Erreur:', error);
+        showError('Erreur de fermeture', 'Une erreur est survenue lors de la fermeture. Veuillez réessayer.');
+      } finally {
+        setProcessing(null);
+      }
+    }, 'warning');
   };
 
   const handleReject = async (jobId: string) => {
@@ -537,36 +546,41 @@ export default function AdminJobList() {
 
       await loadJobs();
       await loadStats();
-      alert('Offre rejetée avec succès!');
+      showSuccess('Offre rejetée', 'L\'offre d\'emploi a été rejetée avec succès!');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors du rejet');
+      showError('Erreur de rejet', 'Une erreur est survenue lors du rejet. Veuillez réessayer.');
     } finally {
       setProcessing(null);
     }
   };
 
   const handleDelete = async (jobId: string) => {
-    if (!confirm('⚠️ ATTENTION: Supprimer définitivement cette offre ?')) return;
+    showConfirm(
+      'Confirmer la suppression',
+      'ATTENTION: Êtes-vous sûr de vouloir supprimer définitivement cette offre? Cette action est irréversible.',
+      async () => {
+        setProcessing(jobId);
+        try {
+          const { error } = await supabase
+            .from('jobs')
+            .delete()
+            .eq('id', jobId);
 
-    setProcessing(jobId);
-    try {
-      const { error } = await supabase
-        .from('jobs')
-        .delete()
-        .eq('id', jobId);
+          if (error) throw error;
 
-      if (error) throw error;
-
-      await loadJobs();
-      await loadStats();
-      alert('Offre supprimée avec succès!');
-    } catch (error) {
-      console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
-    } finally {
-      setProcessing(null);
-    }
+          await loadJobs();
+          await loadStats();
+          showSuccess('Offre supprimée', 'L\'offre d\'emploi a été supprimée définitivement!');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showError('Erreur de suppression', 'Une erreur est survenue lors de la suppression. Veuillez réessayer.');
+        } finally {
+          setProcessing(null);
+        }
+      },
+      'error'
+    );
   };
 
   const handleSaveEdit = async () => {
@@ -593,10 +607,10 @@ export default function AdminJobList() {
       await loadJobs();
       setShowEditModal(false);
       setEditingJob(null);
-      alert('Offre mise à jour avec succès!');
+      showSuccess('Offre mise à jour', 'L\'offre d\'emploi a été mise à jour avec succès!');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la mise à jour');
+      showError('Erreur de mise à jour', 'Une erreur est survenue lors de la mise à jour. Veuillez réessayer.');
     } finally {
       setProcessing(null);
     }
