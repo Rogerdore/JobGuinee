@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Download,
   FileText,
@@ -65,7 +66,8 @@ interface PurchasedProfilesProps {
 type SortField = 'name' | 'date' | 'experience' | 'score' | 'salary' | 'city';
 type SortDirection = 'asc' | 'desc';
 
-export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
+export default function PurchasedProfiles({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); profile }: PurchasedProfilesProps) {
   const [purchases, setPurchases] = useState<PurchasedProfile[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<PurchasedProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -427,7 +429,7 @@ export default function PurchasedProfiles({ profile }: PurchasedProfilesProps) {
       }
     } catch (error) {
       console.error('Error creating ZIP:', error);
-      alert('Erreur lors de la création du fichier ZIP');
+      showError('Erreur', 'Erreur lors de la création du fichier ZIP. Veuillez réessayer.');
     } finally {
       setDownloading(false);
     }

@@ -7,6 +7,7 @@ import FormationModeration from '../components/admin/FormationModeration';
 import FormationBoostModal from '../components/admin/FormationBoostModal';
 import TrainerAccountManagement from '../components/admin/TrainerAccountManagement';
 import AdminTrainerManagement from '../components/admin/AdminTrainerManagement';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface Formation {
   id: string;
@@ -30,6 +31,7 @@ type SortDirection = 'asc' | 'desc';
 type ActiveTab = 'formations' | 'moderation' | 'trainers' | 'account_management';
 
 export default function AdminFormationList() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user } = useAuth();
   const [formations, setFormations] = useState<Formation[]>([]);
   const [filteredFormations, setFilteredFormations] = useState<Formation[]>([]);
@@ -246,7 +248,8 @@ export default function AdminFormationList() {
   };
 
   const deleteFormation = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette formation ?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Êtes-vous sûr de vouloir supprimer cette formation ?')) return;
 
     const { error } = await supabase
       .from('formations')

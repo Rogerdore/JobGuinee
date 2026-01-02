@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   LayoutDashboard,
   Briefcase,
@@ -95,6 +96,7 @@ interface WorkflowStage {
 type Tab = 'dashboard' | 'view-profile' | 'projects' | 'applications' | 'ai-generator' | 'messages' | 'analytics' | 'pilotage' | 'premium' | 'profile' | 'purchased-profiles';
 
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
   const { showNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -601,7 +603,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   const handleStartMatching = (job: Job) => {
     if (!company) {
-      alert('Erreur: Profil entreprise non trouvé');
+      showError('Erreur', 'Erreur: Profil entreprise non trouvé. Veuillez réessayer.');
       return;
     }
 

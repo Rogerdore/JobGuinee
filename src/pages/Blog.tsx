@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   FileText,
   Calendar,
@@ -64,6 +65,7 @@ interface BlogProps {
 }
 
 export default function Blog({ onNavigate }: BlogProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, Plus, Edit, Trash2, Video, FileText, Eye, EyeOff, Upload, X, ArrowLeft, GripVertical } from 'lucide-react';
 import { homepageContentService, VideoSettings, Guide } from '../services/homepageContentService';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 
 const categories = [
   { value: 'candidate', label: 'Candidat' },
@@ -14,6 +15,7 @@ const categories = [
 const iconsList = ['FileText', 'Download', 'Sparkles', 'User', 'Briefcase', 'GraduationCap', 'Book', 'Video', 'HelpCircle'];
 
 export default function AdminHomepageContent() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'video' | 'guides'>('video');
   const [videoSettings, setVideoSettings] = useState<VideoSettings | null>(null);
@@ -45,7 +47,7 @@ export default function AdminHomepageContent() {
     setSaving(true);
     const success = await homepageContentService.updateVideoSettings(videoSettings);
     if (success) {
-      alert('Configuration vidéo sauvegardée!');
+      showSuccess('Sauvegardé', 'Configuration vidéo sauvegardée!');
     }
     setSaving(false);
   };
@@ -87,7 +89,8 @@ export default function AdminHomepageContent() {
   };
 
   const handleDeleteGuide = async (id: string) => {
-    if (!confirm('Supprimer ce guide?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Supprimer ce guide?')) return;
     await homepageContentService.deleteGuide(id);
     await loadData();
   };

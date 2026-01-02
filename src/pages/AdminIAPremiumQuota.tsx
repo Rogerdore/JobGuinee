@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Shield, TrendingUp, Users, Activity, AlertCircle, CheckCircle, Settings, Filter, Calendar, Crown, Zap, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface ServiceQuotaConfig {
   id: string;
@@ -24,6 +25,7 @@ interface UsageStats {
 }
 
 export default function AdminIAPremiumQuota() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
   const [services, setServices] = useState<ServiceQuotaConfig[]>([]);
   const [usageStats, setUsageStats] = useState<UsageStats[]>([]);
@@ -176,11 +178,11 @@ export default function AdminIAPremiumQuota() {
 
     if (error) {
       console.error('Error updating service:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
       return;
     }
 
-    alert('Configuration mise à jour avec succès');
+    showSuccess('Mise à jour', 'Configuration mise à jour avec succès');
     setShowEditModal(false);
     loadData();
   };

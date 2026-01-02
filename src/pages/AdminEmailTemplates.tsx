@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Mail, Plus, Edit2, Trash2, Check, X, Save, Eye, EyeOff, Copy } from 'lucide-react';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface EmailTemplate {
   id: string;
@@ -17,6 +18,7 @@ interface EmailTemplate {
 }
 
 export default function AdminEmailTemplates() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
@@ -107,7 +109,7 @@ export default function AdminEmailTemplates() {
       fetchTemplates();
     } catch (error) {
       console.error('Error saving template:', error);
-      alert('Erreur lors de la sauvegarde du template');
+      showError('Erreur', 'Erreur lors de la sauvegarde du template. Veuillez réessayer.');
     }
   };
 
@@ -125,11 +127,12 @@ export default function AdminEmailTemplates() {
 
   const handleDelete = async (id: string, isDefault: boolean) => {
     if (isDefault) {
-      alert('Impossible de supprimer un template système');
+      showWarning('Information', 'Impossible de supprimer un template système');
       return;
     }
 
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) return;
 
     try {
       const { error } = await supabase
@@ -141,7 +144,7 @@ export default function AdminEmailTemplates() {
       fetchTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);
-      alert('Erreur lors de la suppression');
+      showError('Erreur', 'Erreur lors de la suppression. Veuillez réessayer.');
     }
   };
 

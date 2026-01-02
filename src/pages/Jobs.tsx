@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock,
   ChevronDown, Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign,
@@ -17,6 +18,7 @@ interface JobsProps {
 }
 
 export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user } = useAuth();
   const [jobs, setJobs] = useState<(Job & { companies: Company })[]>([]);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
@@ -274,7 +276,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
     setNewsletterEmail('');
     setNewsletterDomain('');
-    alert('Merci pour votre inscription ! Vous recevrez nos alertes emploi.');
+    showWarning('Information', 'Merci pour votre inscription ! Vous recevrez nos alertes emploi.');
   };
 
   const recommendedJobs = sortedJobs.slice(0, 3);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Settings, Palette, Book, Zap, MessageSquare, Save, Plus, Trash2, Edit2, Eye, ArrowLeft } from 'lucide-react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   ChatbotService,
   ChatbotSettings,
@@ -15,6 +16,7 @@ interface PageProps {
 }
 
 export default function AdminChatbot({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
   const [styles, setStyles] = useState<ChatbotStyle[]>([]);
@@ -61,13 +63,13 @@ export default function AdminChatbot({ onNavigate }: PageProps) {
     try {
       const success = await ChatbotService.updateSettings(settings);
       if (success) {
-        alert('Paramètres sauvegardés avec succès!');
+        showSuccess('Sauvegardé', 'Paramètres sauvegardés avec succès!');
       } else {
-        alert('Erreur lors de la sauvegarde');
+        showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setSaving(false);
     }

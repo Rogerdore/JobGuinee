@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Send, Calendar, Users, Mail, MessageSquare, Bell, AlertTriangle, CheckCircle, Eye } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import { adminCommunicationService, CommunicationFilters, ChannelsConfig, CommunicationTemplate } from '../services/adminCommunicationService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminCommunicationCreateProps {
   onNavigate: (page: string, param?: string) => void;
 }
 
-export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicationCreateProps) {
+export default function AdminCommunicationCreate({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCommunicationCreateProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
@@ -171,7 +173,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
       onNavigate('admin-communications');
     } catch (error) {
       console.error('Error saving communication:', error);
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setSaving(false);
     }

@@ -3,6 +3,7 @@ import { Coins, Plus, Minus, History, Search, Filter, Download, Users, TrendingU
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLayout from '../components/AdminLayout';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminCreditsIAProps {
   onNavigate: (page: string) => void;
@@ -41,6 +42,7 @@ interface CreditStats {
 }
 
 export default function AdminCreditsIA({ onNavigate }: AdminCreditsIAProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { isAdmin, profile } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
@@ -187,7 +189,7 @@ export default function AdminCreditsIA({ onNavigate }: AdminCreditsIAProps) {
 
       if (transError) throw transError;
 
-      alert('Crédits ajoutés avec succès !');
+      showSuccess('Ajouté', 'Crédits ajoutés avec succès !');
       closeModal();
       fetchUsers();
       fetchTransactions();
@@ -205,7 +207,7 @@ export default function AdminCreditsIA({ onNavigate }: AdminCreditsIAProps) {
 
     const currentBalance = selectedUser.credits_balance || 0;
     if (creditAmount > currentBalance) {
-      alert('Le montant à retirer dépasse le solde disponible');
+      showWarning('Information', 'Le montant à retirer dépasse le solde disponible');
       return;
     }
 
@@ -240,7 +242,7 @@ export default function AdminCreditsIA({ onNavigate }: AdminCreditsIAProps) {
       fetchStats();
     } catch (error) {
       console.error('Erreur lors du retrait de crédits:', error);
-      alert('Erreur lors du retrait de crédits');
+      showError('Erreur', 'Erreur lors du retrait de crédits. Veuillez réessayer.');
     } finally {
       setProcessing(false);
     }

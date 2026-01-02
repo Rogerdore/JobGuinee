@@ -3,8 +3,10 @@ import { Save, ToggleLeft, ToggleRight, Zap, Bell, UserX, Activity } from 'lucid
 import { recruitmentAutomationService, AutomationRule } from '../services/recruitmentAutomationService';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
+import { useModalContext } from '../contexts/ModalContext';
 
 export default function AdminAutomationRules() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [rules, setRules] = useState<AutomationRule[]>([]);

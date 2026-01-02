@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Briefcase,
   Building,
@@ -100,7 +101,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
 
   const handleCreatePartner = async () => {
     if (!newPartner.name || !newPartner.email) {
-      alert('Nom et email requis');
+      showWarning('Information', 'Nom et email requis');
       return;
     }
 
@@ -118,7 +119,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
       .single();
 
     if (error) {
-      alert('Erreur lors de la création du partenaire');
+      showError('Erreur', 'Erreur lors de la création du partenaire. Veuillez réessayer.');
       return;
     }
 
@@ -185,11 +186,11 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
 
       if (error) throw error;
 
-      alert('Offre publiée avec succès');
+      showSuccess('Publié', 'Offre publiée avec succès');
       onNavigate('admin-job-moderation');
     } catch (error) {
       console.error('Error creating job:', error);
-      alert('Erreur lors de la publication');
+      showError('Erreur', 'Erreur lors de la publication. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }

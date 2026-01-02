@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Send, Clock, CheckCircle, XCircle, Plus, Eye, Edit, Trash2, Calendar, Users, Mail, MessageSquare, Bell } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import { adminCommunicationService, AdminCommunication } from '../services/adminCommunicationService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminCommunicationsProps {
   onNavigate: (page: string, param?: string) => void;
@@ -24,7 +25,8 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
   failed: { label: 'Échec', color: 'red', icon: XCircle },
 };
 
-export default function AdminCommunications({ onNavigate }: AdminCommunicationsProps) {
+export default function AdminCommunications({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCommunicationsProps) {
   const [communications, setCommunications] = useState<AdminCommunication[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function AdminCommunications({ onNavigate }: AdminCommunicationsP
       loadData();
     } catch (error) {
       console.error('Error deleting communication:', error);
-      alert('Erreur lors de la suppression');
+      showError('Erreur', 'Erreur lors de la suppression. Veuillez réessayer.');
     }
   };
 

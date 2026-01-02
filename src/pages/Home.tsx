@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
@@ -19,6 +20,7 @@ interface HomeProps {
 }
 
 export default function Home({ onNavigate }: HomeProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { getSetting, getSection } = useCMS();
   const { user, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,12 +147,12 @@ export default function Home({ onNavigate }: HomeProps) {
 
   const handleNewsletterSubscribe = async () => {
     if (!newsletterEmail.trim()) {
-      alert('Veuillez entrer votre adresse email');
+      showWarning('Attention', 'Veuillez entrer votre adresse email');
       return;
     }
 
     if (!validateEmail(newsletterEmail)) {
-      alert('Veuillez entrer une adresse email valide');
+      showWarning('Attention', 'Veuillez entrer une adresse email valide');
       return;
     }
 
@@ -168,7 +170,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
       if (error) {
         if (error.code === '23505') {
-          alert('✅ Cet email est déjà inscrit à notre newsletter !');
+          showWarning('Information', '✅ Cet email est déjà inscrit à notre newsletter !');
         } else {
           console.error('Newsletter subscription error:', error);
           alert('❌ Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');

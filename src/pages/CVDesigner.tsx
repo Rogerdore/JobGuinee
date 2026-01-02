@@ -5,6 +5,7 @@ import CVUploadWithParser from '../components/profile/CVUploadWithParser';
 import CVManager from '../components/cv/CVManager';
 import CVWizard from '../components/cv/CVWizard';
 import CVTemplateMarketplace from '../components/cv/CVTemplateMarketplace';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface CVDesignerProps {
   onNavigate: (page: string) => void;
@@ -12,7 +13,8 @@ interface CVDesignerProps {
 
 type ViewMode = 'entry' | 'manager' | 'wizard' | 'import' | 'templates';
 
-export default function CVDesigner({ onNavigate }: CVDesignerProps) {
+export default function CVDesigner({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: CVDesignerProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('entry');
   const [selectedCVId, setSelectedCVId] = useState<string | undefined>(undefined);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
@@ -37,7 +39,7 @@ export default function CVDesigner({ onNavigate }: CVDesignerProps) {
               }}
               onViewCV={(cvId) => {
                 setSelectedCVId(cvId);
-                alert('Prévisualisation du CV à implémenter');
+                showWarning('Information', 'Prévisualisation du CV à implémenter');
               }}
             />
           </div>
@@ -51,7 +53,7 @@ export default function CVDesigner({ onNavigate }: CVDesignerProps) {
       <CVWizard
         cvId={selectedCVId}
         onSave={(cvId) => {
-          alert('CV sauvegardé avec succès!');
+          showSuccess('Sauvegardé', 'CV sauvegardé avec succès!');
           setViewMode('manager');
         }}
         onCancel={() => setViewMode('manager')}

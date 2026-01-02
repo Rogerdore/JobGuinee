@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Globe, TrendingUp, Eye, MousePointerClick, ToggleLeft, ToggleRight,
   Plus, RefreshCw, BarChart3, AlertCircle, CheckCircle2, Zap
@@ -9,6 +10,7 @@ import { b2bPipelineService } from '../services/b2bPipelineService';
 import { supabase } from '../lib/supabase';
 
 export default function AdminSEOLandingPages() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [pages, setPages] = useState<SEOLandingPage[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);

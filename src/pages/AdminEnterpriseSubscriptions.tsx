@@ -3,12 +3,14 @@ import { Building, Check, X, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { cvthequePricingService, EnterpriseSubscription } from '../services/cvthequePricingService';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminEnterpriseSubscriptionsProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminEnterpriseSubscriptions({ onNavigate }: AdminEnterpriseSubscriptionsProps) {
+export default function AdminEnterpriseSubscriptions({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminEnterpriseSubscriptionsProps) {
   const { profile } = useAuth();
   const [subscriptions, setSubscriptions] = useState<EnterpriseSubscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,13 +59,13 @@ export default function AdminEnterpriseSubscriptions({ onNavigate }: AdminEnterp
   const handleReject = async (subscription: EnterpriseSubscription) => {
     const reason = prompt('Raison du rejet:');
     if (!reason) {
-      alert('⚠️ Veuillez fournir une raison pour le rejet');
+      showWarning('Information', '⚠️ Veuillez fournir une raison pour le rejet');
       return;
     }
 
     try {
       await cvthequePricingService.rejectSubscription(subscription.id, reason);
-      alert('✅ Abonnement rejeté');
+      showWarning('Information', '✅ Abonnement rejeté');
       loadSubscriptions();
     } catch (error) {
       console.error('Error rejecting subscription:', error);

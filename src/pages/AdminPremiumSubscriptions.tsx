@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Crown, Check, X, Calendar, FileText, Filter, Eye, Edit2, Ban, ArrowLeft } from 'lucide-react';
 import { PremiumSubscriptionService, PremiumSubscription } from '../services/premiumSubscriptionService';
 import { supabase } from '../lib/supabase';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface SubscriptionWithUser extends PremiumSubscription {
   user_email?: string;
@@ -98,10 +99,10 @@ function DetailsModal({ subscription, isOpen, onClose, onUpdate }: DetailsModalP
     );
 
     if (success) {
-      alert('Notes sauvegardées');
+      showSuccess('Sauvegardé', 'Notes sauvegardées');
       onUpdate();
     } else {
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     }
   };
 
@@ -303,7 +304,8 @@ interface PageProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminPremiumSubscriptions({ onNavigate }: PageProps) {
+export default function AdminPremiumSubscriptions({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PageProps) {
   const [subscriptions, setSubscriptions] = useState<SubscriptionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithUser | null>(null);

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Eye, Search, Filter, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface ProfilePurchase {
   id: string;
@@ -31,6 +32,7 @@ interface ProfilePurchase {
 }
 
 export default function AdminProfilePurchases() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
   const [purchases, setPurchases] = useState<ProfilePurchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<ProfilePurchase[]>([]);
@@ -70,7 +72,7 @@ export default function AdminProfilePurchases() {
       setPurchases(data as any);
     } else if (error) {
       console.error('Error loading purchases:', error);
-      alert('Erreur lors du chargement des achats');
+      showError('Erreur', 'Erreur lors du chargement des achats. Veuillez réessayer.');
     }
     setLoading(false);
   };
@@ -125,7 +127,7 @@ export default function AdminProfilePurchases() {
 
     if (error) {
       console.error('Error updating purchase:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } else {
       alert(approve ? 'Achat vérifié avec succès' : 'Vérification annulée');
       setSelectedPurchase(null);

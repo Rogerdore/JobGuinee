@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Sparkles,
   Target,
@@ -54,6 +55,7 @@ interface PremiumAIServicesProps {
 }
 
 export default function PremiumAIServices({ onNavigate, scrollTarget }: PremiumAIServicesProps = {}) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user, profile } = useAuth();
   const [services, setServices] = useState<PremiumService[]>([]);
   const [userServices, setUserServices] = useState<UserService[]>([]);
@@ -145,12 +147,12 @@ export default function PremiumAIServices({ onNavigate, scrollTarget }: PremiumA
     }
 
     if (service.category === 'chatbot') {
-      alert('Le chatbot est déjà disponible en bas à droite de votre écran !');
+      showWarning('Information', 'Le chatbot est déjà disponible en bas à droite de votre écran !');
       return;
     }
 
     if (service.category === 'alerts') {
-      alert('Les alertes IA sont automatiquement activées pour tous les utilisateurs. Vous recevrez des notifications quand de nouvelles offres correspondent à votre profil.');
+      showSuccess('Activé', 'Les alertes IA sont automatiquement activées pour tous les utilisateurs. Vous recevrez des notifications quand de nouvelles offres correspondent à votre profil.');
       return;
     }
 
@@ -174,7 +176,7 @@ export default function PremiumAIServices({ onNavigate, scrollTarget }: PremiumA
     if (page && onNavigate) {
       onNavigate(page);
     } else {
-      alert('Ce service sera bientôt disponible !');
+      showWarning('Information', 'Ce service sera bientôt disponible !');
     }
   };
 

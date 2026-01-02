@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Star, AlertCircle, Award, Crown, CheckCircle2, Zap,
   Calendar, DollarSign, TrendingUp, Search, Filter,
@@ -41,7 +42,8 @@ interface AdminFormationBoostProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostProps) {
+export default function AdminFormationBoost({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminFormationBoostProps) {
   const { profile } = useAuth();
   const [badges, setBadges] = useState<FormationBadge[]>([]);
   const [filteredBadges, setFilteredBadges] = useState<FormationBadge[]>([]);
@@ -176,7 +178,8 @@ export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostP
   };
 
   const deleteBadge = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce badge ?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Êtes-vous sûr de vouloir supprimer ce badge ?')) return;
 
     try {
       const { error } = await supabase
@@ -186,11 +189,11 @@ export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostP
 
       if (error) throw error;
 
-      alert('Badge supprimé avec succès');
+      showSuccess('Supprimé', 'Badge supprimé avec succès');
       loadBadges();
     } catch (error) {
       console.error('Error deleting badge:', error);
-      alert('Erreur lors de la suppression');
+      showError('Erreur', 'Erreur lors de la suppression. Veuillez réessayer.');
     }
   };
 
@@ -213,18 +216,18 @@ export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostP
       loadBadges();
     } catch (error) {
       console.error('Error extending badge:', error);
-      alert('Erreur lors de la prolongation');
+      showError('Erreur', 'Erreur lors de la prolongation. Veuillez réessayer.');
     }
   };
 
   const savePricingConfig = async () => {
     setSaving(true);
     try {
-      alert('Configuration sauvegardée avec succès');
+      showSuccess('Sauvegardé', 'Configuration sauvegardée avec succès');
       setShowConfigModal(false);
     } catch (error) {
       console.error('Error saving config:', error);
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setSaving(false);
     }

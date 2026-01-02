@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, Edit, History, Trash2, Eye, Save, X, Code, Sparkles, Crown, ArrowLeft } from 'lucide-react';
 import { IAConfigService, IAServiceTemplate } from '../services/iaConfigService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface TemplateEditorProps {
   template: IAServiceTemplate | null;
@@ -36,7 +37,7 @@ function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEd
 
   const handleSave = async () => {
     if (!formData.service_code || !formData.template_name || !formData.template_structure) {
-      alert('Veuillez remplir tous les champs obligatoires');
+      showWarning('Attention', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
 
@@ -61,7 +62,7 @@ function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEd
         alert('Erreur: ' + result.message);
       }
     } catch (error) {
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setSaving(false);
     }
@@ -69,7 +70,7 @@ function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEd
 
   const handlePreview = () => {
     if (!previewData || !formData.template_structure) {
-      alert('Entrez des données JSON dans le champ Preview Data');
+      showWarning('Information', 'Entrez des données JSON dans le champ Preview Data');
       return;
     }
 
@@ -417,6 +418,7 @@ interface PageProps {
 }
 
 export default function AdminIATemplates({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [templates, setTemplates] = useState<IAServiceTemplate[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<IAServiceTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -490,10 +492,10 @@ export default function AdminIATemplates({ onNavigate }: PageProps) {
 
     const success = await IAConfigService.deleteTemplate(template.id);
     if (success) {
-      alert('Template supprimé');
+      showSuccess('Supprimé', 'Template supprimé');
       loadTemplates();
     } else {
-      alert('Erreur lors de la suppression');
+      showError('Erreur', 'Erreur lors de la suppression. Veuillez réessayer.');
     }
   };
 

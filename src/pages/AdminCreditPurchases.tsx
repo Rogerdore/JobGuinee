@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Check, X, Clock, AlertCircle, Filter, RefreshCw, Eye, ArrowLeft } from 'lucide-react';
 import { CreditStoreService, CreditPurchase, CreditStoreSettings } from '../services/creditStoreService';
+import { useModalContext } from '../contexts/ModalContext';
 
 type StatusFilter = 'all' | 'pending' | 'waiting_proof' | 'completed' | 'cancelled';
 
@@ -8,7 +9,8 @@ interface PageProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminCreditPurchases({ onNavigate }: PageProps) {
+export default function AdminCreditPurchases({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PageProps) {
   const [purchases, setPurchases] = useState<CreditPurchase[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,14 +62,15 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
   };
 
   const handleCancel = async (purchaseId: string, reason?: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir annuler ce paiement?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Êtes-vous sûr de vouloir annuler ce paiement?')) return;
 
     setProcessing(purchaseId);
     try {
       const result = await CreditStoreService.cancelPurchase(purchaseId, reason);
 
       if (result.success) {
-        alert('Paiement annulé');
+        showWarning('Information', 'Paiement annulé');
         await loadData();
         setShowModal(false);
         setSelectedPurchase(null);

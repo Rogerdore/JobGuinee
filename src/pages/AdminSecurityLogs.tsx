@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Eye, Filter, RefreshCw, Ban, UserX, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface SecurityLog {
   id: string;
@@ -37,7 +38,8 @@ interface PageProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminSecurityLogs({ onNavigate }: PageProps) {
+export default function AdminSecurityLogs({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PageProps) {
   const [logs, setLogs] = useState<SecurityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventFilter, setEventFilter] = useState<EventFilter>('all');
@@ -81,7 +83,7 @@ export default function AdminSecurityLogs({ onNavigate }: PageProps) {
 
   const handleSuspendUser = async () => {
     if (!suspendUserId || !suspendReason) {
-      alert('Veuillez saisir une raison de suspension');
+      showWarning('Attention', 'Veuillez saisir une raison de suspension');
       return;
     }
 
@@ -121,7 +123,7 @@ export default function AdminSecurityLogs({ onNavigate }: PageProps) {
 
       if (error) {
         console.error('Error suspending user:', error);
-        alert('Erreur lors de la suspension');
+        showError('Erreur', 'Erreur lors de la suspension. Veuillez réessayer.');
       } else {
         alert('Utilisateur suspendu avec succès');
         setShowSuspendModal(false);

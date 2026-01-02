@@ -15,6 +15,7 @@ import ExternalApplicationCTA from '../components/candidate/ExternalApplicationC
 import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
 import ProfileProgressBar from '../components/candidate/ProfileProgressBar';
 import { ProtectedPageWrapper } from '../components/common/AccessControlExample';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -28,6 +29,7 @@ interface Formation {
 }
 
 export default function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'applications' | 'profile' | 'formations' | 'alerts' | 'messages' | 'documents' | 'premium'>('dashboard');
   const [applications, setApplications] = useState<(Application & { jobs: Job & { companies: Company } })[]>([]);
@@ -235,7 +237,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       await supabase.from('candidate_profiles').insert(dataToSave);
     }
 
-    alert('Profil mis à jour avec succès!');
+    showSuccess('Mis à jour', 'Profil mis à jour avec succès!');
     loadData();
   };
 

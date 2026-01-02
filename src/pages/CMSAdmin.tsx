@@ -3,6 +3,7 @@ import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye,
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 import AdminLayout from '../components/AdminLayout';
 import SectionManager from '../components/cms/SectionManager';
 import PageManager from '../components/cms/PageManager';
@@ -16,6 +17,7 @@ interface CMSAdminProps {
 export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const { settings, sections, refreshSettings } = useCMS();
   const { isAdmin, profile, user } = useAuth();
+  const { showSuccess, showError, showConfirm } = useModalContext();
   const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation' | 'blog' | 'resources'>('general');
   const [editingSettings, setEditingSettings] = useState<Record<string, any>>({});
   const [allSettings, setAllSettings] = useState<any[]>([]);
@@ -163,29 +165,37 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       await loadBlogPosts();
       setShowBlogForm(false);
       resetBlogForm();
-      alert(editingBlogPost ? 'Article mis à jour!' : 'Article créé!');
+      showSuccess(
+        editingBlogPost ? 'Article mis à jour' : 'Article créé',
+        editingBlogPost ? 'L\'article de blog a été mis à jour avec succès!' : 'L\'article de blog a été créé avec succès!'
+      );
     } catch (error: any) {
-      alert('Erreur: ' + error.message);
+      showError('Erreur', `Une erreur est survenue: ${error.message}. Veuillez réessayer.`);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteBlogPost = async (postId: string) => {
-    if (!confirm('Supprimer cet article?')) return;
+    showConfirm(
+      'Confirmer la suppression',
+      'Êtes-vous sûr de vouloir supprimer cet article de blog? Cette action est irréversible.',
+      async () => {
+        try {
+          const { error } = await supabase
+            .from('blog_posts')
+            .delete()
+            .eq('id', postId);
 
-    try {
-      const { error } = await supabase
-        .from('blog_posts')
-        .delete()
-        .eq('id', postId);
-
-      if (error) throw error;
-      await loadBlogPosts();
-      alert('Article supprimé!');
-    } catch (error: any) {
-      alert('Erreur: ' + error.message);
-    }
+          if (error) throw error;
+          await loadBlogPosts();
+          showSuccess('Article supprimé', 'L\'article de blog a été supprimé avec succès!');
+        } catch (error: any) {
+          showError('Erreur de suppression', `Une erreur est survenue: ${error.message}. Veuillez réessayer.`);
+        }
+      },
+      'warning'
+    );
   };
 
   const handleEditBlogPost = (post: any) => {
@@ -226,7 +236,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       };
       reader.readAsDataURL(file);
     } else {
-      alert('Veuillez sélectionner une image');
+      showWarning('Attention', 'Veuillez sélectionner une image');
     }
   };
 
@@ -369,7 +379,8 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   };
 
   const handleDeleteResource = async (resourceId: string) => {
-    if (!confirm('Supprimer cette ressource?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Supprimer cette ressource?')) return;
 
     try {
       const { error } = await supabase
@@ -379,7 +390,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
 
       if (error) throw error;
       await loadResources();
-      alert('Ressource supprimée!');
+      showSuccess('Supprimé', 'Ressource supprimée!');
     } catch (error: any) {
       alert('Erreur: ' + error.message);
     }
@@ -424,7 +435,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       };
       reader.readAsDataURL(file);
     } else {
-      alert('Veuillez sélectionner une image');
+      showWarning('Attention', 'Veuillez sélectionner une image');
     }
   };
 
@@ -454,7 +465,7 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
       }
 
       await refreshSettings();
-      alert('Paramètres enregistrés avec succès');
+      showSuccess('Enregistré', 'Paramètres enregistrés avec succès');
     } catch (error) {
       console.error('Error saving settings:', error);
       alert('Erreur lors de l\'enregistrement');

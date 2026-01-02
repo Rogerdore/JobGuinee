@@ -4,6 +4,7 @@ import { CreditStoreService, CreditPackage, CreditStoreSettings } from '../servi
 import { PremiumSubscriptionService } from '../services/premiumSubscriptionService';
 import { useAuth } from '../contexts/AuthContext';
 import CreditBalance from '../components/credits/CreditBalance';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface PaymentModalProps {
   pack: CreditPackage | null;
@@ -85,7 +86,7 @@ function PaymentModal({ pack, isOpen, onClose, settings, userEmail }: PaymentMod
       if (success) {
         setStep('confirm');
       } else {
-        alert('Erreur lors de la mise à jour');
+        showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
@@ -387,7 +388,7 @@ function PremiumPaymentModal({ isOpen, onClose, settings, userEmail }: PremiumPa
       if (success) {
         setStep('confirm');
       } else {
-        alert('Erreur lors de la mise à jour');
+        showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
@@ -612,6 +613,7 @@ interface CreditStoreProps {
 }
 
 export default function CreditStore({ onNavigate, scrollTarget }: CreditStoreProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { user, profile } = useAuth();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
@@ -654,12 +656,12 @@ export default function CreditStore({ onNavigate, scrollTarget }: CreditStorePro
 
   const handleSelectPack = (pack: CreditPackage) => {
     if (!user) {
-      alert('Vous devez être connecté pour acheter des crédits');
+      showWarning('Information', 'Vous devez être connecté pour acheter des crédits');
       return;
     }
 
     if (!settings?.is_enabled) {
-      alert('La boutique de crédits est temporairement désactivée');
+      showSuccess('Désactivé', 'La boutique de crédits est temporairement désactivée');
       return;
     }
 
@@ -669,7 +671,7 @@ export default function CreditStore({ onNavigate, scrollTarget }: CreditStorePro
 
   const handleSelectPremium = () => {
     if (!user) {
-      alert('Vous devez être connecté pour acheter Premium PRO+');
+      showWarning('Information', 'Vous devez être connecté pour acheter Premium PRO+');
       return;
     }
 

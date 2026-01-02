@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   ArrowLeft,
   Plus,
@@ -38,7 +39,8 @@ interface ExternalApplicationsProps {
   onNavigate?: (page: string, param?: string) => void;
 }
 
-export default function ExternalApplications({ onNavigate }: ExternalApplicationsProps) {
+export default function ExternalApplications({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: ExternalApplicationsProps) {
   const { user } = useAuth();
 
   const [applications, setApplications] = useState<ExternalApplication[]>([]);

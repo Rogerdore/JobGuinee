@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Settings, DollarSign, Users, MessageSquare, Image as ImageIcon,
   CreditCard, Shield, Send, TrendingUp, Clock, Save, RefreshCw,
@@ -89,6 +90,7 @@ interface ImageSettings {
 }
 
 export default function AdminDiffusionSettings() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [activeTab, setActiveTab] = useState<TabType>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -190,7 +192,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Tarification mise à jour');
     } catch (error) {
       console.error('Error updating channel:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -212,7 +214,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Règles d\'audience mises à jour');
     } catch (error) {
       console.error('Error updating rules:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -234,7 +236,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Paramètres de paiement mis à jour');
     } catch (error) {
       console.error('Error updating payment:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -256,7 +258,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Règles anti-spam mises à jour');
     } catch (error) {
       console.error('Error updating antispam:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -278,7 +280,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Configuration WhatsApp mise à jour');
     } catch (error) {
       console.error('Error updating whatsapp:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -300,7 +302,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Contenu marketing mis à jour');
     } catch (error) {
       console.error('Error updating marketing:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }
@@ -322,7 +324,7 @@ export default function AdminDiffusionSettings() {
       showSuccess('Paramètres d\'images mis à jour');
     } catch (error) {
       console.error('Error updating images:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     } finally {
       setSaving(false);
     }

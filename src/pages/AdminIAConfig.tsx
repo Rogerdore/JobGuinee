@@ -5,6 +5,7 @@ import { PromptValidationPanel } from '../components/admin/PromptValidationPanel
 import { CacheStatsPanel } from '../components/admin/CacheStatsPanel';
 import { ConfigHistoryWithRollback } from '../components/admin/ConfigHistoryWithRollback';
 import { IAConfigCacheService } from '../services/iaConfigCacheService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface ConfigEditorProps {
   config: IAServiceConfig | null;
@@ -44,7 +45,7 @@ function ConfigEditor({ config, onClose, onSave }: ConfigEditorProps) {
         alert('Erreur: ' + result.message);
       }
     } catch (error) {
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setSaving(false);
     }
@@ -334,6 +335,7 @@ interface PageProps {
 }
 
 export default function AdminIAConfig({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [configs, setConfigs] = useState<IAServiceConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConfig, setSelectedConfig] = useState<IAServiceConfig | null>(null);

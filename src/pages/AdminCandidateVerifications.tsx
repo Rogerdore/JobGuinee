@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Eye, Shield, FileText, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface Verification {
   id: string;
@@ -26,6 +27,7 @@ interface Verification {
 }
 
 export default function AdminCandidateVerifications() {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
   const [verifications, setVerifications] = useState<Verification[]>([]);
   const [filteredVerifications, setFilteredVerifications] = useState<Verification[]>([]);
@@ -65,7 +67,7 @@ export default function AdminCandidateVerifications() {
       setVerifications(data as any);
     } else if (error) {
       console.error('Error loading verifications:', error);
-      alert('Erreur lors du chargement des vérifications');
+      showError('Erreur', 'Erreur lors du chargement des vérifications. Veuillez réessayer.');
     }
     setLoading(false);
   };
@@ -106,7 +108,7 @@ export default function AdminCandidateVerifications() {
 
     if (verificationError) {
       console.error('Error updating verification:', verificationError);
-      alert('Erreur lors de la mise à jour de la vérification');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour de la vérification');
       setProcessing(false);
       return;
     }
@@ -122,7 +124,7 @@ export default function AdminCandidateVerifications() {
 
     if (candidateError) {
       console.error('Error updating candidate:', candidateError);
-      alert('Erreur lors de la mise à jour du profil candidat');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour du profil candidat');
     } else {
       alert('Profil vérifié avec succès');
       setSelectedVerification(null);
@@ -135,7 +137,7 @@ export default function AdminCandidateVerifications() {
 
   const handleReject = async (verificationId: string) => {
     if (!profile?.id || !rejectionReason.trim()) {
-      alert('Veuillez indiquer une raison de rejet');
+      showWarning('Attention', 'Veuillez indiquer une raison de rejet');
       return;
     }
 
@@ -154,9 +156,9 @@ export default function AdminCandidateVerifications() {
 
     if (error) {
       console.error('Error rejecting verification:', error);
-      alert('Erreur lors du rejet');
+      showError('Erreur', 'Erreur lors du rejet. Veuillez réessayer.');
     } else {
-      alert('Demande rejetée');
+      showWarning('Information', 'Demande rejetée');
       setSelectedVerification(null);
       setAdminNotes('');
       setRejectionReason('');

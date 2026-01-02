@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Phone, MessageCircle, FileText, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react';
 import { CreditStoreService, CreditStoreSettings } from '../services/creditStoreService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface PageProps {
   onNavigate: (page: string) => void;
 }
 
 export default function AdminCreditStoreSettings({ onNavigate }: PageProps) {
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,10 +50,10 @@ export default function AdminCreditStoreSettings({ onNavigate }: PageProps) {
       const success = await CreditStoreService.updateSettings(formData);
 
       if (success) {
-        alert('Paramètres sauvegardés avec succès!');
+        showSuccess('Sauvegardé', 'Paramètres sauvegardés avec succès!');
         await loadSettings();
       } else {
-        alert('Erreur lors de la sauvegarde');
+        showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
       }
     } catch (error) {
       console.error('Error saving settings:', error);

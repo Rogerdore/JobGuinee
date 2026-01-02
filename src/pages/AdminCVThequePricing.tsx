@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Package, Plus, Edit2, ToggleLeft, ToggleRight, Save, X } from 'lucide-react';
 import { cvthequePricingService, CVThequePack } from '../services/cvthequePricingService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminCVThequePricingProps {
   onNavigate: (page: string) => void;
 }
 
-export default function AdminCVThequePricing({ onNavigate }: AdminCVThequePricingProps) {
+export default function AdminCVThequePricing({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCVThequePricingProps) {
   const [packs, setPacks] = useState<CVThequePack[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPack, setEditingPack] = useState<CVThequePack | null>(null);
@@ -37,13 +39,13 @@ export default function AdminCVThequePricing({ onNavigate }: AdminCVThequePricin
 
     try {
       await cvthequePricingService.updatePack(editingPack.id, formData);
-      alert('✅ Pack mis à jour avec succès');
+      showSuccess('Mis à jour', '✅ Pack mis à jour avec succès');
       setEditingPack(null);
       setFormData({});
       loadPacks();
     } catch (error) {
       console.error('Error updating pack:', error);
-      alert('❌ Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', '❌ Erreur lors de la mise à jour');
     }
   };
 

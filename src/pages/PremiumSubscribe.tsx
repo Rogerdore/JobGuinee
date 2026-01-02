@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useModalContext } from '../contexts/ModalContext';
 import {
   Crown, Check, Sparkles, X, Copy, MessageCircle, Zap, Shield, Clock, Award,
   ArrowLeft, Lock, BarChart3, FileText, TrendingUp, Search, Target,
@@ -87,7 +88,7 @@ function PaymentModal({ isOpen, onClose, settings, userEmail }: PaymentModalProp
       if (success) {
         setStep('confirm');
       } else {
-        alert('Erreur lors de la mise à jour');
+        showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
@@ -299,7 +300,8 @@ interface PremiumSubscribeProps {
   onNavigate: (page: string) => void;
 }
 
-export default function PremiumSubscribe({ onNavigate }: PremiumSubscribeProps) {
+export default function PremiumSubscribe({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: PremiumSubscribeProps) {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<CreditStoreSettings | null>(null);

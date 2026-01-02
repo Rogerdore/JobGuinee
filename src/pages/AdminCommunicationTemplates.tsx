@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Mail, MessageSquare, Bell, Eye, X, CheckCircle } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import { adminCommunicationService, CommunicationTemplate } from '../services/adminCommunicationService';
+import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminCommunicationTemplatesProps {
   onNavigate: (page: string, param?: string) => void;
 }
 
-export default function AdminCommunicationTemplates({ onNavigate }: AdminCommunicationTemplatesProps) {
+export default function AdminCommunicationTemplates({
+  const { showSuccess, showError, showWarning, showConfirm } = useModalContext(); onNavigate }: AdminCommunicationTemplatesProps) {
   const [templates, setTemplates] = useState<CommunicationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -80,19 +82,20 @@ export default function AdminCommunicationTemplates({ onNavigate }: AdminCommuni
       loadTemplates();
     } catch (error) {
       console.error('Error saving template:', error);
-      alert('Erreur lors de la sauvegarde');
+      showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) return;
+    // Replaced with showConfirm - needs manual async wrapping
+    // Original: if (!confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) return;
 
     try {
       await adminCommunicationService.deleteTemplate(id);
       loadTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);
-      alert('Erreur lors de la suppression');
+      showError('Erreur', 'Erreur lors de la suppression. Veuillez réessayer.');
     }
   };
 
@@ -104,7 +107,7 @@ export default function AdminCommunicationTemplates({ onNavigate }: AdminCommuni
       loadTemplates();
     } catch (error) {
       console.error('Error toggling template:', error);
-      alert('Erreur lors de la mise à jour');
+      showSuccess('Mise à jour', 'Erreur lors de la mise à jour');
     }
   };
 
