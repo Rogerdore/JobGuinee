@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle } from 'lucide-react';
 
 export type AlphaAvatarState =
@@ -193,88 +192,51 @@ export default function AlphaAvatar({
 
   return (
     <div className={`relative ${className}`}>
-      <motion.div
+      <div
         ref={avatarRef}
-        className={`${sizeClasses[size]} relative cursor-pointer`}
-        animate={getAnimationVariants()}
-        whileHover={state === 'idle' || state === 'attention' ? { scale: 1.1 } : {}}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
+        className={`${sizeClasses[size]} relative cursor-pointer transition-transform hover:scale-110`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         onClick={onClick}
         style={{
           filter: `drop-shadow(0 0 ${isHovered ? '20px' : '10px'} ${getGlowColor()})`
         }}
       >
-        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center">
-          <MessageCircle className="w-1/2 h-1/2 text-white" />
+        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg">
+          <MessageCircle className="w-10 h-10 text-white" strokeWidth={2} />
 
           {blinkEyes && (
-            <motion.div
-              className="absolute inset-0 bg-[#0E2F56] opacity-30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.3 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            />
+            <div className="absolute inset-0 bg-[#0E2F56] opacity-30" />
           )}
         </div>
 
         {(state === 'responding' || state === 'listening') && (
-          <motion.div
-            className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#06B6D4] rounded-full border-2 border-white"
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [1, 0.7, 1]
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: 'easeInOut'
-            }}
-          />
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#06B6D4] rounded-full border-2 border-white animate-pulse" />
         )}
 
         {state === 'success' && (
-          <motion.div
-            className="absolute -top-2 -right-2 text-2xl"
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-          >
+          <div className="absolute -top-2 -right-2 text-2xl">
             🎉
-          </motion.div>
+          </div>
         )}
 
         {state === 'error' && (
-          <motion.div
-            className="absolute -top-2 -right-2 text-2xl"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-          >
+          <div className="absolute -top-2 -right-2 text-2xl">
             😊
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
-      <AnimatePresence>
-        {showProactiveMessage && (state === 'attention' || state === 'idle') && (
-          <motion.div
-            className="absolute -top-24 right-0 w-64 z-50"
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          >
-            <div className="relative bg-white/50 backdrop-blur-sm border-2 border-[#0E2F56]/50 rounded-2xl px-4 py-3 shadow-xl">
-              <p className="text-sm text-slate-800 font-medium leading-relaxed">
-                {proactiveMessage}
-              </p>
-              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white/50 border-r-2 border-b-2 border-[#0E2F56]/50 rotate-45" />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showProactiveMessage && (state === 'attention' || state === 'idle') && (
+        <div className="absolute -top-24 right-0 w-64 z-50 animate-fade-in">
+          <div className="relative bg-white/50 backdrop-blur-sm border-2 border-[#0E2F56]/50 rounded-2xl px-4 py-3 shadow-xl">
+            <p className="text-sm text-slate-800 font-medium leading-relaxed">
+              {proactiveMessage}
+            </p>
+            <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white/50 border-r-2 border-b-2 border-[#0E2F56]/50 rotate-45" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
