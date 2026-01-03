@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Briefcase, Building, Mail, AlertCircle, Plus, Save, ArrowLeft,
   FileText, Users, MapPin, DollarSign, Calendar, GraduationCap,
-  Sparkles, Percent, Building2, Shield
+  Sparkles, Percent, Building2, Shield, Image as ImageIcon, Upload
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,7 @@ import AutoCompleteInput from '../components/forms/AutoCompleteInput';
 import AutoSaveIndicator from '../components/forms/AutoSaveIndicator';
 import { useAutoSave } from '../hooks/useAutoSave';
 import LanguageLevelSelector from '../components/forms/LanguageLevelSelector';
+import LanguageRequirementsManager from '../components/forms/LanguageRequirementsManager';
 import {
   jobTitleSuggestions,
   companySuggestions,
@@ -70,6 +71,8 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
   const [skillInput, setSkillInput] = useState('');
   const [benefitInput, setBenefitInput] = useState('');
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFeaturedImage, setUploadingFeaturedImage] = useState(false);
 
   const getInitialFormData = useCallback((): JobFormData & {
     published_by_admin: boolean;
@@ -95,11 +98,13 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
     profile: '',
     skills: [],
     education_level: 'Licence',
+    primary_qualification: '',
     experience_required: '3–5 ans',
     languages: [],
     language_requirements: [],
     company_name: '',
     company_logo_url: '',
+    featured_image_url: '',
     use_profile_logo: false,
     sector: 'Mines',
     location: '',
@@ -242,6 +247,78 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
     }));
   }, []);
 
+  const handleLanguageRequirementsChange = useCallback((requirements: any[]) => {
+    setFormData(prev => ({ ...prev, language_requirements: requirements }));
+  }, []);
+
+  const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `company-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, company_logo_url: publicUrl }));
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('Erreur lors du téléchargement du logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }, []);
+
+  const handleFeaturedImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    setUploadingFeaturedImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `job-featured-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, featured_image_url: publicUrl }));
+    } catch (error) {
+      console.error('Error uploading featured image:', error);
+      alert('Erreur lors du téléchargement de l\'image de mise en avant');
+    } finally {
+      setUploadingFeaturedImage(false);
+    }
+  }, []);
+
   const handleCreatePartner = async () => {
     if (!newPartner.name || !newPartner.email) {
       alert('Nom et email requis');
@@ -306,11 +383,14 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
         profile_sought: formData.profile,
         keywords: formData.skills,
         education_level: formData.education_level,
+        primary_qualification: formData.primary_qualification,
         experience_level: formData.experience_required,
         languages: formData.languages,
+        language_requirements: formData.language_requirements,
         department: formData.company_name,
         company_name: formData.company_name,
         company_logo_url: formData.company_logo_url,
+        featured_image_url: formData.featured_image_url,
         sector: formData.sector,
         location: formData.location,
         company_description: formData.company_description,
@@ -598,46 +678,6 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
         {/* 3. Compétences et qualifications */}
         <FormSection title="3. Compétences et qualifications" icon={GraduationCap}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Compétences requises
-              </label>
-              <div className="flex gap-2 mb-2">
-                <AutoCompleteInput
-                  value={skillInput}
-                  onChange={setSkillInput}
-                  suggestions={skillSuggestions}
-                  placeholder="Ex: Leadership, Gestion de projet..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddSkill();
-                    }
-                  }}
-                  minChars={2}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddSkill}
-                  className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm flex items-center gap-2 cursor-pointer hover:bg-blue-200"
-                    onClick={() => handleRemoveSkill(skill)}
-                  >
-                    {skill}
-                    <span className="text-blue-500">×</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -680,24 +720,66 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Langues requises
+                Qualification et compétence principale requise *
               </label>
+              <input
+                type="text"
+                name="primary_qualification"
+                value={formData.primary_qualification}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                placeholder="Ex: Ingénieur en génie civil, Expert en gestion de projet, Comptable certifié..."
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Indiquez le titre professionnel, la qualification ou la compétence principale requise pour ce poste
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Autres compétences requises
+              </label>
+              <div className="flex gap-2 mb-2">
+                <AutoCompleteInput
+                  value={skillInput}
+                  onChange={setSkillInput}
+                  suggestions={skillSuggestions}
+                  placeholder="Ex: Leadership, Gestion de projet..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSkill();
+                    }
+                  }}
+                  minChars={2}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSkill}
+                  className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
-                {['Français', 'Anglais', 'Arabe', 'Espagnol', 'Chinois', 'Soussou', 'Poular', 'Malinké'].map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => toggleLanguage(lang)}
-                    className={`px-4 py-2 rounded-lg border-2 transition ${
-                      formData.languages.includes(lang)
-                        ? 'bg-[#0E2F56] text-white border-[#0E2F56]'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-[#0E2F56]'
-                    }`}
+                {formData.skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm flex items-center gap-2 cursor-pointer hover:bg-blue-200"
+                    onClick={() => handleRemoveSkill(skill)}
                   >
-                    {lang}
-                  </button>
+                    {skill}
+                    <span className="text-blue-500">×</span>
+                  </span>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <LanguageRequirementsManager
+                requirements={formData.language_requirements}
+                onChange={handleLanguageRequirementsChange}
+              />
             </div>
           </div>
         </FormSection>
@@ -773,6 +855,89 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
                 placeholder="https://example.com"
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Logo de l'entreprise */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Logo de l'entreprise
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-500 transition">
+                  {formData.company_logo_url ? (
+                    <div className="space-y-3">
+                      <img
+                        src={formData.company_logo_url}
+                        alt="Logo"
+                        className="w-32 h-32 object-contain mx-auto"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, company_logo_url: '' }))}
+                        className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer">
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">
+                        {uploadingLogo ? 'Téléchargement...' : 'Cliquez pour télécharger'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        disabled={uploadingLogo}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Image de mise en avant */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Image de mise en avant
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-500 transition">
+                  {formData.featured_image_url ? (
+                    <div className="space-y-3">
+                      <img
+                        src={formData.featured_image_url}
+                        alt="Image de mise en avant"
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, featured_image_url: '' }))}
+                        className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer">
+                      <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">
+                        {uploadingFeaturedImage ? 'Téléchargement...' : 'Cliquez pour télécharger'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFeaturedImageUpload}
+                        className="hidden"
+                        disabled={uploadingFeaturedImage}
+                      />
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Image principale affichée avec l'offre (ratio 16:9 recommandé)
+                </p>
+              </div>
             </div>
           </div>
         </FormSection>

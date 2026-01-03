@@ -15,12 +15,15 @@ export interface JobFormData {
   profile: string;
   skills: string[];
   education_level: string;
+  primary_qualification: string;
   experience_required: string;
   languages: string[];
   language_requirements: LanguageRequirement[];
   company_name: string;
   company_logo?: File;
   company_logo_url?: string;
+  featured_image?: File;
+  featured_image_url?: string;
   use_profile_logo: boolean;
   sector: string;
   location: string;

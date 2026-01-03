@@ -3,7 +3,7 @@ import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
   CheckCircle2, Upload as UploadIcon, Download, Wand2, Save, Clock, AlertCircle, CheckCircle,
-  Image as ImageIcon, Percent
+  Image as ImageIcon, Percent, Upload
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../forms/RichTextEditor';
@@ -15,6 +15,7 @@ import AccessRestrictionModal from '../common/AccessRestrictionModal';
 import JobPreviewModal from './JobPreviewModal';
 import { validateJobData } from '../../services/jobValidationService';
 import LanguageLevelSelector from '../forms/LanguageLevelSelector';
+import LanguageRequirementsManager from '../forms/LanguageRequirementsManager';
 import {
   jobTitleSuggestions,
   companySuggestions,
@@ -68,6 +69,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFeaturedImage, setUploadingFeaturedImage] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -88,11 +90,13 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
         profile: existingJob.profile_sought || '',
         skills: existingJob.keywords || [],
         education_level: existingJob.education_level || 'Licence',
+        primary_qualification: existingJob.primary_qualification || '',
         experience_required: existingJob.experience_level || '3–5 ans',
         languages: existingJob.languages || [],
-        language_requirements: [],
+        language_requirements: existingJob.language_requirements || [],
         company_name: existingJob.department || '',
         company_logo_url: existingJob.company_logo_url || '',
+        featured_image_url: existingJob.featured_image_url || '',
         use_profile_logo: false,
         sector: existingJob.sector || 'Mines',
         location: existingJob.location || '',
@@ -128,10 +132,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       profile: '',
       skills: [],
       education_level: 'Licence',
+      primary_qualification: '',
       experience_required: '3–5 ans',
       languages: [],
       language_requirements: [],
       company_name: '',
+      featured_image_url: '',
       use_profile_logo: false,
       sector: 'Mines',
       location: '',
@@ -340,6 +346,50 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
       alert('Erreur lors de l\'upload du logo');
       setUploadingLogo(false);
     }
+  }, [updateFormField]);
+
+  const handleFeaturedImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux (maximum 5 MB)');
+      return;
+    }
+
+    setUploadingFeaturedImage(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `job-featured-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      updateFormField('featured_image_url', publicUrl);
+      setUploadingFeaturedImage(false);
+    } catch (error) {
+      console.error('Erreur upload image de mise en avant:', error);
+      alert('Erreur lors de l\'upload de l\'image de mise en avant');
+      setUploadingFeaturedImage(false);
+    }
+  }, [updateFormField]);
+
+  const handleLanguageRequirementsChange = useCallback((requirements: any[]) => {
+    updateFormField('language_requirements', requirements);
   }, [updateFormField]);
 
   const handleGenerateWithAI = useCallback(async () => {
@@ -708,47 +758,6 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Compétences clés
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <div className="flex-1">
-                    <AutoCompleteInput
-                      value={skillInput}
-                      onChange={setSkillInput}
-                      suggestions={skillSuggestions}
-                      placeholder="Ex: Excel, Leadership, Gestion de projet..."
-                      minChars={2}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddSkill}
-                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.skills.map((skill, index) => (
-                    <span
-                      key={`skill-${index}`}
-                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="hover:text-blue-900 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -788,10 +797,68 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Qualification et compétence principale requise *
+                </label>
+                <input
+                  type="text"
+                  name="primary_qualification"
+                  value={formData.primary_qualification}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
+                  placeholder="Ex: Ingénieur en génie civil, Expert en gestion de projet, Comptable certifié..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Indiquez le titre professionnel, la qualification ou la compétence principale requise pour ce poste
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Autres compétences requises
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <div className="flex-1">
+                    <AutoCompleteInput
+                      value={skillInput}
+                      onChange={setSkillInput}
+                      suggestions={skillSuggestions}
+                      placeholder="Ex: Excel, Leadership, Gestion de projet..."
+                      minChars={2}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddSkill}
+                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.skills.map((skill, index) => (
+                    <span
+                      key={`skill-${index}`}
+                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2"
+                    >
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:text-blue-900 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
               <div className="md:col-span-2">
-                <LanguageLevelSelector
-                  languageRequirements={formData.language_requirements}
-                  onChange={(requirements) => updateFormField('language_requirements', requirements)}
+                <LanguageRequirementsManager
+                  requirements={formData.language_requirements}
+                  onChange={handleLanguageRequirementsChange}
                 />
               </div>
             </div>
@@ -879,6 +946,63 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                     />
                     <p className="text-xs text-gray-600 mt-2">PNG, JPG ou GIF (max 5 MB)</p>
                   </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200 mb-5">
+              <label className="block text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-[#0E2F56]" />
+                Image de mise en avant (optionnel)
+              </label>
+
+              {formData.featured_image_url ? (
+                <div className="space-y-3">
+                  <img
+                    src={formData.featured_image_url}
+                    alt="Image de mise en avant"
+                    className="w-full h-48 object-cover rounded-lg border-2 border-purple-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateFormField('featured_image_url', '')}
+                    className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition border-2 border-red-200"
+                  >
+                    Supprimer l'image
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="featured-image-upload" className="cursor-pointer">
+                    <div className="flex items-center justify-center gap-2 px-4 py-6 bg-white hover:bg-gray-50 border-2 border-dashed border-purple-300 rounded-xl transition-all hover:border-purple-500 group">
+                      {uploadingFeaturedImage ? (
+                        <>
+                          <Loader className="w-5 h-5 text-purple-600 animate-spin" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            Upload en cours...
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-5 h-5 text-purple-600 group-hover:text-purple-700 transition" />
+                          <span className="text-sm font-semibold text-gray-700 group-hover:text-purple-700 transition">
+                            Cliquez pour télécharger une image
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                  <input
+                    id="featured-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFeaturedImageUpload}
+                    className="hidden"
+                    disabled={uploadingFeaturedImage}
+                  />
+                  <p className="text-xs text-gray-600 mt-2">
+                    Image principale affichée avec l'offre • PNG ou JPG (max 5 MB) • Ratio 16:9 recommandé
+                  </p>
                 </div>
               )}
             </div>
