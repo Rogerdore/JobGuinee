@@ -1035,6 +1035,7 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
                   label="Secteur d'activité"
                   required
                   minChars={1}
+                  maxSuggestions={150}
                 />
               </div>
 

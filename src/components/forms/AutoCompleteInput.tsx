@@ -11,6 +11,7 @@ interface AutoCompleteInputProps {
   className?: string;
   minChars?: number;
   disabled?: boolean;
+  maxSuggestions?: number;
 }
 
 const AutoCompleteInput = memo(function AutoCompleteInput({
@@ -23,6 +24,7 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
   className = '',
   minChars = 2,
   disabled = false,
+  maxSuggestions = 100,
 }: AutoCompleteInputProps) {
   const [internalValue, setInternalValue] = useState(value);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -40,7 +42,7 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
   }, [value]);
 
   const filteredSuggestions = internalValue.length >= minChars
-    ? suggestions.filter(s => s.toLowerCase().includes(internalValue.toLowerCase())).slice(0, 10)
+    ? suggestions.filter(s => s.toLowerCase().includes(internalValue.toLowerCase())).slice(0, maxSuggestions)
     : [];
 
   useEffect(() => {
@@ -152,7 +154,7 @@ const AutoCompleteInput = memo(function AutoCompleteInput({
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div
             ref={listRef}
-            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-80 overflow-y-auto"
           >
             {filteredSuggestions.map((suggestion, index) => {
               const isSelected = index === selectedIndex;
