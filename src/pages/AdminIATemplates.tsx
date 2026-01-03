@@ -16,6 +16,7 @@ function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEd
     service_code: '',
     template_name: '',
     template_description: '',
+    template_structure: '',
     format: 'html',
     is_default: false,
     is_active: true,
