@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Save, Plus, Edit2, Trash2, DollarSign, Zap, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import AdminLayout from '../components/AdminLayout';
 import ModernModal from '../components/modals/ModernModal';
 import { useModal } from '../hooks/useModal';
 
@@ -209,16 +208,16 @@ export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesP
 
   if (loading) {
     return (
-      <AdminLayout onNavigate={onNavigate} currentPage="admin-credit-packages">
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Chargement...</div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout onNavigate={onNavigate} currentPage="admin-credit-packages">
+    <>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -555,6 +554,6 @@ export default function AdminCreditPackages({ onNavigate }: AdminCreditPackagesP
         pedagogical={modalState.pedagogical}
       />
       </div>
-    </AdminLayout>
+    </>
   );
 }

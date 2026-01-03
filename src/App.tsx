@@ -5,6 +5,7 @@ import { CMSProvider } from './contexts/CMSContext';
 import { ModalProvider } from './contexts/ModalContext';
 import { ToastProvider } from './components/notifications/ToastContainer';
 import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
 import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
@@ -148,20 +149,42 @@ function AppContent() {
     );
   }
 
+  const adminPages: Page[] = [
+    'cms-admin', 'user-management', 'admin-credits-ia', 'admin-ia-pricing',
+    'admin-ia-config', 'admin-ia-templates', 'admin-chatbot', 'admin-ia-center',
+    'admin-credit-store-settings', 'admin-credit-purchases', 'admin-credit-packages',
+    'admin-security-logs', 'admin-premium-subscriptions', 'admin-ia-premium-quota',
+    'admin-profile-purchases', 'admin-homepage-content', 'admin-automation-rules',
+    'admin-recruiter-notifications', 'admin-seo', 'admin-job-moderation', 'admin-job-list',
+    'admin-job-create', 'admin-job-badges', 'admin-enterprise-subscriptions',
+    'admin-b2b-management', 'admin-b2b-seo-config', 'admin-seo-landing-pages',
+    'admin-external-applications', 'admin-email-templates', 'admin-campaign-payments',
+    'admin-diffusion-settings', 'admin-communications', 'admin-communication-create',
+    'admin-communication-templates', 'admin-communication-logs', 'admin-formation-config',
+    'admin-cv-builder-config', 'admin-job-alerts-config', 'admin-interview-config',
+    'admin-formation-list', 'admin-trainer-management', 'admin-formation-boost',
+    'admin-applications-list'
+  ];
+
+  const isAdminPage = adminPages.includes(currentPage);
+
   if (currentPage === 'login' || currentPage === 'signup') {
     return <Auth mode={currentPage} onNavigate={handleNavigate} />;
   }
 
-  return (
-    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
-      <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-900"></div>
-            <p className="mt-4 text-gray-600">Chargement de la page...</p>
-          </div>
-        </div>
-      }>
+  const loadingFallback = (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-900"></div>
+        <p className="mt-4 text-gray-600">Chargement de la page...</p>
+      </div>
+    </div>
+  );
+
+  if (isAdminPage) {
+    return (
+      <AdminLayout currentPage={currentPage} onNavigate={handleNavigate}>
+        <Suspense fallback={loadingFallback}>
         {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
         {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
         {currentPage === 'job-detail' && (
@@ -245,6 +268,55 @@ function AppContent() {
         {currentPage === 'admin-communication-create' && <AdminCommunicationCreate onNavigate={handleNavigate} />}
         {currentPage === 'admin-communication-templates' && <AdminCommunicationTemplates onNavigate={handleNavigate} />}
         {currentPage === 'admin-communication-logs' && <AdminCommunicationLogs onNavigate={handleNavigate} />}
+        {currentPage === 'partner-hub' && <PartnerHub onNavigate={handleNavigate} />}
+        </Suspense>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+      <Suspense fallback={loadingFallback}>
+        {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
+        {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
+        {currentPage === 'job-detail' && (
+          <JobDetail
+            jobId={selectedJobId}
+            onNavigate={handleNavigate}
+            autoOpenApply={jobDetailState?.autoOpenApply}
+            metadata={jobDetailState?.metadata}
+          />
+        )}
+        {currentPage === 'job-marketplace' && <JobMarketplacePage slug={marketplaceSlug} onNavigate={handleNavigate} />}
+        {currentPage === 'cvtheque-teaser' && <CVthequeTeaserPage slug={cvthequeTeaserSlug} onNavigate={handleNavigate} />}
+        {currentPage === 'candidate-dashboard' && <CandidateDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'recruiter-dashboard' && <RecruiterDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'trainer-dashboard' && <TrainerDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'formations' && <Formations onNavigate={handleNavigate} searchParams={formationSearchParams} />}
+        {currentPage === 'blog' && <Blog onNavigate={handleNavigate} />}
+        {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
+        {currentPage === 'candidate-profile-form' && <CandidateProfileForm />}
+        {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
+        {currentPage === 'enterprise-subscribe' && <EnterpriseSubscribe onNavigate={handleNavigate} />}
+        {currentPage === 'recruiter-messaging' && <RecruiterMessaging onNavigate={handleNavigate} />}
+        {currentPage === 'premium-ai' && <PremiumAIServices onNavigate={handleNavigate} scrollTarget={scrollTarget} />}
+        {currentPage === 'ai-matching' && <AIMatchingService onNavigate={handleNavigate} />}
+        {currentPage === 'ai-cv-generator' && <AICVGenerator onNavigate={handleNavigate} />}
+        {currentPage === 'ai-cover-letter' && <AICoverLetterGenerator onNavigate={handleNavigate} />}
+        {currentPage === 'ai-career-plan' && <AICareerPlanGenerator onNavigate={handleNavigate} />}
+        {currentPage === 'ai-coach' && <AICoachChat onNavigate={handleNavigate} />}
+        {currentPage === 'ai-interview-simulator' && <AIInterviewSimulator onNavigate={handleNavigate} />}
+        {currentPage === 'ai-alerts' && <AIAlertsCenter onNavigate={handleNavigate} />}
+        {currentPage === 'ai-chat' && <AIChat onNavigate={handleNavigate} />}
+        {currentPage === 'gold-profile' && <GoldProfileService onNavigate={handleNavigate} />}
+        {currentPage === 'credit-store' && <CreditStore onNavigate={handleNavigate} scrollTarget={scrollTarget} />}
+        {currentPage === 'b2b-solutions' && <B2BSolutions onNavigate={handleNavigate} />}
+        {currentPage === 'download-documentation' && <DownloadDocumentation />}
+        {currentPage === 'cv-designer' && <CVDesigner onNavigate={handleNavigate} />}
+        {currentPage === 'external-application' && <ExternalApplication onNavigate={handleNavigate} />}
+        {currentPage === 'external-applications' && <ExternalApplications onNavigate={handleNavigate} />}
+        {currentPage === 'public-profile' && <PublicProfile token={publicProfileToken} onNavigate={handleNavigate} />}
+        {currentPage === 'campaign-create' && <CampaignCreate onNavigate={handleNavigate} />}
         {currentPage === 'partner-hub' && <PartnerHub onNavigate={handleNavigate} />}
       </Suspense>
     </Layout>

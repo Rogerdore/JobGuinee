@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Send, Clock, CheckCircle, XCircle, Plus, Eye, Edit, Trash2, Calendar, Users, Mail, MessageSquare, Bell } from 'lucide-react';
-import AdminLayout from '../components/AdminLayout';
 import { adminCommunicationService, AdminCommunication } from '../services/adminCommunicationService';
 import { useModalContext } from '../contexts/ModalContext';
 
@@ -89,7 +88,7 @@ export default function AdminCommunications({ onNavigate }: AdminCommunicationsP
   };
 
   return (
-    <AdminLayout onNavigate={onNavigate}>
+    <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -346,6 +345,6 @@ export default function AdminCommunications({ onNavigate }: AdminCommunicationsP
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 }

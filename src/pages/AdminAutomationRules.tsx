@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Save, ToggleLeft, ToggleRight, Zap, Bell, UserX, Activity } from 'lucide-react';
 import { recruitmentAutomationService, AutomationRule } from '../services/recruitmentAutomationService';
 import { supabase } from '../lib/supabase';
-import AdminLayout from '../components/AdminLayout';
 import { useModalContext } from '../contexts/ModalContext';
 
 export default function AdminAutomationRules() {
@@ -243,7 +242,7 @@ export default function AdminAutomationRules() {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="max-w-6xl mx-auto">
         <div className="bg-gradient-to-r from-purple-900 via-purple-700 to-purple-900 text-white rounded-3xl p-8 mb-8">
           <div className="flex items-center gap-4">
@@ -330,6 +329,6 @@ export default function AdminAutomationRules() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 }

@@ -5,7 +5,6 @@ import {
   ToggleRight, ArrowLeft
 } from 'lucide-react';
 import { b2bLeadsService, B2BPageConfig } from '../services/b2bLeadsService';
-import AdminLayout from '../components/AdminLayout';
 
 export default function AdminB2BSeoConfig() {
   const [pageConfig, setPageConfig] = useState<B2BPageConfig[]>([]);
@@ -145,16 +144,16 @@ export default function AdminB2BSeoConfig() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
+      <>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF8C00] border-t-transparent"></div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -474,7 +473,7 @@ export default function AdminB2BSeoConfig() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Activity, Clock, User, FileText, TrendingUp, Calendar } from 'lucide-react';
-import AdminLayout from '../components/AdminLayout';
 import { adminCommunicationService, CommunicationLog } from '../services/adminCommunicationService';
 
 interface AdminCommunicationLogsProps {
@@ -59,7 +58,7 @@ export default function AdminCommunicationLogs({ onNavigate }: AdminCommunicatio
   const actionStats = getActionStats();
 
   return (
-    <AdminLayout onNavigate={onNavigate}>
+    <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -263,6 +262,6 @@ export default function AdminCommunicationLogs({ onNavigate }: AdminCommunicatio
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }
