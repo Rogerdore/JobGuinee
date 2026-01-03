@@ -5,7 +5,7 @@ import {
   LogOut, Home, Menu, X, AlertTriangle, Zap, DollarSign, Code,
   FileText, Mail, Crown, Building2, Globe, ShoppingCart, Send,
   TrendingUp, Database, Lock, Download, Palette, Search, Activity,
-  GraduationCap, AlertCircle, Calendar, Video
+  GraduationCap, AlertCircle, Calendar, Video, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -234,10 +234,19 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
     return currentPage === route;
   };
 
+  const hasActiveChild = (item: MenuItem): boolean => {
+    if (!item.children) return false;
+    return item.children.some(child => {
+      if (isActive(child.route)) return true;
+      return hasActiveChild(child);
+    });
+  };
+
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = isMenuExpanded(item.id);
     const active = isActive(item.route);
+    const hasActiveDescendant = hasActiveChild(item);
     const Icon = item.icon;
 
     return (
@@ -252,25 +261,37 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
                 onNavigate(item.route);
               }
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl group relative
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl group relative transition-all duration-200
               ${active
                 ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-200'
+                : hasActiveDescendant && level === 0
+                ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
                 : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-md'
               }
               ${level > 0 ? 'ml-4' : ''}
               ${!sidebarOpen ? 'justify-center' : ''}
             `}
-            style={{ transition: 'none' }}
             title={!sidebarOpen ? item.label : ''}
           >
             <div className={`flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'}`}>
-              <Icon className={`w-5 h-5 ${
+              {level > 0 && sidebarOpen && (
+                <div className={`w-1 h-1 rounded-full ${active ? 'bg-white' : 'bg-gray-400'}`}></div>
+              )}
+              <Icon className={`w-5 h-5 transition-colors ${
                 active
                   ? 'text-white'
+                  : hasActiveDescendant
+                  ? 'text-blue-600'
                   : 'text-gray-600 group-hover:text-blue-600'
-              }`} style={{ transition: 'none' }} />
+              }`} />
               {sidebarOpen && (
-                <span className={`font-medium text-sm ${active ? 'text-white' : 'text-gray-700'}`}>
+                <span className={`font-medium text-sm ${
+                  active
+                    ? 'text-white'
+                    : hasActiveDescendant
+                    ? 'text-blue-700 font-semibold'
+                    : 'text-gray-700'
+                }`}>
                   {item.label}
                 </span>
               )}
@@ -281,8 +302,14 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
               )}
             </div>
             {hasChildren && sidebarOpen && (
-              <div className={`${isExpanded ? 'rotate-0' : '-rotate-90'}`} style={{ transition: 'none' }}>
-                <ChevronDown className={`w-4 h-4 ${active ? 'text-white' : 'text-gray-400 group-hover:text-blue-600'}`} />
+              <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                <ChevronDown className={`w-4 h-4 ${
+                  active
+                    ? 'text-white'
+                    : hasActiveDescendant
+                    ? 'text-blue-600'
+                    : 'text-gray-400 group-hover:text-blue-600'
+                }`} />
               </div>
             )}
             {hasChildren && !sidebarOpen && (
@@ -293,7 +320,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           </button>
 
           {!sidebarOpen && (
-            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible whitespace-nowrap z-50 shadow-xl">
+            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible whitespace-nowrap z-50 shadow-xl transition-all duration-200">
               {item.label}
               <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
             </div>
@@ -301,7 +328,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         </div>
 
         {hasChildren && isExpanded && sidebarOpen && (
-          <div className="ml-2 mt-1 space-y-1">
+          <div className="ml-2 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
             {item.children!.map(child => renderMenuItem(child, level + 1))}
           </div>
         )}
@@ -309,16 +336,33 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
     );
   };
 
-  const getBreadcrumbs = () => {
-    const breadcrumbs: string[] = ['Admin'];
+  interface Breadcrumb {
+    label: string;
+    route?: string;
+    isParent?: boolean;
+  }
 
-    const findInMenu = (items: MenuItem[], route: string, path: string[] = []): string[] | null => {
+  const getBreadcrumbs = (): Breadcrumb[] => {
+    const breadcrumbs: Breadcrumb[] = [{ label: 'Admin', route: 'cms-admin' }];
+
+    const findInMenu = (
+      items: MenuItem[],
+      targetRoute: string,
+      path: Breadcrumb[] = []
+    ): Breadcrumb[] | null => {
       for (const item of items) {
-        if (item.route === route) {
-          return [...path, item.label];
+        const currentBreadcrumb: Breadcrumb = {
+          label: item.label,
+          route: item.route,
+          isParent: !!item.children
+        };
+
+        if (item.route === targetRoute) {
+          return [...path, currentBreadcrumb];
         }
+
         if (item.children) {
-          const found = findInMenu(item.children, route, [...path, item.label]);
+          const found = findInMenu(item.children, targetRoute, [...path, currentBreadcrumb]);
           if (found) return found;
         }
       }
@@ -327,10 +371,18 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
 
     const path = findInMenu(menuStructure, currentPage);
     if (path) {
-      breadcrumbs.push(...path);
+      breadcrumbs.push(...path.filter(b => b.route !== 'cms-admin'));
     }
 
     return breadcrumbs;
+  };
+
+  const getParentRoute = (): string | null => {
+    const breadcrumbs = getBreadcrumbs();
+    if (breadcrumbs.length > 1) {
+      return breadcrumbs[breadcrumbs.length - 2]?.route || 'cms-admin';
+    }
+    return null;
   };
 
   const handleSignOut = async () => {
@@ -472,13 +524,22 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       >
         <header className="sticky top-0 bg-white border-b border-gray-200 shadow-sm" style={{ zIndex: 30 }}>
           <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-sm">
                 {getBreadcrumbs().map((crumb, index, arr) => (
                   <div key={index} className="flex items-center gap-2">
-                    <span className={index === arr.length - 1 ? 'font-semibold text-gray-900' : ''}>
-                      {crumb}
-                    </span>
+                    {crumb.route && index < arr.length - 1 ? (
+                      <button
+                        onClick={() => onNavigate && onNavigate(crumb.route!)}
+                        className="text-gray-600 hover:text-blue-600 hover:underline transition-colors"
+                      >
+                        {crumb.label}
+                      </button>
+                    ) : (
+                      <span className={index === arr.length - 1 ? 'font-semibold text-gray-900' : 'text-gray-600'}>
+                        {crumb.label}
+                      </span>
+                    )}
                     {index < arr.length - 1 && (
                       <ChevronRight className="w-4 h-4 text-gray-400" />
                     )}
@@ -496,6 +557,27 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
                 </button>
               </div>
             </div>
+
+            {getParentRoute() && currentPage !== 'cms-admin' && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onNavigate && onNavigate(getParentRoute()!)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Retour</span>
+                </button>
+                {currentPage !== 'cms-admin' && (
+                  <button
+                    onClick={() => onNavigate && onNavigate('cms-admin')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Dashboard</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
