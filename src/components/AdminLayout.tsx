@@ -44,27 +44,40 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
   }, [expandedMenus]);
 
   useEffect(() => {
-    const findAllParentMenus = (items: MenuItem[], targetRoute: string, parents: string[] = []): string[] | null => {
+    if (!currentPage || currentPage === 'cms-admin') return;
+
+    const findAllParentMenus = (items: MenuItem[], targetRoute: string, parents: string[] = []): string[][] => {
+      const results: string[][] = [];
+
       for (const item of items) {
         if (item.route === targetRoute) {
-          return parents;
+          results.push(parents);
         }
 
         if (item.children) {
-          const result = findAllParentMenus(item.children, targetRoute, [...parents, item.id]);
-          if (result) return result;
+          const childResults = findAllParentMenus(item.children, targetRoute, [...parents, item.id]);
+          results.push(...childResults);
         }
       }
-      return null;
+
+      return results;
     };
 
-    if (currentPage) {
-      const allParentIds = findAllParentMenus(menuStructure, currentPage);
-      if (allParentIds && allParentIds.length > 0) {
-        const newParents = allParentIds.filter(id => !expandedMenus.includes(id));
-        if (newParents.length > 0) {
-          setExpandedMenus(prev => [...prev, ...newParents]);
-        }
+    const allPaths = findAllParentMenus(menuStructure, currentPage);
+
+    if (allPaths.length > 0) {
+      const allParentIds = new Set<string>();
+      allPaths.forEach(path => {
+        path.forEach(id => allParentIds.add(id));
+      });
+
+      const newParents = Array.from(allParentIds).filter(id => !expandedMenus.includes(id));
+
+      if (newParents.length > 0) {
+        setExpandedMenus(prev => {
+          const updated = [...prev, ...newParents];
+          return Array.from(new Set(updated));
+        });
       }
     }
   }, [currentPage]);
