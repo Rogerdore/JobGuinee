@@ -23,6 +23,7 @@ import {
   skillSuggestions,
   benefitSuggestions,
   sectorSuggestions,
+  categorySuggestions,
 } from '../../utils/jobSuggestions';
 import {
   calculateJobCompletion,
@@ -621,24 +622,15 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Catégorie / Domaine *
-                </label>
-                <select
-                  name="category"
+                <AutoCompleteInput
                   value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="Ressources Humaines">Ressources Humaines</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Mines">Mines</option>
-                  <option value="Sécurité">Sécurité</option>
-                  <option value="Transport">Transport</option>
-                  <option value="IT">IT / Informatique</option>
-                  <option value="BTP">BTP</option>
-                  <option value="Santé">Santé</option>
-                </select>
+                  onChange={(value) => updateFormField('category', value)}
+                  suggestions={categorySuggestions}
+                  placeholder="Ex : Ressources Humaines, Finance, IT..."
+                  label={`Catégorie / Domaine * (${categorySuggestions.length} catégories)`}
+                  required
+                  minChars={1}
+                />
               </div>
 
               <div>
