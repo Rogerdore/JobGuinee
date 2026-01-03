@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, CheckCircle, XCircle, Clock, Filter, Search, Eye, TrendingUp, Calendar } from 'lucide-react';
 import { jobBadgeRequestService, type JobBadgeRequest } from '../services/jobBadgeRequestService';
-import AdminLayout from '../components/AdminLayout';
 
 export default function AdminJobBadges() {
   const [requests, setRequests] = useState<JobBadgeRequest[]>([]);
@@ -102,19 +101,19 @@ export default function AdminJobBadges() {
 
   if (loading) {
     return (
-      <AdminLayout>
+      <>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0E2F56] mx-auto"></div>
             <p className="mt-4 text-gray-600">Chargement...</p>
           </div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="p-6 max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -437,6 +436,6 @@ export default function AdminJobBadges() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 }

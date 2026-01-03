@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Users, TrendingUp, Eye, Clock, CheckCircle, Save, Loader2 } from 'lucide-react';
-import AdminLayout from '../components/AdminLayout';
 import { supabase } from '../lib/supabase';
 
 export default function AdminExternalApplications() {
@@ -179,16 +178,16 @@ https://jobguinee.com`;
 
   if (loading) {
     return (
-      <AdminLayout>
+      <>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -451,6 +450,6 @@ https://jobguinee.com`;
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }

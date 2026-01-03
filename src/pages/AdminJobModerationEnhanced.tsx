@@ -9,7 +9,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import AdminLayout from '../components/AdminLayout';
 
 interface PendingJob {
   id: string;
@@ -628,19 +627,19 @@ Modérées aujourd'hui: ${stats.moderated_today}
 
   if (loading) {
     return (
-      <AdminLayout onNavigate={onNavigate}>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
             <p className="text-gray-600">Chargement des offres...</p>
           </div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout onNavigate={onNavigate}>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <motion.div
@@ -1903,6 +1902,6 @@ Modérées aujourd'hui: ${stats.moderated_today}
           )}
         </AnimatePresence>
       </div>
-    </AdminLayout>
+    </>
   );
 }

@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import AdminLayout from '../components/AdminLayout';
 
 interface Formation {
   id: string;
@@ -261,16 +260,16 @@ export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostP
 
   if (loading) {
     return (
-      <AdminLayout onNavigate={onNavigate}>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout onNavigate={onNavigate}>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -628,6 +627,6 @@ export default function AdminFormationBoost({ onNavigate }: AdminFormationBoostP
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 }

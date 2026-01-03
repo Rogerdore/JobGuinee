@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Plus
 } from 'lucide-react';
-import AdminLayout from '../components/AdminLayout';
 import RichTextEditor from '../components/forms/RichTextEditor';
 
 interface Partner {
@@ -197,7 +196,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -565,7 +564,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
           </div>
         </form>
       </div>
-    </AdminLayout>
+    </>
   );
 };
 

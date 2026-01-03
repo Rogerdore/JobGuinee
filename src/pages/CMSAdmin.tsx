@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModalContext } from '../contexts/ModalContext';
-import AdminLayout from '../components/AdminLayout';
 import SectionManager from '../components/cms/SectionManager';
 import PageManager from '../components/cms/PageManager';
 import NavigationManager from '../components/cms/NavigationManager';
@@ -532,9 +531,8 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   };
 
   return (
-    <AdminLayout onNavigate={onNavigate}>
-      <div className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb et Navigation */}
           <div className="mb-6">
             <div className="flex items-center gap-3 text-sm text-gray-600 mb-4">
@@ -808,7 +806,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
               </div>
             )}
           </div>
-        </div>
         </div>
       </div>
 
@@ -1186,6 +1183,6 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </div>
   );
 }

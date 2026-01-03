@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import AdminLayout from '../components/AdminLayout';
 import { useModalContext } from '../contexts/ModalContext';
 import {
   Settings, DollarSign, Users, MessageSquare, Image as ImageIcon,
@@ -340,19 +339,19 @@ export default function AdminDiffusionSettings() {
 
   if (loading) {
     return (
-      <AdminLayout>
+      <>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <RefreshCw className="h-8 w-8 animate-spin text-[#FF8C00] mx-auto mb-4" />
             <p className="text-gray-600">Chargement des paramètres...</p>
           </div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -1302,6 +1301,6 @@ export default function AdminDiffusionSettings() {
           )}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Users, Shield, UserCog, Search, AlertCircle, CheckCircle, X, ArrowLeft, Home, ChevronRight, GraduationCap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import AdminLayout from '../components/AdminLayout';
 
 interface UserManagementProps {
   onNavigate: (page: string) => void;
@@ -141,7 +140,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
   }
 
   return (
-    <AdminLayout onNavigate={onNavigate}>
+    <>
       <div className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb et Navigation */}
@@ -326,6 +325,6 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
           )}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }

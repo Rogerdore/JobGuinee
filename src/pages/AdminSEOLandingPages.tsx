@@ -4,7 +4,6 @@ import {
   Globe, TrendingUp, Eye, MousePointerClick, ToggleLeft, ToggleRight,
   Plus, RefreshCw, BarChart3, AlertCircle, CheckCircle2, Zap
 } from 'lucide-react';
-import AdminLayout from '../components/AdminLayout';
 import { seoLandingPagesService, SEOLandingPage } from '../services/seoLandingPagesService';
 import { b2bPipelineService } from '../services/b2bPipelineService';
 import { supabase } from '../lib/supabase';
@@ -83,16 +82,16 @@ export default function AdminSEOLandingPages() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
+      <>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF8C00] border-t-transparent"></div>
         </div>
-      </AdminLayout>
+      </>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -283,6 +282,6 @@ export default function AdminSEOLandingPages() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }
