@@ -43,6 +43,34 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
     localStorage.setItem('admin-expanded-menus', JSON.stringify(expandedMenus));
   }, [expandedMenus]);
 
+  useEffect(() => {
+    const findParentMenu = (items: MenuItem[], targetRoute: string): string | null => {
+      for (const item of items) {
+        if (item.children) {
+          const hasMatchingChild = item.children.some(child => {
+            if (child.route === targetRoute) return true;
+            if (child.children) {
+              return findParentMenu([child], targetRoute) !== null;
+            }
+            return false;
+          });
+          if (hasMatchingChild) return item.id;
+
+          const childResult = findParentMenu(item.children, targetRoute);
+          if (childResult) return childResult;
+        }
+      }
+      return null;
+    };
+
+    if (currentPage) {
+      const parentMenuId = findParentMenu(menuStructure, currentPage);
+      if (parentMenuId && !expandedMenus.includes(parentMenuId)) {
+        setExpandedMenus(prev => [...prev, parentMenuId]);
+      }
+    }
+  }, [currentPage]);
+
   const menuStructure: MenuItem[] = [
     {
       id: 'dashboard',
@@ -322,7 +350,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         `}
         style={{
           zIndex: 9999,
-          transition: 'none',
+          transition: 'width 0.2s ease',
           width: sidebarOpen ? '18rem' : '5rem',
           willChange: 'auto',
           transform: 'translate3d(0, 0, 0)',
@@ -331,7 +359,8 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           perspective: 1000,
           WebkitPerspective: 1000,
           contain: 'layout style paint',
-          pointerEvents: 'auto'
+          pointerEvents: 'auto',
+          display: 'flex'
         }}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200" style={{ minHeight: '80px', position: 'relative', zIndex: 1 }}>
@@ -429,7 +458,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       <div
         className={`flex-1 ${sidebarOpen ? 'ml-72' : 'ml-20'}`}
         style={{
-          transition: 'none',
+          transition: 'margin-left 0.2s ease',
           marginLeft: sidebarOpen ? '18rem' : '5rem',
           willChange: 'auto',
           transform: 'translate3d(0, 0, 0)',
@@ -437,7 +466,8 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
           WebkitBackfaceVisibility: 'hidden',
           isolation: 'isolate',
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          minHeight: '100vh'
         }}
       >
         <header className="sticky top-0 bg-white border-b border-gray-200 shadow-sm" style={{ zIndex: 30 }}>
