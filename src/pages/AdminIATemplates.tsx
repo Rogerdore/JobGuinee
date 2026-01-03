@@ -11,11 +11,11 @@ interface TemplateEditorProps {
 }
 
 function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEditorProps) {
+  const { showSuccess, showError, showWarning } = useModalContext();
   const [formData, setFormData] = useState<Partial<IAServiceTemplate>>({
     service_code: '',
     template_name: '',
     template_description: '',
-    template_structure: '',
     format: 'html',
     is_default: false,
     is_active: true,
@@ -55,11 +55,11 @@ function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEd
       }
 
       if (result.success) {
-        alert(isNew ? 'Template créé avec succès!' : 'Template mis à jour!');
+        showSuccess('Succès', isNew ? 'Template créé avec succès!' : 'Template mis à jour!');
         onSave();
         onClose();
       } else {
-        alert('Erreur: ' + result.message);
+        showError('Erreur', result.message || 'Une erreur est survenue');
       }
     } catch (error) {
       showError('Erreur', 'Erreur lors de la sauvegarde. Veuillez réessayer.');
@@ -80,7 +80,7 @@ function TemplateEditor({ template, onClose, onSave, isNew = false }: TemplateEd
       setPreview(result);
       setShowPreview(true);
     } catch (error) {
-      alert('Erreur JSON ou template invalide: ' + error);
+      showError('Erreur', 'JSON ou template invalide: ' + error);
     }
   };
 
@@ -488,11 +488,16 @@ export default function AdminIATemplates({ onNavigate }: PageProps) {
   };
 
   const handleDelete = async (template: IAServiceTemplate) => {
-    if (!confirm(`Supprimer le template "${template.template_name}" ?`)) return;
+    const confirmed = await showConfirm(
+      'Confirmer la suppression',
+      `Êtes-vous sûr de vouloir supprimer le template "${template.template_name}" ?`
+    );
+
+    if (!confirmed) return;
 
     const success = await IAConfigService.deleteTemplate(template.id);
     if (success) {
-      showSuccess('Supprimé', 'Template supprimé');
+      showSuccess('Supprimé', 'Template supprimé avec succès');
       loadTemplates();
     } else {
       showError('Erreur', 'Erreur lors de la suppression. Veuillez réessayer.');
