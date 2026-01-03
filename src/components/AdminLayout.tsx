@@ -216,7 +216,8 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       <div key={item.id}>
         <div className="relative group/menu">
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               if (hasChildren) {
                 toggleMenu(item.id);
               } else if (item.route && onNavigate) {
@@ -362,9 +363,10 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         </div>
 
         <div
-          className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scroll-smooth overscroll-contain"
+          className="flex-1 overflow-y-auto py-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent overscroll-contain"
           style={{
-            willChange: 'scroll-position',
+            scrollBehavior: 'auto',
+            willChange: 'auto',
             transform: 'translateZ(0)',
             backfaceVisibility: 'hidden'
           }}
