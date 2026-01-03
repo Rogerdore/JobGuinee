@@ -330,39 +330,101 @@ export default function RecruiterMatchingPricingAdmin() {
                         key={pricing.id}
                         className="border border-gray-200 rounded-lg p-4 bg-gray-50"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900">{pricing.name}</h4>
-                          <button
-                            onClick={() => startEdit(pricing)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                          >
-                            <Edit className="w-4 h-4 text-gray-600" />
-                          </button>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{pricing.description}</p>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Candidats:</span>
-                            <span className="font-medium">{pricing.candidate_count}</span>
+                        {editingPricing === pricing.id ? (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Coût en crédits
+                              </label>
+                              <input
+                                type="number"
+                                value={editForm.credits_cost || 0}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, credits_cost: parseInt(e.target.value) })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Équivalent GNF: {((editForm.credits_cost || 0) * 1000).toLocaleString()} GNF
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                              </label>
+                              <textarea
+                                value={editForm.description || ''}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, description: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                rows={2}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={editForm.is_active ?? true}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, is_active: e.target.checked })
+                                }
+                                className="rounded"
+                              />
+                              <label className="text-sm text-gray-700">Actif</label>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={savePricing}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                              >
+                                <Save className="w-4 h-4" />
+                                Enregistrer
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                              >
+                                Annuler
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Crédits:</span>
-                            <span className="font-bold text-green-600">{pricing.credits_cost}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">GNF:</span>
-                            <span className="font-medium">{pricing.gnf_cost.toLocaleString()}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Par candidat:</span>
-                            <span className="text-xs">
-                              {pricing.candidate_count
-                                ? (pricing.credits_cost / pricing.candidate_count).toFixed(1)
-                                : 0}{' '}
-                              crédits
-                            </span>
-                          </div>
-                        </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold text-gray-900">{pricing.name}</h4>
+                              <button
+                                onClick={() => startEdit(pricing)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                              >
+                                <Edit className="w-4 h-4 text-gray-600" />
+                              </button>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{pricing.description}</p>
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Candidats:</span>
+                                <span className="font-medium">{pricing.candidate_count}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Crédits:</span>
+                                <span className="font-bold text-green-600">{pricing.credits_cost}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">GNF:</span>
+                                <span className="font-medium">{pricing.gnf_cost.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Par candidat:</span>
+                                <span className="text-xs">
+                                  {pricing.candidate_count
+                                    ? (pricing.credits_cost / pricing.candidate_count).toFixed(1)
+                                    : 0}{' '}
+                                  crédits
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                 </div>
@@ -388,43 +450,105 @@ export default function RecruiterMatchingPricingAdmin() {
                         key={pricing.id}
                         className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-bold text-gray-900">{pricing.name}</h4>
-                          <button
-                            onClick={() => startEdit(pricing)}
-                            className="p-1 hover:bg-purple-100 rounded"
-                          >
-                            <Edit className="w-4 h-4 text-purple-600" />
-                          </button>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{pricing.description}</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Matchings:</span>
-                            <span className="font-bold text-purple-600">
-                              {pricing.candidate_count || 'Illimité'}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Prix GNF:</span>
-                            <span className="font-bold text-gray-900">
-                              {pricing.metadata?.gnf_price?.toLocaleString() || pricing.gnf_cost.toLocaleString()}
-                            </span>
-                          </div>
-                          {pricing.metadata?.features && (
-                            <div className="mt-3 pt-3 border-t border-purple-200">
-                              <p className="text-xs font-medium text-gray-700 mb-2">Inclus:</p>
-                              <ul className="space-y-1">
-                                {pricing.metadata.features.map((feature: string, idx: number) => (
-                                  <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
-                                    <CheckCircle className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
-                                    {feature}
-                                  </li>
-                                ))}
-                              </ul>
+                        {editingPricing === pricing.id ? (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Coût en crédits
+                              </label>
+                              <input
+                                type="number"
+                                value={editForm.credits_cost || 0}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, credits_cost: parseInt(e.target.value) })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Équivalent GNF: {((editForm.credits_cost || 0) * 1000).toLocaleString()} GNF
+                              </p>
                             </div>
-                          )}
-                        </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                              </label>
+                              <textarea
+                                value={editForm.description || ''}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, description: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                rows={2}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={editForm.is_active ?? true}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, is_active: e.target.checked })
+                                }
+                                className="rounded"
+                              />
+                              <label className="text-sm text-gray-700">Actif</label>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={savePricing}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                              >
+                                <Save className="w-4 h-4" />
+                                Enregistrer
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-bold text-gray-900">{pricing.name}</h4>
+                              <button
+                                onClick={() => startEdit(pricing)}
+                                className="p-1 hover:bg-purple-100 rounded"
+                              >
+                                <Edit className="w-4 h-4 text-purple-600" />
+                              </button>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">{pricing.description}</p>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">Matchings:</span>
+                                <span className="font-bold text-purple-600">
+                                  {pricing.candidate_count || 'Illimité'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">Prix GNF:</span>
+                                <span className="font-bold text-gray-900">
+                                  {pricing.metadata?.gnf_price?.toLocaleString() || pricing.gnf_cost.toLocaleString()}
+                                </span>
+                              </div>
+                              {pricing.metadata?.features && (
+                                <div className="mt-3 pt-3 border-t border-purple-200">
+                                  <p className="text-xs font-medium text-gray-700 mb-2">Inclus:</p>
+                                  <ul className="space-y-1">
+                                    {pricing.metadata.features.map((feature: string, idx: number) => (
+                                      <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                                        <CheckCircle className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
+                                        {feature}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                 </div>
