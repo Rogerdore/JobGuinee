@@ -86,7 +86,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       label: 'Candidatures',
       icon: FileCheck,
       children: [
-        { id: 'all-applications', label: 'Toutes les candidatures', icon: FileCheck, route: 'cms-admin' },
+        { id: 'all-applications', label: 'Toutes les candidatures', icon: FileCheck, route: 'admin-applications-list' },
         { id: 'external-apps', label: 'Candidatures externes', icon: Send, route: 'admin-external-applications' },
         { id: 'app-stats', label: 'Statistiques', icon: TrendingUp, route: 'cms-admin' }
       ]
