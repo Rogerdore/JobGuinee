@@ -540,6 +540,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       position_level: data.position_level,
       profile_sought: data.profile,
       company_logo_url: data.use_profile_logo ? (company.logo_url || logoUrl) : logoUrl,
+      featured_image_url: data.featured_image_url || null,
       use_profile_logo: data.use_profile_logo,
       company_description: data.company_description,
       company_website: data.website || null,

@@ -559,11 +559,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
                   <div className="p-6">
                     <div className="flex items-start gap-4 mb-4">
-                      {job.companies?.logo_url ? (
+                      {(job.featured_image_url || job.company_logo_url || job.companies?.logo_url) ? (
                         <div className="flex-shrink-0">
                           <img
-                            src={job.companies.logo_url}
-                            alt={job.companies.name}
+                            src={job.featured_image_url || job.company_logo_url || job.companies.logo_url}
+                            alt={job.companies?.name || 'Logo entreprise'}
                             className="w-16 h-16 rounded-xl object-cover border-2 border-gray-100 group-hover:border-[#FF8C00] transition-colors"
                           />
                         </div>

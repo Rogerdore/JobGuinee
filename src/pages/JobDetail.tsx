@@ -274,7 +274,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                 </div>
                 <div className="flex items-center space-x-3 mb-2">
                   <CompanyLogo
-                    logoUrl={job.companies?.logo_url}
+                    logoUrl={job.featured_image_url || job.company_logo_url || job.companies?.logo_url}
                     companyName={job.companies?.name || job.department || 'Entreprise'}
                     size="sm"
                   />
@@ -288,7 +288,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                 )}
               </div>
               <CompanyLogo
-                logoUrl={job.companies?.logo_url}
+                logoUrl={job.featured_image_url || job.company_logo_url || job.companies?.logo_url}
                 companyName={job.companies?.name || job.department || 'Entreprise'}
                 size="xl"
                 className="border-4 border-white/20 shadow-lg"
@@ -458,9 +458,9 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     À propos de l'entreprise
                   </h2>
                   <div className="flex items-start space-x-4 bg-gray-50 p-6 rounded-xl border-2 border-gray-200">
-                    {job.companies.logo_url && (
+                    {(job.featured_image_url || job.company_logo_url || job.companies.logo_url) && (
                       <img
-                        src={job.companies.logo_url}
+                        src={job.featured_image_url || job.company_logo_url || job.companies.logo_url}
                         alt={job.companies.name}
                         className="w-20 h-20 rounded-xl object-cover border-2 border-gray-300"
                       />

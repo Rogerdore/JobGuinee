@@ -142,6 +142,7 @@ export type Job = {
   ai_generated?: boolean;
   hiring_manager_id?: string;
   company_logo_url?: string;
+  featured_image_url?: string;
   company_description?: string;
   company_website?: string;
   submitted_at?: string;
