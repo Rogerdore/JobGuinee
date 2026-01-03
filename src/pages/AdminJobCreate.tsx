@@ -801,21 +801,15 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Secteur d'activité ({sectorSuggestions.length} catégories disponibles)
-                </label>
-                <select
-                  name="sector"
+                <AutoCompleteInput
                   value={formData.sector}
-                  onChange={handleInputChange}
+                  onChange={(value) => updateFormField('sector', value)}
+                  suggestions={sectorSuggestions}
+                  placeholder="Ex : Mines et Ressources Minérales"
+                  label={`Secteur d'activité * (${sectorSuggestions.length} catégories)`}
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="">-- Sélectionnez un secteur --</option>
-                  {sectorSuggestions.map(sector => (
-                    <option key={sector} value={sector}>{sector}</option>
-                  ))}
-                </select>
+                  minChars={2}
+                />
               </div>
             </div>
 
