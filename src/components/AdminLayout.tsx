@@ -44,29 +44,27 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
   }, [expandedMenus]);
 
   useEffect(() => {
-    const findParentMenu = (items: MenuItem[], targetRoute: string): string | null => {
+    const findAllParentMenus = (items: MenuItem[], targetRoute: string, parents: string[] = []): string[] | null => {
       for (const item of items) {
-        if (item.children) {
-          const hasMatchingChild = item.children.some(child => {
-            if (child.route === targetRoute) return true;
-            if (child.children) {
-              return findParentMenu([child], targetRoute) !== null;
-            }
-            return false;
-          });
-          if (hasMatchingChild) return item.id;
+        if (item.route === targetRoute) {
+          return parents;
+        }
 
-          const childResult = findParentMenu(item.children, targetRoute);
-          if (childResult) return childResult;
+        if (item.children) {
+          const result = findAllParentMenus(item.children, targetRoute, [...parents, item.id]);
+          if (result) return result;
         }
       }
       return null;
     };
 
     if (currentPage) {
-      const parentMenuId = findParentMenu(menuStructure, currentPage);
-      if (parentMenuId && !expandedMenus.includes(parentMenuId)) {
-        setExpandedMenus(prev => [...prev, parentMenuId]);
+      const allParentIds = findAllParentMenus(menuStructure, currentPage);
+      if (allParentIds && allParentIds.length > 0) {
+        const newParents = allParentIds.filter(id => !expandedMenus.includes(id));
+        if (newParents.length > 0) {
+          setExpandedMenus(prev => [...prev, ...newParents]);
+        }
       }
     }
   }, [currentPage]);
