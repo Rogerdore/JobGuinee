@@ -60,7 +60,7 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
 
   // Nouveaux états pour les fonctionnalités avancées
   const [auditStats, setAuditStats] = useState<AuditStats | null>(null);
-  const [activeTab, setActiveTab] = useState<'purchases' | 'config' | 'logs' | 'rules'>('purchases');
+  const [activeTab, setActiveTab] = useState<'purchases' | 'logs'>('purchases');
   const [searchTerm, setSearchTerm] = useState('');
   const [adminLogs, setAdminLogs] = useState<AdminLog[]>([]);
   const [conversionRules, setConversionRules] = useState<ConversionRule[]>([]);
@@ -434,8 +434,6 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
           <div className="flex border-b border-gray-200 overflow-x-auto">
             {[
               { id: 'purchases', label: 'Transactions', icon: ShoppingCart },
-              { id: 'config', label: 'Configuration', icon: Settings },
-              { id: 'rules', label: 'Règles & Bonus', icon: Calculator },
               { id: 'logs', label: 'Historique', icon: History }
             ].map(tab => (
               <button
@@ -607,130 +605,6 @@ export default function AdminCreditPurchases({ onNavigate }: PageProps) {
                   </table>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Configuration actuelle */}
-          {activeTab === 'config' && settings && (
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Settings className="w-6 h-6 text-orange-600" />
-                Configuration Orange Money
-              </h2>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-orange-500 rounded-lg">
-                      <DollarSign className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-orange-600 font-medium">Numéro Orange Money</div>
-                      <div className="text-2xl font-bold text-orange-900">{settings.admin_phone_number}</div>
-                    </div>
-                  </div>
-                  <div className="text-sm text-orange-700">
-                    Compte de réception des paiements
-                  </div>
-                </div>
-
-                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-green-500 rounded-lg">
-                      <Bell className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-green-600 font-medium">WhatsApp de réception</div>
-                      <div className="text-2xl font-bold text-green-900">{settings.admin_whatsapp_number}</div>
-                    </div>
-                  </div>
-                  <div className="text-sm text-green-700">
-                    Numéro pour l'envoi des preuves de paiement
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-blue-500 rounded-lg">
-                      <Calculator className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-blue-600 font-medium">Taux de conversion</div>
-                      <div className="text-2xl font-bold text-blue-900">1 000 FG = 10 crédits</div>
-                    </div>
-                  </div>
-                  <div className="text-sm text-blue-700">
-                    Taux de base configuré
-                  </div>
-                </div>
-
-                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-purple-500 rounded-lg">
-                      <Gift className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-purple-600 font-medium">Bonus actifs</div>
-                      <div className="text-2xl font-bold text-purple-900">
-                        {settings.bonus_enabled ? 'Activés' : 'Désactivés'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-sm text-purple-700">
-                    {settings.bonus_enabled ? 'Bonus appliqués aux achats' : 'Aucun bonus actif'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-yellow-800">
-                    <strong>Important:</strong> Les modifications de configuration se font via la page
-                    "Configuration de la boutique de crédits". Cette section est en lecture seule.
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Règles & Bonus */}
-          {activeTab === 'rules' && (
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Calculator className="w-6 h-6 text-orange-600" />
-                Règles de conversion & Bonus
-              </h2>
-
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl p-6 mb-6">
-                <h3 className="font-bold text-lg text-orange-900 mb-4">Paliers de crédits</h3>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {[
-                    { fg: '10 000', credits: '100', bonus: '0' },
-                    { fg: '50 000', credits: '500', bonus: '50' },
-                    { fg: '100 000', credits: '1 000', bonus: '200' }
-                  ].map((tier, index) => (
-                    <div key={index} className="bg-white rounded-lg p-4 border-2 border-orange-300">
-                      <div className="text-sm text-gray-600 mb-1">Montant</div>
-                      <div className="text-xl font-bold text-orange-600">{tier.fg} FG</div>
-                      <div className="mt-3 text-sm text-gray-600">Crédits de base</div>
-                      <div className="text-lg font-bold text-blue-600">{tier.credits} crédits</div>
-                      <div className="mt-2 text-sm text-gray-600">Bonus</div>
-                      <div className="text-lg font-bold text-green-600">+{tier.bonus} crédits</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <div className="flex items-start gap-3">
-                  <Gift className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
-                    <strong>Calcul automatique:</strong> Les crédits et bonus sont calculés automatiquement
-                    en fonction du montant payé. Les bonus sont traçables et non modifiables après validation.
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
