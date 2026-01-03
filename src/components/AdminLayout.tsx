@@ -172,22 +172,6 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         { id: 'job-alerts-config', label: 'Alertes Emploi', icon: AlertCircle, route: 'admin-job-alerts-config' },
         { id: 'interview-config', label: 'Entretiens', icon: Video, route: 'admin-interview-config' }
       ]
-    },
-    {
-      id: 'config',
-      label: 'Configuration',
-      icon: Settings,
-      children: [
-        { id: 'global-settings', label: 'Paramètres Globaux', icon: Settings, route: 'cms-admin' },
-        { id: 'homepage-content', label: 'Contenu Accueil', icon: Home, route: 'admin-homepage-content' },
-        { id: 'branding', label: 'Branding', icon: Palette, route: 'cms-admin' },
-        { id: 'seo', label: 'SEO', icon: Globe, route: 'admin-seo' },
-        { id: 'seo-landing', label: 'Landing Pages SEO', icon: Globe, route: 'admin-seo-landing-pages' },
-        { id: 'b2b-management', label: 'Gestion B2B', icon: Building2, route: 'admin-b2b-management' },
-        { id: 'b2b-seo', label: 'SEO B2B', icon: Globe, route: 'admin-b2b-seo-config' },
-        { id: 'diffusion-settings', label: 'Config Diffusion', icon: Send, route: 'admin-diffusion-settings' },
-        { id: 'automation-rules', label: 'Règles d\'Automatisation', icon: Zap, route: 'admin-automation-rules' }
-      ]
     }
   ];
 
