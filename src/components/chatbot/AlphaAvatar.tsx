@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle } from 'lucide-react';
+import alphaGif from '../../assets/chatbot/avatar_alpha_gif.gif';
 
 export type AlphaAvatarState =
   | 'idle'
@@ -217,22 +218,9 @@ export default function AlphaAvatar({
 
         <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-1">
           <img
-            src="/avatar_alpha_gif.gif"
+            src={alphaGif}
             alt="Alpha Avatar"
             className="w-full h-full object-contain rounded-full alpha-gif-avatar"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const svgFallback = target.parentElement?.querySelector('.svg-fallback');
-              if (svgFallback) {
-                (svgFallback as HTMLElement).style.display = 'block';
-              }
-            }}
-          />
-          <img
-            src="/avatars/alpha-animated.svg"
-            alt="Alpha Avatar"
-            className="svg-fallback w-full h-full object-contain rounded-full hidden"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
