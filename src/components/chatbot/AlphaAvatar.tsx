@@ -219,13 +219,26 @@ export default function AlphaAvatar({
           <img
             src="/avatar_alpha_gif.gif"
             alt="Alpha Avatar"
-            className="w-full h-full object-contain rounded-full"
+            className="w-full h-full object-contain rounded-full alpha-gif-avatar"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
-              const fallback = target.parentElement?.querySelector('.fallback-icon');
-              if (fallback) {
-                (fallback as HTMLElement).style.display = 'block';
+              const svgFallback = target.parentElement?.querySelector('.svg-fallback');
+              if (svgFallback) {
+                (svgFallback as HTMLElement).style.display = 'block';
+              }
+            }}
+          />
+          <img
+            src="/avatars/alpha-animated.svg"
+            alt="Alpha Avatar"
+            className="svg-fallback w-full h-full object-contain rounded-full hidden"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const iconFallback = target.parentElement?.querySelector('.fallback-icon');
+              if (iconFallback) {
+                (iconFallback as HTMLElement).style.display = 'block';
               }
             }}
           />
