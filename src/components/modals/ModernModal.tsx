@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 export type ModalType = 'success' | 'error' | 'warning' | 'info';
@@ -98,7 +99,10 @@ export default function ModernModal({
     onClose();
   };
 
-  return (
+  const modalRoot = document.getElementById('modal-root');
+  if (!modalRoot) return null;
+
+  const modalContent = (
     <div
       className="fixed inset-0 flex items-center justify-center p-4 animate-fadeIn"
       style={{ zIndex: 10000 }}
@@ -166,4 +170,6 @@ export default function ModernModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, modalRoot);
 }
