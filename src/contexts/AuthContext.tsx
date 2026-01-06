@@ -15,6 +15,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   getAndClearRedirectIntent: () => AuthRedirectIntent | null;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -190,6 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRedirectIntent(null);
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    if (error) {
+      throw new Error('Impossible d\'envoyer l\'email de réinitialisation. Vérifiez votre adresse email.');
+    }
+  };
+
   const getAndClearRedirectIntent = (): AuthRedirectIntent | null => {
     const intent = getAuthRedirectIntent();
     if (intent) {
@@ -229,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     refreshProfile,
     getAndClearRedirectIntent,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
