@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
+import AuthCallback from './pages/AuthCallback';
 import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
 
 const Jobs = lazy(() => import('./pages/Jobs'));
@@ -88,7 +89,7 @@ const AdminFormationBoost = lazy(() => import('./pages/AdminFormationBoost'));
 const AdminApplicationsList = lazy(() => import('./pages/AdminApplicationsList'));
 const Resources = lazy(() => import('./pages/Resources'));
 
-type Page = 'home' | 'login' | 'signup' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list';
+type Page = 'home' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -105,6 +106,11 @@ function AppContent() {
   useEffect(() => {
     // Disabled temporarily - RLS permissions issue
     // seoCoreWebVitalsService.initRUM();
+
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      setCurrentPage('auth-callback');
+    }
   }, []);
 
   const handleNavigate = (page: string, paramOrState?: string | any) => {
@@ -171,6 +177,10 @@ function AppContent() {
 
   if (currentPage === 'login' || currentPage === 'signup') {
     return <Auth mode={currentPage} onNavigate={handleNavigate} />;
+  }
+
+  if (currentPage === 'auth-callback') {
+    return <AuthCallback onNavigate={handleNavigate} />;
   }
 
   const loadingFallback = (

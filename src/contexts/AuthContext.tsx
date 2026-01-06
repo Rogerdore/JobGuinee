@@ -11,6 +11,7 @@ interface AuthContextType {
   redirectIntent: AuthRedirectIntent | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
+  signInWithGoogle: (role?: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   getAndClearRedirectIntent: () => AuthRedirectIntent | null;
@@ -162,6 +163,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (role: UserRole = 'candidate') => {
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+
+    localStorage.setItem('pending_oauth_role', role);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      }
+    });
+
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -205,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     redirectIntent,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
     refreshProfile,
     getAndClearRedirectIntent,
