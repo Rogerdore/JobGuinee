@@ -121,7 +121,9 @@ export default function Home({ onNavigate }: HomeProps) {
   };
 
   const shareJob = (job: Job & { companies: Company }, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    console.log('Share job clicked:', job.id);
     setShareJobModal(job);
   };
 
