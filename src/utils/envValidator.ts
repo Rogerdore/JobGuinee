@@ -156,6 +156,11 @@ class EnvValidator {
   }
 
   logConfiguration(): void {
+    // NE LOGGER QU'EN MODE DÉVELOPPEMENT
+    if (import.meta.env.MODE !== 'development') {
+      return;
+    }
+
     const config = this.getConfig();
     const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
 
@@ -165,10 +170,7 @@ class EnvValidator {
     console.log(`%c Supabase URL: %c${config.VITE_SUPABASE_URL}`, 'color: #888', 'color: #2196F3');
     console.log(`%c Anon Key: %c${config.VITE_SUPABASE_ANON_KEY.substring(0, 20)}...`, 'color: #888', 'color: #2196F3');
     console.log('%c────────────────────────────', 'color: #4CAF50');
-
-    if (environment === 'development') {
-      console.log('%c⚡ Mode développement activé', 'color: #FFC107');
-    }
+    console.log('%c⚡ Mode développement activé', 'color: #FFC107');
   }
 }
 
