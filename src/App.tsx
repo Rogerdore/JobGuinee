@@ -4,6 +4,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { CMSProvider } from './contexts/CMSContext';
 import { ModalProvider } from './contexts/ModalContext';
 import { ToastProvider } from './components/notifications/ToastContainer';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
@@ -338,17 +339,19 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <CMSProvider>
-          <ModalProvider>
-            <ToastProvider>
-              <AppContent />
-            </ToastProvider>
-          </ModalProvider>
-        </CMSProvider>
-      </NotificationProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <NotificationProvider>
+          <CMSProvider>
+            <ModalProvider>
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
+            </ModalProvider>
+          </CMSProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -175,16 +175,31 @@ class EnvValidator {
 export const envValidator = new EnvValidator();
 
 export function validateEnvOnStartup(): void {
-  const result = envValidator.validate();
+  try {
+    const result = envValidator.validate();
 
-  if (!result.isValid) {
-    envValidator.showValidationError(result);
-    throw new Error('Configuration environment invalide. Voir les détails ci-dessus.');
+    if (!result.isValid) {
+      envValidator.showValidationError(result);
+      // Ne pas lancer d'exception en production pour éviter la page blanche
+      if (import.meta.env.MODE === 'development') {
+        throw new Error('Configuration environment invalide. Voir les détails ci-dessus.');
+      } else {
+        console.error('❌ Configuration environment invalide:', result.errors);
+      }
+      return;
+    }
+
+    if (result.warnings.length > 0) {
+      console.warn('⚠️ Avertissements de configuration:', result.warnings);
+    }
+
+    envValidator.logConfiguration();
+  } catch (error) {
+    // Capturer toute erreur pour éviter de crasher l'application
+    console.error('❌ Erreur lors de la validation de l\'environnement:', error);
+    // En production, ne pas bloquer l'application
+    if (import.meta.env.MODE === 'development') {
+      throw error;
+    }
   }
-
-  if (result.warnings.length > 0) {
-    console.warn('⚠️ Avertissements de configuration:', result.warnings);
-  }
-
-  envValidator.logConfiguration();
 }
