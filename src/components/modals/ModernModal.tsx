@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
@@ -69,8 +69,14 @@ export default function ModernModal({
   const config = typeConfig[type];
   const IconComponent = config.Icon;
   const [mounted, setMounted] = useState(false);
+  const modalRootRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    // Récupérer modal-root UNE SEULE FOIS au montage
+    modalRootRef.current = document.getElementById('modal-root');
+    if (!modalRootRef.current) {
+      console.warn('ModernModal: modal-root element not found in DOM');
+    }
     setMounted(true);
     return () => setMounted(false);
   }, []);
@@ -105,9 +111,8 @@ export default function ModernModal({
     onClose();
   };
 
-  const modalRoot = document.getElementById('modal-root');
-  if (!modalRoot) {
-    console.warn('ModernModal: modal-root element not found in DOM');
+  // Utiliser la référence mise en cache au lieu d'un nouveau getElementById
+  if (!modalRootRef.current) {
     return null;
   }
 
@@ -180,5 +185,5 @@ export default function ModernModal({
     </div>
   );
 
-  return createPortal(modalContent, modalRoot);
+  return createPortal(modalContent, modalRootRef.current);
 }
