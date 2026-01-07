@@ -9,6 +9,7 @@ interface ChatbotWidgetProps {
 }
 
 export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
   const [style, setStyle] = useState<ChatbotStyle | null>(null);
@@ -17,9 +18,22 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   const [showProactiveMessage, setShowProactiveMessage] = useState(false);
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
 
+  // Protection contre insertBefore: montage différé avec requestAnimationFrame
   useEffect(() => {
-    loadConfiguration();
+    const rafId = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      setMounted(false);
+    };
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      loadConfiguration();
+    }
+  }, [mounted]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -102,6 +116,11 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
     }
   };
 
+  // PROTECTION 1: Bloquer tout rendu avant montage complet
+  if (!mounted) {
+    return null;
+  }
+
   if (loading) {
     return null;
   }
@@ -128,15 +147,16 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
 
   const isEnabled = settings.is_enabled;
 
-  console.log('🎯 ChatBot Widget Render:', {
-    isEnabled,
-    position,
-    animation,
-    settingsExists: !!settings,
-    styleExists: !!style
-  });
+  // PROTECTION 2: Envelopper le rendu dans try/catch pour éviter tout crash
+  try {
+    return renderChatbot();
+  } catch (error) {
+    console.error('🚨 ChatBot Widget - Erreur critique bloquée:', error);
+    return null;
+  }
 
-  return (
+  function renderChatbot() {
+    return (
     <>
       <div
         className={`fixed bottom-6 ${position} z-50 ${animation}`}
@@ -194,5 +214,6 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
         />
       )}
     </>
-  );
+    );
+  }
 }

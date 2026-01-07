@@ -36,6 +36,7 @@ interface ChatbotWindowProps {
 
 export default function ChatbotWindow({ settings, style, onClose, onNavigate }: ChatbotWindowProps) {
   const { user, profile } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,13 +48,26 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Protection contre insertBefore: montage différé
   useEffect(() => {
-    const init = async () => {
-      await loadQuickActions();
-      await loadUserContext();
+    const rafId = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      setMounted(false);
     };
-    init();
-  }, [user, profile]);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      const init = async () => {
+        await loadQuickActions();
+        await loadUserContext();
+      };
+      init();
+    }
+  }, [mounted, user, profile]);
 
   useEffect(() => {
     const animations = ['animate-chatbot-wave', 'animate-chatbot-bounce', 'animate-chatbot-excited'];
@@ -138,7 +152,14 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    try {
+      if (messagesEndRef.current && mounted) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    } catch (error) {
+      // Ignorer les erreurs de scroll pendant les transitions
+      console.debug('ChatBot scroll ignoré pendant transition');
+    }
   };
 
   const addBotMessage = (
@@ -293,10 +314,24 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     }
   };
 
+  // Bloquer le rendu avant montage complet
+  if (!mounted) {
+    return null;
+  }
+
   const position = settings.position === 'bottom-left' ? 'left-4' : 'right-4';
   const shadow = style?.shadow_strength === 'strong' ? 'shadow-2xl' : style?.shadow_strength === 'soft' ? 'shadow-lg' : 'shadow-md';
 
-  return (
+  // Protection contre les crashs React
+  try {
+    return renderWindow();
+  } catch (error) {
+    console.error('🚨 ChatBot Window - Erreur critique bloquée:', error);
+    return null;
+  }
+
+  function renderWindow() {
+    return (
     <div
       className={`fixed bottom-24 ${position} w-96 h-[600px] rounded-2xl ${shadow} flex flex-col overflow-hidden z-40 animate-slide-up backdrop-blur-xl bg-white/95 border border-white/20`}
       style={{
@@ -429,5 +464,6 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
         <ChatInput onSendMessage={handleSendMessage} disabled={loading} style={style} />
       </div>
     </div>
-  );
+    );
+  }
 }
