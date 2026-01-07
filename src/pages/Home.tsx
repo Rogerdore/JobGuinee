@@ -4,7 +4,7 @@ import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
   Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn,
-  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight, Heart
+  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight, Heart, Share2
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
 import VideoGuidesSection from '../components/home/VideoGuidesSection';
 import { savedJobsService } from '../services/savedJobsService';
+import ShareJobModal from '../components/common/ShareJobModal';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -38,6 +39,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
   const [savingJob, setSavingJob] = useState<string | null>(null);
+  const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
   useEffect(() => {
     loadData();
@@ -116,6 +118,11 @@ export default function Home({ onNavigate }: HomeProps) {
     } finally {
       setSavingJob(null);
     }
+  };
+
+  const shareJob = (job: Job & { companies: Company }, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShareJobModal(job);
   };
 
   const loadData = async () => {
@@ -594,6 +601,13 @@ export default function Home({ onNavigate }: HomeProps) {
                           {(job as any).saves_count}
                         </span>
                       )}
+                      <button
+                        onClick={(e) => shareJob(job, e)}
+                        className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all"
+                        title="Partager cette offre"
+                      >
+                        <Share2 className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1215,6 +1229,13 @@ export default function Home({ onNavigate }: HomeProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {shareJobModal && (
+        <ShareJobModal
+          job={shareJobModal}
+          onClose={() => setShareJobModal(null)}
+        />
       )}
     </div>
   );
