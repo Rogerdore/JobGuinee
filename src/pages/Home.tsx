@@ -328,10 +328,26 @@ export default function Home({ onNavigate }: HomeProps) {
     <div className="w-full">
       <section className="relative bg-gradient-to-br from-[#0E2F56] via-[#1a4275] to-[#0E2F56] text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+        {/* Image d'arrière-plan : Employés professionnels noirs souriants dans un bureau
+            Alternatives Pexels disponibles :
+            - https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg (Équipe diverse)
+            - https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg (Professionnels souriants)
+            - https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg (Bureau moderne)
+            - https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg (Collaboration)
+        */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: `url('/assets/hero/image_hero.gif')` }}
+          className="absolute inset-0 bg-cover bg-center opacity-30 animate-slow-zoom"
+          style={{ backgroundImage: `url('https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920')` }}
         ></div>
+        <style>{`
+          @keyframes slow-zoom {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+          .animate-slow-zoom {
+            animation: slow-zoom 20s ease-in-out infinite;
+          }
+        `}</style>
 
         <div className="relative max-w-7xl mx-auto px-4 py-8 md:py-16">
           <div className="text-center mb-12">
