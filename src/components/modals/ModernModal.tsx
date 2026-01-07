@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
@@ -68,6 +68,12 @@ export default function ModernModal({
 }: ModernModalProps) {
   const config = typeConfig[type];
   const IconComponent = config.Icon;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,7 +96,7 @@ export default function ModernModal({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleConfirm = () => {
     if (onConfirm) {
@@ -100,7 +106,10 @@ export default function ModernModal({
   };
 
   const modalRoot = document.getElementById('modal-root');
-  if (!modalRoot) return null;
+  if (!modalRoot) {
+    console.warn('ModernModal: modal-root element not found in DOM');
+    return null;
+  }
 
   const modalContent = (
     <div

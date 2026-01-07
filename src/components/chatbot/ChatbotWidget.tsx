@@ -94,6 +94,9 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
       setStyle(styleData);
     } catch (error) {
       console.error('❌ Alpha Avatar - Erreur:', error);
+      // En cas d'erreur, désactiver le chatbot pour éviter le crash
+      setSettings(null);
+      setStyle(null);
     } finally {
       setLoading(false);
     }
