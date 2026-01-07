@@ -120,6 +120,7 @@ export type Job = {
   is_urgent: boolean;
   views_count: number;
   applications_count: number;
+  saves_count?: number;
   nationality_required?: string;
   languages?: string[];
   keywords?: string[];

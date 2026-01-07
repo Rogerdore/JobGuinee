@@ -4,7 +4,7 @@ import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
   Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn,
-  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight
+  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight, Heart
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
 import VideoGuidesSection from '../components/home/VideoGuidesSection';
 import heroGif from '../assets/hero/image_hero.gif';
+import { savedJobsService } from '../services/savedJobsService';
 
 interface HomeProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -36,10 +37,15 @@ export default function Home({ onNavigate }: HomeProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
+  const [savingJob, setSavingJob] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
-  }, []);
+    if (user) {
+      loadSavedJobs();
+    }
+  }, [user]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -64,6 +70,54 @@ export default function Home({ onNavigate }: HomeProps) {
 
     return () => clearInterval(timer);
   }, [stats]);
+
+  const loadSavedJobs = async () => {
+    if (!user) return;
+    try {
+      const saved = await savedJobsService.getSavedJobs();
+      const savedMap: Record<string, boolean> = {};
+      saved.forEach(item => {
+        if (item.job_id) {
+          savedMap[item.job_id] = true;
+        }
+      });
+      setSavedJobs(savedMap);
+    } catch (error) {
+      console.error('Error loading saved jobs:', error);
+    }
+  };
+
+  const handleToggleSave = async (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    setSavingJob(jobId);
+    try {
+      const newState = await savedJobsService.toggleSaveJob(jobId);
+      setSavedJobs(prev => ({ ...prev, [jobId]: newState }));
+
+      // Recharger les jobs pour mettre à jour le compteur
+      const { data } = await supabase
+        .from('jobs')
+        .select('*, companies(*)')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (data) {
+        setRecentJobs(data as any);
+      }
+    } catch (error) {
+      console.error('Error toggling save:', error);
+      showError('Erreur', 'Impossible de sauvegarder cette offre');
+    } finally {
+      setSavingJob(null);
+    }
+  };
 
   const loadData = async () => {
     const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount] = await Promise.all([
@@ -516,20 +570,32 @@ export default function Home({ onNavigate }: HomeProps) {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
                     <div className="flex items-center space-x-2 text-gray-500">
                       <Clock className="w-4 h-4" />
-                      <span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
+                      <span className="text-sm">{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onNavigate('job-detail', job.id);
-                      }}
-                      className="text-[#FF8C00] font-semibold group-hover:underline"
-                    >
-                      Voir l'offre →
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleToggleSave(job.id, e)}
+                        disabled={savingJob === job.id}
+                        className={`p-2.5 rounded-lg border-2 transition-all ${
+                          savedJobs[job.id]
+                            ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
+                            : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+                        } ${savingJob === job.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={savedJobs[job.id] ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      >
+                        <Heart
+                          className={`w-5 h-5 ${savedJobs[job.id] ? 'fill-current' : ''}`}
+                        />
+                      </button>
+                      {(job as any).saves_count > 0 && (
+                        <span className="text-sm font-medium text-gray-600">
+                          {(job as any).saves_count}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
