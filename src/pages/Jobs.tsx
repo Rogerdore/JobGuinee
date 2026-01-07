@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
 import { testimonials, companies as recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
+import ShareJobModal from '../components/common/ShareJobModal';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -39,6 +40,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterDomain, setNewsletterDomain] = useState('');
   const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 10 });
+  const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
   const locations = ['Conakry', 'Boké', 'Kamsar', 'Kindia', 'Labé', 'Nzérékoré', 'Siguiri', 'Kankan', 'Mamou', 'Faranah'];
   const contractTypes = ['CDI', 'CDD', 'Stage', 'Mission', 'Freelance', 'Temps partiel'];
@@ -159,17 +161,10 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     }
   };
 
-  const shareJob = (job: Job, e: React.MouseEvent) => {
+  const shareJob = (job: Job & { companies: Company }, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    const text = `${job.title} - ${job.companies?.name}\n📍 ${job.location}\n💼 ${job.contract_type}\n\nPostulez sur JobGuinée`;
-    const url = window.location.origin;
-
-    if (navigator.share) {
-      navigator.share({ title: job.title, text, url });
-    } else {
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`;
-      window.open(whatsappUrl, '_blank');
-    }
+    setShareJobModal(job);
   };
 
   const filteredJobs = jobs.filter((job) => {
@@ -1026,6 +1021,13 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       </div>
 
       <div className="py-8"></div>
+
+      {shareJobModal && (
+        <ShareJobModal
+          job={shareJobModal}
+          onClose={() => setShareJobModal(null)}
+        />
+      )}
     </div>
   );
 }
