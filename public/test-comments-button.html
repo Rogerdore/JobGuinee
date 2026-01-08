@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test - Bouton Commentaires</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8 text-gray-900">Test du Bouton Commentaires</h1>
+
+    <div class="bg-white rounded-xl p-6 shadow-lg mb-8">
+      <h2 class="text-xl font-semibold mb-4">Aperçu de la carte d'offre avec bouton commentaires</h2>
+
+      <!-- Carte d'offre simulée -->
+      <div class="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white">
+        <div class="mb-4">
+          <h3 class="font-bold text-lg text-gray-900 mb-2">Comptable Junior</h3>
+          <div class="flex items-center space-x-2 text-gray-700 mb-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+            <span class="text-sm font-medium">Conakry</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">CDI</span>
+          <span class="px-3 py-1 bg-gray-200 text-gray-700 text-xs font-medium rounded-full">Finance</span>
+        </div>
+
+        <!-- Zone des boutons d'action -->
+        <div class="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
+          <div class="flex items-center space-x-2 text-gray-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-sm">Il y a 2 jours</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Bouton Favoris -->
+            <button class="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </button>
+
+            <!-- BOUTON COMMENTAIRES (avec badge) -->
+            <button class="p-2.5 rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all relative">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+              </svg>
+              <span class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">3</span>
+            </button>
+
+            <!-- Bouton Partager -->
+            <button class="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Légende -->
+      <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div class="flex items-start space-x-3">
+          <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <p class="font-semibold text-blue-900 mb-1">Voici à quoi ressemble le bouton commentaires :</p>
+            <ul class="text-sm text-blue-800 space-y-1">
+              <li>• Icône de bulle de dialogue 💬</li>
+              <li>• Badge numérique avec le nombre de commentaires (3 dans cet exemple)</li>
+              <li>• Bordure bleue pour le mettre en évidence</li>
+              <li>• Au clic, ouvre un modal avec tous les commentaires</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exemple de modal (aperçu) -->
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Aperçu du modal de commentaires</h2>
+
+      <div class="border-2 border-gray-300 rounded-xl overflow-hidden">
+        <!-- Header du modal -->
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 border-b border-gray-200">
+          <h3 class="text-lg font-bold text-gray-900">Commentaires</h3>
+          <p class="text-sm text-gray-600">Comptable Junior</p>
+        </div>
+
+        <!-- Zone de commentaires -->
+        <div class="p-4 space-y-4 bg-gray-50">
+          <!-- Commentaire exemple -->
+          <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="flex items-start space-x-3 mb-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                AC
+              </div>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="font-semibold text-gray-900">Amadou Camara</span>
+                  <span class="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">Candidat</span>
+                </div>
+                <span class="text-xs text-gray-500">Il y a 2 heures</span>
+              </div>
+            </div>
+            <p class="text-gray-700 mb-3">
+              Excellente opportunité ! J'ai postulé et l'équipe RH m'a répondu très rapidement.
+              L'entreprise est vraiment professionnelle. 👍
+            </p>
+            <div class="flex items-center space-x-4">
+              <button class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                <span>👍</span>
+                <span class="text-sm font-medium">12</span>
+              </button>
+              <button class="flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition">
+                <span>💡</span>
+                <span class="text-sm font-medium">5</span>
+              </button>
+              <button class="text-sm text-gray-600 hover:text-blue-600 font-medium">
+                Répondre
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone de saisie -->
+        <div class="p-4 border-t border-gray-200 bg-white">
+          <div class="flex space-x-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex-shrink-0"></div>
+            <div class="flex-1">
+              <textarea
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none"
+                rows="3"
+                placeholder="Partagez votre avis sur cette offre..."
+              ></textarea>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-gray-500">0/2000 caractères</span>
+                <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                  Publier
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="mt-8 p-6 bg-green-50 rounded-xl border border-green-200">
+      <h3 class="font-bold text-green-900 mb-3 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Comment voir le bouton dans votre application :
+      </h3>
+      <ol class="text-sm text-green-800 space-y-2 ml-7">
+        <li>1. Assurez-vous que le serveur de développement est démarré (<code class="bg-green-100 px-2 py-0.5 rounded">npm run dev</code>)</li>
+        <li>2. Ouvrez votre navigateur sur <code class="bg-green-100 px-2 py-0.5 rounded">http://localhost:5173</code></li>
+        <li>3. Allez sur la page d'accueil</li>
+        <li>4. Scrollez jusqu'à la section "Offres récentes"</li>
+        <li>5. Sur chaque carte d'offre, vous verrez 3 boutons en bas à droite :</li>
+        <ul class="ml-4 mt-2 space-y-1">
+          <li>• ❤️ Favoris</li>
+          <li>• <strong class="text-blue-700">💬 Commentaires (avec badge bleu)</strong> ← NOUVEAU !</li>
+          <li>• 🔗 Partager</li>
+        </ul>
+        <li>6. Cliquez sur le bouton 💬 pour ouvrir le modal des commentaires</li>
+      </ol>
+    </div>
+
+    <!-- Troubleshooting -->
+    <div class="mt-4 p-6 bg-yellow-50 rounded-xl border border-yellow-200">
+      <h3 class="font-bold text-yellow-900 mb-3 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        Si vous ne voyez toujours pas le bouton :
+      </h3>
+      <ul class="text-sm text-yellow-800 space-y-2 ml-7">
+        <li>• Videz le cache du navigateur (Ctrl+Shift+R ou Cmd+Shift+R)</li>
+        <li>• Vérifiez la console pour d'éventuelles erreurs (F12)</li>
+        <li>• Redémarrez le serveur de développement</li>
+        <li>• Vérifiez que le build s'est bien terminé sans erreur</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    console.log('✅ Page de test chargée');
+    console.log('📝 Le bouton commentaires devrait ressembler à la version mise en évidence ci-dessus');
+  </script>
+</body>
+</html>

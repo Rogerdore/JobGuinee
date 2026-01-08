@@ -129,6 +129,7 @@ export type Job = {
   views_count: number;
   applications_count: number;
   saves_count?: number;
+  comments_count?: number;
   nationality_required?: string;
   languages?: string[];
   keywords?: string[];
