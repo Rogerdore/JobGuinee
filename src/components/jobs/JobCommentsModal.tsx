@@ -73,16 +73,19 @@ export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: J
       await jobCommentsService.createComment(commentData);
       setNewComment('');
       await loadComments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting comment:', error);
-      alert('Erreur lors de la publication du commentaire');
+      const errorMessage = error?.message || 'Erreur lors de la publication du commentaire';
+      alert(errorMessage.includes('char_length')
+        ? 'Le commentaire doit contenir au moins 3 caractères'
+        : errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleSubmitReply = async (parentId: string) => {
-    if (!replyContent.trim() || !user) return;
+    if (!replyContent.trim() || replyContent.length < 3 || !user) return;
 
     setSubmitting(true);
     try {
@@ -96,9 +99,12 @@ export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: J
       setReplyContent('');
       setReplyingTo(null);
       await loadComments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting reply:', error);
-      alert('Erreur lors de la publication de la réponse');
+      const errorMessage = error?.message || 'Erreur lors de la publication de la réponse';
+      alert(errorMessage.includes('char_length')
+        ? 'La réponse doit contenir au moins 3 caractères'
+        : errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -344,7 +350,7 @@ export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: J
               />
               <button
                 onClick={() => handleSubmitReply(comment.id)}
-                disabled={!replyContent.trim() || submitting}
+                disabled={!replyContent.trim() || replyContent.length < 3 || submitting}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center space-x-2"
               >
                 <Send className="w-4 h-4" />
@@ -429,12 +435,12 @@ export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: J
                   maxLength={2000}
                 />
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">
-                    {newComment.length}/2000 caractères
+                  <span className={`text-xs ${newComment.length > 0 && newComment.length < 3 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                    {newComment.length}/2000 caractères {newComment.length > 0 && newComment.length < 3 && '(minimum 3)'}
                   </span>
                   <button
                     type="submit"
-                    disabled={!newComment.trim() || newComment.length < 10 || submitting}
+                    disabled={!newComment.trim() || newComment.length < 3 || submitting}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center space-x-2 font-medium"
                   >
                     {submitting ? (
