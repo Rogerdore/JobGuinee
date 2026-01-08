@@ -13,6 +13,7 @@ import { testimonials, companies as recruitingCompanies, jobCategories, guineaRe
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
+import { useRealtimeJobUpdates } from '../hooks/useRealtimeJobUpdates';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -71,6 +72,17 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     loadStats();
     if (user) loadSavedJobs();
   }, [user]);
+
+  useRealtimeJobUpdates({
+    onJobUpdate: (jobId, updates) => {
+      setJobs(prevJobs =>
+        prevJobs.map(job =>
+          job.id === jobId ? { ...job, ...updates } : job
+        )
+      );
+    },
+    enabled: true,
+  });
 
   useEffect(() => {
     if (initialSearch) {
@@ -150,30 +162,16 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
     const isSaved = savedJobs.includes(jobId);
 
-    if (isSaved) {
-      await supabase
-        .from('saved_jobs')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('job_id', jobId);
-      setSavedJobs(savedJobs.filter(id => id !== jobId));
+    try {
+      const newState = await supabase.rpc('toggle_save_job', { p_job_id: jobId });
 
-      setJobs(jobs.map(job =>
-        job.id === jobId
-          ? { ...job, saves_count: Math.max(0, (job.saves_count || 0) - 1) }
-          : job
-      ));
-    } else {
-      await supabase
-        .from('saved_jobs')
-        .insert({ user_id: user.id, job_id: jobId });
-      setSavedJobs([...savedJobs, jobId]);
-
-      setJobs(jobs.map(job =>
-        job.id === jobId
-          ? { ...job, saves_count: (job.saves_count || 0) + 1 }
-          : job
-      ));
+      if (newState) {
+        setSavedJobs([...savedJobs, jobId]);
+      } else {
+        setSavedJobs(savedJobs.filter(id => id !== jobId));
+      }
+    } catch (error) {
+      console.error('Error toggling saved job:', error);
     }
   };
 
