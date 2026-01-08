@@ -104,17 +104,16 @@ export default function Home({ onNavigate }: HomeProps) {
       const newState = await savedJobsService.toggleSaveJob(jobId);
       setSavedJobs(prev => ({ ...prev, [jobId]: newState }));
 
-      // Recharger les jobs pour mettre à jour le compteur
-      const { data } = await supabase
-        .from('jobs')
-        .select('*, companies(*)')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (data) {
-        setRecentJobs(data as any);
-      }
+      setRecentJobs(recentJobs.map(job =>
+        job.id === jobId
+          ? {
+              ...job,
+              saves_count: newState
+                ? (job.saves_count || 0) + 1
+                : Math.max(0, (job.saves_count || 0) - 1)
+            }
+          : job
+      ));
     } catch (error) {
       console.error('Error toggling save:', error);
       showError('Erreur', 'Impossible de sauvegarder cette offre');
