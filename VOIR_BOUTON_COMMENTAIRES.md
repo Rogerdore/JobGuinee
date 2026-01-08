@@ -30,9 +30,10 @@ Sur chaque carte d'offre, en bas, vous verrez **3 boutons d'action** :
 │  ─────────────────────────────────  │
 │  💰 Salaire                          │
 │  ─────────────────────────────────  │
-│  [❤️] [💬 3] [🔗] [Voir l'offre →] │
-│         ↑                            │
-│    NOUVEAU !                         │
+│  [❤️ 5] [💬 3] [🔗] [Voir l'offre →] │
+│     ↑      ↑                         │
+│   Rouge   Bleu                       │
+│  COMPTEURS VISIBLES !                │
 └─────────────────────────────────────┘
 ```
 
@@ -41,19 +42,37 @@ Sur chaque carte d'offre, en bas, vous verrez **3 boutons d'action** :
 - Icône : 💬 MessageCircle
 - Badge bleu avec le nombre de commentaires si > 0
 
+**Position du bouton favoris** :
+- **Premier bouton** à gauche
+- Icône : ❤️ Heart
+- Badge rouge avec le nombre de favoris si > 0
+
 ---
 
-## 🎨 Apparence du bouton
+## 🎨 Apparence des boutons avec compteurs
 
-### Sans commentaires
+### Bouton Favoris (❤️)
 ```
+Sans favoris :
 ┌──────┐
-│  💬  │  Bouton gris avec bordure
+│  ❤️  │  Bouton gris avec bordure
+└──────┘
+
+Avec favoris :
+┌──────┐
+│  ❤️  │  ← Bouton rouge (si vous avez liké)
+│  [5] │  ← Badge rouge avec le nombre
 └──────┘
 ```
 
-### Avec commentaires
+### Bouton Commentaires (💬)
 ```
+Sans commentaires :
+┌──────┐
+│  💬  │  Bouton gris avec bordure
+└──────┘
+
+Avec commentaires :
 ┌──────┐
 │  💬  │  ← Bouton gris
 │  [3] │  ← Badge bleu avec le nombre
@@ -62,7 +81,8 @@ Sur chaque carte d'offre, en bas, vous verrez **3 boutons d'action** :
 
 ### Au survol
 ```
-Fond bleu clair + bordure bleue + texte bleu
+Favoris : Fond rose + bordure rouge
+Commentaires : Fond bleu clair + bordure bleue + texte bleu
 "Voir les commentaires"
 ```
 
@@ -95,12 +115,19 @@ Fond bleu clair + bordure bleue + texte bleu
 
 ---
 
-## 📊 Compteur de commentaires
+## 📊 Compteurs sur les icônes
 
-Le badge bleu affiche automatiquement :
+### Badge rouge (Favoris ❤️)
+- **Nombre total** de personnes qui ont mis l'offre en favori
+- **Mise à jour en temps réel** quand quelqu'un ajoute/retire des favoris
+- **Disparaît** quand il n'y a aucun favori
+- **Couleur** : Rouge (`bg-red-600`)
+
+### Badge bleu (Commentaires 💬)
 - **Nombre total** de commentaires (parents + réponses)
 - **Mise à jour en temps réel** quand quelqu'un commente
 - **Disparaît** quand il n'y a aucun commentaire
+- **Couleur** : Bleu (`bg-blue-600`)
 
 ---
 
@@ -210,7 +237,9 @@ src/pages/Jobs.tsx
   - Ligne 7 : Import de MessageCircle
   - Ligne 15 : Import de JobCommentsModal
   - Ligne 45 : État pour gérer le modal
-  - Ligne 684-699 : Bouton commentaires avec badge
+  - Ligne 675 : Ajout de "relative" pour le bouton favoris
+  - Ligne 683-687 : Badge rouge pour le nombre de favoris
+  - Ligne 694-698 : Badge bleu pour le nombre de commentaires
   - Ligne 1050-1057 : Rendu du modal
 
 src/components/jobs/JobCommentsModal.tsx
@@ -222,11 +251,13 @@ src/components/jobs/JobCommentsModal.tsx
 ## 🎯 Résumé
 
 ✅ **Emplacement** : Page Jobs (/jobs)
-✅ **Position** : En bas de chaque carte, entre ❤️ et 🔗
-✅ **Icône** : 💬 MessageCircle
-✅ **Badge** : Nombre de commentaires (si > 0)
-✅ **Action** : Ouvre un modal avec tous les commentaires
-✅ **Build** : Réussi (47.61s)
+✅ **Bouton Favoris** : Badge rouge avec le nombre de likes
+✅ **Bouton Commentaires** : Badge bleu avec le nombre de commentaires
+✅ **Position** : En bas de chaque carte
+✅ **Compteurs** : Visibles uniquement si > 0
+✅ **Mise à jour** : Automatique en temps réel
+✅ **Action commentaires** : Ouvre un modal avec tous les commentaires
+✅ **Build** : Réussi (35.09s)
 
 ---
 
@@ -243,13 +274,16 @@ Carte d'offre :
 ╟──────────────────────────────────────╢
 ║ 💰 5M - 8M GNF                       ║
 ╟──────────────────────────────────────╢
-║ [❤️] [💬 3] [🔗]   [Voir l'offre →] ║
-║       ^^^^^^                          ║
-║       NOUVEAU                         ║
+║ [❤️ 5] [💬 3] [🔗]  [Voir l'offre →] ║
+║   ↑      ↑                            ║
+║ Rouge   Bleu                          ║
+║ COMPTEURS VISIBLES !                  ║
 ╚══════════════════════════════════════╝
 ```
 
-**Le bouton 💬 avec badge [3] = bouton commentaires !**
+**Les compteurs sont maintenant visibles sur les deux icônes !**
+- Badge rouge [5] = 5 personnes ont mis l'offre en favori
+- Badge bleu [3] = 3 commentaires sur l'offre
 
 ---
 

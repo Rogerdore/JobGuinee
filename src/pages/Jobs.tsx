@@ -672,7 +672,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => toggleSaveJob(job.id, e)}
-                          className={`p-2.5 rounded-lg border-2 transition-all ${
+                          className={`relative p-2.5 rounded-lg border-2 transition-all ${
                             savedJobs.includes(job.id)
                               ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
                               : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
@@ -680,6 +680,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                           title={savedJobs.includes(job.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                         >
                           <Heart className={`w-5 h-5 ${savedJobs.includes(job.id) ? 'fill-current' : ''}`} />
+                          {job.saves_count > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                              {job.saves_count}
+                            </span>
+                          )}
                         </button>
                         <button
                           onClick={(e) => {
