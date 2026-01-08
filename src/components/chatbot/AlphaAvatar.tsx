@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle } from 'lucide-react';
-import alphaGif from '../../assets/chatbot/avatar_alpha_gif.gif';
 
 export type AlphaAvatarState =
   | 'idle'
@@ -217,20 +216,7 @@ export default function AlphaAvatar({
         </div>
 
         <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-1">
-          <img
-            src={alphaGif}
-            alt="Alpha Avatar"
-            className="w-full h-full object-contain rounded-full alpha-gif-avatar"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const iconFallback = target.parentElement?.querySelector('.fallback-icon');
-              if (iconFallback) {
-                (iconFallback as HTMLElement).style.display = 'block';
-              }
-            }}
-          />
-          <MessageCircle className="fallback-icon w-10 h-10 text-white hidden absolute" strokeWidth={2} />
+          <MessageCircle className="w-10 h-10 text-white" strokeWidth={2} />
 
           {blinkEyes && (
             <div className="absolute inset-0 bg-[#0E2F56] opacity-30" />
