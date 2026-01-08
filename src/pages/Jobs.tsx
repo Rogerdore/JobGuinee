@@ -4,7 +4,7 @@ import {
   Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock,
   ChevronDown, Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign,
   Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight,
-  Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3
+  Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle
 } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,7 @@ import { sampleJobs } from '../utils/sampleJobsData';
 import { testimonials, companies as recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 import ShareJobModal from '../components/common/ShareJobModal';
+import JobCommentsModal from '../components/jobs/JobCommentsModal';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -41,6 +42,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [newsletterDomain, setNewsletterDomain] = useState('');
   const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 10 });
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
+  const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
   const locations = ['Conakry', 'Boké', 'Kamsar', 'Kindia', 'Labé', 'Nzérékoré', 'Siguiri', 'Kankan', 'Mamou', 'Faranah'];
   const contractTypes = ['CDI', 'CDD', 'Stage', 'Mission', 'Freelance', 'Temps partiel'];
@@ -680,6 +682,22 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                           <Heart className={`w-5 h-5 ${savedJobs.includes(job.id) ? 'fill-current' : ''}`} />
                         </button>
                         <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCommentsJobModal(job);
+                          }}
+                          className="relative p-2.5 rounded-lg border-2 border-gray-300 text-gray-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all"
+                          title="Voir les commentaires"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          {job.comments_count > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                              {job.comments_count}
+                            </span>
+                          )}
+                        </button>
+                        <button
                           onClick={(e) => shareJob(job, e)}
                           className="p-2.5 rounded-lg border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-all"
                           title="Partager"
@@ -1026,6 +1044,15 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
         <ShareJobModal
           job={shareJobModal}
           onClose={() => setShareJobModal(null)}
+        />
+      )}
+
+      {commentsJobModal && (
+        <JobCommentsModal
+          jobId={commentsJobModal.id}
+          jobTitle={commentsJobModal.title}
+          isOpen={true}
+          onClose={() => setCommentsJobModal(null)}
         />
       )}
     </div>

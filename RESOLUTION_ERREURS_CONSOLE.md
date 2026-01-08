@@ -43,7 +43,7 @@ Attendez que vous voyiez :
 ### 4. Ouvrir dans un nouvel onglet
 
 ```
-http://localhost:5173
+http://localhost:5173/jobs
 ```
 
 **IMPORTANT** : Ouvrez dans un **nouvel onglet**, pas celui qui avait les erreurs.
@@ -56,19 +56,23 @@ Une fois que le serveur est relancé et l'application chargée sans erreur :
 
 ### Où chercher le bouton ?
 
-1. **Allez sur la page d'accueil** (`http://localhost:5173`)
+1. **Allez sur la page des offres d'emploi** (`http://localhost:5173/jobs`)
 
-2. **Scrollez jusqu'à la section "Offres récentes"**
+2. **Scrollez pour voir les cartes d'offres**
 
 3. **Regardez en bas de chaque carte d'offre**
 
 Vous devriez voir 3 boutons :
 ```
 ┌──────────────────────────┐
+│  TITRE DE L'OFFRE        │
+│  Entreprise • Localité   │
 │  [CDI] [Finance]         │
 │  ─────────────────────   │
-│  ⏰ Il y a 2 jours        │
-│                           │
+│  Description...          │
+│  ─────────────────────   │
+│  💰 Salaire              │
+│  ─────────────────────   │
 │  [❤️] [💬 3] [🔗]         │
 │        ↑                  │
 │    NOUVEAU !              │
@@ -108,7 +112,7 @@ Dans le navigateur :
 ```
 1. Fermez TOUS les onglets de localhost:5173
 2. Ouvrez un NOUVEL onglet
-3. Allez sur http://localhost:5173
+3. Allez sur http://localhost:5173/jobs
 4. Appuyez sur Ctrl+Shift+R (vidage cache)
 ```
 
@@ -138,12 +142,12 @@ Si elles manquent, l'application ne peut pas se connecter à la base de données
 
 - [ ] Serveur arrêté complètement (Ctrl+C)
 - [ ] Cache vidé (`rm -rf node_modules/.vite dist`)
-- [ ] Build réussi (✓ déjà fait : "built in 35.27s")
+- [ ] Build réussi (✓ déjà fait : "built in 47.61s")
 - [ ] Serveur redémarré (`npm run dev`)
 - [ ] Nouvel onglet navigateur ouvert
 - [ ] Cache navigateur vidé (Ctrl+Shift+R)
-- [ ] Page d'accueil chargée sans erreur rouge
-- [ ] Scrollé jusqu'à "Offres récentes"
+- [ ] Page /jobs chargée sans erreur rouge
+- [ ] Scrollé pour voir les offres
 - [ ] Bouton 💬 visible sur les cartes
 
 ---
@@ -170,22 +174,22 @@ Si après toutes ces étapes le bouton n'est toujours pas visible :
 
 1. **Partagez une capture d'écran de** :
    - La console (F12) après redémarrage
-   - La section "Offres récentes" de la page
+   - La page /jobs avec les cartes d'offres
 
 2. **Vérifiez dans le code** :
    ```bash
-   grep -n "MessageCircle" src/pages/Home.tsx
+   grep -n "MessageCircle" src/pages/Jobs.tsx
    ```
 
    Résultat attendu :
    ```
-   7:  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight, Heart, Share2, MessageCircle
-   620:  <MessageCircle className="w-5 h-5" />
+   7:  Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle
+   693:  <MessageCircle className="w-5 h-5" />
    ```
 
-3. **Testez la page de démonstration** :
+3. **Consultez la documentation complète** :
    ```
-   http://localhost:5173/test-comments-button.html
+   VOIR_BOUTON_COMMENTAIRES.md
    ```
 
-   Cette page devrait toujours fonctionner car c'est du HTML statique.
+   Ce fichier contient toutes les instructions détaillées pour localiser et tester le bouton commentaires.
