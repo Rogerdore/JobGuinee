@@ -136,7 +136,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     const { data } = await supabase
       .from('saved_jobs')
       .select('job_id')
-      .eq('candidate_id', user.id);
+      .eq('user_id', user.id);
 
     if (data) setSavedJobs(data.map(item => item.job_id));
   };
@@ -152,15 +152,17 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       await supabase
         .from('saved_jobs')
         .delete()
-        .eq('candidate_id', user.id)
+        .eq('user_id', user.id)
         .eq('job_id', jobId);
       setSavedJobs(savedJobs.filter(id => id !== jobId));
     } else {
       await supabase
         .from('saved_jobs')
-        .insert({ candidate_id: user.id, job_id: jobId });
+        .insert({ user_id: user.id, job_id: jobId });
       setSavedJobs([...savedJobs, jobId]);
     }
+
+    await loadJobs();
   };
 
   const shareJob = (job: Job & { companies: Company }, e: React.MouseEvent) => {
