@@ -1058,6 +1058,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
           jobTitle={commentsJobModal.title}
           isOpen={true}
           onClose={() => setCommentsJobModal(null)}
+          onCommentAdded={loadJobs}
         />
       )}
     </div>

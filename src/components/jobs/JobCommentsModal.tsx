@@ -10,9 +10,10 @@ interface JobCommentsModalProps {
   jobTitle: string;
   isOpen: boolean;
   onClose: () => void;
+  onCommentAdded?: () => void;
 }
 
-export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: JobCommentsModalProps) {
+export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose, onCommentAdded }: JobCommentsModalProps) {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState<JobComment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -73,6 +74,7 @@ export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: J
       await jobCommentsService.createComment(commentData);
       setNewComment('');
       await loadComments();
+      onCommentAdded?.();
     } catch (error: any) {
       console.error('Error submitting comment:', error);
       const errorMessage = error?.message || 'Erreur lors de la publication du commentaire';
@@ -130,6 +132,7 @@ export default function JobCommentsModal({ jobId, jobTitle, isOpen, onClose }: J
     try {
       await jobCommentsService.deleteComment(commentId);
       await loadComments();
+      onCommentAdded?.();
     } catch (error) {
       console.error('Error deleting comment:', error);
       alert('Erreur lors de la suppression du commentaire');

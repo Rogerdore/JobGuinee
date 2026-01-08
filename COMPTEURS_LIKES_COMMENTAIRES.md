@@ -78,12 +78,15 @@ Avec commentaires :
 - **Valeur** : Nombre total de personnes qui ont mis l'offre en favori
 - **Met à jour** : Quand quelqu'un ajoute/retire des favoris
 
-### Compteur de Commentaires (💬)
+### Compteur de Commentaires (💬) - ✅ MISE À JOUR AUTOMATIQUE
 - **Couleur du badge** : Bleu (`bg-blue-600`)
 - **Affichage** : Uniquement si `comments_count > 0`
 - **Position** : Coin supérieur droit de l'icône
-- **Valeur** : Nombre total de commentaires (parents + réponses)
-- **Met à jour** : Quand quelqu'un publie un commentaire
+- **Valeur** : Nombre total de commentaires PARENTS uniquement (pas les réponses)
+- **Met à jour** : ✅ **AUTOMATIQUEMENT** quand vous publiez/supprimez un commentaire
+  - **Trigger BDD** : Met à jour `jobs.comments_count` instantanément
+  - **Callback React** : Recharge les offres pour afficher le nouveau compteur
+  - **Temps réel** : Vous voyez immédiatement le changement !
 
 ---
 
@@ -202,7 +205,30 @@ comments_count INTEGER DEFAULT 0
 
 Ces colonnes sont mises à jour automatiquement par des triggers :
 - `update_saves_count_trigger` : Incrémente/décrémente quand on ajoute/retire des favoris
-- `update_comments_count_trigger` : Incrémente/décrémente quand on ajoute/supprime des commentaires
+- `trigger_update_job_comments_count` ✅ : Incrémente/décrémente quand on ajoute/supprime des commentaires
+
+### ✨ Nouveau : Système de mise à jour automatique
+
+**Migration** : `add_job_comments_count_trigger.sql`
+
+Le trigger met à jour le compteur en temps réel :
+```sql
+CREATE TRIGGER trigger_update_job_comments_count
+  AFTER INSERT OR DELETE ON job_comments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_job_comments_count();
+```
+
+**Fonctionnement** :
+1. Vous publiez un commentaire → Trigger incrémente `comments_count`
+2. Le callback `onCommentAdded` recharge les offres
+3. Le badge se met à jour instantanément avec le nouveau nombre
+
+**Avantages** :
+- ✅ Pas de calcul côté application
+- ✅ Toujours synchronisé
+- ✅ Performance optimale
+- ✅ Ne compte QUE les commentaires parents
 
 ---
 

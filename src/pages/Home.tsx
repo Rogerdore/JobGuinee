@@ -1267,6 +1267,7 @@ export default function Home({ onNavigate }: HomeProps) {
           jobTitle={commentsJobModal.title}
           isOpen={true}
           onClose={() => setCommentsJobModal(null)}
+          onCommentAdded={loadData}
         />
       )}
     </div>
