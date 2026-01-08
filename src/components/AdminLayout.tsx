@@ -428,13 +428,14 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200" style={{ minHeight: '80px', position: 'relative', zIndex: 1 }}>
           {sidebarOpen ? (
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg">
-                <Settings className="w-6 h-6 text-white" />
-              </div>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo_jobguinee.png"
+                alt="JobGuinée"
+                className="h-10 w-auto"
+              />
               <div>
-                <h1 className="font-bold text-lg text-gray-900">JobGuinée</h1>
-                <p className="text-xs text-gray-500">Administration</p>
+                <p className="text-xs text-gray-500 font-semibold">Administration</p>
               </div>
             </div>
           ) : (

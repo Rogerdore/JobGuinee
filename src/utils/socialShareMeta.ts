@@ -99,7 +99,7 @@ export const generateJobShareMeta = (job: {
   return {
     title: job.title,
     description,
-    image: job.companies?.logo_url || '/assets/hero/image_hero.gif',
+    image: job.companies?.logo_url || '/logo_jobguinee.png',
     url: `${window.location.origin}/job/${job.id}`,
     type: 'article',
   };

@@ -68,10 +68,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div className="flex items-center">
               <button
                 onClick={() => onNavigate('home')}
-                className="flex items-center space-x-2 text-xl font-bold text-blue-900 hover:text-blue-700 transition"
+                className="flex items-center hover:opacity-80 transition"
               >
-                <Briefcase className="w-8 h-8" />
-                <span>JobGuinée</span>
+                <img
+                  src="/logo_jobguinee.png"
+                  alt="JobGuinée"
+                  className="h-10 w-auto"
+                />
               </button>
             </div>
 
