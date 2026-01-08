@@ -4,7 +4,7 @@ import {
   Search, Briefcase, Users, MapPin, Building, ArrowRight,
   Award, BookOpen, CheckCircle, Star, Zap, Target, Shield,
   Truck, DollarSign, Code, GraduationCap, UserCheck, Clock, Calendar, Check, X, LogIn,
-  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight, Heart, Share2
+  Mountain, Smartphone, Ship, Drill, Factory, Gem, ChevronLeft, ChevronRight, Heart, Share2, MessageCircle
 } from 'lucide-react';
 import { supabase, Job, Company, Formation } from '../lib/supabase';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -15,6 +15,7 @@ import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
 import VideoGuidesSection from '../components/home/VideoGuidesSection';
 import { savedJobsService } from '../services/savedJobsService';
 import ShareJobModal from '../components/common/ShareJobModal';
+import JobCommentsModal from '../components/jobs/JobCommentsModal';
 import heroGif from '../assets/hero/image_hero.gif';
 
 interface HomeProps {
@@ -41,6 +42,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [savedJobs, setSavedJobs] = useState<Record<string, boolean>>({});
   const [savingJob, setSavingJob] = useState<string | null>(null);
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
+  const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
   useEffect(() => {
     loadData();
@@ -126,6 +128,12 @@ export default function Home({ onNavigate }: HomeProps) {
     e.stopPropagation();
     console.log('Share job clicked:', job.id);
     setShareJobModal(job);
+  };
+
+  const openComments = (job: Job & { companies: Company }, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCommentsJobModal(job);
   };
 
   const loadData = async () => {
@@ -604,6 +612,18 @@ export default function Home({ onNavigate }: HomeProps) {
                           {(job as any).saves_count}
                         </span>
                       )}
+                      <button
+                        onClick={(e) => openComments(job, e)}
+                        className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all relative"
+                        title="Voir les commentaires"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        {job.comments_count > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                            {job.comments_count}
+                          </span>
+                        )}
+                      </button>
                       <button
                         onClick={(e) => shareJob(job, e)}
                         className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all"
@@ -1238,6 +1258,15 @@ export default function Home({ onNavigate }: HomeProps) {
         <ShareJobModal
           job={shareJobModal}
           onClose={() => setShareJobModal(null)}
+        />
+      )}
+
+      {commentsJobModal && (
+        <JobCommentsModal
+          jobId={commentsJobModal.id}
+          jobTitle={commentsJobModal.title}
+          isOpen={true}
+          onClose={() => setCommentsJobModal(null)}
         />
       )}
     </div>
