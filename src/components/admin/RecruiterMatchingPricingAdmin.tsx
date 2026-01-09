@@ -18,7 +18,6 @@ import {
   MatchingPricingOption,
   RecruiterAISubscription
 } from '../../services/recruiterMatchingPricingService';
-import { supabase } from '../../lib/supabase';
 
 export default function RecruiterMatchingPricingAdmin() {
   const [activeTab, setActiveTab] = useState<'pricing' | 'subscriptions'>('pricing');
@@ -58,7 +57,7 @@ export default function RecruiterMatchingPricingAdmin() {
 
   const loadPendingSubscriptions = async () => {
     // Charger les abonnements en attente de validation
-    const { data, error } = await supabase
+    const { data, error } = await (await import('../../lib/supabase')).supabase
       .from('recruiter_ai_subscriptions')
       .select(`
         *,
