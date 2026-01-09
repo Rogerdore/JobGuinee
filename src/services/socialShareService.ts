@@ -1,4 +1,4 @@
-import { Job } from '../lib/supabase';
+import { Job, supabase } from '../lib/supabase';
 
 export interface SocialShareMetadata {
   title: string;
@@ -172,8 +172,6 @@ export const socialShareService = {
 
   async trackShare(jobId: string, platform: keyof SocialShareLinks): Promise<void> {
     try {
-      const { supabase } = await import('../lib/supabase');
-
       await supabase
         .from('social_share_analytics')
         .insert({
