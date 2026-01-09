@@ -221,8 +221,8 @@ export default function AlphaAvatar({
             alt="Alpha Assistant"
             className="w-full h-full object-cover"
             style={{
-              objectPosition: 'center 35%',
-              transform: `scale(1.4) translateY(8%)`
+              objectPosition: 'center top',
+              transform: `scale(1.8) translateY(30%)`
             }}
             loading="lazy"
           />
