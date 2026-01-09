@@ -219,10 +219,10 @@ export default function AlphaAvatar({
           <img
             src={avatarAlphaGif}
             alt="Alpha Assistant"
-            className="w-full h-full object-cover scale-110"
+            className="w-full h-full object-cover"
             style={{
-              objectPosition: 'center 20%',
-              transform: `scale(1.3) translateY(-5%)`
+              objectPosition: 'center 35%',
+              transform: `scale(1.4) translateY(8%)`
             }}
             loading="lazy"
           />
