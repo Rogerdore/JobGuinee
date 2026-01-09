@@ -95,7 +95,7 @@ export default function SocialSharePreview({
             <img
               src={displayImage}
               alt={metadata.title}
-              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+              className={`w-full h-full object-contain ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
               onLoad={() => setImageLoaded(true)}
               onError={() => {
                 if (fallbackAttempts < 2) {
