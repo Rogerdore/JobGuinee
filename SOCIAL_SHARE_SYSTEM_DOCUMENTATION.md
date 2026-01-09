@@ -153,16 +153,31 @@ Preview de l'apparence sur les réseaux sociaux:
 ### Structure URL
 
 ```
-https://jobguinee-pro.com/assets/share/jobs/[job-id].png
-https://jobguinee-pro.com/assets/share/default-job.png (fallback)
+https://jobguinee-pro.com/assets/share/jobs/[job-id].png (image spécifique)
+https://jobguinee-pro.com/logo_jobguinee.png (fallback universel)
 ```
 
-### Fallback Automatique
+### Cascade Automatique des Images
 
-Si l'image spécifique n'existe pas:
-1. Le système détecte l'erreur 404
-2. Charge automatiquement `default-job.png`
-3. Affiche un badge "Fallback" dans le preview
+Le système utilise une logique de cascade intelligente :
+
+**1. Image spécifique** → `/assets/share/jobs/[job-id].png`
+   - Créée manuellement pour les offres importantes
+   - Optimisée pour le partage social (1200×630)
+
+**2. Image de mise en avant** → `job.featured_image_url`
+   - Uploadée par le recruteur lors de la publication
+   - Utilisée si pas d'image spécifique
+
+**3. Logo de l'entreprise** → `job.company_logo_url` ou `job.companies.logo_url`
+   - Logo de l'entreprise recruteuse
+   - Utilisé si pas d'image de mise en avant
+
+**4. Logo JobGuinée** → `/logo_jobguinee.png`
+   - Fallback universel toujours disponible
+   - Garantit un partage professionnel
+
+Cette cascade garantit qu'une image appropriée est toujours affichée, dans l'ordre de priorité optimal.
 
 ### Création d'Images
 

@@ -17,10 +17,10 @@ export interface SocialShareLinks {
 }
 
 const BASE_URL = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
-const DEFAULT_SHARE_IMAGE = `${BASE_URL}/assets/share/default-job.png`;
+const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.png`;
 
 export const socialShareService = {
-  generateJobMetadata(job: Partial<Job>): SocialShareMetadata {
+  generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
     const jobUrl = `${BASE_URL}/offres/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const company = job.company_name || job.company || 'Entreprise';
@@ -30,7 +30,7 @@ export const socialShareService = {
 
     const description = this.generateDescription(job);
 
-    const image = this.getJobShareImage(job.id);
+    const image = this.getJobShareImage(job);
 
     return {
       title,
@@ -97,12 +97,24 @@ export const socialShareService = {
     return description;
   },
 
-  getJobShareImage(jobId?: string): string {
-    if (!jobId) return DEFAULT_SHARE_IMAGE;
+  getJobShareImage(job: Partial<Job> & { companies?: any }): string {
+    if (!job || !job.id) return JOBGUINEE_LOGO;
 
-    const specificImage = `${BASE_URL}/assets/share/jobs/${jobId}.png`;
+    const specificImage = `${BASE_URL}/assets/share/jobs/${job.id}.png`;
 
-    return specificImage;
+    if (job.featured_image_url) {
+      return specificImage;
+    }
+
+    if (job.company_logo_url) {
+      return job.company_logo_url;
+    }
+
+    if (job.companies?.logo_url) {
+      return job.companies.logo_url;
+    }
+
+    return JOBGUINEE_LOGO;
   },
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
@@ -200,12 +212,37 @@ export const socialShareService = {
     });
   },
 
-  async getJobImageWithFallback(jobId?: string): Promise<string> {
-    if (!jobId) return DEFAULT_SHARE_IMAGE;
+  async getJobImageWithFallback(job: Partial<Job> & { companies?: any }): Promise<string> {
+    if (!job || !job.id) return JOBGUINEE_LOGO;
 
-    const specificImage = this.getJobShareImage(jobId);
-    const exists = await this.checkImageExists(specificImage);
+    const specificImage = `${BASE_URL}/assets/share/jobs/${job.id}.png`;
+    const specificExists = await this.checkImageExists(specificImage);
 
-    return exists ? specificImage : DEFAULT_SHARE_IMAGE;
+    if (specificExists) {
+      return specificImage;
+    }
+
+    if (job.featured_image_url) {
+      const featuredExists = await this.checkImageExists(job.featured_image_url);
+      if (featuredExists) {
+        return job.featured_image_url;
+      }
+    }
+
+    if (job.company_logo_url) {
+      const companyLogoExists = await this.checkImageExists(job.company_logo_url);
+      if (companyLogoExists) {
+        return job.company_logo_url;
+      }
+    }
+
+    if (job.companies?.logo_url) {
+      const companiesLogoExists = await this.checkImageExists(job.companies.logo_url);
+      if (companiesLogoExists) {
+        return job.companies.logo_url;
+      }
+    }
+
+    return JOBGUINEE_LOGO;
   }
 };

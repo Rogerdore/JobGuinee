@@ -3,14 +3,38 @@
 ## 📁 Structure des Dossiers
 
 ```
-public/assets/share/
-├── README.md                    (ce fichier)
-├── default-job.png             (image fallback 1200×630px)
-└── jobs/
-    ├── [job-id-1].png          (image spécifique offre 1)
-    ├── [job-id-2].png          (image spécifique offre 2)
-    └── ...
+public/
+├── logo_jobguinee.png          (logo JobGuinée - fallback par défaut)
+└── assets/share/
+    ├── README.md                (ce fichier)
+    └── jobs/
+        ├── [job-id-1].png      (image spécifique offre 1)
+        ├── [job-id-2].png      (image spécifique offre 2)
+        └── ...
 ```
+
+## 🔄 Logique de Cascade des Images
+
+Le système utilise une logique de cascade intelligente pour choisir la meilleure image de partage :
+
+**1. Image spécifique de partage** (Priorité maximale)
+   - Chemin : `public/assets/share/jobs/[job-id].png`
+   - URL : `https://jobguinee-pro.com/assets/share/jobs/[job-id].png`
+   - Créée manuellement pour les offres importantes
+
+**2. Image de mise en avant** (Si disponible)
+   - Champ : `job.featured_image_url`
+   - Image uploadée par le recruteur lors de la publication
+
+**3. Logo de l'entreprise** (Si disponible)
+   - Champs : `job.company_logo_url` ou `job.companies.logo_url`
+   - Logo de l'entreprise recruteuse
+
+**4. Logo JobGuinée** (Fallback par défaut)
+   - Chemin : `public/logo_jobguinee.png`
+   - Toujours disponible, utilisé quand aucune autre image n'existe
+
+Cette cascade garantit qu'une image professionnelle est toujours affichée lors du partage.
 
 ## 🎨 Spécifications des Images
 
@@ -42,18 +66,19 @@ Chaque image de partage d'offre devrait contenir :
 7. **Background** : Dégradé bleu JobGuinée (#0E2F56)
 8. **CTA** : "Postuler sur JobGuinée"
 
-## 🖼️ Image par Défaut (default-job.png)
+## 🖼️ Logo JobGuinée (Fallback Universel)
 
-L'image `default-job.png` est utilisée comme **fallback** quand :
-- L'image spécifique d'une offre n'existe pas
-- L'offre vient d'être créée
-- Erreur de chargement
+Le logo `logo_jobguinee.png` est utilisé comme **fallback universel** dans ces cas :
+- Aucune image spécifique créée pour l'offre
+- Aucune image de mise en avant uploadée
+- Pas de logo d'entreprise disponible
+- Erreur de chargement de toutes les images
 
-**Contenu de l'image par défaut :**
-- Logo JobGuinée (grand, centré)
-- Texte : "Offre d'Emploi en Guinée"
-- Slogan : "Trouvez votre prochain emploi sur JobGuinée"
-- Background : Dégradé bleu JobGuinée
+**Avantages du logo comme fallback :**
+- Toujours disponible et optimisé
+- Cohérence visuelle avec la marque JobGuinée
+- Poids minimal pour chargement rapide
+- Professionnalisme garanti
 
 ## 🔄 Génération Automatique des Images
 

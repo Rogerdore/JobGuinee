@@ -23,10 +23,10 @@ export default function SocialSharePreview({
 
     const img = new Image();
     img.onload = () => setImageLoaded(true);
-    img.onerror = async () => {
+    img.onerror = () => {
       setImageError(true);
-      const fallback = await socialShareService.getJobImageWithFallback();
-      setFallbackImage(fallback);
+      const baseUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
+      setFallbackImage(`${baseUrl}/logo_jobguinee.png`);
     };
     img.src = metadata.image;
   }, [metadata.image]);

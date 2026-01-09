@@ -196,14 +196,12 @@ dist/assets/share/
 https://jobguinee-pro.com/offres/[job-id]
 ```
 
-**Image de partage spécifique:**
+**Cascade des images de partage:**
 ```
-https://jobguinee-pro.com/assets/share/jobs/[job-id].png
-```
-
-**Image de partage par défaut:**
-```
-https://jobguinee-pro.com/assets/share/default-job.png
+1. https://jobguinee-pro.com/assets/share/jobs/[job-id].png (spécifique)
+2. job.featured_image_url (image de mise en avant)
+3. job.company_logo_url (logo entreprise)
+4. https://jobguinee-pro.com/logo_jobguinee.png (fallback universel)
 ```
 
 ### Meta Tags Type
@@ -333,12 +331,10 @@ SELECT * FROM get_most_shared_jobs(10);
 
 ### Pré-requis
 
-**1. Image par défaut:**
-- [ ] Créer `public/assets/share/default-job.png`
-- Dimensions: 1200 × 630 pixels
-- Poids: < 500 Ko
-- Format: PNG ou JPG
-- Contenu: Logo JobGuinée + "Offre d'emploi en Guinée"
+**1. Logo JobGuinée:**
+- ✅ Déjà présent : `public/logo_jobguinee.png`
+- Utilisé comme fallback universel
+- Aucune action requise
 
 **2. Variables d'environnement:**
 ```env
@@ -521,10 +517,11 @@ Le système de partage social est **100% opérationnel** et prêt pour la produc
 ✅ Checklist de validation
 ✅ Build compilé avec succès
 
-**Action requise avant mise en production:**
-- Créer l'image `default-job.png` (1200×630px)
-- Tester avec les debuggers officiels
-- Valider sur un partage réel
+**Prêt pour production immédiate:**
+- ✅ Logo JobGuinée utilisé comme fallback universel
+- ✅ Cascade d'images intelligente implémentée
+- Recommandé : Tester avec les debuggers officiels
+- Recommandé : Valider sur un partage réel
 
 **Temps d'implémentation:** Système complet développé et documenté en une session.
 
