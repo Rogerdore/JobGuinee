@@ -17,7 +17,8 @@ export interface SocialShareLinks {
 }
 
 const BASE_URL = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
-const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.png`;
+const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.svg`;
+const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.svg`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
@@ -98,14 +99,15 @@ export const socialShareService = {
   },
 
   getJobShareImage(job: Partial<Job> & { companies?: any }): string {
-    if (!job || !job.id) return JOBGUINEE_LOGO;
+    if (!job || !job.id) return DEFAULT_JOB_IMAGE;
 
-    const specificImage = `${BASE_URL}/assets/share/jobs/${job.id}.png`;
-
+    // Cascade intelligente d'images
+    // 1. Image de mise en avant uploadée par le recruteur
     if (job.featured_image_url) {
-      return specificImage;
+      return job.featured_image_url;
     }
 
+    // 2. Logo de l'entreprise
     if (job.company_logo_url) {
       return job.company_logo_url;
     }
@@ -114,7 +116,12 @@ export const socialShareService = {
       return job.companies.logo_url;
     }
 
-    return JOBGUINEE_LOGO;
+    // 3. Image spécifique de partage (si créée manuellement)
+    const specificImage = `${BASE_URL}/assets/share/jobs/${job.id}.png`;
+
+    // Note: En cas d'échec, le composant SocialSharePreview utilisera DEFAULT_JOB_IMAGE
+    // Pour l'instant, on retourne l'image par défaut qui existe toujours
+    return DEFAULT_JOB_IMAGE;
   },
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
@@ -213,8 +220,9 @@ export const socialShareService = {
   },
 
   async getJobImageWithFallback(job: Partial<Job> & { companies?: any }): Promise<string> {
-    if (!job || !job.id) return JOBGUINEE_LOGO;
+    if (!job || !job.id) return DEFAULT_JOB_IMAGE;
 
+    // 1. Vérifier l'image spécifique de partage
     const specificImage = `${BASE_URL}/assets/share/jobs/${job.id}.png`;
     const specificExists = await this.checkImageExists(specificImage);
 
@@ -222,6 +230,7 @@ export const socialShareService = {
       return specificImage;
     }
 
+    // 2. Vérifier l'image de mise en avant
     if (job.featured_image_url) {
       const featuredExists = await this.checkImageExists(job.featured_image_url);
       if (featuredExists) {
@@ -229,6 +238,7 @@ export const socialShareService = {
       }
     }
 
+    // 3. Vérifier le logo de l'entreprise
     if (job.company_logo_url) {
       const companyLogoExists = await this.checkImageExists(job.company_logo_url);
       if (companyLogoExists) {
@@ -243,6 +253,7 @@ export const socialShareService = {
       }
     }
 
-    return JOBGUINEE_LOGO;
+    // 4. Fallback universel : image par défaut JobGuinée
+    return DEFAULT_JOB_IMAGE;
   }
 };

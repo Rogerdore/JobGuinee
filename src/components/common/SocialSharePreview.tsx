@@ -15,23 +15,34 @@ export default function SocialSharePreview({
 }: SocialSharePreviewProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [fallbackImage, setFallbackImage] = useState<string | null>(null);
+  const [currentImage, setCurrentImage] = useState(metadata.image);
+  const [fallbackAttempts, setFallbackAttempts] = useState(0);
 
   useEffect(() => {
     setImageLoaded(false);
     setImageError(false);
-
-    const img = new Image();
-    img.onload = () => setImageLoaded(true);
-    img.onerror = () => {
-      setImageError(true);
-      const baseUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
-      setFallbackImage(`${baseUrl}/logo_jobguinee.png`);
-    };
-    img.src = metadata.image;
+    setCurrentImage(metadata.image);
+    setFallbackAttempts(0);
   }, [metadata.image]);
 
-  const displayImage = imageError && fallbackImage ? fallbackImage : metadata.image;
+  const tryNextFallback = () => {
+    const baseUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
+
+    if (fallbackAttempts === 0) {
+      // Premier fallback : image par défaut d'offre
+      setCurrentImage(`${baseUrl}/assets/share/default-job.svg`);
+      setFallbackAttempts(1);
+    } else if (fallbackAttempts === 1) {
+      // Deuxième fallback : logo JobGuinée
+      setCurrentImage(`${baseUrl}/logo_jobguinee.svg`);
+      setFallbackAttempts(2);
+    } else {
+      // Dernier recours : afficher une erreur
+      setImageError(true);
+    }
+  };
+
+  const displayImage = currentImage;
 
   const platformStyles = {
     facebook: {
@@ -72,24 +83,31 @@ export default function SocialSharePreview({
             </div>
           )}
 
-          {imageError && !fallbackImage && (
+          {imageError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-4">
               <AlertCircle className="w-12 h-12 mb-2" />
               <p className="text-sm text-center">Image de partage non disponible</p>
-              <p className="text-xs text-center mt-1">L'image par défaut sera utilisée</p>
+              <p className="text-xs text-center mt-1">Impossible de charger l'image</p>
             </div>
           )}
 
-          <img
-            src={displayImage}
-            alt={metadata.title}
-            className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
-            onError={() => {
-              setImageError(true);
-            }}
-          />
+          {!imageError && (
+            <img
+              src={displayImage}
+              alt={metadata.title}
+              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                if (fallbackAttempts < 2) {
+                  tryNextFallback();
+                } else {
+                  setImageError(true);
+                }
+              }}
+            />
+          )}
 
-          {imageError && fallbackImage && (
+          {imageLoaded && fallbackAttempts > 0 && (
             <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               Fallback
