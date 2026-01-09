@@ -334,7 +334,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {job.contract_type && (
-                <div className="flex items-center space-x-3 bg-blue-50 p-4 rounded-xl border-2 border-blue-100">
+                <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
                   <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Briefcase className="w-5 h-5 text-white" />
                   </div>
@@ -346,8 +346,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
 
               {job.experience_level && (
-                <div className="flex items-center space-x-3 bg-orange-50 p-4 rounded-xl border-2 border-orange-100">
-                  <div className="w-10 h-10 bg-[#FF8C00] rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Users className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -358,8 +358,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
 
               {job.education_level && (
-                <div className="flex items-center space-x-3 bg-purple-50 p-4 rounded-xl border-2 border-purple-100">
-                  <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
                     <GraduationCap className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -370,8 +370,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
 
               {(job as any).primary_qualification && (
-                <div className="flex items-center space-x-3 bg-teal-50 p-4 rounded-xl border-2 border-teal-100">
-                  <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Award className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -382,7 +382,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
 
               {((job.salary_min || job.salary_max) || (job as any).salary_range) && (
-                <div className="flex items-center space-x-3 bg-green-50 p-4 rounded-xl border-2 border-green-100">
+                <div className="flex items-center space-x-3 bg-green-50 p-4 rounded-lg border border-green-200">
                   <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     <DollarSign className="w-5 h-5 text-white" />
                   </div>
@@ -406,8 +406,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
 
               {job.sector && (
-                <div className="flex items-center space-x-3 bg-indigo-50 p-4 rounded-xl border-2 border-indigo-100">
-                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Building className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -417,7 +417,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                 </div>
               )}
 
-              <div className="flex items-center space-x-3 bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
+              <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
                 <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
@@ -434,7 +434,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               </div>
 
               {(job.deadline || job.application_deadline) && (
-                <div className="flex items-center space-x-3 bg-red-50 p-4 rounded-xl border-2 border-red-100">
+                <div className="flex items-center space-x-3 bg-red-50 p-4 rounded-lg border border-red-200">
                   <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Clock className="w-5 h-5 text-white" />
                   </div>
@@ -452,8 +452,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
 
               {(job as any).publication_duration && (
-                <div className="flex items-center space-x-3 bg-cyan-50 p-4 rounded-xl border-2 border-cyan-100">
-                  <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center space-x-3 bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
                     <TrendingUp className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -464,9 +464,9 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
               <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-full mx-auto mb-2">
+                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
                   <Eye className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{job.views_count || 0}</div>
@@ -474,7 +474,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               </div>
 
               <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-500 rounded-full mx-auto mb-2">
+                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{job.applications_count || 0}</div>
@@ -482,7 +482,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               </div>
 
               <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-red-500 rounded-full mx-auto mb-2">
+                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
                   <Heart className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{(job as any).saves_count || 0}</div>
@@ -490,7 +490,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               </div>
 
               <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-purple-500 rounded-full mx-auto mb-2">
+                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
                   <MessageCircle className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{(job as any).comments_count || 0}</div>
@@ -499,10 +499,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
             </div>
 
             {job.keywords && job.keywords.length > 0 && (
-              <div className="mb-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-xl">
+              <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-4">
                   <Tag className="w-6 h-6 text-[#0E2F56]" />
-                  <h3 className="text-xl font-bold text-gray-900">🎯 Compétences requises</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Compétences requises</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {job.keywords.map((skill, index) => (
@@ -518,17 +518,17 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
             )}
 
             {((job.languages && job.languages.length > 0) || ((job as any).language_requirements && (job as any).language_requirements.length > 0)) && (
-              <div className="mb-8 p-6 bg-purple-50 border-2 border-purple-200 rounded-xl">
+              <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-4">
-                  <Languages className="w-6 h-6 text-purple-600" />
-                  <h3 className="text-xl font-bold text-gray-900">🌐 Langues requises</h3>
+                  <Languages className="w-6 h-6 text-[#0E2F56]" />
+                  <h3 className="text-xl font-bold text-gray-900">Langues requises</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {(job as any).language_requirements && (job as any).language_requirements.length > 0 ? (
                     (job as any).language_requirements.map((lang: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border-2 border-purple-200">
+                      <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
                         <span className="font-semibold text-gray-800">{lang.language}</span>
-                        <span className="px-3 py-1 bg-purple-600 text-white rounded-full text-xs font-medium">
+                        <span className="px-3 py-1 bg-[#0E2F56] text-white rounded-full text-xs font-medium">
                           {lang.level}
                         </span>
                       </div>
@@ -537,7 +537,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     job.languages.map((lang, index) => (
                       <span
                         key={index}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium text-center"
+                        className="px-4 py-2 bg-[#0E2F56] text-white rounded-full text-sm font-medium text-center"
                       >
                         {lang}
                       </span>
@@ -548,14 +548,14 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
             )}
 
             {job.benefits && job.benefits.length > 0 && (
-              <div className="mb-8 p-6 bg-green-50 border-2 border-green-200 rounded-xl">
+              <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="w-6 h-6 text-green-600" />
-                  <h3 className="text-xl font-bold text-gray-900">✨ Avantages proposés</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Avantages proposés</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {(typeof job.benefits === 'string' ? job.benefits.split(', ') : job.benefits).map((benefit, index) => (
-                    <div key={index} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-green-300">
+                    <div key={index} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
                       <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                       <span className="text-gray-800 font-medium">{benefit}</span>
                     </div>
@@ -567,10 +567,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
             <div className="space-y-8">
               <div className="border-t-2 border-gray-200 pt-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <FileText className="w-6 h-6 text-[#FF8C00]" />
-                  📝 Description complète du poste
+                  <FileText className="w-6 h-6 text-[#0E2F56]" />
+                  Description du poste
                 </h2>
-                <div className="prose prose-blue max-w-none bg-gray-50 p-6 rounded-xl">
+                <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
                   <div
                     className="text-gray-700 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }}
@@ -581,10 +581,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               {job.responsibilities && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Target className="w-6 h-6 text-[#FF8C00]" />
-                    🎯 Responsabilités
+                    <Target className="w-6 h-6 text-[#0E2F56]" />
+                    Responsabilités
                   </h2>
-                  <div className="prose prose-blue max-w-none bg-orange-50 p-6 rounded-xl border-2 border-orange-200">
+                  <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
                     <div
                       className="text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: job.responsibilities.replace(/\n/g, '<br />') }}
@@ -596,10 +596,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               {job.requirements && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <CheckCircle2 className="w-6 h-6 text-[#FF8C00]" />
-                    ✓ Exigences et compétences
+                    <CheckCircle2 className="w-6 h-6 text-[#0E2F56]" />
+                    Exigences et compétences
                   </h2>
-                  <div className="prose prose-blue max-w-none bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
+                  <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
                     <div
                       className="text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: job.requirements.replace(/\n/g, '<br />') }}
@@ -611,10 +611,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               {(job as any).profile_sought && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Users className="w-6 h-6 text-[#FF8C00]" />
-                    👤 Profil recherché
+                    <Users className="w-6 h-6 text-[#0E2F56]" />
+                    Profil recherché
                   </h2>
-                  <div className="prose prose-blue max-w-none bg-purple-50 p-6 rounded-xl border-2 border-purple-200">
+                  <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
                     <div
                       className="text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: (job as any).profile_sought.replace(/\n/g, '<br />') }}
@@ -626,10 +626,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               {((job as any).application_email || (job as any).application_instructions || (job as any).required_documents) && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Mail className="w-6 h-6 text-[#FF8C00]" />
-                    📧 Modalités de candidature
+                    <Mail className="w-6 h-6 text-[#0E2F56]" />
+                    Modalités de candidature
                   </h2>
-                  <div className="bg-yellow-50 p-6 rounded-xl border-2 border-yellow-200 space-y-4">
+                  <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 space-y-4">
                     {(job as any).application_email && (
                       <div>
                         <div className="text-sm font-semibold text-gray-600 mb-2">Email de candidature :</div>
@@ -657,7 +657,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                           {(job as any).required_documents.map((doc: string, index: number) => (
                             <span
                               key={index}
-                              className="px-4 py-2 bg-yellow-200 text-gray-800 rounded-lg text-sm font-medium flex items-center gap-2"
+                              className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg text-sm font-medium flex items-center gap-2"
                             >
                               <Download className="w-4 h-4" />
                               {doc}
@@ -670,7 +670,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     {(job as any).application_instructions && (
                       <div>
                         <div className="text-sm font-semibold text-gray-600 mb-2">Instructions spéciales :</div>
-                        <div className="bg-white p-4 rounded-lg border border-yellow-300 text-gray-700">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 text-gray-700">
                           {(job as any).application_instructions}
                         </div>
                       </div>
@@ -682,10 +682,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               {job.companies && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Building className="w-6 h-6 text-[#FF8C00]" />
-                    🏢 À propos de l'entreprise
+                    <Building className="w-6 h-6 text-[#0E2F56]" />
+                    À propos de l'entreprise
                   </h2>
-                  <div className="flex items-start space-x-4 bg-gradient-to-br from-gray-50 to-blue-50 p-6 rounded-xl border-2 border-gray-200">
+                  <div className="flex items-start space-x-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
                     {(job.featured_image_url || job.company_logo_url || job.companies.logo_url) && (
                       <img
                         src={job.featured_image_url || job.company_logo_url || job.companies.logo_url}
@@ -738,26 +738,26 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               {((job as any).visibility || (job as any).nationality_required || (job as any).auto_renewal) && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Info className="w-6 h-6 text-[#FF8C00]" />
-                    ℹ️ Informations supplémentaires
+                    <Info className="w-6 h-6 text-[#0E2F56]" />
+                    Informations supplémentaires
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {(job as any).visibility && (
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
                         <div className="text-xs text-gray-500 font-medium mb-1">Visibilité</div>
                         <div className="font-bold text-gray-900">{(job as any).visibility}</div>
                       </div>
                     )}
 
                     {(job as any).nationality_required && (
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
                         <div className="text-xs text-gray-500 font-medium mb-1">Nationalité requise</div>
                         <div className="font-bold text-gray-900">{(job as any).nationality_required}</div>
                       </div>
                     )}
 
                     {(job as any).auto_renewal && (
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-center gap-2">
+                      <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center gap-2">
                         <CheckCircle2 className="w-5 h-5 text-green-600" />
                         <div>
                           <div className="text-xs text-gray-500 font-medium mb-1">Renouvellement</div>
