@@ -61,30 +61,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      (async () => {
+    // PROTECTION: Ne jamais bloquer le démarrage de l'app si Supabase est indisponible
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('⚠️ Erreur lors de la récupération de la session:', error);
+          setLoading(false);
+          return;
+        }
+
         setUser(session?.user ?? null);
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+          } catch (profileError) {
+            console.error('⚠️ Erreur lors de la récupération du profil:', profileError);
+          }
         }
         setLoading(false);
-      })();
-    });
+      } catch (error) {
+        console.error('⚠️ Erreur critique lors de l\'initialisation de l\'auth:', error);
+        setLoading(false);
+      }
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
-        } else {
-          setProfile(null);
+    initAuth();
+
+    // Protection de l'abonnement aux changements d'état
+    let subscription: any = null;
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        (async () => {
+          try {
+            setUser(session?.user ?? null);
+            if (session?.user) {
+              const profileData = await fetchProfile(session.user.id);
+              setProfile(profileData);
+            } else {
+              setProfile(null);
+            }
+          } catch (error) {
+            console.error('⚠️ Erreur dans onAuthStateChange:', error);
+          }
+        })();
+      });
+      subscription = data.subscription;
+    } catch (error) {
+      console.error('⚠️ Erreur lors de la souscription aux changements d\'auth:', error);
+    }
+
+    return () => {
+      try {
+        if (subscription) {
+          subscription.unsubscribe();
         }
-      })();
-    });
-
-    return () => subscription.unsubscribe();
+      } catch (error) {
+        console.error('⚠️ Erreur lors de la désinscription:', error);
+      }
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

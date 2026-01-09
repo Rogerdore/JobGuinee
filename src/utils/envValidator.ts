@@ -181,12 +181,15 @@ export function validateEnvOnStartup(): void {
     const result = envValidator.validate();
 
     if (!result.isValid) {
-      envValidator.showValidationError(result);
-      // Ne pas lancer d'exception en production pour éviter la page blanche
+      // En développement, afficher l'erreur mais NE JAMAIS BLOQUER
+      console.error('❌ Configuration environment invalide:', result.errors);
+      console.warn('⚠️ L\'application va démarrer malgré les erreurs de configuration');
+
+      // Afficher l'avertissement visuellement mais permettre le rendu
       if (import.meta.env.MODE === 'development') {
-        throw new Error('Configuration environment invalide. Voir les détails ci-dessus.');
-      } else {
-        console.error('❌ Configuration environment invalide:', result.errors);
+        setTimeout(() => {
+          envValidator.showValidationError(result);
+        }, 1000);
       }
       return;
     }
@@ -197,11 +200,8 @@ export function validateEnvOnStartup(): void {
 
     envValidator.logConfiguration();
   } catch (error) {
-    // Capturer toute erreur pour éviter de crasher l'application
+    // ABSOLUMENT AUCUNE EXCEPTION NE DOIT BLOQUER LE DÉMARRAGE
     console.error('❌ Erreur lors de la validation de l\'environnement:', error);
-    // En production, ne pas bloquer l'application
-    if (import.meta.env.MODE === 'development') {
-      throw error;
-    }
+    console.warn('⚠️ L\'application démarre malgré l\'erreur de validation');
   }
 }
