@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import AlphaIcon, { AlphaIconState } from './AlphaIcon';
+import avatarAlphaGif from '../../assets/chatbot/avatar_alpha_gif copy copy.gif';
 
 export type AlphaAvatarState =
   | 'idle'
@@ -216,10 +216,15 @@ export default function AlphaAvatar({
         </div>
 
         <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg">
-          <AlphaIcon
-            state={state as AlphaIconState}
-            size={size === 'small' ? 56 : size === 'large' ? 80 : 68}
-            className="scale-90"
+          <img
+            src={avatarAlphaGif}
+            alt="Alpha Assistant"
+            className="w-full h-full object-cover scale-110"
+            style={{
+              objectPosition: 'center 20%',
+              transform: `scale(1.3) translateY(-5%)`
+            }}
+            loading="lazy"
           />
 
           {blinkEyes && (
