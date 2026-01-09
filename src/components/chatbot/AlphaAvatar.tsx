@@ -222,7 +222,7 @@ export default function AlphaAvatar({
             className="w-full h-full object-cover"
             style={{
               objectPosition: 'center top',
-              transform: `scale(1.62) translateY(9%)`
+              transform: `scale(1.46) translateY(9%)`
             }}
             loading="lazy"
           />
