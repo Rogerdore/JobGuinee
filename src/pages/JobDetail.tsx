@@ -15,6 +15,7 @@ import AccessRestrictionModal from '../components/common/AccessRestrictionModal'
 import AuthRequiredModal from '../components/common/AuthRequiredModal';
 import ApplicationSuccessModal from '../components/candidate/ApplicationSuccessModal';
 import ShareJobModal from '../components/common/ShareJobModal';
+import MarkdownRenderer from '../components/common/MarkdownRenderer';
 import { useSavedJobs } from '../hooks/useSavedJobs';
 import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
@@ -570,11 +571,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                   <FileText className="w-6 h-6 text-[#0E2F56]" />
                   Description du poste
                 </h2>
-                <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
-                  <div
-                    className="text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }}
-                  />
+                <div className="bg-white p-6 rounded-xl border border-gray-200">
+                  <MarkdownRenderer content={job.description} />
                 </div>
               </div>
 
@@ -584,11 +582,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     <Target className="w-6 h-6 text-[#0E2F56]" />
                     Responsabilités
                   </h2>
-                  <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
-                    <div
-                      className="text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: job.responsibilities.replace(/\n/g, '<br />') }}
-                    />
+                  <div className="bg-white p-6 rounded-xl border border-gray-200">
+                    <MarkdownRenderer content={job.responsibilities} />
                   </div>
                 </div>
               )}
@@ -599,11 +594,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     <CheckCircle2 className="w-6 h-6 text-[#0E2F56]" />
                     Exigences et compétences
                   </h2>
-                  <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
-                    <div
-                      className="text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: job.requirements.replace(/\n/g, '<br />') }}
-                    />
+                  <div className="bg-white p-6 rounded-xl border border-gray-200">
+                    <MarkdownRenderer content={job.requirements} />
                   </div>
                 </div>
               )}
@@ -614,11 +606,8 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     <Users className="w-6 h-6 text-[#0E2F56]" />
                     Profil recherché
                   </h2>
-                  <div className="prose prose-blue max-w-none bg-white p-6 rounded-xl border border-gray-200">
-                    <div
-                      className="text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: (job as any).profile_sought.replace(/\n/g, '<br />') }}
-                    />
+                  <div className="bg-white p-6 rounded-xl border border-gray-200">
+                    <MarkdownRenderer content={(job as any).profile_sought} />
                   </div>
                 </div>
               )}
