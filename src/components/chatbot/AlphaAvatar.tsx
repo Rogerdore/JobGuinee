@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle } from 'lucide-react';
+import AlphaIcon, { AlphaIconState } from './AlphaIcon';
 
 export type AlphaAvatarState =
   | 'idle'
@@ -215,11 +215,15 @@ export default function AlphaAvatar({
           <div className="w-full h-full rounded-full bg-transparent" />
         </div>
 
-        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg p-1">
-          <MessageCircle className="w-10 h-10 text-white" strokeWidth={2} />
+        <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0E2F56] to-[#1a4a7e] flex items-center justify-center shadow-lg">
+          <AlphaIcon
+            state={state as AlphaIconState}
+            size={size === 'small' ? 56 : size === 'large' ? 80 : 68}
+            className="scale-90"
+          />
 
           {blinkEyes && (
-            <div className="absolute inset-0 bg-[#0E2F56] opacity-30" />
+            <div className="absolute inset-0 bg-[#0E2F56] opacity-30 pointer-events-none" />
           )}
         </div>
 
