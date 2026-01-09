@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 import { SocialShareMetadata } from '../services/socialShareService';
 
-export function useSocialShareMeta(metadata: SocialShareMetadata) {
+export function useSocialShareMeta(metadata: SocialShareMetadata | null) {
   useEffect(() => {
+    if (!metadata) {
+      return;
+    }
+
     const metaTags: Array<{ property?: string; name?: string; content: string }> = [
       { property: 'og:type', content: metadata.type },
       { property: 'og:site_name', content: metadata.siteName },

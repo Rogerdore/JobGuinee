@@ -43,9 +43,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
   const { isSaved, loading: savingJob, toggleSave } = useSavedJobs(jobId);
 
   const shareMetadata = job ? socialShareService.generateJobMetadata(job) : null;
-  if (shareMetadata) {
-    useSocialShareMeta(shareMetadata);
-  }
+  useSocialShareMeta(shareMetadata);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
