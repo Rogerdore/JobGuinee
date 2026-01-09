@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, Building, Briefcase, DollarSign, Calendar, ArrowLeft,
   FileText, Users, GraduationCap, Globe, Mail, CheckCircle2,
-  Clock, Tag, Languages, X, BookmarkPlus, Bookmark
+  Clock, Tag, Languages, X, BookmarkPlus, Bookmark, Share2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
@@ -12,8 +12,11 @@ import CompanyLogo from '../components/common/CompanyLogo';
 import AccessRestrictionModal from '../components/common/AccessRestrictionModal';
 import AuthRequiredModal from '../components/common/AuthRequiredModal';
 import ApplicationSuccessModal from '../components/candidate/ApplicationSuccessModal';
+import ShareJobModal from '../components/common/ShareJobModal';
 import { useSavedJobs } from '../hooks/useSavedJobs';
 import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
+import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
+import { socialShareService } from '../services/socialShareService';
 
 interface JobDetailProps {
   jobId: string;
@@ -35,8 +38,14 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
   const [nextSteps, setNextSteps] = useState<string[]>([]);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [profileCompletionPercentage, setProfileCompletionPercentage] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const { isSaved, loading: savingJob, toggleSave } = useSavedJobs(jobId);
+
+  const shareMetadata = job ? socialShareService.generateJobMetadata(job) : null;
+  if (shareMetadata) {
+    useSocialShareMeta(shareMetadata);
+  }
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
@@ -549,6 +558,13 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                       )}
                       {isSaved ? 'Offre enregistrée' : 'Enregistrer cette offre'}
                     </button>
+                    <button
+                      onClick={() => setShowShareModal(true)}
+                      className="w-full py-3 border-2 border-[#FF8C00] text-[#FF8C00] hover:bg-[#FF8C00] hover:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
+                    >
+                      <Share2 className="w-5 h-5" />
+                      Partager cette offre
+                    </button>
                   </div>
                 )}
               </div>
@@ -600,6 +616,14 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
         currentUserType={profile?.user_type}
         onNavigate={onNavigate}
       />
+
+      {job && (
+        <ShareJobModal
+          job={job}
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 }
