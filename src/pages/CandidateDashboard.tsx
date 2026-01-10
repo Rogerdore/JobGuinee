@@ -13,7 +13,6 @@ import { candidateApplicationTrackingService } from '../services/candidateApplic
 import { usePendingApplication } from '../hooks/usePendingApplication';
 import ExternalApplicationCTA from '../components/candidate/ExternalApplicationCTA';
 import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
-import ProfileProgressBar from '../components/candidate/ProfileProgressBar';
 import { ProtectedPageWrapper } from '../components/common/AccessControlExample';
 import { useModalContext } from '../contexts/ModalContext';
 
@@ -616,85 +615,58 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
           <div className="p-6">
             {activeTab === 'dashboard' && (
-              <div className="space-y-6">
-                <ProfileProgressBar
-                  candidateProfileId={candidateProfile?.id}
-                  onNavigate={(section) => setActiveTab('profile')}
-                  compact={false}
-                />
-
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                  <div className="flex items-start justify-between mb-4">
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">Complétion rapide</h3>
-                      <p className="text-sm text-gray-600 mb-3">Votre profil est complété à <span className="font-bold text-orange-600">{profileCompletion}%</span></p>
-                      <ProfileQualityBadge completion={profileCompletion} variant="compact" />
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">Complétion de votre Profil</h3>
+                      <p className="text-sm text-gray-600">Votre profil est complété à <span className="font-semibold text-gray-900">{profileCompletion}%</span></p>
                     </div>
                     <button
                       onClick={() => setActiveTab('profile')}
-                      className="px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-blue-800 transition text-sm font-medium"
+                      className="px-3 py-1.5 bg-[#0E2F56] text-white rounded-md hover:bg-[#1a4275] transition text-sm font-medium"
                     >
                       Compléter
                     </button>
                   </div>
 
-                  {/* Barre de progression intelligente */}
-                  <div className="relative">
-                    {/* Barre de fond avec marqueurs */}
-                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
-                      {/* Barre de progression avec dégradé orange uniforme */}
-                      <div
-                        className="h-full transition-all duration-1000 ease-out bg-gradient-to-r from-amber-500 to-orange-500"
-                        style={{ width: `${profileCompletion}%` }}
-                      >
-                        {/* Animation de brillance */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
-                      </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ProfileQualityBadge completion={profileCompletion} variant="compact" />
+                  </div>
 
-                      {/* Marqueurs d'étapes clés */}
-                      <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-30"></div>
-                      <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
+                  {/* Barre de progression */}
+                  <div className="relative">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden relative">
+                      <div
+                        className="h-full transition-all duration-500 bg-[#0E2F56]"
+                        style={{ width: `${profileCompletion}%` }}
+                      ></div>
                     </div>
 
-                    {/* Labels des étapes positionnés exactement */}
-                    <div className="relative mt-2 h-5">
-                      {/* 0% */}
-                      <span className="absolute left-0 text-xs text-gray-600 font-medium">
-                        0%
-                      </span>
-
-                      {/* 50% */}
-                      <span className="absolute left-1/2 -translate-x-1/2 text-xs text-gray-600 font-medium">
-                        50%
-                      </span>
-
-                      {/* 80% CVthèque */}
-                      <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
-                        profileCompletion >= 80 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
-                      } flex items-center gap-1 whitespace-nowrap`}>
-                        {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
+                    {/* Labels des étapes */}
+                    <div className="flex justify-between mt-1.5 text-xs text-gray-500">
+                      <span>0%</span>
+                      <span>50%</span>
+                      <span className={profileCompletion >= 80 ? 'text-gray-900 font-medium' : ''}>
+                        {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3 inline mr-0.5" />}
                         80% CVthèque
                       </span>
-
-                      {/* 100% */}
-                      <span className={`absolute right-0 text-xs ${
-                        profileCompletion >= 100 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
-                      } flex items-center gap-1`}>
-                        {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3" />}
+                      <span className={profileCompletion >= 100 ? 'text-gray-900 font-medium' : ''}>
+                        {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3 inline mr-0.5" />}
                         100%
                       </span>
                     </div>
                   </div>
 
                   {profileCompletion >= 80 && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="w-8 h-8 text-green-600 flex-shrink-0" />
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                         <div>
-                          <h4 className="font-bold text-green-900 mb-1">
+                          <h4 className="font-semibold text-green-900 text-sm">
                             Félicitations !
                           </h4>
-                          <p className="text-sm text-green-800">
+                          <p className="text-xs text-green-800">
                             Votre profil est bien complété. Vous maximisez vos chances d'être contacté par les recruteurs.
                           </p>
                         </div>
@@ -709,20 +681,20 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 />
 
                 {(isPremium || creditsBalance > 0) && aiScore > 0 && (
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-[#0E2F56] rounded-full flex items-center justify-center flex-shrink-0">
-                        <Brain className="w-6 h-6 text-white" />
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Brain className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Recommandation IA</h3>
-                        <p className="text-gray-700 mb-4">
-                          Votre score moyen de compatibilité est de <span className="font-bold text-[#0E2F56]">{aiScore}%</span> avec les offres consultées.
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">Recommandation IA</h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Votre score moyen de compatibilité est de <span className="font-semibold text-gray-900">{aiScore}%</span> avec les offres consultées.
                           {aiScore < 80 && ' Suivez une formation pour améliorer vos chances!'}
                         </p>
                         <button
                           onClick={() => setActiveTab('formations')}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#0E2F56] text-white rounded-lg hover:bg-[#1a4275] transition text-sm font-medium"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0E2F56] text-white rounded-md hover:bg-[#1a4275] transition text-sm font-medium"
                         >
                           <BookOpen className="w-4 h-4" />
                           Découvrir les formations
@@ -733,47 +705,44 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 )}
 
                 {!(isPremium || creditsBalance > 0) && (
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-2 border-blue-300 shadow-md">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <Brain className="w-6 h-6 text-white" />
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-[#0E2F56] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Brain className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-                          <Lock className="w-5 h-5 text-blue-600" />
+                        <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-gray-500" />
                           Score de compatibilité IA
                         </h3>
-                        <p className="text-gray-700 mb-4 leading-relaxed">
-                          Vous voulez connaître votre <span className="font-semibold text-blue-700">score moyen de compatibilité</span> avec les offres auxquelles vous avez candidaté ?
-                          Cette fonctionnalité nécessite un <span className="font-semibold text-blue-700">abonnement Premium PRO+</span> ou des <span className="font-semibold text-blue-700">crédits IA</span>.
+                        <p className="text-sm text-gray-600 mb-3">
+                          Connaissez votre <span className="font-medium text-gray-900">score de compatibilité</span> avec les offres auxquelles vous avez candidaté.
+                          Cette fonctionnalité nécessite un <span className="font-medium text-gray-900">abonnement Premium</span> ou des <span className="font-medium text-gray-900">crédits IA</span>.
                         </p>
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-blue-200">
-                          <div className="flex items-start gap-2">
-                            <Sparkles className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-gray-600">
-                              <p className="font-medium text-gray-900 mb-1">Avec l'analyse IA, vous obtenez :</p>
-                              <ul className="space-y-1 ml-4">
-                                <li>✓ Score de compatibilité précis pour chaque candidature</li>
-                                <li>✓ Suggestions personnalisées d'amélioration</li>
-                                <li>✓ Recommandations de formations adaptées</li>
-                              </ul>
-                            </div>
+                        <div className="bg-white rounded-md p-3 mb-3 border border-gray-200">
+                          <div className="text-sm text-gray-600">
+                            <p className="font-medium text-gray-900 mb-1.5 text-xs">Avec l'analyse IA :</p>
+                            <ul className="space-y-1 text-xs">
+                              <li>✓ Score de compatibilité précis</li>
+                              <li>✓ Suggestions d'amélioration</li>
+                              <li>✓ Recommandations de formations</li>
+                            </ul>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => onNavigate('credit-store')}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition shadow-md hover:shadow-lg text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0E2F56] text-white rounded-md hover:bg-[#1a4275] transition text-sm font-medium"
                           >
-                            <Zap className="w-4 h-4" />
-                            Boutique de crédits IA
+                            <Zap className="w-3.5 h-3.5" />
+                            Crédits IA
                           </button>
                           <button
                             onClick={() => onNavigate('premium-ai', 'premium-pro-section')}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition shadow-md hover:shadow-lg text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition text-sm font-medium"
                           >
-                            <Crown className="w-4 h-4" />
-                            Abonnement Premium PRO+
+                            <Crown className="w-3.5 h-3.5" />
+                            Premium PRO+
                           </button>
                         </div>
                       </div>
@@ -781,103 +750,66 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                   </div>
                 )}
 
-                {profileCompletion >= 80 && (
-                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 border border-orange-400 shadow-lg hover:shadow-xl transition">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Send className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-white mb-2">Postuler à une offre externe</h3>
-                        <p className="text-orange-100 mb-4 leading-relaxed">
-                          Utilisez votre profil JobGuinée pour candidater à des offres externes. Service 100% gratuit pour les profils qualifiés.
-                        </p>
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-sm text-white">
-                            <CheckCircle className="w-4 h-4" />
-                            CV professionnel
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-sm text-white">
-                            <CheckCircle className="w-4 h-4" />
-                            Lettre personnalisée
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full text-sm text-white">
-                            <CheckCircle className="w-4 h-4" />
-                            Lien profil public
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => onNavigate('external-application')}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-orange-600 rounded-lg hover:bg-orange-50 transition shadow-md hover:shadow-lg font-semibold"
-                        >
-                          <Send className="w-5 h-5" />
-                          Postuler à une offre externe
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => onNavigate('jobs')}
-                    className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
+                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
                   >
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition">
-                      <Search className="w-6 h-6 text-[#0E2F56]" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] group-hover:text-white transition">
+                      <Search className="w-5 h-5 text-[#0E2F56] group-hover:text-white" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Rechercher une offre</h3>
-                    <p className="text-sm text-gray-600">Explorez des milliers d'opportunités</p>
+                    <h3 className="font-semibold text-base mb-1">Rechercher une offre</h3>
+                    <p className="text-xs text-gray-600">Explorez des milliers d'opportunités</p>
                   </button>
 
                   <button
                     onClick={() => onNavigate('candidate-profile-form')}
-                    className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
+                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
                   >
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition">
-                      <User className="w-6 h-6 text-green-700" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] transition">
+                      <User className="w-5 h-5 text-gray-600 group-hover:text-white" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Créer mon profil</h3>
-                    <p className="text-sm text-gray-600">Formulaire complet de profil</p>
+                    <h3 className="font-semibold text-base mb-1">Créer mon profil</h3>
+                    <p className="text-xs text-gray-600">Formulaire complet de profil</p>
                   </button>
 
                   <button
                     onClick={() => setActiveTab('premium')}
-                    className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-200 rounded-xl hover:border-amber-400 hover:shadow-lg transition text-left group"
+                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
                   >
-                    <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
-                      <Crown className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] transition">
+                      <Crown className="w-5 h-5 text-gray-600 group-hover:text-white" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Services Premium IA</h3>
-                    <p className="text-sm text-gray-600">Boostez votre recherche d'emploi</p>
+                    <h3 className="font-semibold text-base mb-1">Services Premium IA</h3>
+                    <p className="text-xs text-gray-600">Boostez votre recherche d'emploi</p>
                   </button>
 
                   <button
                     onClick={() => setActiveTab('formations')}
-                    className="p-6 bg-white border-2 border-gray-200 rounded-xl hover:border-[#0E2F56] hover:shadow-lg transition text-left group"
+                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
                   >
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition">
-                      <GraduationCap className="w-6 h-6 text-green-700" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] transition">
+                      <GraduationCap className="w-5 h-5 text-gray-600 group-hover:text-white" />
                     </div>
-                    <h3 className="font-bold text-lg mb-2">Mes formations</h3>
-                    <p className="text-sm text-gray-600">Développez vos compétences</p>
+                    <h3 className="font-semibold text-base mb-1">Mes formations</h3>
+                    <p className="text-xs text-gray-600">Développez vos compétences</p>
                   </button>
                 </div>
 
                 {applications.length > 0 && (
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">Dernières candidatures</h3>
-                    <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Dernières candidatures</h3>
+                    <div className="space-y-2">
                       {applications.slice(0, 3).map((app) => (
                         <div
                           key={app.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                          className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition cursor-pointer"
                           onClick={() => onNavigate('job-detail', app.job_id)}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="font-bold text-gray-900 mb-1">{app.jobs?.title}</h4>
-                              <p className="text-sm text-gray-600 mb-2">{app.jobs?.companies?.company_name}</p>
+                              <h4 className="font-semibold text-gray-900 mb-0.5 text-sm">{app.jobs?.title}</h4>
+                              <p className="text-xs text-gray-600 mb-1.5">{app.jobs?.companies?.company_name}</p>
                               {!isPremium && creditsBalance === 0 ? (
                                 <div className="flex items-center gap-1 text-xs text-gray-500">
                                   <Lock className="w-3 h-3" />
@@ -886,18 +818,18 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                               ) : app.ai_match_score ? (
                                 <div className="flex items-center gap-2">
                                   <div className="flex items-center gap-1 text-xs text-gray-600">
-                                    <Sparkles className="w-3 h-3 text-purple-600" />
+                                    <Sparkles className="w-3 h-3 text-gray-600" />
                                     <span>Score IA: {app.ai_match_score}%</span>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1 text-xs text-blue-600">
+                                <div className="flex items-center gap-1 text-xs text-gray-600">
                                   <Sparkles className="w-3 h-3" />
                                   <span>Score disponible</span>
                                 </div>
                               )}
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
                               {getStatusLabel(app.status)}
                             </span>
                           </div>
