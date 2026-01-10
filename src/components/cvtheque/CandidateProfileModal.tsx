@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { X, Download, MapPin, Briefcase, GraduationCap, Mail, Phone, Globe, Linkedin, Github, FileText, Award, Languages, Car, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import { profileViewsService } from '../../services/profileViewsService';
 
 interface CandidateProfile {
   id: string;
@@ -44,6 +46,15 @@ interface CandidateProfileModalProps {
 }
 
 export default function CandidateProfileModal({ candidate, isOpen, onClose }: CandidateProfileModalProps) {
+  // Record profile view when modal opens
+  useEffect(() => {
+    if (isOpen && candidate.id) {
+      // Generate a session ID to prevent multiple counts in the same session
+      const sessionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      profileViewsService.recordProfileView(candidate.id, sessionId);
+    }
+  }, [isOpen, candidate.id]);
+
   if (!isOpen) return null;
 
   const handleDownload = (url: string | undefined, filename: string) => {

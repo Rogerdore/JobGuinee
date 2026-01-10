@@ -42,6 +42,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [jobViewsCount, setJobViewsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [trackingApplicationId, setTrackingApplicationId] = useState<string | null>(null);
+  const [profileStats, setProfileStats] = useState({
+    profile_views_count: 0,
+    profile_purchases_count: 0,
+    this_month_views: 0,
+    this_month_purchases: 0
+  });
 
   const { pendingApplication, shouldShowApplicationModal, clearPendingApplication } = usePendingApplication(profile?.id || null);
 
@@ -122,7 +128,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     setLoading(true);
 
     try {
-      const [appsData, profileData, jobViewsData, formationsData, profilesData, unreadCount] = await Promise.all([
+      const [appsData, profileData, jobViewsData, formationsData, profilesData, unreadCount, profileStatsData] = await Promise.all([
         supabase
           .from('applications')
           .select('*, jobs(*, companies(*))')
@@ -147,7 +153,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .select('credits_balance, is_premium, premium_expiration')
           .eq('id', profile.id)
           .maybeSingle(),
-        candidateMessagingService.getUnreadCount()
+        candidateMessagingService.getUnreadCount(),
+        supabase.rpc('get_candidate_profile_stats', { p_user_id: user.id })
       ]);
 
       console.log('📊 Data loaded:', {
@@ -195,6 +202,17 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           status: enrollment.status,
           progress: enrollment.progress
         })));
+      }
+
+      // Charger les statistiques de profil CVthèque
+      if (profileStatsData.data) {
+        setProfileStats({
+          profile_views_count: profileStatsData.data.profile_views_count || 0,
+          profile_purchases_count: profileStatsData.data.profile_purchases_count || 0,
+          this_month_views: profileStatsData.data.this_month_views || 0,
+          this_month_purchases: profileStatsData.data.this_month_purchases || 0
+        });
+        console.log('👁️ Profile stats:', profileStatsData.data);
       }
 
       // Charger les crédits et statut premium
@@ -530,7 +548,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-blue-100 text-sm">Offres consultées</span>
@@ -540,7 +558,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 {loading ? '...' : jobViewsCount}
               </div>
               {!loading && jobViewsCount === 0 && (
-                <p className="text-xs text-blue-200 mt-1">Consultez des offres pour voir vos statistiques</p>
+                <p className="text-xs text-blue-200 mt-1">Consultez des offres</p>
               )}
             </div>
 
@@ -553,7 +571,33 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 {loading ? '...' : applications.length}
               </div>
               {!loading && applications.length === 0 && (
-                <p className="text-xs text-blue-200 mt-1">Postulez à des offres pour commencer</p>
+                <p className="text-xs text-blue-200 mt-1">Postulez maintenant</p>
+              )}
+            </div>
+
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-100 text-sm">Vues profil</span>
+                <Users className="w-5 h-5 text-blue-200" />
+              </div>
+              <div className="text-3xl font-bold">
+                {loading ? '...' : profileStats.profile_views_count}
+              </div>
+              {!loading && profileStats.this_month_views > 0 && (
+                <p className="text-xs text-blue-200 mt-1">+{profileStats.this_month_views} ce mois</p>
+              )}
+            </div>
+
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-100 text-sm">Profil acheté</span>
+                <DollarSign className="w-5 h-5 text-blue-200" />
+              </div>
+              <div className="text-3xl font-bold">
+                {loading ? '...' : profileStats.profile_purchases_count}
+              </div>
+              {!loading && profileStats.this_month_purchases > 0 && (
+                <p className="text-xs text-blue-200 mt-1">+{profileStats.this_month_purchases} ce mois</p>
               )}
             </div>
 

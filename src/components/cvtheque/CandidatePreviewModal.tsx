@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { X, Briefcase, MapPin, GraduationCap, Award, Lock, ShoppingCart, Eye, User, Crown, Shield } from 'lucide-react';
+import { profileViewsService } from '../../services/profileViewsService';
 
 interface Candidate {
   id: string;
@@ -32,6 +34,14 @@ export default function CandidatePreviewModal({
   isInCart = false,
   viewerUserType
 }: CandidatePreviewModalProps) {
+  // Record profile preview view
+  useEffect(() => {
+    if (isOpen && candidate.id) {
+      const sessionId = `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      profileViewsService.recordProfileView(candidate.id, sessionId);
+    }
+  }, [isOpen, candidate.id]);
+
   if (!isOpen) return null;
 
   const formatPrice = (price: number) => {
