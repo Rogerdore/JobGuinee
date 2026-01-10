@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { calculateCandidateCompletion } from '../../utils/profileCompletion';
 
 interface ProfileStep {
   id: string;
@@ -115,29 +114,7 @@ export default function ProfileProgressBar({
 
       setSteps(profileSteps);
 
-      const calculatedProgress = calculateCandidateCompletion({
-        full_name: profileData?.full_name,
-        desired_position: profile.desired_position,
-        bio: profile.bio,
-        phone: profileData?.phone,
-        location: profile.location,
-        experience_years: profile.experience_years,
-        education_level: profile.education_level,
-        skills: profile.skills,
-        languages: profile.languages,
-        cv_url: profile.cv_url,
-        linkedin_url: profile.linkedin_url,
-        portfolio_url: profile.portfolio_url,
-        desired_salary_min: profile.desired_salary_min?.toString(),
-        desired_salary_max: profile.desired_salary_max?.toString(),
-      });
-
-      setProgress(calculatedProgress);
-
-      await supabase
-        .from('candidate_profiles')
-        .update({ profile_completion_percentage: calculatedProgress })
-        .eq('profile_id', user?.id);
+      setProgress(profile.profile_completion_percentage || 0);
     } catch (error) {
       console.error('Error calculating progress:', error);
     }
