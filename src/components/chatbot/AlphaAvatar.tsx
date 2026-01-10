@@ -225,7 +225,17 @@ export default function AlphaAvatar({
               transform: `scale(1.46) translateY(9%)`
             }}
             loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
           />
+
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+              <span className="text-3xl">🤖</span>
+            </div>
+          </div>
 
           {blinkEyes && (
             <div className="absolute inset-0 bg-[#0E2F56] opacity-30 pointer-events-none" />

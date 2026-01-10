@@ -20,10 +20,13 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
 
   // Protection contre insertBefore: montage différé avec requestAnimationFrame
   useEffect(() => {
+    console.log('🚀 [ChatbotWidget] Initialisation du widget...');
     const rafId = requestAnimationFrame(() => {
+      console.log('✅ [ChatbotWidget] Widget monté');
       setMounted(true);
     });
     return () => {
+      console.log('🛑 [ChatbotWidget] Widget démonté');
       cancelAnimationFrame(rafId);
       setMounted(false);
     };
@@ -95,19 +98,25 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   const loadConfiguration = async () => {
     setLoading(true);
     try {
+      console.log('🤖 [ChatbotWidget] Chargement de la configuration...');
       const [settingsData, styleData] = await Promise.all([
         ChatbotService.getSettings(),
         ChatbotService.getDefaultStyle()
       ]);
 
+      console.log('🤖 [ChatbotWidget] Settings:', settingsData);
+      console.log('🤖 [ChatbotWidget] Style:', styleData);
+
       if (settingsData?.is_enabled) {
-        console.log('🤖 Alpha Avatar chargé et activé');
+        console.log('✅ [ChatbotWidget] Alpha Avatar chargé et activé');
+      } else {
+        console.warn('⚠️ [ChatbotWidget] Alpha Avatar désactivé dans les settings');
       }
 
       setSettings(settingsData);
       setStyle(styleData);
     } catch (error) {
-      console.error('❌ Alpha Avatar - Erreur:', error);
+      console.error('❌ [ChatbotWidget] Erreur:', error);
       // En cas d'erreur, désactiver le chatbot pour éviter le crash
       setSettings(null);
       setStyle(null);
@@ -156,6 +165,7 @@ export default function ChatbotWidget({ onNavigate }: ChatbotWidgetProps) {
   }
 
   function renderChatbot() {
+    console.log('🎨 [ChatbotWidget] Rendu du chatbot - isEnabled:', isEnabled, 'position:', position);
     return (
     <>
       <div
