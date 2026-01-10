@@ -368,7 +368,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         }
       }
     }
-  }, [addFiles, user]);
+  }, [addFiles, user, uploadFile]);
 
   const removeFile = useCallback((id: string) => {
     setFilesToUpload(prev => prev.filter(f => f.id !== id));
@@ -610,24 +610,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     setFormData((prev: any) => ({ ...prev, [fieldName]: value }));
   }, []);
 
-  const handlePhotoChange = useCallback(async (file: File | null) => {
-    setFormData((prev: any) => ({ ...prev, profilePhoto: file }));
-
-    if (file && user) {
-      try {
-        const photoUrl = await uploadFile(file, 'candidate-profile-photos');
-        if (photoUrl) {
-          setExistingPhotoUrl(photoUrl);
-        }
-      } catch (error) {
-        console.error('Error uploading photo:', error);
-      }
-    } else if (!file) {
-      setExistingPhotoUrl('');
-    }
-  }, [user]);
-
-  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+  const uploadFile = useCallback(async (file: File, folder: string): Promise<string | null> => {
     if (!file || !user) return null;
 
     try {
@@ -649,7 +632,24 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
       console.error(`Error uploading file to ${folder}:`, error);
       return null;
     }
-  };
+  }, [user]);
+
+  const handlePhotoChange = useCallback(async (file: File | null) => {
+    setFormData((prev: any) => ({ ...prev, profilePhoto: file }));
+
+    if (file && user) {
+      try {
+        const photoUrl = await uploadFile(file, 'candidate-profile-photos');
+        if (photoUrl) {
+          setExistingPhotoUrl(photoUrl);
+        }
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+      }
+    } else if (!file) {
+      setExistingPhotoUrl('');
+    }
+  }, [user, uploadFile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
