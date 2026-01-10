@@ -324,6 +324,30 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     setFilesToUpload(prev => [...prev, ...newFiles]);
   }, []);
 
+  const uploadFile = useCallback(async (file: File, folder: string): Promise<string | null> => {
+    if (!file || !user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(folder)
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from(folder)
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error(`Error uploading file to ${folder}:`, error);
+      return null;
+    }
+  }, [user]);
+
   const handleMultipleFilesChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files);
@@ -608,30 +632,6 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const updateField = useCallback((fieldName: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [fieldName]: value }));
   }, []);
-
-  const uploadFile = useCallback(async (file: File, folder: string): Promise<string | null> => {
-    if (!file || !user) return null;
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(folder)
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from(folder)
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error(`Error uploading file to ${folder}:`, error);
-      return null;
-    }
-  }, [user]);
 
   const handlePhotoChange = useCallback(async (file: File | null) => {
     setFormData((prev: any) => ({ ...prev, profilePhoto: file }));
