@@ -15,6 +15,7 @@ import {
   Trash2,
   FileText,
   Upload as UploadIcon,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -37,6 +38,11 @@ import { ParsedCVData } from '../../services/cvUploadParserService';
 import { useCVParsing } from '../../hooks/useCVParsing';
 import SuccessModal from '../notifications/SuccessModal';
 import ErrorListModal from '../notifications/ErrorListModal';
+import LanguageRequirementsManager from './LanguageRequirementsManager';
+import ExperienceFieldsImproved from './ExperienceFieldsImproved';
+import EducationFieldsImproved from './EducationFieldsImproved';
+import ProfilePhotoUpload from './ProfilePhotoUpload';
+import { useCreditBalance, useServiceCost } from '../../hooks/useCreditService';
 
 const CITIES_GUINEA = [
   'Conakry',
@@ -88,7 +94,7 @@ const COMMON_POSITIONS = [
   'Ingénieur',
 ];
 
-type FileType = 'cv' | 'cover_letter' | 'certificate';
+type FileType = 'cv' | 'certificate';
 
 interface FileToUpload {
   id: string;
@@ -104,6 +110,8 @@ interface CandidateProfileFormProps {
 export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfileFormProps = {}) {
   const { user, profile } = useAuth();
   const { mapToFormData } = useCVParsing();
+  const { balance } = useCreditBalance();
+  const { serviceCost: cvParseCost } = useServiceCost('cv_parse');
 
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('candidateProfileDraft');
@@ -122,6 +130,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showCVUploadModal, setShowCVUploadModal] = useState(false);
   const [cvParsed, setCvParsed] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(true);
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     type: 'success' | 'error';
@@ -265,9 +274,8 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   };
 
   const getFileTypeLabel = (type: FileType) => {
-    const labels = {
+    const labels: Record<FileType, string> = {
       cv: 'CV',
-      cover_letter: 'Lettre de motivation',
       certificate: 'Certificat / Attestation'
     };
     return labels[type];
@@ -520,8 +528,6 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
 
         const storageBucket = fileItem.fileType === 'cv'
           ? 'candidate-cvs'
-          : fileItem.fileType === 'cover_letter'
-          ? 'candidate-cover-letters'
           : 'candidate-certificates';
 
         const { error: uploadError } = await supabase.storage
@@ -547,11 +553,26 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
       const cvFiles = uploadedFiles.filter(f => f.type === 'cv');
       const cvUrl = cvFiles.length > 0 ? cvFiles[0].url : (formData.cvUrl || null);
 
-      const coverLetterFiles = uploadedFiles.filter(f => f.type === 'cover_letter');
-      const coverLetterUrl = coverLetterFiles.length > 0 ? coverLetterFiles[0].url : (formData.coverLetterUrl || null);
-
       const certificateFiles = uploadedFiles.filter(f => f.type === 'certificate');
       const certificatesUrl = certificateFiles.length > 0 ? certificateFiles[0].url : (formData.certificatesUrl || null);
+
+      // Upload photo de profil si présente
+      let photoUrl = null;
+      if (formData.profilePhoto) {
+        const photoExt = formData.profilePhoto.name.split('.').pop();
+        const photoFileName = `${user.id}/profile-${Date.now()}.${photoExt}`;
+
+        const { error: photoError } = await supabase.storage
+          .from('candidate-profile-photos')
+          .upload(photoFileName, formData.profilePhoto);
+
+        if (!photoError) {
+          const { data: photoUrlData } = supabase.storage
+            .from('candidate-profile-photos')
+            .getPublicUrl(photoFileName);
+          photoUrl = photoUrlData.publicUrl;
+        }
+      }
       const candidateData = {
         profile_id: profile.id,
         user_id: user?.id,
@@ -563,6 +584,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         address: formData.address || null,
         city: formData.city || null,
         region: formData.region || null,
+        photo_url: photoUrl || formData.profilePhoto || null,
         title: formData.desiredPosition || formData.currentPosition || '',
         bio: formData.professionalSummary,
         professional_status: formData.professionalStatus || null,
@@ -585,7 +607,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         desired_salary_max: formData.desiredSalaryMax ? parseInt(formData.desiredSalaryMax) : null,
         mobility: formData.mobility,
         willing_to_relocate: formData.willingToRelocate,
-        education_level: formData.formations[0]?.['Diplôme obtenu'] || '',
+        education_level: formData.formations[0]?.degree || '',
         driving_license: formData.drivingLicense,
         linkedin_url: formData.linkedinUrl,
         portfolio_url: formData.portfolioUrl,
@@ -593,7 +615,6 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         other_urls: formData.otherUrls,
         receive_alerts: formData.receiveAlerts,
         cv_url: cvUrl,
-        cover_letter_url: coverLetterUrl,
         certificates_url: certificatesUrl,
         cv_parsed_data: formData.cvParsedData,
         cv_parsed_at: formData.cvParsedAt,
@@ -759,19 +780,49 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             <div className="flex items-center gap-3 text-xs text-gray-600">
               <span className="flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Coût: 10 crédits
+                Coût: {cvParseCost || 10} crédits
               </span>
+              <span>•</span>
+              <span>Solde: {balance?.credits_available || 0} crédits</span>
               <span>•</span>
               <span>Temps d'analyse: ~10 secondes</span>
             </div>
+            {balance && balance.credits_available < (cvParseCost || 10) && (
+              <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
+                <Lock className="w-4 h-4" />
+                <span>
+                  Le téléversement du CV nécessite {cvParseCost || 10} crédits. Veuillez recharger votre solde.
+                </span>
+              </div>
+            )}
           </div>
           <button
             type="button"
-            onClick={() => setShowCVUploadModal(true)}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap"
+            onClick={() => {
+              if (balance && balance.credits_available < (cvParseCost || 10)) {
+                alert(`Crédits insuffisants. Vous avez ${balance.credits_available} crédits mais ${cvParseCost || 10} sont nécessaires.`);
+                return;
+              }
+              setShowCVUploadModal(true);
+            }}
+            disabled={balance && balance.credits_available < (cvParseCost || 10)}
+            className={`px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+              balance && balance.credits_available < (cvParseCost || 10)
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
           >
-            <UploadIcon className="w-5 h-5" />
-            Téléverser mon CV
+            {balance && balance.credits_available < (cvParseCost || 10) ? (
+              <>
+                <Lock className="w-5 h-5" />
+                Crédits insuffisants
+              </>
+            ) : (
+              <>
+                <UploadIcon className="w-5 h-5" />
+                Téléverser mon CV
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -818,7 +869,12 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         title="1️⃣ Identité & Informations de contact"
         icon={<User className="w-6 h-6" />}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ProfilePhotoUpload
+          currentPhotoUrl={formData.cvUrl}
+          onPhotoChange={(file) => updateField('profilePhoto', file)}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <Input
             label="Nom complet"
             placeholder="Ex: Fatoumata Camara"
@@ -931,19 +987,8 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           </span>
         }
       >
-        <Repeater
-          label="Ajouter une expérience"
-          fields={[
-            { label: 'Poste occupé', type: 'text', placeholder: 'Ex: Chargé RH' },
-            { label: 'Entreprise', type: 'text', placeholder: 'Ex: UMS Mining' },
-            { label: 'Période', type: 'text', placeholder: 'Ex: 2020 - 2023' },
-            {
-              label: 'Missions principales',
-              type: 'textarea',
-              placeholder: 'Décrivez vos responsabilités...',
-            },
-          ]}
-          value={formData.experiences}
+        <ExperienceFieldsImproved
+          experiences={formData.experiences}
           onChange={(value) => updateField('experiences', value)}
         />
         {errors.experiences && (
@@ -970,18 +1015,8 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           </span>
         }
       >
-        <Repeater
-          label="Ajouter une formation"
-          fields={[
-            {
-              label: 'Diplôme obtenu',
-              type: 'text',
-              placeholder: 'Ex: Licence en GRH',
-            },
-            { label: 'Établissement', type: 'text', placeholder: 'Ex: Université de Conakry' },
-            { label: 'Année d\'obtention', type: 'text', placeholder: 'Ex: 2021' },
-          ]}
-          value={formData.formations}
+        <EducationFieldsImproved
+          educations={formData.formations}
           onChange={(value) => updateField('formations', value)}
         />
         {errors.formations && (
@@ -1004,17 +1039,13 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           aiSuggestions={formData.cvParsedData?.skills || []}
           helpText="Ajoutez vos compétences techniques et soft skills. Appuyez sur Entrée pour ajouter."
         />
-        <MultiSelect
-          label="Langues parlées"
-          options={['Français', 'Anglais', 'Soussou', 'Malinké', 'Peul', 'Arabe', 'Chinois', 'Espagnol']}
-          value={formData.languagesDetailed.map(l => l.language)}
-          onChange={(value) =>
-            updateField(
-              'languagesDetailed',
-              value.map((lang) => ({ language: lang, level: 'Intermédiaire' }))
-            )
-          }
-        />
+
+        <div className="mt-6">
+          <LanguageRequirementsManager
+            requirements={formData.languagesDetailed}
+            onChange={(value) => updateField('languagesDetailed', value)}
+          />
+        </div>
       </FormSection>
 
       {/* SECTION 8: Localisation & Mobilité */}
@@ -1124,14 +1155,8 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         />
 
         <MultipleFileUploadSection
-          fileType="cover_letter"
-          label="Lettre de motivation (optionnel)"
-          required={false}
-        />
-
-        <MultipleFileUploadSection
           fileType="certificate"
-          label="Certificats / Attestations (optionnel)"
+          label="Certificats / Attestations"
           required={false}
         />
       </FormSection>
