@@ -7,12 +7,23 @@ interface UseAutoSaveOptions<T> {
   key: string;
   delay?: number;
   enabled?: boolean;
+  saveToDatabase?: (data: T) => Promise<void>;
+  databaseSaveDelay?: number;
 }
 
-export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseAutoSaveOptions<T>) {
+export function useAutoSave<T>({
+  data,
+  key,
+  delay = 3000,
+  enabled = true,
+  saveToDatabase,
+  databaseSaveDelay = 10000
+}: UseAutoSaveOptions<T>) {
   const [status, setStatus] = useState<AutoSaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastDatabaseSave, setLastDatabaseSave] = useState<Date | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const databaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
   const lastDataRef = useRef<string>('');
 
@@ -22,6 +33,9 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
       isMountedRef.current = false;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (databaseTimeoutRef.current) {
+        clearTimeout(databaseTimeoutRef.current);
       }
     };
   }, []);
@@ -64,6 +78,8 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
       if (!isMountedRef.current) return;
 
       try {
+        setStatus('saving');
+
         const saveData = {
           data,
           timestamp: new Date().toISOString(),
@@ -74,11 +90,40 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
 
         if (isMountedRef.current) {
           setLastSaved(new Date());
+          setStatus('saved');
+
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              setStatus('idle');
+            }
+          }, 2000);
         }
       } catch (error) {
         console.error('Auto-save error:', error);
+        if (isMountedRef.current) {
+          setStatus('error');
+        }
       }
     }, delay);
+
+    if (saveToDatabase && databaseTimeoutRef.current) {
+      clearTimeout(databaseTimeoutRef.current);
+    }
+
+    if (saveToDatabase) {
+      databaseTimeoutRef.current = setTimeout(async () => {
+        if (!isMountedRef.current) return;
+
+        try {
+          await saveToDatabase(data);
+          if (isMountedRef.current) {
+            setLastDatabaseSave(new Date());
+          }
+        } catch (error) {
+          console.error('Database save error:', error);
+        }
+      }, databaseSaveDelay);
+    }
 
     return () => {
       if (timeoutRef.current) {
@@ -122,6 +167,7 @@ export function useAutoSave<T>({ data, key, delay = 3000, enabled = true }: UseA
   return {
     status,
     lastSaved,
+    lastDatabaseSave,
     clearDraft,
     loadDraft,
     hasDraft,

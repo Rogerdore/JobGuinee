@@ -43,7 +43,9 @@ import LanguageRequirementsManager from './LanguageRequirementsManager';
 import ExperienceFieldsImproved from './ExperienceFieldsImproved';
 import EducationFieldsImproved from './EducationFieldsImproved';
 import ProfilePhotoUpload from './ProfilePhotoUpload';
+import AutoSaveIndicator from './AutoSaveIndicator';
 import { useCreditBalance, useServiceCost } from '../../hooks/useCreditService';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 const CITIES_GUINEA = [
   'Conakry',
@@ -127,11 +129,71 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [autoSaving, setAutoSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showCVUploadModal, setShowCVUploadModal] = useState(false);
   const [cvParsed, setCvParsed] = useState(false);
   const [showManualForm, setShowManualForm] = useState(true);
+
+  const saveToDatabaseCallback = useCallback(async (data: any) => {
+    if (!profile?.id || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('candidate_profiles')
+        .upsert({
+          profile_id: profile.id,
+          phone: data.phone,
+          birth_date: data.birthDate || null,
+          gender: data.gender || null,
+          nationality: data.nationality || null,
+          address: data.address || null,
+          city: data.city || null,
+          region: data.region || null,
+          location: data.city || null,
+          title: data.desiredPosition || null,
+          desired_position: data.desiredPosition || null,
+          desired_sectors: data.desiredSectors || [],
+          desired_contract_types: data.desiredContractTypes || [],
+          availability: data.availability || null,
+          professional_status: data.professionalStatus || null,
+          current_position: data.currentPosition || null,
+          current_company: data.currentCompany || null,
+          bio: data.professionalSummary || null,
+          work_experience: data.experiences || [],
+          education: data.formations || [],
+          skills: data.skills || [],
+          languages: data.languagesDetailed || [],
+          mobility: data.mobility || [],
+          willing_to_relocate: data.willingToRelocate || false,
+          desired_salary_min: data.desiredSalaryMin ? parseInt(data.desiredSalaryMin) : null,
+          desired_salary_max: data.desiredSalaryMax ? parseInt(data.desiredSalaryMax) : null,
+          linkedin_url: data.linkedinUrl || null,
+          portfolio_url: data.portfolioUrl || null,
+          github_url: data.githubUrl || null,
+          other_urls: data.otherUrls || [],
+          driving_license: data.drivingLicense || [],
+          visible_in_cvtheque: data.visibleInCVTheque || false,
+          receive_alerts: data.receiveAlerts || false,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'profile_id'
+        });
+
+      if (error) {
+        console.error('Error auto-saving to database:', error);
+      }
+    } catch (error) {
+      console.error('Error auto-saving to database:', error);
+    }
+  }, [profile?.id, user]);
+
+  const { status: autoSaveStatus, lastSaved, lastDatabaseSave } = useAutoSave({
+    data: formData,
+    key: 'candidateProfileDraft',
+    delay: 2000,
+    enabled: true,
+    saveToDatabase: saveToDatabaseCallback,
+    databaseSaveDelay: 15000,
+  });
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     type: 'success' | 'error';
@@ -462,17 +524,6 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     loadExistingProfile();
   }, [profile?.id, user?.email]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAutoSaving(true);
-      localStorage.setItem('candidateProfileDraft', JSON.stringify(formData));
-      setLastSaved(new Date());
-      setTimeout(() => setAutoSaving(false), 1000);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [formData]);
-
   const handleCVParsed = useCallback((parsedData: ParsedCVData) => {
     const mappedData = mapToFormData(parsedData, formData);
     setFormData(mappedData);
@@ -715,6 +766,13 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         </p>
       </div>
 
+      {/* Indicateur de sauvegarde automatique */}
+      <AutoSaveIndicator
+        status={autoSaveStatus}
+        lastSaved={lastSaved}
+        lastDatabaseSave={lastDatabaseSave}
+      />
+
       {/* Barre de progression */}
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
@@ -723,17 +781,6 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             <span className="text-sm font-semibold text-gray-800">Profil complété</span>
           </div>
           <div className="flex items-center gap-3">
-            {autoSaving && (
-              <span className="text-xs text-green-600 flex items-center gap-1 animate-pulse">
-                <Save className="w-3 h-3" />
-                Sauvegarde...
-              </span>
-            )}
-            {lastSaved && !autoSaving && (
-              <span className="text-xs text-gray-500">
-                Sauvegardé à {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
             <span className="text-xl font-bold text-orange-600">{progress}%</span>
           </div>
         </div>
