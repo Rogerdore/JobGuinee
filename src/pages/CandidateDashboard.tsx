@@ -619,8 +619,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900 mb-1">Complétion de votre Profil</h3>
-                      <p className="text-sm text-gray-600">Votre profil est complété à <span className="font-semibold text-gray-900">{profileCompletion}%</span></p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-base font-semibold text-gray-900">Complétion de votre Profil</h3>
+                        <ProfileQualityBadge completion={profileCompletion} variant="compact" />
+                      </div>
+                      <p className="text-sm text-gray-600">Votre profil est complété à <span className="font-semibold text-orange-600">{profileCompletion}%</span></p>
                     </div>
                     <button
                       onClick={() => setActiveTab('profile')}
@@ -630,29 +633,47 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2 mb-2">
-                    <ProfileQualityBadge completion={profileCompletion} variant="compact" />
-                  </div>
-
                   {/* Barre de progression */}
                   <div className="relative">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden relative">
+                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
                       <div
-                        className="h-full transition-all duration-500 bg-[#0E2F56]"
+                        className="h-full transition-all duration-1000 ease-out bg-gradient-to-r from-amber-500 to-orange-500"
                         style={{ width: `${profileCompletion}%` }}
-                      ></div>
+                      >
+                        {/* Animation de brillance */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
+                      </div>
+
+                      {/* Marqueurs d'étapes clés */}
+                      <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-30"></div>
+                      <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
                     </div>
 
-                    {/* Labels des étapes */}
-                    <div className="flex justify-between mt-1.5 text-xs text-gray-500">
-                      <span>0%</span>
-                      <span>50%</span>
-                      <span className={profileCompletion >= 80 ? 'text-gray-900 font-medium' : ''}>
-                        {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3 inline mr-0.5" />}
+                    {/* Labels des étapes positionnés exactement */}
+                    <div className="relative mt-2 h-5">
+                      {/* 0% */}
+                      <span className="absolute left-0 text-xs text-gray-600 font-medium">
+                        0%
+                      </span>
+
+                      {/* 50% */}
+                      <span className="absolute left-1/2 -translate-x-1/2 text-xs text-gray-600 font-medium">
+                        50%
+                      </span>
+
+                      {/* 80% CVthèque */}
+                      <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
+                        profileCompletion >= 80 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
+                      } flex items-center gap-1 whitespace-nowrap`}>
+                        {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
                         80% CVthèque
                       </span>
-                      <span className={profileCompletion >= 100 ? 'text-gray-900 font-medium' : ''}>
-                        {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3 inline mr-0.5" />}
+
+                      {/* 100% */}
+                      <span className={`absolute right-0 text-xs ${
+                        profileCompletion >= 100 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
+                      } flex items-center gap-1`}>
+                        {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3" />}
                         100%
                       </span>
                     </div>
