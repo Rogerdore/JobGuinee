@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test de Connexion - JobGuinée</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      color: #1a202c;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #718096;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .test-section {
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .test-section h2 {
+      color: #2d3748;
+      font-size: 18px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status.pending {
+      background: #fed7d7;
+      color: #c53030;
+    }
+
+    .status.testing {
+      background: #feebc8;
+      color: #c05621;
+    }
+
+    .status.success {
+      background: #c6f6d5;
+      color: #2f855a;
+    }
+
+    .status.error {
+      background: #fed7d7;
+      color: #c53030;
+    }
+
+    .info {
+      background: #ebf8ff;
+      border-left: 4px solid #4299e1;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #2c5282;
+    }
+
+    .error-box {
+      background: #fff5f5;
+      border-left: 4px solid #fc8181;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #742a2a;
+    }
+
+    .success-box {
+      background: #f0fff4;
+      border-left: 4px solid #68d391;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #22543d;
+    }
+
+    .code {
+      background: #2d3748;
+      color: #68d391;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+
+    button {
+      background: #4299e1;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #3182ce;
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      background: #a0aec0;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .solutions {
+      background: #fffaf0;
+      border: 2px solid #f6ad55;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .solutions h3 {
+      color: #c05621;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .solutions ol {
+      padding-left: 20px;
+      color: #744210;
+    }
+
+    .solutions li {
+      margin-bottom: 10px;
+      line-height: 1.6;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4299e1;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .log {
+      max-height: 200px;
+      overflow-y: auto;
+      background: #f7fafc;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Test de Connexion Supabase</h1>
+    <p class="subtitle">JobGuinée - Diagnostic et Résolution</p>
+
+    <!-- Test 1: Variables d'environnement -->
+    <div class="test-section">
+      <h2>
+        <span id="status1" class="status pending">EN ATTENTE</span>
+        Test 1: Variables d'Environnement
+      </h2>
+      <div id="result1"></div>
+    </div>
+
+    <!-- Test 2: Connexion Réseau -->
+    <div class="test-section">
+      <h2>
+        <span id="status2" class="status pending">EN ATTENTE</span>
+        Test 2: Connexion Réseau Supabase
+      </h2>
+      <div id="result2"></div>
+    </div>
+
+    <!-- Test 3: Auth Service -->
+    <div class="test-section">
+      <h2>
+        <span id="status3" class="status pending">EN ATTENTE</span>
+        Test 3: Service d'Authentification
+      </h2>
+      <div id="result3"></div>
+    </div>
+
+    <!-- Test 4: Profil Utilisateur -->
+    <div class="test-section">
+      <h2>
+        <span id="status4" class="status pending">EN ATTENTE</span>
+        Test 4: Recherche Profil Utilisateur
+      </h2>
+      <div id="result4"></div>
+      <div style="margin-top: 15px;">
+        <input type="email" id="emailInput" placeholder="doreroger07@gmail.com"
+               style="padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; width: 300px; margin-right: 10px;">
+        <button onclick="searchUser()">Rechercher</button>
+      </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="test-section">
+      <h2>📋 Journal des Tests</h2>
+      <div id="logs" class="log"></div>
+    </div>
+
+    <!-- Actions -->
+    <div style="text-align: center; margin-top: 30px;">
+      <button onclick="runAllTests()" id="runBtn">
+        Lancer Tous les Tests
+      </button>
+    </div>
+
+    <!-- Solutions -->
+    <div id="solutions" class="solutions" style="display: none;">
+      <h3>💡 Solutions pour "Failed to fetch"</h3>
+      <ol>
+        <li><strong>Vérifier votre connexion internet</strong> - Assurez-vous d'être connecté</li>
+        <li><strong>Désactiver les extensions</strong> - AdBlock, Privacy Badger peuvent bloquer Supabase</li>
+        <li><strong>Essayer en navigation privée</strong> - Pour éliminer les problèmes de cache</li>
+        <li><strong>Vider le cache</strong> - Ctrl+Shift+Delete puis F5</li>
+        <li><strong>Vérifier le fichier .env</strong> - S'assurer que les variables sont définies</li>
+        <li><strong>Redémarrer le serveur</strong> - <code>npm run dev</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    let supabase;
+    const logs = [];
+
+    function addLog(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      logs.push({ timestamp, message, type });
+      updateLogs();
+    }
+
+    function updateLogs() {
+      const logsEl = document.getElementById('logs');
+      logsEl.innerHTML = logs.map(log =>
+        `<div class="log-entry" style="color: ${log.type === 'error' ? '#c53030' : '#2d3748'}">
+          [${log.timestamp}] ${log.message}
+        </div>`
+      ).join('');
+      logsEl.scrollTop = logsEl.scrollHeight;
+    }
+
+    function setStatus(testNum, status, message) {
+      const statusEl = document.getElementById(`status${testNum}`);
+      const resultEl = document.getElementById(`result${testNum}`);
+
+      statusEl.className = `status ${status}`;
+      statusEl.textContent = status === 'testing' ? 'EN COURS...' :
+                             status === 'success' ? 'RÉUSSI' :
+                             status === 'error' ? 'ÉCHEC' : 'EN ATTENTE';
+
+      resultEl.innerHTML = message;
+      addLog(`Test ${testNum}: ${status}`, status);
+    }
+
+    async function test1_CheckEnv() {
+      setStatus(1, 'testing', '<div class="spinner"></div>');
+
+      try {
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!url || !key) {
+          setStatus(1, 'error', `
+            <div class="error-box">
+              <strong>❌ Variables d'environnement manquantes</strong><br>
+              URL: ${url ? '✅ Défini' : '❌ Manquant'}<br>
+              Key: ${key ? '✅ Défini' : '❌ Manquant'}
+            </div>
+            <div class="info">
+              Vérifiez que votre fichier <code>.env</code> contient:<br>
+              VITE_SUPABASE_URL=...<br>
+              VITE_SUPABASE_ANON_KEY=...
+            </div>
+          `);
+          return false;
+        }
+
+        supabase = createClient(url, key);
+
+        setStatus(1, 'success', `
+          <div class="success-box">
+            <strong>✅ Variables d'environnement chargées</strong>
+          </div>
+          <div class="code">
+URL: ${url}<br>
+Key: ${key.substring(0, 30)}...
+          </div>
+        `);
+        return true;
+      } catch (error) {
+        setStatus(1, 'error', `
+          <div class="error-box">
+            <strong>❌ Erreur:</strong> ${error.message}
+          </div>
+        `);
+        return false;
+      }
+    }
+
+    async function test2_CheckNetwork() {
+      setStatus(2, 'testing', '<div class="spinner"></div>');
+
+      try {
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const response = await fetch(`${url}/rest/v1/`, {
+          method: 'GET',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+          }
+        });
+
+        if (response.ok || response.status === 404) {
+          setStatus(2, 'success', `
+            <div class="success-box">
+              <strong>✅ Supabase accessible</strong><br>
+              Status: ${response.status}<br>
+              Serveur: ${url}
+            </div>
+          `);
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        setStatus(2, 'error', `
+          <div class="error-box">
+            <strong>❌ Impossible de se connecter à Supabase</strong><br>
+            Erreur: ${error.message}
+          </div>
+          <div id="solutions"></div>
+        `);
+        document.getElementById('solutions').style.display = 'block';
+        return false;
+      }
+    }
+
+    async function test3_CheckAuth() {
+      setStatus(3, 'testing', '<div class="spinner"></div>');
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        setStatus(3, 'success', `
+          <div class="success-box">
+            <strong>✅ Service d'authentification actif</strong><br>
+            Session: ${data.session ? 'Active' : 'Aucune'}
+          </div>
+        `);
+        return true;
+      } catch (error) {
+        setStatus(3, 'error', `
+          <div class="error-box">
+            <strong>❌ Erreur Auth:</strong> ${error.message}
+          </div>
+        `);
+        return false;
+      }
+    }
+
+    async function test4_CheckUser(email = 'doreroger07@gmail.com') {
+      setStatus(4, 'testing', '<div class="spinner"></div>');
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+          setStatus(4, 'error', `
+            <div class="error-box">
+              <strong>❌ Utilisateur introuvable</strong><br>
+              Email: ${email}
+            </div>
+            <div class="info">
+              <strong>💡 L'utilisateur n'existe pas dans la base de données</strong><br>
+              Options:<br>
+              1. Créer un nouveau compte via "S'inscrire"<br>
+              2. Vérifier l'orthographe de l'email<br>
+              3. Utiliser un autre email
+            </div>
+          `);
+          return false;
+        }
+
+        setStatus(4, 'success', `
+          <div class="success-box">
+            <strong>✅ Utilisateur trouvé</strong>
+          </div>
+          <div class="code">
+ID: ${data.id}<br>
+Email: ${data.email}<br>
+Type: ${data.user_type}<br>
+Créé le: ${new Date(data.created_at).toLocaleDateString()}
+          </div>
+        `);
+        return true;
+      } catch (error) {
+        setStatus(4, 'error', `
+          <div class="error-box">
+            <strong>❌ Erreur:</strong> ${error.message}
+          </div>
+        `);
+        return false;
+      }
+    }
+
+    async function runAllTests() {
+      const btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Tests en cours...';
+
+      logs.length = 0;
+      addLog('Démarrage des tests...', 'info');
+
+      const test1 = await test1_CheckEnv();
+      await new Promise(r => setTimeout(r, 500));
+
+      if (test1) {
+        const test2 = await test2_CheckNetwork();
+        await new Promise(r => setTimeout(r, 500));
+
+        if (test2) {
+          const test3 = await test3_CheckAuth();
+          await new Promise(r => setTimeout(r, 500));
+
+          if (test3) {
+            await test4_CheckUser();
+          }
+        }
+      }
+
+      addLog('Tests terminés', 'info');
+      btn.disabled = false;
+      btn.textContent = 'Relancer les Tests';
+    }
+
+    window.runAllTests = runAllTests;
+    window.searchUser = () => {
+      const email = document.getElementById('emailInput').value;
+      if (email) {
+        test4_CheckUser(email);
+      }
+    };
+
+    // Auto-run on load
+    setTimeout(runAllTests, 500);
+  </script>
+</body>
+</html>
