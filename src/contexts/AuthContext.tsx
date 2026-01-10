@@ -63,11 +63,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // PROTECTION: Ne jamais bloquer le démarrage de l'app si Supabase est indisponible
     const initAuth = async () => {
+      // Timeout de sécurité: débloquer l'app après 8 secondes maximum
+      const timeoutId = setTimeout(() => {
+        console.warn('⏱️ Timeout auth initialization - déblocage de l\'app');
+        setLoading(false);
+      }, 8000);
+
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Tentative de récupération de la session avec timeout
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session timeout')), 5000)
+        );
+
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
 
         if (error) {
           console.error('⚠️ Erreur lors de la récupération de la session:', error);
+          clearTimeout(timeoutId);
           setLoading(false);
           return;
         }
@@ -75,15 +91,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           try {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData);
+            // Récupération du profil avec timeout
+            const profilePromise = fetchProfile(session.user.id);
+            const profileTimeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Profile timeout')), 3000)
+            );
+
+            const profileData = await Promise.race([
+              profilePromise,
+              profileTimeoutPromise
+            ]);
+            setProfile(profileData as Profile | null);
           } catch (profileError) {
             console.error('⚠️ Erreur lors de la récupération du profil:', profileError);
+            // Continue quand même sans profil
           }
         }
+        clearTimeout(timeoutId);
         setLoading(false);
       } catch (error) {
         console.error('⚠️ Erreur critique lors de l\'initialisation de l\'auth:', error);
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
