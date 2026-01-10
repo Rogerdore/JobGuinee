@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { calculateCandidateCompletion } from '../../utils/profileCompletion';
 import {
   Input,
   Select,
@@ -286,30 +287,24 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   }
 
   const calculateProgress = useCallback(() => {
-    const totalFields = 20;
-    let completedFields = 0;
+    const profileData = {
+      full_name: formData.fullName,
+      desired_position: formData.desiredPosition,
+      bio: formData.professionalSummary,
+      phone: formData.phone,
+      location: formData.city || formData.address,
+      experience_years: formData.experiences.length,
+      education_level: formData.formations[0]?.degree || '',
+      skills: formData.skills,
+      languages: formData.languagesDetailed,
+      cv_url: formData.cv ? 'temp' : '',
+      linkedin_url: formData.linkedinUrl,
+      portfolio_url: formData.portfolioUrl,
+      desired_salary_min: formData.desiredSalaryMin,
+      desired_salary_max: formData.desiredSalaryMax,
+    };
 
-    // Calcul simplifié basé sur les champs principaux du formulaire
-    // Note: Le calcul final sera fait par le trigger SQL en base de données
-    if (formData.desiredPosition && formData.desiredPosition !== '') completedFields += 2; // title + desired_position
-    if (formData.professionalSummary && formData.professionalSummary !== '') completedFields++; // bio
-    if (formData.city && formData.city !== '') completedFields++; // location
-    if (formData.skills && formData.skills.length > 0) completedFields++; // skills
-    if (formData.experiences && formData.experiences.length > 0) completedFields += 2; // experience_years + work_experience
-    if (formData.formations && formData.formations.length > 0) completedFields += 2; // education + education_level
-    if (formData.cv) completedFields++; // cv_url
-    if (formData.desiredSalaryMin) completedFields++; // desired_salary_min
-    if (formData.desiredSectors && formData.desiredSectors.length > 0) completedFields++; // desired_sectors
-    if (formData.mobility && formData.mobility.length > 0) completedFields++; // mobility
-    if (formData.availability && formData.availability !== '') completedFields++; // availability
-    if (formData.languagesDetailed && formData.languagesDetailed.length > 0) completedFields++; // languages
-    if (formData.linkedinUrl && formData.linkedinUrl !== '') completedFields++; // linkedin_url
-    if (formData.portfolioUrl && formData.portfolioUrl !== '') completedFields++; // portfolio_url
-    if (formData.githubUrl && formData.githubUrl !== '') completedFields++; // github_url
-    if (formData.drivingLicense && formData.drivingLicense.length > 0) completedFields++; // driving_license
-    if (formData.nationality && formData.nationality !== '') completedFields++; // nationality
-
-    return Math.round((completedFields / totalFields) * 100);
+    return calculateCandidateCompletion(profileData);
   }, [formData]);
 
   const addFiles = useCallback((files: File[], fileType: FileType) => {

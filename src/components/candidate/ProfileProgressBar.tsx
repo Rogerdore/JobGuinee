@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { calculateCandidateCompletion } from '../../utils/profileCompletion';
 
 interface ProfileStep {
   id: string;
@@ -47,6 +48,12 @@ export default function ProfileProgressBar({
 
   const calculateProgress = async () => {
     try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', user?.id)
+        .maybeSingle();
+
       const { data: profile } = await supabase
         .from('candidate_profiles')
         .select('*')
@@ -100,7 +107,7 @@ export default function ProfileProgressBar({
           title: 'Compléter mes informations',
           description: 'Renseignez vos coordonnées et préférences',
           icon: User,
-          completed: !!(profile.full_name && profile.location && profile.phone),
+          completed: !!(profileData?.full_name && profile.location && profileData?.phone),
           action: () => onNavigate?.('info'),
           weight: 25
         }
@@ -108,12 +115,23 @@ export default function ProfileProgressBar({
 
       setSteps(profileSteps);
 
-      const totalWeight = profileSteps.reduce((sum, step) => sum + step.weight, 0);
-      const completedWeight = profileSteps
-        .filter(step => step.completed)
-        .reduce((sum, step) => sum + step.weight, 0);
+      const calculatedProgress = calculateCandidateCompletion({
+        full_name: profileData?.full_name,
+        desired_position: profile.desired_position,
+        bio: profile.bio,
+        phone: profileData?.phone,
+        location: profile.location,
+        experience_years: profile.experience_years,
+        education_level: profile.education_level,
+        skills: profile.skills,
+        languages: profile.languages,
+        cv_url: profile.cv_url,
+        linkedin_url: profile.linkedin_url,
+        portfolio_url: profile.portfolio_url,
+        desired_salary_min: profile.desired_salary_min?.toString(),
+        desired_salary_max: profile.desired_salary_max?.toString(),
+      });
 
-      const calculatedProgress = Math.round((completedWeight / totalWeight) * 100);
       setProgress(calculatedProgress);
 
       await supabase
