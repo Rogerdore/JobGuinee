@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection - JobGuinée</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        .pending {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test de Connexion Supabase - JobGuinée</h1>
+
+        <div id="results"></div>
+
+        <button onclick="runTests()" id="testBtn">Lancer les tests</button>
+        <button onclick="location.href='/'" style="background: #28a745;">Retour au site</button>
+    </div>
+
+    <script type="module">
+        const SUPABASE_URL = 'https://hhhjzgeidjgctuveopso.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoaGp6Z2VpZGpnY3R1dmVvcHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NDc5NjUsImV4cCI6MjA4MDMyMzk2NX0.kaxpdgyYyGXiN93bThIceJ_p0j6hZQr5yz7obTtRSqA';
+
+        let results = [];
+
+        function addResult(title, status, message, details = null) {
+            results.push({ title, status, message, details });
+            displayResults();
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = results.map(r => `
+                <div class="test-result ${r.status}">
+                    <strong>${r.title}</strong><br>
+                    ${r.message}
+                    ${r.details ? `<pre>${r.details}</pre>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function testRestAPI() {
+            addResult('Test 1: API REST', 'pending', 'Test en cours...');
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok || response.status === 200) {
+                    addResult('Test 1: API REST', 'success', '✅ API REST accessible');
+                    return true;
+                } else {
+                    addResult('Test 1: API REST', 'error', `❌ API REST erreur: ${response.status}`, response.statusText);
+                    return false;
+                }
+            } catch (error) {
+                addResult('Test 1: API REST', 'error', '❌ API REST inaccessible', error.message);
+                return false;
+            }
+        }
+
+        async function testWebSocket() {
+            addResult('Test 2: WebSocket Realtime', 'pending', 'Test en cours...');
+
+            return new Promise((resolve) => {
+                try {
+                    const wsUrl = `wss://hhhjzgeidjgctuveopso.supabase.co/realtime/v1/websocket?apikey=${SUPABASE_ANON_KEY}&vsn=1.0.0`;
+                    const ws = new WebSocket(wsUrl);
+
+                    const timeout = setTimeout(() => {
+                        ws.close();
+                        addResult('Test 2: WebSocket Realtime', 'error', '❌ WebSocket timeout (5s)', 'La connexion n\'a pas pu être établie dans les 5 secondes');
+                        resolve(false);
+                    }, 5000);
+
+                    ws.onopen = () => {
+                        clearTimeout(timeout);
+                        ws.close();
+                        addResult('Test 2: WebSocket Realtime', 'success', '✅ WebSocket connecté avec succès');
+                        resolve(true);
+                    };
+
+                    ws.onerror = (error) => {
+                        clearTimeout(timeout);
+                        addResult('Test 2: WebSocket Realtime', 'error', '❌ Erreur WebSocket', error.message || 'Erreur de connexion');
+                        resolve(false);
+                    };
+                } catch (error) {
+                    addResult('Test 2: WebSocket Realtime', 'error', '❌ WebSocket non supporté', error.message);
+                    resolve(false);
+                }
+            });
+        }
+
+        async function testAuth() {
+            addResult('Test 3: Auth Service', 'pending', 'Test en cours...');
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('Test 3: Auth Service', 'success', '✅ Service Auth opérationnel', JSON.stringify(data, null, 2));
+                    return true;
+                } else {
+                    addResult('Test 3: Auth Service', 'error', `❌ Auth erreur: ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                addResult('Test 3: Auth Service', 'error', '❌ Auth service inaccessible', error.message);
+                return false;
+            }
+        }
+
+        async function testDatabase() {
+            addResult('Test 4: Database Query', 'pending', 'Test en cours...');
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'count=exact'
+                    }
+                });
+
+                if (response.ok) {
+                    const count = response.headers.get('Content-Range');
+                    addResult('Test 4: Database Query', 'success', '✅ Base de données accessible', `Requête exécutée avec succès`);
+                    return true;
+                } else {
+                    addResult('Test 4: Database Query', 'error', `❌ Database erreur: ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                addResult('Test 4: Database Query', 'error', '❌ Database inaccessible', error.message);
+                return false;
+            }
+        }
+
+        async function testURLCorrectness() {
+            addResult('Test 0: Validation URL', 'pending', 'Vérification...');
+
+            const correctURL = 'https://hhhjzgeidjgctuveopso.supabase.co';
+            const urlInCode = SUPABASE_URL;
+
+            if (urlInCode === correctURL) {
+                addResult('Test 0: Validation URL', 'success', '✅ URL Supabase correcte', `URL: ${urlInCode}`);
+                return true;
+            } else {
+                addResult('Test 0: Validation URL', 'error', '❌ URL Supabase incorrecte', `Attendu: ${correctURL}\nActuel: ${urlInCode}`);
+                return false;
+            }
+        }
+
+        window.runTests = async function() {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            btn.textContent = 'Tests en cours...';
+
+            results = [];
+            displayResults();
+
+            // Test 0: Validation URL
+            await testURLCorrectness();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Test 1: REST API
+            const restOk = await testRestAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Test 2: WebSocket
+            const wsOk = await testWebSocket();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Test 3: Auth
+            const authOk = await testAuth();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Test 4: Database
+            const dbOk = await testDatabase();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Résumé final
+            const allOk = restOk && wsOk && authOk && dbOk;
+            const summary = allOk
+                ? '✅ Tous les tests sont passés ! JobGuinée est opérationnel.'
+                : '⚠️ Certains tests ont échoué. Vérifiez les détails ci-dessus.';
+
+            addResult('Résumé Final', allOk ? 'success' : 'error', summary,
+                `REST API: ${restOk ? '✅' : '❌'}\nWebSocket: ${wsOk ? '✅' : '❌'}\nAuth: ${authOk ? '✅' : '❌'}\nDatabase: ${dbOk ? '✅' : '❌'}`
+            );
+
+            btn.disabled = false;
+            btn.textContent = 'Relancer les tests';
+        };
+
+        // Lancer automatiquement au chargement
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>
