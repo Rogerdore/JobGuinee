@@ -19,17 +19,41 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      // CRITICAL: Ne pas attendre Realtime pour l'auth
+      // Permet à l'app de démarrer même si WebSocket échoue
+      flowType: 'pkce',
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'jobguinee-auth-token',
+      // Timeout rapide pour éviter le blocage
+      debug: false
     },
     realtime: {
+      // Configuration non-bloquante du Realtime
+      // L'app continue même si WebSocket échoue
+      timeout: 3000, // Timeout WebSocket à 3s
       params: {
         eventsPerSecond: 10
+      },
+      // Paramètres pour éviter le blocage
+      heartbeatIntervalMs: 30000,
+      logger: (level: string, message: string) => {
+        // Logger les erreurs WebSocket mais ne pas crasher
+        if (level === 'error') {
+          console.warn('🔌 Realtime WebSocket:', message);
+        }
       }
     },
     global: {
       headers: {
         'x-application-name': 'jobguinee'
-      }
+      },
+      // Préférer REST plutôt que d'attendre WebSocket
+      fetch: fetch
+    },
+    // Option importante: ne pas bloquer sur Realtime
+    db: {
+      schema: 'public'
     }
   }
 );

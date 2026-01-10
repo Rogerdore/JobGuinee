@@ -61,84 +61,161 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // PROTECTION: Ne jamais bloquer le démarrage de l'app si Supabase est indisponible
+    // PRODUCTION SAFETY: Bootstrap auth avec timeout et fallback REST
+    // L'app ne doit JAMAIS être bloquée par Realtime WebSocket
     const initAuth = async () => {
-      // Timeout de sécurité: débloquer l'app après 8 secondes maximum
-      const timeoutId = setTimeout(() => {
-        console.warn('⏱️ Timeout auth initialization - déblocage de l\'app');
-        setLoading(false);
-      }, 8000);
+      console.log('🚀 JobGuinée: Initialisation auth (REST + fallback)');
+
+      let authResolved = false;
+
+      // Timeout de sécurité global: débloquer l'app après 3s maximum
+      const safetyTimeout = setTimeout(() => {
+        if (!authResolved) {
+          console.warn('⏱️ Auth timeout (3s) - déblocage immédiat de l\'app');
+          console.warn('💡 L\'app fonctionne en mode REST uniquement (WebSocket indisponible)');
+          authResolved = true;
+          setLoading(false);
+        }
+      }, 3000);
 
       try {
-        // Tentative de récupération de la session avec timeout
+        // Stratégie 1: Essayer getSession() avec timeout court
+        console.log('📡 Tentative auth.getSession() avec timeout 2.5s...');
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session timeout')), 5000)
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout')), 2500)
         );
 
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
+        try {
+          const { data: { session }, error } = await Promise.race([
+            sessionPromise,
+            timeoutPromise
+          ]);
 
-        if (error) {
-          console.error('⚠️ Erreur lors de la récupération de la session:', error);
-          clearTimeout(timeoutId);
-          setLoading(false);
-          return;
-        }
+          if (!authResolved) {
+            authResolved = true;
+            clearTimeout(safetyTimeout);
 
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          try {
-            // Récupération du profil avec timeout
-            const profilePromise = fetchProfile(session.user.id);
-            const profileTimeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Profile timeout')), 3000)
-            );
+            if (error) {
+              console.error('⚠️ Erreur getSession:', error.message);
+              setLoading(false);
+              return;
+            }
 
-            const profileData = await Promise.race([
-              profilePromise,
-              profileTimeoutPromise
-            ]);
-            setProfile(profileData as Profile | null);
-          } catch (profileError) {
-            console.error('⚠️ Erreur lors de la récupération du profil:', profileError);
-            // Continue quand même sans profil
+            console.log('✅ Session récupérée:', session ? 'utilisateur connecté' : 'aucune session');
+            setUser(session?.user ?? null);
+
+            // Récupération du profil avec timeout séparé
+            if (session?.user) {
+              try {
+                const profileData = await Promise.race([
+                  fetchProfile(session.user.id),
+                  new Promise<null>((_, reject) =>
+                    setTimeout(() => reject(new Error('Profile timeout')), 2000)
+                  )
+                ]);
+                setProfile(profileData as Profile | null);
+                console.log('✅ Profil chargé');
+              } catch (profileError) {
+                console.warn('⚠️ Timeout profil - continuons sans profil:', profileError);
+                // Continue sans profil
+              }
+            }
+
+            setLoading(false);
+          }
+        } catch (timeoutError) {
+          // Stratégie 2: Fallback REST pur si getSession() timeout
+          if (!authResolved) {
+            console.warn('🔄 Fallback: mode REST uniquement (WebSocket timeout)');
+
+            try {
+              // Vérifier si on a un token stocké localement
+              const storedToken = localStorage.getItem('jobguinee-auth-token');
+
+              if (storedToken) {
+                console.log('💾 Token local trouvé - tentative validation REST');
+                // On a un token, essayer de le valider via REST
+                const { data: { user: restUser }, error: restError } = await supabase.auth.getUser();
+
+                if (!restError && restUser) {
+                  console.log('✅ Session validée via REST');
+                  setUser(restUser);
+
+                  // Charger profil via REST direct
+                  try {
+                    const profileData = await fetchProfile(restUser.id);
+                    setProfile(profileData);
+                    console.log('✅ Profil chargé via REST');
+                  } catch (profileErr) {
+                    console.warn('⚠️ Erreur chargement profil REST:', profileErr);
+                  }
+                } else {
+                  console.log('ℹ️ Pas de session active');
+                }
+              } else {
+                console.log('ℹ️ Pas de token local - utilisateur non connecté');
+              }
+            } catch (fallbackError) {
+              console.error('⚠️ Erreur fallback REST:', fallbackError);
+            }
+
+            authResolved = true;
+            clearTimeout(safetyTimeout);
+            setLoading(false);
           }
         }
-        clearTimeout(timeoutId);
-        setLoading(false);
-      } catch (error) {
-        console.error('⚠️ Erreur critique lors de l\'initialisation de l\'auth:', error);
-        clearTimeout(timeoutId);
-        setLoading(false);
+      } catch (criticalError) {
+        console.error('❌ Erreur critique auth bootstrap:', criticalError);
+        if (!authResolved) {
+          authResolved = true;
+          clearTimeout(safetyTimeout);
+          setLoading(false);
+        }
       }
     };
 
     initAuth();
 
     // Protection de l'abonnement aux changements d'état
+    // N'utilise PAS WebSocket, juste les events locaux d'auth
     let subscription: any = null;
     try {
       const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        // Utiliser une fonction async immédiatement invoquée (IIFE)
+        // pour éviter de bloquer le callback sync
         (async () => {
           try {
             setUser(session?.user ?? null);
             if (session?.user) {
-              const profileData = await fetchProfile(session.user.id);
-              setProfile(profileData);
+              // Timeout pour le profil même dans onAuthStateChange
+              const profilePromise = fetchProfile(session.user.id);
+              const timeoutPromise = new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
+              );
+
+              try {
+                const profileData = await Promise.race([profilePromise, timeoutPromise]);
+                setProfile(profileData as Profile | null);
+              } catch (timeoutErr) {
+                console.warn('⚠️ Timeout récupération profil dans onAuthStateChange');
+                // Continue sans profil
+              }
             } else {
               setProfile(null);
             }
           } catch (error) {
             console.error('⚠️ Erreur dans onAuthStateChange:', error);
+            // Ne pas crasher, juste logger
           }
         })();
       });
       subscription = data.subscription;
+      console.log('✅ Auth state listener configuré (mode non-bloquant)');
     } catch (error) {
-      console.error('⚠️ Erreur lors de la souscription aux changements d\'auth:', error);
+      console.error('⚠️ Impossible de configurer auth listener:', error);
+      console.warn('💡 L\'app continuera sans listener temps réel');
+      // Ne pas crasher, l'app fonctionne quand même
     }
 
     return () => {
@@ -147,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           subscription.unsubscribe();
         }
       } catch (error) {
-        console.error('⚠️ Erreur lors de la désinscription:', error);
+        // Silent fail, ne pas logger en cleanup
       }
     };
   }, []);
