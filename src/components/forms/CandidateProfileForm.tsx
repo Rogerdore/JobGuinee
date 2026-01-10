@@ -312,7 +312,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     return Math.round((completedFields / totalFields) * 100);
   }, [formData]);
 
-  const addFiles = (files: File[], fileType: FileType) => {
+  const addFiles = useCallback((files: File[], fileType: FileType) => {
     const newFiles: FileToUpload[] = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
@@ -320,9 +320,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
       customTitle: ''
     }));
     setFilesToUpload(prev => [...prev, ...newFiles]);
-  };
+  }, []);
 
-  const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
+  const handleMultipleFilesChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files);
       const oversizedFiles: string[] = [];
@@ -346,17 +346,17 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         addFiles(validFiles, fileType);
       }
     }
-  };
+  }, [addFiles]);
 
-  const removeFile = (id: string) => {
+  const removeFile = useCallback((id: string) => {
     setFilesToUpload(prev => prev.filter(f => f.id !== id));
-  };
+  }, []);
 
-  const updateFileTitle = (id: string, title: string) => {
+  const updateFileTitle = useCallback((id: string, title: string) => {
     setFilesToUpload(prev =>
       prev.map(f => f.id === id ? { ...f, customTitle: title } : f)
     );
-  };
+  }, []);
 
   const getFileTypeLabel = (type: FileType) => {
     const labels: Record<FileType, string> = {
@@ -366,12 +366,21 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     return labels[type];
   };
 
-  const getFilesByType = (type: FileType) => {
+  const getFilesByType = useCallback((type: FileType) => {
     return filesToUpload.filter(f => f.fileType === type);
-  };
+  }, [filesToUpload]);
 
-  const MultipleFileUploadSection = ({ fileType, label, required = false }: { fileType: FileType; label: string; required?: boolean }) => {
+  const MultipleFileUploadSection = useCallback(({ fileType, label, required = false }: { fileType: FileType; label: string; required?: boolean }) => {
     const filesOfType = getFilesByType(fileType);
+    const fileInputId = `file-upload-${fileType}`;
+
+    const handleClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      const input = document.getElementById(fileInputId) as HTMLInputElement;
+      if (input) {
+        input.click();
+      }
+    };
 
     return (
       <div className="space-y-3">
@@ -386,22 +395,30 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           multiple
           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
           onChange={(e) => handleMultipleFilesChange(e, fileType)}
-          className="hidden"
-          id={`file-upload-${fileType}`}
+          style={{ display: 'none' }}
+          id={fileInputId}
         />
 
-        <label
-          htmlFor={`file-upload-${fileType}`}
-          className="flex items-center justify-center gap-3 px-4 py-6 bg-white border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-lg cursor-pointer transition"
+        <div
+          onClick={handleClick}
+          className="flex items-center justify-center gap-3 px-4 py-6 bg-white border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg cursor-pointer transition-all"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleClick(e as any);
+            }
+          }}
         >
           <UploadIcon className="w-6 h-6 text-gray-600" />
-          <div className="text-center">
+          <div className="text-center pointer-events-none">
             <p className="font-semibold text-gray-900">
               Cliquer pour télécharger {filesOfType.length > 0 ? 'd\'autres fichiers' : 'un ou plusieurs fichiers'}
             </p>
             <p className="text-sm text-gray-600">Formats acceptés: PDF, Word, JPG, PNG (max 10 MB par fichier)</p>
           </div>
-        </label>
+        </div>
 
         {filesOfType.length > 0 && (
           <div className="space-y-2">
@@ -441,7 +458,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         )}
       </div>
     );
-  };
+  }, [getFilesByType, handleMultipleFilesChange, removeFile, updateFileTitle]);
 
   useEffect(() => {
     const loadExistingProfile = async () => {
