@@ -774,46 +774,46 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => onNavigate('jobs')}
-                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
+                    className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg hover:from-blue-100 hover:to-blue-200 hover:border-blue-400 hover:shadow-lg transition-all text-left group"
                   >
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] group-hover:text-white transition">
-                      <Search className="w-5 h-5 text-[#0E2F56] group-hover:text-white" />
+                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-600 transition shadow-sm">
+                      <Search className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-base mb-1">Rechercher une offre</h3>
-                    <p className="text-xs text-gray-600">Explorez des milliers d'opportunités</p>
+                    <h3 className="font-semibold text-base mb-1 text-gray-900">Rechercher une offre</h3>
+                    <p className="text-xs text-gray-700">Explorez des milliers d'opportunités</p>
                   </button>
 
                   <button
                     onClick={() => onNavigate('candidate-profile-form')}
-                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
+                    className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-200 rounded-lg hover:from-emerald-100 hover:to-emerald-200 hover:border-emerald-400 hover:shadow-lg transition-all text-left group"
                   >
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] transition">
-                      <User className="w-5 h-5 text-gray-600 group-hover:text-white" />
+                    <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-emerald-600 transition shadow-sm">
+                      <User className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-base mb-1">Créer mon profil</h3>
-                    <p className="text-xs text-gray-600">Formulaire complet de profil</p>
+                    <h3 className="font-semibold text-base mb-1 text-gray-900">Créer mon profil</h3>
+                    <p className="text-xs text-gray-700">Formulaire complet de profil</p>
                   </button>
 
                   <button
                     onClick={() => setActiveTab('premium')}
-                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
+                    className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-200 rounded-lg hover:from-amber-100 hover:to-amber-200 hover:border-amber-400 hover:shadow-lg transition-all text-left group"
                   >
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] transition">
-                      <Crown className="w-5 h-5 text-gray-600 group-hover:text-white" />
+                    <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-600 transition shadow-sm">
+                      <Crown className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-base mb-1">Services Premium IA</h3>
-                    <p className="text-xs text-gray-600">Boostez votre recherche d'emploi</p>
+                    <h3 className="font-semibold text-base mb-1 text-gray-900">Services Premium IA</h3>
+                    <p className="text-xs text-gray-700">Boostez votre recherche d'emploi</p>
                   </button>
 
                   <button
                     onClick={() => setActiveTab('formations')}
-                    className="p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0E2F56] hover:shadow-md transition text-left group"
+                    className="p-4 bg-gradient-to-br from-violet-50 to-violet-100 border-2 border-violet-200 rounded-lg hover:from-violet-100 hover:to-violet-200 hover:border-violet-400 hover:shadow-lg transition-all text-left group"
                   >
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#0E2F56] transition">
-                      <GraduationCap className="w-5 h-5 text-gray-600 group-hover:text-white" />
+                    <div className="w-10 h-10 bg-violet-500 rounded-lg flex items-center justify-center mb-3 group-hover:bg-violet-600 transition shadow-sm">
+                      <GraduationCap className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-base mb-1">Mes formations</h3>
-                    <p className="text-xs text-gray-600">Développez vos compétences</p>
+                    <h3 className="font-semibold text-base mb-1 text-gray-900">Mes formations</h3>
+                    <p className="text-xs text-gray-700">Développez vos compétences</p>
                   </button>
                 </div>
 
@@ -824,7 +824,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                       {applications.slice(0, 3).map((app) => (
                         <div
                           key={app.id}
-                          className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition cursor-pointer"
+                          className="bg-white border-2 border-gray-200 rounded-lg p-3 hover:border-blue-400 hover:shadow-lg hover:bg-blue-50 transition-all cursor-pointer"
                           onClick={() => onNavigate('job-detail', app.job_id)}
                         >
                           <div className="flex items-start justify-between">
