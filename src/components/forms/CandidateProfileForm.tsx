@@ -117,17 +117,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const { balance } = useCreditBalance();
   const { serviceCost: cvParseCost } = useServiceCost('cv_parse');
 
-  const [formData, setFormData] = useState(() => {
-    const saved = localStorage.getItem('candidateProfileDraft');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return getInitialFormData();
-      }
-    }
-    return getInitialFormData();
-  });
+  const [formData, setFormData] = useState(() => getInitialFormData());
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showCVUploadModal, setShowCVUploadModal] = useState(false);
