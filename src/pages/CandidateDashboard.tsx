@@ -625,8 +625,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           <div className="flex border-b border-gray-200 overflow-x-auto">
             {[
               { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
+              { id: 'profile', label: 'Mon Profil', icon: User },
               { id: 'applications', label: `Candidatures (${applications.length})`, icon: Briefcase },
-              { id: 'profile', label: 'Créer/Compléter le profil', icon: Settings },
               { id: 'formations', label: 'Formations', icon: BookOpen },
               { id: 'alerts', label: 'Alertes emploi', icon: Bell },
               { id: 'messages', label: `Messages${unreadMessagesCount > 0 ? ` (${unreadMessagesCount})` : ''}`, icon: MessageCircle, badge: unreadMessagesCount },
