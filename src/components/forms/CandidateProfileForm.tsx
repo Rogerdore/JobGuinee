@@ -133,6 +133,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const [showCVUploadModal, setShowCVUploadModal] = useState(false);
   const [cvParsed, setCvParsed] = useState(false);
   const [showManualForm, setShowManualForm] = useState(true);
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string>('');
+  const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const saveToDatabaseCallback = useCallback(async (data: any) => {
     if (!profile?.id || !user) return;
@@ -231,10 +234,6 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     title: '',
     message: ''
   });
-
-  const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string>('');
 
   function getInitialFormData() {
     return {
