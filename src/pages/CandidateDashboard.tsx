@@ -1085,7 +1085,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg font-medium transition flex items-center gap-2 shadow-sm"
                         >
                           <Edit className="w-5 h-5" />
-                          Modifier/Compléter
+                          Compléter mon profil
                         </button>
                       </div>
 
