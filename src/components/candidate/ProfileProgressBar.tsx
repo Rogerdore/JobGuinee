@@ -279,22 +279,6 @@ export default function ProfileProgressBar({
             })}
           </div>
         )}
-
-        {progress >= 80 && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-8 h-8 text-green-600 flex-shrink-0" />
-              <div>
-                <h4 className="font-bold text-green-900 mb-1">
-                  Félicitations !
-                </h4>
-                <p className="text-sm text-green-800">
-                  Votre profil est bien complété. Vous maximisez vos chances d'être contacté par les recruteurs.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
