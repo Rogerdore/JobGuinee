@@ -159,6 +159,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           current_position: data.currentPosition || null,
           current_company: data.currentCompany || null,
           bio: data.professionalSummary || null,
+          professional_summary: data.professionalSummary || null,
           work_experience: Array.isArray(data.experiences) ? data.experiences : [],
           education: Array.isArray(data.formations) ? data.formations : [],
           skills: Array.isArray(data.skills) ? data.skills : [],
@@ -172,8 +173,14 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           github_url: data.githubUrl || null,
           other_urls: Array.isArray(data.otherUrls) ? data.otherUrls : [],
           driving_license: Array.isArray(data.drivingLicense) ? data.drivingLicense : [],
+          photo_url: existingPhotoUrl || null,
+          cv_url: data.cvUrl || null,
+          cover_letter_url: data.coverLetterUrl || null,
+          certificates_url: data.certificatesUrl || null,
           visible_in_cvtheque: data.visibleInCVTheque || false,
           receive_alerts: data.receiveAlerts || false,
+          cv_parsed_data: data.cvParsedData || null,
+          cv_parsed_at: data.cvParsedAt || null,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'profile_id'
@@ -185,7 +192,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     } catch (error) {
       console.error('Error auto-saving to database:', error);
     }
-  }, [profile?.id, user]);
+  }, [profile?.id, user, existingPhotoUrl]);
 
   const { status: autoSaveStatus, lastSaved, lastDatabaseSave } = useAutoSave({
     data: formData,
@@ -318,7 +325,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     setFilesToUpload(prev => [...prev, ...newFiles]);
   }, []);
 
-  const handleMultipleFilesChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
+  const handleMultipleFilesChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files);
       const oversizedFiles: string[] = [];
@@ -340,9 +347,28 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
 
       if (validFiles.length > 0) {
         addFiles(validFiles, fileType);
+
+        if (validFiles.length === 1 && user) {
+          setUploadingFiles(true);
+          try {
+            const folder = fileType === 'cv' ? 'candidate-cvs' : 'candidate-certificates';
+            const fileUrl = await uploadFile(validFiles[0], folder);
+
+            if (fileUrl) {
+              setFormData(prev => ({
+                ...prev,
+                [fileType === 'cv' ? 'cvUrl' : 'certificatesUrl']: fileUrl
+              }));
+            }
+          } catch (error) {
+            console.error('Error auto-uploading file:', error);
+          } finally {
+            setUploadingFiles(false);
+          }
+        }
       }
     }
-  }, [addFiles]);
+  }, [addFiles, user]);
 
   const removeFile = useCallback((id: string) => {
     setFilesToUpload(prev => prev.filter(f => f.id !== id));
@@ -389,19 +415,31 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           </label>
         </div>
 
+        {uploadingFiles && !hasExistingFile && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+              <div className="flex-1">
+                <p className="font-medium text-blue-900 text-sm">Upload en cours...</p>
+                <p className="text-xs text-blue-700">Veuillez patienter</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {hasExistingFile && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div className="flex-1">
-                <p className="font-medium text-green-900 text-sm">Fichier enregistré</p>
+                <p className="font-medium text-green-900 text-sm">Fichier enregistré automatiquement</p>
                 <a
                   href={existingFileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-green-700 hover:text-green-900 underline"
                 >
-                  Voir le fichier
+                  Voir le fichier →
                 </a>
               </div>
             </div>
@@ -571,6 +609,23 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const updateField = useCallback((fieldName: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [fieldName]: value }));
   }, []);
+
+  const handlePhotoChange = useCallback(async (file: File | null) => {
+    setFormData((prev: any) => ({ ...prev, profilePhoto: file }));
+
+    if (file && user) {
+      try {
+        const photoUrl = await uploadFile(file, 'candidate-profile-photos');
+        if (photoUrl) {
+          setExistingPhotoUrl(photoUrl);
+        }
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+      }
+    } else if (!file) {
+      setExistingPhotoUrl('');
+    }
+  }, [user]);
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
     if (!file || !user) return null;
@@ -984,7 +1039,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
       >
         <ProfilePhotoUpload
           currentPhotoUrl={existingPhotoUrl}
-          onPhotoChange={(file) => updateField('profilePhoto', file)}
+          onPhotoChange={handlePhotoChange}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
