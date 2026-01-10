@@ -38,6 +38,7 @@ import { ParsedCVData } from '../../services/cvUploadParserService';
 import { useCVParsing } from '../../hooks/useCVParsing';
 import SuccessModal from '../notifications/SuccessModal';
 import ErrorListModal from '../notifications/ErrorListModal';
+import ModernModal from '../modals/ModernModal';
 import LanguageRequirementsManager from './LanguageRequirementsManager';
 import ExperienceFieldsImproved from './ExperienceFieldsImproved';
 import EducationFieldsImproved from './EducationFieldsImproved';
@@ -151,6 +152,16 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     errors: []
   });
 
+  const [warningModal, setWarningModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: ''
+  });
+
   const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
@@ -252,14 +263,26 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
   const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: FileType) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files);
+      const oversizedFiles: string[] = [];
       const validFiles = filesArray.filter(file => {
         if (file.size > 10 * 1024 * 1024) {
-          alert(`Le fichier ${file.name} dépasse 10 MB`);
+          oversizedFiles.push(file.name);
           return false;
         }
         return true;
       });
-      addFiles(validFiles, fileType);
+
+      if (oversizedFiles.length > 0) {
+        setWarningModal({
+          isOpen: true,
+          title: 'Fichier(s) trop volumineux',
+          message: `${oversizedFiles.length > 1 ? 'Les fichiers suivants dépassent' : 'Le fichier suivant dépasse'} la limite de 10 MB:\n\n${oversizedFiles.map(name => `• ${name}`).join('\n')}\n\nVeuillez compresser ${oversizedFiles.length > 1 ? 'ces fichiers' : 'ce fichier'} ou en sélectionner ${oversizedFiles.length > 1 ? 'd\'autres' : 'un autre'}.`
+        });
+      }
+
+      if (validFiles.length > 0) {
+        addFiles(validFiles, fileType);
+      }
     }
   };
 
@@ -800,7 +823,11 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             type="button"
             onClick={() => {
               if (balance && balance.credits_available < (cvParseCost || 10)) {
-                alert(`Crédits insuffisants. Vous avez ${balance.credits_available} crédits mais ${cvParseCost || 10} sont nécessaires.`);
+                setWarningModal({
+                  isOpen: true,
+                  title: 'Crédits insuffisants',
+                  message: `Vous ne disposez pas de suffisamment de crédits pour utiliser cette fonctionnalité.\n\nVotre solde actuel: ${balance.credits_available} crédits\nCoût du service: ${cvParseCost || 10} crédits\n\nVeuillez recharger votre compte pour continuer.`
+                });
                 return;
               }
               setShowCVUploadModal(true);
@@ -1232,6 +1259,15 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         isOpen={errorListModal.isOpen}
         onClose={() => setErrorListModal({ isOpen: false, errors: [] })}
         errors={errorListModal.errors}
+      />
+
+      <ModernModal
+        isOpen={warningModal.isOpen}
+        onClose={() => setWarningModal({ isOpen: false, title: '', message: '' })}
+        title={warningModal.title}
+        message={warningModal.message}
+        type="warning"
+        confirmText="Compris"
       />
     </form>
   );

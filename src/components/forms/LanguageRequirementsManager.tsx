@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Globe } from 'lucide-react';
 import { LanguageRequirement } from '../../types/jobFormTypes';
 import { languageSuggestions, languageLevels } from '../../utils/jobSuggestions';
+import ModernModal from '../modals/ModernModal';
 
 interface LanguageRequirementsManagerProps {
   requirements: LanguageRequirement[];
@@ -13,17 +14,38 @@ export default function LanguageRequirementsManager({ requirements, onChange }: 
   const [selectedLevel, setSelectedLevel] = useState('Intermédiaire (B1)');
   const [customLanguage, setCustomLanguage] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'warning' | 'error' | 'info' | 'success';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+  });
 
   const handleAddLanguage = () => {
     const languageToAdd = showCustomInput ? customLanguage.trim() : selectedLanguage;
 
     if (!languageToAdd) {
-      alert('Veuillez sélectionner ou saisir une langue');
+      setModalState({
+        isOpen: true,
+        title: 'Langue manquante',
+        message: 'Veuillez sélectionner ou saisir une langue avant de l\'ajouter.',
+        type: 'warning',
+      });
       return;
     }
 
     if (requirements.some(req => req.language === languageToAdd)) {
-      alert('Cette langue a déjà été ajoutée');
+      setModalState({
+        isOpen: true,
+        title: 'Langue déjà ajoutée',
+        message: `La langue "${languageToAdd}" a déjà été ajoutée à la liste. Chaque langue ne peut être ajoutée qu'une seule fois.`,
+        type: 'info',
+      });
       return;
     }
 
@@ -182,6 +204,15 @@ export default function LanguageRequirementsManager({ requirements, onChange }: 
           </div>
         </div>
       )}
+
+      <ModernModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        confirmText="Compris"
+      />
     </div>
   );
 }

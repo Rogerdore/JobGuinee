@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Camera, X, Upload } from 'lucide-react';
+import ModernModal from '../modals/ModernModal';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -9,6 +10,17 @@ interface ProfilePhotoUploadProps {
 export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoChange }: ProfilePhotoUploadProps) {
   const [preview, setPreview] = useState<string | null>(currentPhotoUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'warning' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -17,12 +29,22 @@ export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoChange }: P
 
     // Validation
     if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner une image (JPG, PNG)');
+      setModalState({
+        isOpen: true,
+        title: 'Format non valide',
+        message: 'Veuillez sélectionner une image au format JPG ou PNG.',
+        type: 'warning',
+      });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('La taille de l\'image ne doit pas dépasser 5 MB');
+      setModalState({
+        isOpen: true,
+        title: 'Fichier trop volumineux',
+        message: 'La taille de l\'image ne doit pas dépasser 5 MB. Veuillez compresser votre image ou en choisir une plus petite.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -109,6 +131,15 @@ export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoChange }: P
           </div>
         </div>
       </div>
+
+      <ModernModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        confirmText="Compris"
+      />
     </div>
   );
 }
