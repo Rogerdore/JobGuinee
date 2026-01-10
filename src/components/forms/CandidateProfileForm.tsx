@@ -803,12 +803,14 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         </p>
       </div>
 
-      {/* Indicateur de sauvegarde automatique */}
-      <AutoSaveIndicator
-        status={autoSaveStatus}
-        lastSaved={lastSaved}
-        lastDatabaseSave={lastDatabaseSave}
-      />
+      {/* Indicateur de sauvegarde automatique - Sticky */}
+      <div className="sticky top-0 z-20 mb-6">
+        <AutoSaveIndicator
+          status={autoSaveStatus}
+          lastSaved={lastSaved}
+          lastDatabaseSave={lastDatabaseSave}
+        />
+      </div>
 
       {/* Barre de progression */}
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 shadow-sm">

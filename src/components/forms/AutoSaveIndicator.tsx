@@ -35,7 +35,7 @@ const AutoSaveIndicator = memo(function AutoSaveIndicator({
   };
 
   return (
-    <div className={`bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm ${className}`}>
+    <div className={`bg-white border-2 border-gray-200 rounded-xl p-3 shadow-lg backdrop-blur-sm ${className}`}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           {status === 'saving' && (
