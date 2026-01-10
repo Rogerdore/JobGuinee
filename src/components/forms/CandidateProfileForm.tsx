@@ -159,19 +159,19 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           current_position: data.currentPosition || null,
           current_company: data.currentCompany || null,
           bio: data.professionalSummary || null,
-          work_experience: data.experiences || [],
-          education: data.formations || [],
-          skills: data.skills || [],
-          languages: data.languagesDetailed || [],
-          mobility: data.mobility || [],
+          work_experience: Array.isArray(data.experiences) ? data.experiences : [],
+          education: Array.isArray(data.formations) ? data.formations : [],
+          skills: Array.isArray(data.skills) ? data.skills : [],
+          languages: Array.isArray(data.languagesDetailed) ? data.languagesDetailed : [],
+          mobility: Array.isArray(data.mobility) ? data.mobility : [],
           willing_to_relocate: data.willingToRelocate || false,
           desired_salary_min: data.desiredSalaryMin ? parseInt(data.desiredSalaryMin) : null,
           desired_salary_max: data.desiredSalaryMax ? parseInt(data.desiredSalaryMax) : null,
           linkedin_url: data.linkedinUrl || null,
           portfolio_url: data.portfolioUrl || null,
           github_url: data.githubUrl || null,
-          other_urls: data.otherUrls || [],
-          driving_license: data.drivingLicense || [],
+          other_urls: Array.isArray(data.otherUrls) ? data.otherUrls : [],
+          driving_license: Array.isArray(data.drivingLicense) ? data.drivingLicense : [],
           visible_in_cvtheque: data.visibleInCVTheque || false,
           receive_alerts: data.receiveAlerts || false,
           updated_at: new Date().toISOString(),
@@ -227,6 +227,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
 
   const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string>('');
 
   function getInitialFormData() {
     return {
@@ -369,6 +370,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     const filesOfType = getFilesByType(fileType);
     const fileInputId = `file-upload-${fileType}`;
 
+    const existingFileUrl = fileType === 'cv' ? formData.cvUrl : formData.certificatesUrl;
+    const hasExistingFile = !!existingFileUrl;
+
     const handleClick = (e: React.MouseEvent) => {
       e.preventDefault();
       const input = document.getElementById(fileInputId) as HTMLInputElement;
@@ -384,6 +388,25 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             {label} {required && <span className="text-red-600">*</span>}
           </label>
         </div>
+
+        {hasExistingFile && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-medium text-green-900 text-sm">Fichier enregistré</p>
+                <a
+                  href={existingFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-green-700 hover:text-green-900 underline"
+                >
+                  Voir le fichier
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         <input
           type="file"
@@ -409,7 +432,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
           <UploadIcon className="w-6 h-6 text-gray-600" />
           <div className="text-center pointer-events-none">
             <p className="font-semibold text-gray-900">
-              Cliquer pour télécharger {filesOfType.length > 0 ? 'd\'autres fichiers' : 'un ou plusieurs fichiers'}
+              Cliquer pour {hasExistingFile || filesOfType.length > 0 ? 'remplacer ou ajouter des fichiers' : 'télécharger un ou plusieurs fichiers'}
             </p>
             <p className="text-sm text-gray-600">Formats acceptés: PDF, Word, JPG, PNG (max 10 MB par fichier)</p>
           </div>
@@ -453,7 +476,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         )}
       </div>
     );
-  }, [getFilesByType, handleMultipleFilesChange, removeFile, updateFileTitle]);
+  }, [getFilesByType, handleMultipleFilesChange, removeFile, updateFileTitle, formData.cvUrl, formData.certificatesUrl]);
 
   useEffect(() => {
     const loadExistingProfile = async () => {
@@ -472,6 +495,8 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         }
 
         if (data) {
+          setExistingPhotoUrl(data.photo_url || '');
+
           setFormData({
             fullName: profile?.full_name || '',
             email: user?.email || '',
@@ -494,13 +519,13 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             currentCompany: data.current_company || '',
             professionalSummary: data.bio || data.professional_summary || '',
 
-            experiences: data.work_experience || [],
-            formations: data.education || [],
+            experiences: Array.isArray(data.work_experience) ? data.work_experience : [],
+            formations: Array.isArray(data.education) ? data.education : [],
 
-            skills: data.skills || [],
-            languagesDetailed: data.languages || [],
+            skills: Array.isArray(data.skills) ? data.skills : [],
+            languagesDetailed: Array.isArray(data.languages) ? data.languages : [],
 
-            mobility: data.mobility || [],
+            mobility: Array.isArray(data.mobility) ? data.mobility : [],
             willingToRelocate: data.willing_to_relocate || false,
 
             desiredSalaryMin: data.desired_salary_min?.toString() || '',
@@ -509,9 +534,9 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
             linkedinUrl: data.linkedin_url || '',
             portfolioUrl: data.portfolio_url || '',
             githubUrl: data.github_url || '',
-            otherUrls: data.other_urls || [],
+            otherUrls: Array.isArray(data.other_urls) ? data.other_urls : [],
 
-            drivingLicense: data.driving_license || [],
+            drivingLicense: Array.isArray(data.driving_license) ? data.driving_license : [],
             cv: null,
             coverLetter: null,
             certificates: null,
@@ -670,7 +695,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         address: formData.address || null,
         city: formData.city || null,
         region: formData.region || null,
-        photo_url: photoUrl || formData.profilePhoto || null,
+        photo_url: photoUrl || existingPhotoUrl || null,
         title: formData.desiredPosition || formData.currentPosition || '',
         bio: formData.professionalSummary,
         professional_status: formData.professionalStatus || null,
@@ -956,7 +981,7 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
         icon={<User className="w-6 h-6" />}
       >
         <ProfilePhotoUpload
-          currentPhotoUrl={formData.cvUrl}
+          currentPhotoUrl={existingPhotoUrl}
           onPhotoChange={(file) => updateField('profilePhoto', file)}
         />
 
