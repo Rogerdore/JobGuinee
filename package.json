@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "db:check": "node setup-database.js",
-    "db:create-user": "node create-test-user.js"
+    "db:create-user": "node create-test-user.js",
+    "audit:system": "node audit-system-complete.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
