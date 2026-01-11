@@ -1065,10 +1065,13 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             {activeTab === 'profile' && (
               <div className="-m-6">
                 {isEditingProfile ? (
-                  <CandidateProfileForm onSaveSuccess={() => {
-                    setIsEditingProfile(false);
-                    loadData();
-                  }} />
+                  <CandidateProfileForm
+                    onSaveSuccess={() => {
+                      setIsEditingProfile(false);
+                      loadData();
+                    }}
+                    onNavigateDashboard={() => setIsEditingProfile(false)}
+                  />
                 ) : (
                   <div className="p-6">
                     {/* Header avec boutons d'action */}

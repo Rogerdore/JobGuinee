@@ -16,6 +16,7 @@ import {
   FileText,
   Upload as UploadIcon,
   Lock,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -109,9 +110,10 @@ interface FileToUpload {
 
 interface CandidateProfileFormProps {
   onSaveSuccess?: () => void;
+  onNavigateDashboard?: () => void;
 }
 
-export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfileFormProps = {}) {
+export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboard }: CandidateProfileFormProps = {}) {
   const { user, profile } = useAuth();
   const { mapToFormData } = useCVParsing();
   const { balance } = useCreditBalance();
@@ -838,6 +840,18 @@ export default function CandidateProfileForm({ onSaveSuccess }: CandidateProfile
     >
       {/* En-tête */}
       <div className="text-center border-b pb-6">
+        {onNavigateDashboard && (
+          <div className="mb-4 flex justify-start">
+            <button
+              type="button"
+              onClick={onNavigateDashboard}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour au dashboard
+            </button>
+          </div>
+        )}
         <h1 className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-3">
           <User className="w-8 h-8 text-blue-600" />
           Mon Profil Professionnel JobGuinée
