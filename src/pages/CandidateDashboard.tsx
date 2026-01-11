@@ -1280,81 +1280,93 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             </div>
                             <h3 className="text-lg font-bold text-gray-900">Objectif professionnel</h3>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-gray-500">Poste recherché</label>
-                              <p className="text-gray-900 font-medium mt-1">{candidateProfile.desired_position || candidateProfile.title || '-'}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Colonne 1 */}
+                            <div className="space-y-6">
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Poste recherché</label>
+                                <p className="text-gray-900 font-medium mt-1">{candidateProfile.desired_position || candidateProfile.title || '-'}</p>
+                              </div>
+
+                              {candidateProfile.desired_sectors && candidateProfile.desired_sectors.length > 0 && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Secteurs recherchés</label>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {candidateProfile.desired_sectors.map((sector: string, index: number) => (
+                                      <span key={index} className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
+                                        {sector}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {candidateProfile.desired_contract_types && candidateProfile.desired_contract_types.length > 0 && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Types de contrat recherchés</label>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {candidateProfile.desired_contract_types.map((type: string, index: number) => (
+                                      <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border border-gray-300">
+                                        {type}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {(candidateProfile.desired_salary_min || candidateProfile.desired_salary_max) && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Prétentions salariales</label>
+                                  <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
+                                    <DollarSign className="w-4 h-4 text-gray-400" />
+                                    {candidateProfile.desired_salary_min && `${candidateProfile.desired_salary_min.toLocaleString()} GNF`}
+                                    {candidateProfile.desired_salary_min && candidateProfile.desired_salary_max && ' - '}
+                                    {candidateProfile.desired_salary_max && `${candidateProfile.desired_salary_max.toLocaleString()} GNF`}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-500">Disponibilité</label>
-                              <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.availability || '-'}</p>
+
+                            {/* Colonne 2 */}
+                            <div className="space-y-6">
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Disponibilité</label>
+                                <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.availability || '-'}</p>
+                              </div>
+
+                              {candidateProfile.mobility && candidateProfile.mobility.length > 0 && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Mobilité géographique</label>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {candidateProfile.mobility.map((city: string, index: number) => (
+                                      <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        {city}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {candidateProfile.willing_to_relocate !== undefined && candidateProfile.willing_to_relocate !== null && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Accepte la délocalisation</label>
+                                  <p className="text-gray-900 font-medium mt-1">
+                                    {candidateProfile.willing_to_relocate ? (
+                                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Oui, ouvert à la délocalisation
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200">
+                                        <X className="w-4 h-4" />
+                                        Non, préfère rester dans sa région
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            {candidateProfile.desired_sectors && candidateProfile.desired_sectors.length > 0 && (
-                              <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-gray-500">Secteurs recherchés</label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {candidateProfile.desired_sectors.map((sector: string, index: number) => (
-                                    <span key={index} className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
-                                      {sector}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {candidateProfile.desired_contract_types && candidateProfile.desired_contract_types.length > 0 && (
-                              <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-gray-500">Types de contrat recherchés</label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {candidateProfile.desired_contract_types.map((type: string, index: number) => (
-                                    <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm border border-gray-300">
-                                      {type}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {candidateProfile.mobility && candidateProfile.mobility.length > 0 && (
-                              <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-gray-500">Mobilité géographique</label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {candidateProfile.mobility.map((city: string, index: number) => (
-                                    <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 flex items-center gap-1">
-                                      <MapPin className="w-3 h-3" />
-                                      {city}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {candidateProfile.willing_to_relocate !== undefined && candidateProfile.willing_to_relocate !== null && (
-                              <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-gray-500">Accepte la délocalisation</label>
-                                <p className="text-gray-900 font-medium mt-1">
-                                  {candidateProfile.willing_to_relocate ? (
-                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">
-                                      <CheckCircle2 className="w-4 h-4" />
-                                      Oui, ouvert à la délocalisation
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-50 text-gray-700 rounded-full text-sm border border-gray-200">
-                                      <X className="w-4 h-4" />
-                                      Non, préfère rester dans sa région
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
-                            )}
-                            {(candidateProfile.desired_salary_min || candidateProfile.desired_salary_max) && (
-                              <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-gray-500">Prétentions salariales</label>
-                                <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
-                                  <DollarSign className="w-4 h-4 text-gray-400" />
-                                  {candidateProfile.desired_salary_min && `${candidateProfile.desired_salary_min.toLocaleString()} GNF`}
-                                  {candidateProfile.desired_salary_min && candidateProfile.desired_salary_max && ' - '}
-                                  {candidateProfile.desired_salary_max && `${candidateProfile.desired_salary_max.toLocaleString()} GNF`}
-                                </p>
-                              </div>
-                            )}
                           </div>
                         </div>
 
