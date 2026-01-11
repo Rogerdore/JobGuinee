@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Auth from './pages/Auth';
 import AuthCallback from './pages/AuthCallback';
 import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
+import { useSiteSettings } from './hooks/useFavicon';
 
 const Jobs = lazy(() => import('./pages/Jobs'));
 const JobDetail = lazy(() => import('./pages/JobDetail'));
@@ -43,6 +44,7 @@ const AdminIATemplates = lazy(() => import('./pages/AdminIATemplates'));
 const AdminChatbot = lazy(() => import('./pages/AdminChatbot'));
 const AdminIACenter = lazy(() => import('./pages/AdminIACenter'));
 const AdminHomepageContent = lazy(() => import('./pages/AdminHomepageContent'));
+const AdminBrandingSettings = lazy(() => import('./pages/AdminBrandingSettings'));
 const AdminCreditStoreSettings = lazy(() => import('./pages/AdminCreditStoreSettings'));
 const AdminCreditPurchases = lazy(() => import('./pages/AdminCreditPurchases'));
 const AdminSecurityLogs = lazy(() => import('./pages/AdminSecurityLogs'));
@@ -103,6 +105,7 @@ function AppContent() {
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const [publicProfileToken, setPublicProfileToken] = useState<string>('');
   const { loading } = useAuth();
+  useSiteSettings();
 
   useEffect(() => {
     // Disabled temporarily - RLS permissions issue
@@ -162,7 +165,7 @@ function AppContent() {
     'admin-ia-config', 'admin-ia-templates', 'admin-chatbot', 'admin-ia-center',
     'admin-credit-store-settings', 'admin-credit-purchases', 'admin-credit-packages',
     'admin-security-logs', 'admin-premium-subscriptions', 'admin-ia-premium-quota',
-    'admin-profile-purchases', 'admin-homepage-content', 'admin-automation-rules',
+    'admin-profile-purchases', 'admin-homepage-content', 'admin-branding', 'admin-automation-rules',
     'admin-recruiter-notifications', 'admin-seo', 'admin-job-moderation', 'admin-job-list',
     'admin-job-create', 'admin-job-badges', 'admin-enterprise-subscriptions',
     'admin-b2b-management', 'admin-b2b-seo-config', 'admin-seo-landing-pages',
@@ -226,6 +229,7 @@ function AppContent() {
         {currentPage === 'admin-ia-premium-quota' && <AdminIAPremiumQuota />}
         {currentPage === 'admin-profile-purchases' && <AdminProfilePurchases />}
         {currentPage === 'admin-homepage-content' && <AdminHomepageContent />}
+        {currentPage === 'admin-branding' && <AdminBrandingSettings />}
         {currentPage === 'admin-ia-center' && <AdminIACenter onNavigate={handleNavigate} />}
         {currentPage === 'admin-credit-store-settings' && <AdminCreditStoreSettings onNavigate={handleNavigate} />}
         {currentPage === 'admin-credit-purchases' && <AdminCreditPurchases onNavigate={handleNavigate} />}

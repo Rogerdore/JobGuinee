@@ -219,7 +219,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       children: [
         { id: 'global-settings', label: 'Paramètres Globaux', icon: Settings, route: 'cms-admin' },
         { id: 'homepage-content', label: 'Contenu Accueil', icon: Home, route: 'admin-homepage-content' },
-        { id: 'branding', label: 'Branding', icon: Palette, route: 'cms-admin' },
+        { id: 'branding', label: 'Branding & Favicon', icon: Palette, route: 'admin-branding' },
         { id: 'seo', label: 'SEO', icon: Globe, route: 'admin-seo' },
         { id: 'seo-landing', label: 'Landing Pages SEO', icon: Globe, route: 'admin-seo-landing-pages' },
         { id: 'b2b-management', label: 'Gestion B2B', icon: Building2, route: 'admin-b2b-management' },
