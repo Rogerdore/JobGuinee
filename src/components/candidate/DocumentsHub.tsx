@@ -3,7 +3,7 @@ import {
   FileText, Upload, Download, Eye, Star, Archive, Trash2,
   Search, Filter, Plus, RefreshCw, Calendar, Tag, Sparkles,
   File, FileCheck, Award, Folder, BarChart3, Clock, CheckCircle,
-  AlertCircle, ExternalLink, Copy, Share2
+  AlertCircle, ExternalLink, Copy, Share2, Edit3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -12,7 +12,9 @@ import {
   DocumentType,
   DocumentStats
 } from '../../services/candidateDocumentService';
+import { documentEditorService } from '../../services/documentEditorService';
 import SuccessModal from '../notifications/SuccessModal';
+import DocumentEditor from './DocumentEditor';
 
 export default function DocumentsHub() {
   const { profile } = useAuth();
@@ -25,6 +27,7 @@ export default function DocumentsHub() {
   const [showArchived, setShowArchived] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<CandidateDocument | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<CandidateDocument | null>(null);
   const [uploadProgress, setUploadProgress] = useState(false);
   const [availableToImport, setAvailableToImport] = useState(0);
   const [autoImportDone, setAutoImportDone] = useState(false);
@@ -214,6 +217,19 @@ export default function DocumentsHub() {
     } catch (error) {
       console.error('Error tracking view:', error);
     }
+  };
+
+  const handleEdit = (doc: CandidateDocument) => {
+    if (documentEditorService.isEditable(doc)) {
+      setEditingDocument(doc);
+    } else {
+      alert('Ce type de document ne peut pas être édité directement.');
+    }
+  };
+
+  const handleEditorClose = () => {
+    setEditingDocument(null);
+    loadData();
   };
 
   const filteredDocuments = documents.filter(doc => {
@@ -519,7 +535,7 @@ export default function DocumentsHub() {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
                   {!doc.archived_at ? (
                     <>
                       <button
@@ -529,6 +545,15 @@ export default function DocumentsHub() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      {documentEditorService.isEditable(doc) && (
+                        <button
+                          onClick={() => handleEdit(doc)}
+                          className="flex-1 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
+                          title="Modifier"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDownload(doc)}
                         className="flex-1 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
@@ -614,6 +639,18 @@ export default function DocumentsHub() {
         <DocumentPreviewModal
           document={selectedDocument}
           onClose={() => setSelectedDocument(null)}
+          onEdit={() => {
+            setEditingDocument(selectedDocument);
+            setSelectedDocument(null);
+          }}
+        />
+      )}
+
+      {editingDocument && (
+        <DocumentEditor
+          document={editingDocument}
+          onClose={handleEditorClose}
+          onSave={handleEditorClose}
         />
       )}
 
@@ -880,11 +917,41 @@ function UploadModal({ onClose, onUpload, uploading, onComplete }: UploadModalPr
 interface DocumentPreviewModalProps {
   document: CandidateDocument;
   onClose: () => void;
+  onEdit: () => void;
 }
 
-function DocumentPreviewModal({ document, onClose }: DocumentPreviewModalProps) {
+function DocumentPreviewModal({ document, onClose, onEdit }: DocumentPreviewModalProps) {
+  const [loading, setLoading] = useState(true);
+  const [content, setContent] = useState<string>('');
+  const [previewError, setPreviewError] = useState(false);
+
   const isPDF = document.file_type?.includes('pdf');
   const isImage = document.file_type?.includes('image');
+  const isEditable = documentEditorService.isEditable(document);
+
+  useEffect(() => {
+    loadPreview();
+  }, [document.id]);
+
+  const loadPreview = async () => {
+    setLoading(true);
+    setPreviewError(false);
+
+    if (isPDF || isImage) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const docContent = await documentEditorService.fetchDocumentContent(document);
+      setContent(docContent.html);
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      setPreviewError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -894,26 +961,35 @@ function DocumentPreviewModal({ document, onClose }: DocumentPreviewModalProps) 
             <h3 className="text-lg font-bold text-gray-900">{document.file_name}</h3>
             <p className="text-sm text-gray-500">Version {document.version}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {isEditable && (
+              <button
+                onClick={onEdit}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center gap-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                Modifier
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-2"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-4">
-          {isPDF || isImage ? (
-            <iframe
-              src={document.file_url}
-              className="w-full h-full min-h-[600px] border rounded"
-              title={document.file_name}
-            />
-          ) : (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-8 h-8 animate-spin text-[#0E2F56]" />
+            </div>
+          ) : previewError ? (
             <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
               <p className="text-gray-600 mb-4">
-                Aperçu non disponible pour ce type de fichier
+                Erreur lors du chargement de l'aperçu
               </p>
               <a
                 href={document.file_url}
@@ -924,6 +1000,43 @@ function DocumentPreviewModal({ document, onClose }: DocumentPreviewModalProps) 
                 <ExternalLink className="w-5 h-5" />
                 Ouvrir dans un nouvel onglet
               </a>
+            </div>
+          ) : isPDF || isImage ? (
+            <iframe
+              src={document.file_url}
+              className="w-full h-full min-h-[600px] border rounded"
+              title={document.file_name}
+            />
+          ) : content ? (
+            <div className="prose max-w-none p-4 bg-gray-50 rounded-lg">
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 mb-4">
+                Aperçu non disponible pour ce type de fichier
+              </p>
+              <div className="flex gap-3 justify-center">
+                {isEditable && (
+                  <button
+                    onClick={onEdit}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition inline-flex items-center gap-2"
+                  >
+                    <Edit3 className="w-5 h-5" />
+                    Modifier le document
+                  </button>
+                )}
+                <a
+                  href={document.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition inline-flex items-center gap-2"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Ouvrir dans un nouvel onglet
+                </a>
+              </div>
             </div>
           )}
         </div>
