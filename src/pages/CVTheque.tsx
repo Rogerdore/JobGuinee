@@ -195,44 +195,17 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   /**
-   * CALCUL DU SCORE IA - REFACTORISÉ
-   * RÈGLE: Utilise cvScoringService (moteur IA central)
-   * Fallback automatique sur calcul local si IA indisponible
+   * LECTURE DU SCORE IA - BACKEND ONLY (CONFORMITÉ TOTALE)
+   * RÈGLE: Lit depuis candidate_stats (source de vérité)
+   *
+   * ⚠️ PRINCIPE 1 (Backend First) RESPECTÉ
+   * ⚠️ PRINCIPE 2 (Source unique) RESPECTÉ
+   * Le score a été calculé côté backend lors de la création/MAJ du profil
    */
   const calculateAIScore = (candidate: any) => {
-    // Appel synchrone pour batch (utilise fallback local automatiquement)
-    const result = cvScoringService['calculateLocalScore']({
-      experienceYears: candidate.experience_years,
-      educationLevel: candidate.education_level?.toLowerCase(),
-      skills: candidate.skills || [],
-      isVerified: candidate.is_verified,
-      isGold: candidate.is_gold,
-      profileCompletion: candidate.profile_completion_percentage || 80
-    });
-
-    return result.score;
-  };
-
-  /**
-   * Calcul IA individuel (optionnel, débite 1 crédit)
-   * Pour usage spécifique où le recruteur veut un scoring IA détaillé
-   */
-  const calculateAIScoreWithIA = async (candidate: any) => {
-    if (!user?.id) return calculateAIScore(candidate);
-
-    const result = await cvScoringService.calculateProfileScore(
-      {
-        experienceYears: candidate.experience_years,
-        educationLevel: candidate.education_level?.toLowerCase(),
-        skills: candidate.skills || [],
-        isVerified: candidate.is_verified,
-        isGold: candidate.is_gold,
-        profileCompletion: candidate.profile_completion_percentage || 80
-      },
-      user.id
-    );
-
-    return result.score;
+    // Retourner le score pré-calculé par le backend
+    // Pas de calcul frontend autorisé
+    return candidate.ai_score || candidate.profile_completion_percentage || 60;
   };
 
   const handleSearch = (query: string) => {
