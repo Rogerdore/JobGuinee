@@ -5,6 +5,7 @@ import {
   Save, Download, Copy, X, RefreshCw, AlertCircle,
   CheckCircle, FileText, Edit3
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { CandidateDocument } from '../../services/candidateDocumentService';
 import {
   documentEditorService,
@@ -183,15 +184,31 @@ export default function DocumentEditor({ document, onClose, onSave }: DocumentEd
     );
   }
 
-  const handleDirectDownload = () => {
-    const link = document.createElement('a');
-    link.href = document.file_url;
-    link.download = document.file_name;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showNotification('success', 'Téléchargement en cours...');
+  const handleDirectDownload = async () => {
+    try {
+      const bucket = document.document_type === 'cv' ? 'candidate-cvs'
+        : document.document_type === 'cover_letter' ? 'candidate-cover-letters'
+        : document.document_type === 'certificate' ? 'candidate-certificates'
+        : 'candidate-cvs';
+
+      const filePath = document.file_url.split('/').slice(-2).join('/');
+
+      const { data: signedUrl, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(filePath, 3600);
+
+      if (error || !signedUrl) {
+        console.error('Error creating signed URL:', error);
+        showNotification('error', 'Erreur lors de l\'ouverture du document');
+        return;
+      }
+
+      window.open(signedUrl.signedUrl, '_blank');
+      showNotification('success', 'Document ouvert dans un nouvel onglet');
+    } catch (error) {
+      console.error('Error opening document:', error);
+      showNotification('error', 'Erreur lors de l\'ouverture du document');
+    }
   };
 
   if (!originalContent?.editable) {
@@ -206,7 +223,7 @@ export default function DocumentEditor({ document, onClose, onSave }: DocumentEd
             Ce type de fichier ne peut pas être édité directement dans le navigateur.
           </p>
           <p className="text-gray-700 mb-6 font-medium">
-            Téléchargez-le pour l'ouvrir avec {originalContent.format === 'pdf' ? 'Adobe Reader, un lecteur PDF' : 'Microsoft Word, LibreOffice'} ou un logiciel approprié sur votre ordinateur.
+            Cliquez sur "Ouvrir" pour le visualiser avec {originalContent.format === 'pdf' ? 'Adobe Reader, votre lecteur PDF' : 'Microsoft Word, LibreOffice'} ou l'application par défaut de votre système.
           </p>
           <div className="flex gap-3">
             <button
@@ -220,7 +237,7 @@ export default function DocumentEditor({ document, onClose, onSave }: DocumentEd
               className="flex-1 px-4 py-2 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Télécharger
+              Ouvrir
             </button>
           </div>
         </div>

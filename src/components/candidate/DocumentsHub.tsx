@@ -200,6 +200,53 @@ export default function DocumentsHub() {
     }
   };
 
+  const handleOpen = async (doc: CandidateDocument) => {
+    try {
+      await candidateDocumentService.trackUsage(doc.id, 'viewed');
+
+      const bucket = doc.document_type === 'cv' ? 'candidate-cvs'
+        : doc.document_type === 'cover_letter' ? 'candidate-cover-letters'
+        : doc.document_type === 'certificate' ? 'candidate-certificates'
+        : 'candidate-cvs';
+
+      const filePath = doc.file_url.split('/').slice(-2).join('/');
+
+      const { data: signedUrl, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(filePath, 3600);
+
+      if (error || !signedUrl) {
+        console.error('Error creating signed URL:', error);
+        setNotification({
+          show: true,
+          type: 'error',
+          title: 'Erreur d\'ouverture',
+          message: 'Impossible d\'ouvrir le fichier. Veuillez réessayer.'
+        });
+        return;
+      }
+
+      window.open(signedUrl.signedUrl, '_blank');
+
+      setNotification({
+        show: true,
+        type: 'success',
+        title: 'Document ouvert',
+        message: `${doc.file_name} a été ouvert dans un nouvel onglet.`
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Error opening document:', error);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Erreur d\'ouverture',
+        message: 'Impossible d\'ouvrir le fichier. Veuillez réessayer.'
+      });
+    }
+  };
+
   const handleDownload = async (doc: CandidateDocument) => {
     try {
       await candidateDocumentService.trackUsage(doc.id, 'downloaded');
@@ -217,7 +264,12 @@ export default function DocumentsHub() {
 
       if (error || !data) {
         console.error('Download error:', error);
-        window.open(doc.file_url, '_blank');
+        setNotification({
+          show: true,
+          type: 'error',
+          title: 'Erreur de téléchargement',
+          message: 'Impossible de télécharger le fichier.'
+        });
         return;
       }
 
@@ -579,17 +631,18 @@ export default function DocumentsHub() {
                   {!doc.archived_at ? (
                     <>
                       <button
-                        onClick={() => handleView(doc)}
-                        className="flex-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
-                        title="Aperçu"
+                        onClick={() => handleOpen(doc)}
+                        className="flex-1 px-3 py-2 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition flex items-center justify-center gap-1 text-sm font-medium"
+                        title="Ouvrir avec l'application par défaut"
                       >
-                        <Eye className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4" />
+                        Ouvrir
                       </button>
                       {documentEditorService.isEditable(doc) && (
                         <button
                           onClick={() => handleEdit(doc)}
                           className="flex-1 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
-                          title="Modifier"
+                          title="Modifier en ligne"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
@@ -597,9 +650,16 @@ export default function DocumentsHub() {
                       <button
                         onClick={() => handleDownload(doc)}
                         className="flex-1 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
-                        title="Télécharger"
+                        title="Télécharger sur votre ordinateur"
                       >
                         <Download className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleView(doc)}
+                        className="flex-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition flex items-center justify-center gap-1 text-sm"
+                        title="Aperçu rapide"
+                      >
+                        <Eye className="w-4 h-4" />
                       </button>
                       {!doc.is_primary && (
                         <button
