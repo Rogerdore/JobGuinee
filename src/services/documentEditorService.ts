@@ -46,14 +46,23 @@ class DocumentEditorService {
       fileName.endsWith('.doc')
     ) {
       try {
-        const response = await fetch(document.file_url);
-        const arrayBuffer = await response.arrayBuffer();
+        const bucket = this.getBucket(document.document_type);
+        const filePath = this.extractFilePath(document.file_url);
 
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .download(filePath);
+
+        if (error || !data) {
+          throw new Error('Impossible de télécharger le fichier');
+        }
+
+        const arrayBuffer = await data.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
 
         return {
           raw: '',
-          html: result.value,
+          html: result.value || '<p>Document vide</p>',
           format: 'docx',
           editable: true
         };
@@ -61,7 +70,7 @@ class DocumentEditorService {
         console.error('Error converting DOCX:', error);
         return {
           raw: '',
-          html: '<p>Erreur lors de la conversion du document. Impossible de lire le contenu.</p>',
+          html: '<p>Erreur lors de la conversion du document. Le fichier est peut-être corrompu ou inaccessible.</p>',
           format: 'docx',
           editable: false
         };
@@ -70,8 +79,18 @@ class DocumentEditorService {
 
     if (fileType.includes('text') || fileName.endsWith('.txt')) {
       try {
-        const response = await fetch(document.file_url);
-        const text = await response.text();
+        const bucket = this.getBucket(document.document_type);
+        const filePath = this.extractFilePath(document.file_url);
+
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .download(filePath);
+
+        if (error || !data) {
+          throw new Error('Impossible de télécharger le fichier');
+        }
+
+        const text = await data.text();
 
         const htmlContent = text
           .split('\n')
@@ -97,8 +116,18 @@ class DocumentEditorService {
 
     if (fileType.includes('html') || fileName.endsWith('.html')) {
       try {
-        const response = await fetch(document.file_url);
-        const html = await response.text();
+        const bucket = this.getBucket(document.document_type);
+        const filePath = this.extractFilePath(document.file_url);
+
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .download(filePath);
+
+        if (error || !data) {
+          throw new Error('Impossible de télécharger le fichier');
+        }
+
+        const html = await data.text();
 
         return {
           raw: html,
@@ -133,6 +162,22 @@ class DocumentEditorService {
       format: 'unknown',
       editable: false
     };
+  }
+
+  private extractFilePath(fileUrl: string): string {
+    const parts = fileUrl.split('/');
+    const storageIndex = parts.findIndex(part => part === 'storage');
+
+    if (storageIndex !== -1 && storageIndex + 3 < parts.length) {
+      return parts.slice(storageIndex + 3).join('/');
+    }
+
+    const objectIndex = parts.findIndex(part => part === 'object');
+    if (objectIndex !== -1 && objectIndex + 2 < parts.length) {
+      return parts.slice(objectIndex + 2).join('/');
+    }
+
+    return parts.slice(-2).join('/');
   }
 
   async saveDocument(options: SaveDocumentOptions): Promise<CandidateDocument> {
