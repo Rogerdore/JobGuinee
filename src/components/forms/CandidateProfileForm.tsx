@@ -536,6 +536,21 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
       if (!profile?.id) return;
 
       try {
+        const draftKey = 'autosave_candidateProfileDraft';
+        const savedDraft = localStorage.getItem(draftKey);
+        let draftData = null;
+        let draftTimestamp = null;
+
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft);
+            draftData = parsed.data;
+            draftTimestamp = parsed.timestamp ? new Date(parsed.timestamp) : null;
+          } catch (e) {
+            console.error('Error parsing draft:', e);
+          }
+        }
+
         const { data, error } = await supabase
           .from('candidate_profiles')
           .select('*')
@@ -547,7 +562,16 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           return;
         }
 
-        if (data) {
+        const dbTimestamp = data?.updated_at ? new Date(data.updated_at) : null;
+
+        const useDraft = draftData && draftTimestamp && dbTimestamp && draftTimestamp > dbTimestamp;
+
+        if (useDraft) {
+          console.log('Loading from draft (more recent than database)');
+          setExistingPhotoUrl(draftData.profilePhoto || data?.photo_url || '');
+          setFormData(draftData);
+        } else if (data) {
+          console.log('Loading from database');
           setExistingPhotoUrl(data.photo_url || '');
 
           setFormData({
@@ -605,6 +629,9 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
             cvParsedData: data.cv_parsed_data || null,
             cvParsedAt: data.cv_parsed_at || null,
           });
+        } else if (draftData) {
+          console.log('Loading from draft (no database data)');
+          setFormData(draftData);
         }
       } catch (error) {
         console.error('Error loading profile:', error);
