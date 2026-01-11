@@ -49,28 +49,60 @@ class DocumentEditorService {
         const bucket = this.getBucket(document.document_type);
         const filePath = this.extractFilePath(document.file_url);
 
+        console.log('DOCX Editor Debug:', {
+          bucket,
+          filePath,
+          originalUrl: document.file_url,
+          documentType: document.document_type
+        });
+
         const { data, error } = await supabase.storage
           .from(bucket)
           .download(filePath);
 
-        if (error || !data) {
-          throw new Error('Impossible de télécharger le fichier');
+        if (error) {
+          console.error('Supabase Storage Error:', error);
+          throw new Error(`Erreur de téléchargement: ${error.message}`);
         }
+
+        if (!data) {
+          throw new Error('Aucune donnée reçue du storage');
+        }
+
+        console.log('File downloaded successfully, size:', data.size);
 
         const arrayBuffer = await data.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
 
+        console.log('Conversion successful, HTML length:', result.value?.length);
+
+        if (!result.value || result.value.trim() === '') {
+          return {
+            raw: '',
+            html: '<p>Le document semble vide. Vérifiez que le fichier contient du texte.</p>',
+            format: 'docx',
+            editable: false
+          };
+        }
+
         return {
           raw: '',
-          html: result.value || '<p>Document vide</p>',
+          html: result.value,
           format: 'docx',
           editable: true
         };
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error converting DOCX:', error);
+        const errorMessage = error?.message || 'Erreur inconnue';
         return {
           raw: '',
-          html: '<p>Erreur lors de la conversion du document. Le fichier est peut-être corrompu ou inaccessible.</p>',
+          html: `<div style="padding: 20px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b;">
+            <h3 style="margin: 0 0 10px 0;">Erreur de conversion du document</h3>
+            <p style="margin: 0;">${errorMessage}</p>
+            <p style="margin: 10px 0 0 0; font-size: 0.875rem; color: #dc2626;">
+              Si le problème persiste, téléchargez le fichier et modifiez-le avec Microsoft Word ou LibreOffice.
+            </p>
+          </div>`,
           format: 'docx',
           editable: false
         };
