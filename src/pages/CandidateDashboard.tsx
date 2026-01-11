@@ -1180,44 +1180,58 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             </div>
                             <h3 className="text-lg font-bold text-gray-900">Informations personnelles</h3>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-gray-500">Nom complet</label>
-                              <p className="text-gray-900 font-medium mt-1">{profile?.full_name || '-'}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-500">Email</label>
-                              <p className="text-gray-900 font-medium mt-1">{user?.email || '-'}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-500">Téléphone</label>
-                              <p className="text-gray-900 font-medium mt-1">{candidateProfile.phone || profile?.phone || '-'}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-gray-500">Localisation</label>
-                              <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                                {candidateProfile.location || candidateProfile.city || '-'}
-                              </p>
-                            </div>
-                            {candidateProfile.birth_date && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Colonne 1 */}
+                            <div className="space-y-6">
                               <div>
-                                <label className="text-sm font-medium text-gray-500">Date de naissance</label>
-                                <p className="text-gray-900 font-medium mt-1">{new Date(candidateProfile.birth_date).toLocaleDateString('fr-FR')}</p>
+                                <label className="text-sm font-medium text-gray-500">Nom complet</label>
+                                <p className="text-gray-900 font-medium mt-1">{profile?.full_name || '-'}</p>
                               </div>
-                            )}
-                            {candidateProfile.gender && (
+
                               <div>
-                                <label className="text-sm font-medium text-gray-500">Genre</label>
-                                <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.gender}</p>
+                                <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                                <p className="text-gray-900 font-medium mt-1">{candidateProfile.phone || profile?.phone || '-'}</p>
                               </div>
-                            )}
-                            {candidateProfile.nationality && (
+
+                              {candidateProfile.birth_date && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Date de naissance</label>
+                                  <p className="text-gray-900 font-medium mt-1">{new Date(candidateProfile.birth_date).toLocaleDateString('fr-FR')}</p>
+                                </div>
+                              )}
+
+                              {candidateProfile.nationality && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Nationalité</label>
+                                  <p className="text-gray-900 font-medium mt-1">{candidateProfile.nationality}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Colonne 2 */}
+                            <div className="space-y-6">
                               <div>
-                                <label className="text-sm font-medium text-gray-500">Nationalité</label>
-                                <p className="text-gray-900 font-medium mt-1">{candidateProfile.nationality}</p>
+                                <label className="text-sm font-medium text-gray-500">Email</label>
+                                <p className="text-gray-900 font-medium mt-1">{user?.email || '-'}</p>
                               </div>
-                            )}
+
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Localisation</label>
+                                <p className="text-gray-900 font-medium mt-1 flex items-center gap-1">
+                                  <MapPin className="w-4 h-4 text-gray-400" />
+                                  {candidateProfile.location || candidateProfile.city || '-'}
+                                </p>
+                              </div>
+
+                              {candidateProfile.gender && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Genre</label>
+                                  <p className="text-gray-900 font-medium mt-1 capitalize">{candidateProfile.gender}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Adresse complète sur toute la largeur */}
                             {candidateProfile.address && (
                               <div className="md:col-span-2">
                                 <label className="text-sm font-medium text-gray-500">Adresse complète</label>
