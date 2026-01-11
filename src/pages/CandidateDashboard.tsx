@@ -1421,20 +1421,105 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                   <h3 className="text-lg font-bold text-gray-900">Expérience professionnelle</h3>
                                 </div>
                                 <div className="space-y-4">
-                                  {candidateProfile.work_experience.map((exp: any, index: number) => (
-                                    <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                                      <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
-                                      <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
-                                      <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        {exp['Période'] || (exp['Date de début'] && `${exp['Date de début']} - ${exp['Date de fin'] || 'Présent'}`) || (exp.start_date && `${exp.start_date} - ${exp.end_date || 'Présent'}`) || '-'}
-                                      </p>
-                                      {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description) && (
-                                        <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description}</p>
-                                      )}
-                                    </div>
-                                  ))}
+                                  {candidateProfile.work_experience.map((exp: any, index: number) => {
+                                    // Calculer la durée de l'expérience
+                                    const startDate = exp['Date de début'] || exp.start_date;
+                                    const endDate = exp['Date de fin'] || exp.end_date;
+                                    let duration = '';
+
+                                    if (startDate) {
+                                      try {
+                                        const start = new Date(startDate);
+                                        const end = endDate ? new Date(endDate) : new Date();
+
+                                        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                          const months = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+                                          const years = Math.floor(months / 12);
+                                          const remainingMonths = months % 12;
+
+                                          if (years > 0 && remainingMonths > 0) {
+                                            duration = `${years} an${years > 1 ? 's' : ''} ${remainingMonths} mois`;
+                                          } else if (years > 0) {
+                                            duration = `${years} an${years > 1 ? 's' : ''}`;
+                                          } else if (months > 0) {
+                                            duration = `${months} mois`;
+                                          }
+                                        }
+                                      } catch (e) {
+                                        // Ignore les erreurs de parsing de date
+                                      }
+                                    }
+
+                                    return (
+                                      <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1">
+                                            <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
+                                            <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
+                                          </div>
+                                          {duration && (
+                                            <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full whitespace-nowrap">
+                                              {duration}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                          <Calendar className="w-3 h-3" />
+                                          {exp['Période'] || (exp['Date de début'] && `${exp['Date de début']} - ${exp['Date de fin'] || 'Présent'}`) || (exp.start_date && `${exp.start_date} - ${exp.end_date || 'Présent'}`) || '-'}
+                                        </p>
+                                        {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description) && (
+                                          <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
+                                {/* Durée totale d'expérience */}
+                                {(() => {
+                                  let totalMonths = 0;
+                                  candidateProfile.work_experience.forEach((exp: any) => {
+                                    const startDate = exp['Date de début'] || exp.start_date;
+                                    const endDate = exp['Date de fin'] || exp.end_date;
+
+                                    if (startDate) {
+                                      try {
+                                        const start = new Date(startDate);
+                                        const end = endDate ? new Date(endDate) : new Date();
+
+                                        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                          const months = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+                                          totalMonths += months;
+                                        }
+                                      } catch (e) {
+                                        // Ignore les erreurs de parsing
+                                      }
+                                    }
+                                  });
+
+                                  if (totalMonths > 0) {
+                                    const totalYears = Math.floor(totalMonths / 12);
+                                    const remainingMonths = totalMonths % 12;
+                                    let totalDuration = '';
+
+                                    if (totalYears > 0 && remainingMonths > 0) {
+                                      totalDuration = `${totalYears} an${totalYears > 1 ? 's' : ''} ${remainingMonths} mois`;
+                                    } else if (totalYears > 0) {
+                                      totalDuration = `${totalYears} an${totalYears > 1 ? 's' : ''}`;
+                                    } else if (totalMonths > 0) {
+                                      totalDuration = `${totalMonths} mois`;
+                                    }
+
+                                    return (
+                                      <div className="mt-4 pt-4 border-t border-gray-200">
+                                        <div className="flex items-center justify-between bg-orange-50 rounded-lg px-4 py-3">
+                                          <span className="text-sm font-medium text-gray-700">Expérience totale</span>
+                                          <span className="text-sm font-bold text-orange-600">{totalDuration}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                             )}
 
