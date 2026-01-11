@@ -536,9 +536,22 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       <div className="bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
-              <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
+            <div className="flex items-center gap-4">
+              {candidateProfile?.profile_photo ? (
+                <img
+                  src={candidateProfile.profile_photo}
+                  alt={profile?.full_name || 'Photo de profil'}
+                  className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center border-4 border-white shadow-lg">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+              )}
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Bonjour, {profile?.full_name} 👋</h1>
+                <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
+              </div>
             </div>
             {isPremium && (
               <div className="flex items-center gap-2 px-4 py-2 bg-[#FF8C00] rounded-full">
@@ -1180,6 +1193,20 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                             </div>
                             <h3 className="text-lg font-bold text-gray-900">Informations personnelles</h3>
                           </div>
+
+                          {/* Photo de profil */}
+                          {candidateProfile.profile_photo && (
+                            <div className="mb-6 flex justify-center">
+                              <div className="relative">
+                                <img
+                                  src={candidateProfile.profile_photo}
+                                  alt={profile?.full_name || 'Photo de profil'}
+                                  className="w-32 h-32 rounded-full object-cover border-4 border-blue-100 shadow-lg"
+                                />
+                              </div>
+                            </div>
+                          )}
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Colonne 1 */}
                             <div className="space-y-6">
