@@ -136,13 +136,23 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
       {exps.map((exp, index) => (
         <div key={index} className="border-2 border-gray-200 rounded-xl p-5 bg-gray-50 space-y-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-gray-800">Expérience #{index + 1}</span>
-              {exp.duration && (
-                <span className="text-sm text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
-                  {exp.duration}
-                </span>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-gray-800">Expérience #{index + 1}</span>
+                {exp.duration && (
+                  <span className="text-sm text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
+                    {exp.duration}
+                  </span>
+                )}
+              </div>
+              {(exp.startMonth && exp.startYear) && (
+                <div className="flex items-center gap-1 text-xs text-gray-600 ml-7">
+                  <Calendar className="w-3 h-3" />
+                  <span>
+                    {exp.startMonth} {exp.startYear} - {exp.current ? "Aujourd'hui" : exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '...'}
+                  </span>
+                </div>
               )}
             </div>
             <button
