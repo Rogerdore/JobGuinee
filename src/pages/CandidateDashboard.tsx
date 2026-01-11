@@ -1587,14 +1587,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                   {candidateProfile.education.map((edu: any, index: number) => (
                                     <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                                       <h4 className="font-bold text-gray-900">{edu['Diplôme obtenu'] || edu.degree || edu.title || '-'}</h4>
+                                      {(edu.field || edu['Spécialisation/Domaine'] || edu['Spécialisation']) && (
+                                        <p className="text-gray-700 text-sm mt-1">{edu.field || edu['Spécialisation/Domaine'] || edu['Spécialisation']}</p>
+                                      )}
                                       <p className="text-gray-600 text-sm mt-1">{edu['Établissement'] || edu['Nom de l\'établissement'] || edu.school || edu.institution || '-'}</p>
                                       <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
                                         {edu['Année d\'obtention'] || edu.start_date || edu.year || '-'} {(edu['Année de fin'] || edu.end_date) && `- ${edu['Année de fin'] || edu.end_date}`}
                                       </p>
-                                      {(edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description) && (
-                                        <p className="text-gray-700 text-sm mt-2">{edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description}</p>
-                                      )}
                                     </div>
                                   ))}
                                 </div>
