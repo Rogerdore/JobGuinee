@@ -1407,76 +1407,108 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                         )}
 
                         {/* Expérience professionnelle */}
-                        {candidateProfile.work_experience && Array.isArray(candidateProfile.work_experience) && candidateProfile.work_experience.length > 0 && (
-                          <div className="bg-white border border-gray-200 rounded-xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <Briefcase className="w-6 h-6 text-orange-600" />
-                              </div>
-                              <h3 className="text-lg font-bold text-gray-900">Expérience professionnelle</h3>
-                            </div>
-                            <div className="space-y-4">
-                              {candidateProfile.work_experience.map((exp: any, index: number) => (
-                                <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                                  <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
-                                  <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
-                                  <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
-                                    {exp['Période'] || (exp['Date de début'] && `${exp['Date de début']} - ${exp['Date de fin'] || 'Présent'}`) || (exp.start_date && `${exp.start_date} - ${exp.end_date || 'Présent'}`) || '-'}
-                                  </p>
-                                  {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description) && (
-                                    <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description}</p>
-                                  )}
+                        {/* Expérience professionnelle et Formation côte à côte */}
+                        {((candidateProfile.work_experience && Array.isArray(candidateProfile.work_experience) && candidateProfile.work_experience.length > 0) ||
+                          (candidateProfile.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0)) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Expérience professionnelle */}
+                            {candidateProfile.work_experience && Array.isArray(candidateProfile.work_experience) && candidateProfile.work_experience.length > 0 && (
+                              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                    <Briefcase className="w-6 h-6 text-orange-600" />
+                                  </div>
+                                  <h3 className="text-lg font-bold text-gray-900">Expérience professionnelle</h3>
                                 </div>
-                              ))}
-                            </div>
+                                <div className="space-y-4">
+                                  {candidateProfile.work_experience.map((exp: any, index: number) => (
+                                    <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                                      <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
+                                      <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
+                                      <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {exp['Période'] || (exp['Date de début'] && `${exp['Date de début']} - ${exp['Date de fin'] || 'Présent'}`) || (exp.start_date && `${exp.start_date} - ${exp.end_date || 'Présent'}`) || '-'}
+                                      </p>
+                                      {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description) && (
+                                        <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Formation */}
+                            {candidateProfile.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0 && (
+                              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <GraduationCap className="w-6 h-6 text-green-600" />
+                                  </div>
+                                  <h3 className="text-lg font-bold text-gray-900">Formation</h3>
+                                </div>
+                                <div className="space-y-4">
+                                  {candidateProfile.education.map((edu: any, index: number) => (
+                                    <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                                      <h4 className="font-bold text-gray-900">{edu['Diplôme obtenu'] || edu.degree || edu.title || '-'}</h4>
+                                      <p className="text-gray-600 text-sm mt-1">{edu['Établissement'] || edu['Nom de l\'établissement'] || edu.school || edu.institution || '-'}</p>
+                                      <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {edu['Année d\'obtention'] || edu.start_date || edu.year || '-'} {(edu['Année de fin'] || edu.end_date) && `- ${edu['Année de fin'] || edu.end_date}`}
+                                      </p>
+                                      {(edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description) && (
+                                        <p className="text-gray-700 text-sm mt-2">{edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {/* Formation */}
-                        {candidateProfile.education && Array.isArray(candidateProfile.education) && candidateProfile.education.length > 0 && (
-                          <div className="bg-white border border-gray-200 rounded-xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <GraduationCap className="w-6 h-6 text-green-600" />
-                              </div>
-                              <h3 className="text-lg font-bold text-gray-900">Formation</h3>
-                            </div>
-                            <div className="space-y-4">
-                              {candidateProfile.education.map((edu: any, index: number) => (
-                                <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                                  <h4 className="font-bold text-gray-900">{edu['Diplôme obtenu'] || edu.degree || edu.title || '-'}</h4>
-                                  <p className="text-gray-600 text-sm mt-1">{edu['Établissement'] || edu['Nom de l\'établissement'] || edu.school || edu.institution || '-'}</p>
-                                  <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
-                                    {edu['Année d\'obtention'] || edu.start_date || edu.year || '-'} {(edu['Année de fin'] || edu.end_date) && `- ${edu['Année de fin'] || edu.end_date}`}
-                                  </p>
-                                  {(edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description) && (
-                                    <p className="text-gray-700 text-sm mt-2">{edu['Spécialisation/Domaine'] || edu['Spécialisation'] || edu.description}</p>
-                                  )}
+                        {/* Langues et Permis de conduire côte à côte */}
+                        {((candidateProfile.languages && Array.isArray(candidateProfile.languages) && candidateProfile.languages.length > 0) ||
+                          (candidateProfile.driving_license && candidateProfile.driving_license.length > 0)) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Langues */}
+                            {candidateProfile.languages && Array.isArray(candidateProfile.languages) && candidateProfile.languages.length > 0 && (
+                              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                                    <MessageCircle className="w-6 h-6 text-pink-600" />
+                                  </div>
+                                  <h3 className="text-lg font-bold text-gray-900">Langues</h3>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                                <div className="grid grid-cols-2 gap-3">
+                                  {candidateProfile.languages.map((lang: any, index: number) => (
+                                    <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                      <p className="font-medium text-gray-900">{lang.language}</p>
+                                      <p className="text-sm text-gray-600">{lang.level}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
-                        {/* Langues */}
-                        {candidateProfile.languages && Array.isArray(candidateProfile.languages) && candidateProfile.languages.length > 0 && (
-                          <div className="bg-white border border-gray-200 rounded-xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-                                <MessageCircle className="w-6 h-6 text-pink-600" />
-                              </div>
-                              <h3 className="text-lg font-bold text-gray-900">Langues</h3>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                              {candidateProfile.languages.map((lang: any, index: number) => (
-                                <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                  <p className="font-medium text-gray-900">{lang.language}</p>
-                                  <p className="text-sm text-gray-600">{lang.level}</p>
+                            {/* Permis de conduire */}
+                            {candidateProfile.driving_license && candidateProfile.driving_license.length > 0 && (
+                              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <Award className="w-6 h-6 text-yellow-600" />
+                                  </div>
+                                  <h3 className="text-lg font-bold text-gray-900">Permis de conduire</h3>
                                 </div>
-                              ))}
-                            </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {candidateProfile.driving_license.map((license: string, index: number) => (
+                                    <span key={index} className="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full text-sm font-medium border border-yellow-200">
+                                      Permis {license}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -1534,25 +1566,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                   <Share2 className="w-4 h-4" />
                                   Autre lien {index + 1}
                                 </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Permis de conduire */}
-                        {candidateProfile.driving_license && candidateProfile.driving_license.length > 0 && (
-                          <div className="bg-white border border-gray-200 rounded-xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                <Award className="w-6 h-6 text-yellow-600" />
-                              </div>
-                              <h3 className="text-lg font-bold text-gray-900">Permis de conduire</h3>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {candidateProfile.driving_license.map((license: string, index: number) => (
-                                <span key={index} className="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full text-sm font-medium border border-yellow-200">
-                                  Permis {license}
-                                </span>
                               ))}
                             </div>
                           </div>
