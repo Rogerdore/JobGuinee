@@ -1196,12 +1196,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                           {/* Photo de profil */}
                           {candidateProfile.photo_url && (
-                            <div className="mb-6 flex justify-center">
+                            <div className="mb-6 flex justify-start">
                               <div className="relative">
                                 <img
                                   src={candidateProfile.photo_url}
                                   alt={profile?.full_name || 'Photo de profil'}
-                                  className="w-32 h-32 rounded-full object-cover border-4 border-blue-100 shadow-lg"
+                                  className="w-20 h-20 rounded-full object-cover border-2 border-blue-100 shadow-lg"
                                 />
                               </div>
                             </div>
