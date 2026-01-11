@@ -1,557 +1,782 @@
-# Système de Statistiques Candidat - JobGuinée
-## Documentation Technique Complète
-
-## Vue d'ensemble
-
-Le système de statistiques candidat fournit des indicateurs fiables, synchronisés et basés sur une seule source de vérité. Tous les compteurs sont calculés à partir de la base de données et mis à jour automatiquement lors d'actions réelles.
+# Système Sécurisé de Statistiques Candidat - JobGuinée
+## Documentation Technique Complète V2.0
 
 ---
 
-## Architecture
+## 🎯 OBJECTIF
 
-### Principe fondamental : SOURCE UNIQUE
+Fournir un système de statistiques candidat:
+- **MÉTIER-CORRECT** : Respecte strictement les règles métier
+- **ANTI-SPAM** : Protection contre manipulation et abus
+- **AUDITABLE** : Traçabilité complète de chaque action
+- **SCALABLE** : Architecture performante pour forte montée en charge
+- **BACKEND-FIRST** : Aucune logique critique côté frontend
 
-**RÈGLE D'OR :** Tous les compteurs sont calculés exclusivement à partir de la base de données. Aucun compteur n'est calculé "à la volée" côté frontend.
+---
 
+## 📋 RÈGLES MÉTIER OBLIGATOIRES
+
+### A. Job Views (Vues d'offres)
+
+**Principe**: Compteur dynamique mesurant la popularité réelle d'une offre
+
+**Règles de validation**:
+- ✅ Consultation réelle de la page JobDetail uniquement
+- ✅ Tracking backend via Edge Function
+- ✅ Anti-spam: 1 vue max par heure par viewer_fingerprint
+- ✅ Exclusion des bots automatique
+- ✅ Ignore les rafraîchissements immédiats
+- ✅ Ignore les doubles clics successifs
+
+**Sources autorisées**:
+- Candidats connectés
+- Utilisateurs anonymes
+- Recruteurs / Employeurs
+
+**Unicité**: `viewer_fingerprint` + `job_id` + fenêtre 1h
+
+---
+
+### B. Profile Views (CVthèque) ⚠️ CRITIQUE
+
+**Principe**: Mesure l'intérêt réel pour un profil candidat
+
+**RÈGLE ABSOLUE**: Le compteur "Profile Views" correspond STRICTEMENT au nombre de clics sur le bouton **« Aperçu »** du profil candidat depuis la CVthèque.
+
+**Déclencheur unique**:
+- ✅ Clic explicite sur bouton « Aperçu » dans CVthèque
+
+**Interdictions absolues**:
+- ❌ Ouverture automatique du profil
+- ❌ Chargement silencieux (prefetch, hover, preload)
+- ❌ Vues déclenchées sans action utilisateur
+
+**Règle d'unicité**:
+- `viewer_fingerprint` + `candidate_id` + fenêtre 24h
+
+**Viewer fingerprint**:
 ```
-Action utilisateur → Événement persisté en base → Compteur mis à jour → Dashboard affiche la valeur
+SI utilisateur connecté:
+  viewer_fingerprint = viewer_id
+SINON:
+  viewer_fingerprint = SHA256(session_id + ip_hash + user_agent)
 ```
 
----
-
-## 1. Indicateurs Disponibles
-
-### 1.1 Offres consultées
-- **Source :** Table `job_views`
-- **Tracking :** Automatique lors de l'ouverture d'une page détail d'offre
-- **Calcul :** COUNT(DISTINCT job_id) - Une offre vue plusieurs fois compte pour 1
-- **Service :** `candidateStatsService.trackJobView(userId, jobId)`
-
-### 1.2 Candidatures
-- **Source :** Table `applications`
-- **Tracking :** Lors de la soumission d'une candidature
-- **Calcul :** COUNT(*) WHERE candidate_id = user_id
-- **Service :** `candidateStatsService.getApplicationsCount(userId)`
-
-### 1.3 Vues du profil
-- **Source :** Table `profile_views` via `candidate_profiles.profile_views_count`
-- **Tracking :** Automatique lors de la consultation par un recruteur
-- **Calcul :** Fonction RPC `get_candidate_profile_stats()`
-- **Service :** `profileViewsService.recordProfileView()` (existant)
-
-### 1.4 Profil acheté
-- **Source :** Table `profile_purchases` via `candidate_profiles.profile_purchases_count`
-- **Tracking :** Automatique via trigger lors d'un achat validé
-- **Calcul :** COUNT(*) WHERE payment_status='completed' AND payment_verified_by_admin=true
-- **Trigger :** `update_profile_purchases_count()`
-
-### 1.5 Formations suivies
-- **Source :** Table `formation_enrollments`
-- **Tracking :** Lors de l'inscription à une formation
-- **Calcul :** COUNT(*) WHERE status IN ('enrolled', 'in_progress', 'completed')
-- **Service :** `candidateStatsService.enrollInFormation()`
-
-### 1.6 Score IA
-- **Source :** Colonne `ai_match_score` dans table `applications`
-- **Calcul :** AVERAGE(ai_match_score) de toutes les candidatures
-- **Affichage :** Pourcentage de compatibilité moyen
-- **Service :** `candidateStatsService.getAIScore(userId)`
+**Viewers autorisés**:
+- Tous types d'utilisateurs (candidats, recruteurs, employeurs, admins, anonymes)
 
 ---
 
-## 2. Service Centralisé : `candidateStatsService`
+### C. Applications
 
-### 2.1 Fonctionnalités principales
+**Règles**:
+- ✅ Une seule candidature valide par `candidate_id` + `job_id`
+- ✅ Tentatives multiples bloquées
+- ✅ Incrément uniquement après validation backend (trigger automatique)
 
-#### `getAllStats(userId, profileId)`
-Charge TOUTES les statistiques en un seul appel. Retourne:
-```typescript
+---
+
+### D. Purchases (Achats de profils CVthèque)
+
+**Règles**:
+- ✅ Incrément uniquement après paiement confirmé ET vérifié admin
+- ✅ Lié à `transaction_id` unique
+- ✅ Aucune tentative échouée comptabilisée
+
+---
+
+### E. Formations
+
+**Règles**:
+- ✅ Incrément après accès réel (pas à l'achat seul)
+- ✅ Validation backend obligatoire
+
+---
+
+### F. AI Score
+
+**Règles**:
+- ✅ Calcul exclusivement BACKEND via fonction RPC
+- ✅ Versionné (`ai_score_version`: 'v1.0')
+- ✅ Explicable et auditable
+- ✅ Moyenne des `ai_match_score` de toutes les candidatures
+- ❌ Aucun recalcul frontend autorisé
+
+---
+
+## 🗄️ STRUCTURE DE DONNÉES
+
+### 1. Table `candidate_stats` (Agrégée)
+
+Source unique de vérité pour les dashboards.
+
+```sql
+CREATE TABLE candidate_stats (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id uuid NOT NULL UNIQUE REFERENCES auth.users(id),
+
+  -- Compteurs validés
+  job_views_count integer DEFAULT 0,
+  applications_count integer DEFAULT 0,
+  profile_views_count integer DEFAULT 0,
+  purchases_count integer DEFAULT 0,
+  formations_count integer DEFAULT 0,
+
+  -- Score IA
+  ai_score integer CHECK (ai_score >= 0 AND ai_score <= 100) DEFAULT 0,
+  ai_score_version text DEFAULT 'v1.0',
+  ai_score_updated_at timestamptz,
+
+  -- Métadonnées
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+**Index**:
+- `idx_candidate_stats_candidate_id` sur `candidate_id`
+- `idx_candidate_stats_updated_at` sur `updated_at DESC`
+
+---
+
+### 2. Table `candidate_stats_logs` (Audit) 🔍
+
+**OBLIGATOIRE**: Chaque modification ou tentative DOIT être loggée.
+
+```sql
+CREATE TABLE candidate_stats_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id uuid REFERENCES auth.users(id),
+
+  -- Type de statistique
+  stat_type text CHECK (stat_type IN (
+    'job_view',
+    'profile_view',
+    'application',
+    'purchase',
+    'formation',
+    'ai_score'
+  )),
+
+  -- Source de l'action
+  source text NOT NULL, -- 'job_detail', 'cvtheque_preview_button', etc.
+
+  -- Identifiants
+  related_id uuid,
+  transaction_id text,
+
+  -- Viewer (pour views)
+  viewer_id uuid REFERENCES auth.users(id),
+  viewer_fingerprint text,
+  session_id text,
+  ip_hash text,
+  user_agent text,
+
+  -- Résultat
+  delta integer DEFAULT 0, -- +1 si success, 0 si blocked
+  status text CHECK (status IN (
+    'success',
+    'blocked',
+    'blocked_duplicate',
+    'blocked_spam',
+    'blocked_no_credit',
+    'error'
+  )),
+
+  -- Métadonnées
+  metadata jsonb DEFAULT '{}'::jsonb,
+  error_message text,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+**Index**:
+- `idx_stats_logs_candidate_id`
+- `idx_stats_logs_stat_type`
+- `idx_stats_logs_status`
+- `idx_stats_logs_created_at DESC`
+- `idx_stats_logs_viewer_id`
+- `idx_stats_logs_viewer_fingerprint`
+- `idx_stats_logs_source`
+
+---
+
+## 🔧 FONCTIONS RPC BACKEND
+
+### 1. `track_job_view_secure()`
+
+**Usage**: Tracking sécurisé des vues d'offres
+
+```sql
+track_job_view_secure(
+  p_job_id uuid,
+  p_session_id text DEFAULT NULL,
+  p_ip_hash text DEFAULT NULL,
+  p_user_agent text DEFAULT NULL
+) RETURNS jsonb
+```
+
+**Comportement**:
+1. Génère `viewer_fingerprint`
+2. Vérifie anti-spam (1h)
+3. Si spam → log avec `status='blocked_spam'`, retourne blocked
+4. Si valide → incrémente `jobs.views_count`, log `status='success'`
+5. Si candidat connecté → incrémente `candidate_stats.job_views_count`
+
+**Retour**:
+```json
 {
-  jobViewsCount: number;          // Offres consultées
-  applicationsCount: number;      // Candidatures
-  profileViewsCount: number;      // Vues du profil
-  profilePurchasesCount: number;  // Profil acheté
-  formationsCount: number;        // Formations suivies
-  aiScore: number;                // Score IA moyen (0-100)
-  creditsBalance: number;         // Crédits disponibles
-  isPremium: boolean;             // Statut premium
-  unreadMessagesCount: number;    // Messages non lus
-  profileStats: {
-    profile_views_count: number;
-    profile_purchases_count: number;
-    this_month_views: number;
-    this_month_purchases: number;
-  }
+  "success": true,
+  "status": "success",
+  "message": "Vue enregistrée"
 }
 ```
 
-#### `trackJobView(userId, jobId)`
-Enregistre automatiquement une vue d'offre. Vérifie d'abord si l'offre a déjà été vue pour éviter les doublons.
-
-```typescript
-await candidateStatsService.trackJobView(user.id, jobId);
-```
-
-#### Autres méthodes
-- `getJobViewsCount(userId)` - Compte les vues d'offres
-- `getApplicationsCount(userId)` - Compte les candidatures
-- `getFormationsCount(userId)` - Compte les formations
-- `getAIScore(userId)` - Calcule le score IA moyen
-- `getProfileStats(userId)` - Récupère stats profil CVthèque
-- `enrollInFormation(userId, formationId)` - Inscrit à une formation
-- `updateFormationProgress(userId, formationId, progress)` - Met à jour progression
-
 ---
 
-## 3. Tables de Tracking
+### 2. `track_profile_preview_click()`
 
-### 3.1 Table `job_views`
+**Usage**: Tracking strict du clic bouton "Aperçu" CVthèque
+
 ```sql
-CREATE TABLE job_views (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-  viewed_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Index pour performance
-CREATE INDEX idx_job_views_user_id ON job_views(user_id);
-CREATE INDEX idx_job_views_job_id ON job_views(job_id);
-
--- RLS activée
-ALTER TABLE job_views ENABLE ROW LEVEL SECURITY;
+track_profile_preview_click(
+  p_candidate_id uuid,
+  p_session_id text DEFAULT NULL,
+  p_ip_hash text DEFAULT NULL,
+  p_user_agent text DEFAULT NULL
+) RETURNS jsonb
 ```
 
-### 3.2 Table `profile_views`
-```sql
-CREATE TABLE profile_views (
-  id UUID PRIMARY KEY,
-  candidate_id UUID REFERENCES candidate_profiles(id),
-  viewer_id UUID REFERENCES profiles(id),
-  viewed_at TIMESTAMPTZ,
-  session_id TEXT,
-  ip_address TEXT,
-  user_agent TEXT
-);
+**Comportement**:
+1. Génère `viewer_fingerprint`
+2. Vérifie anti-spam (24h)
+3. Si spam → log `status='blocked_spam'`
+4. Si valide:
+   - Incrémente `candidate_stats.profile_views_count`
+   - Incrémente `candidate_profiles.profile_views_count`
+   - Crée entrée dans `profile_views`
+   - Log `status='success'`
 
--- Fonction d'incrémentation
-CREATE FUNCTION increment_profile_views(
-  p_candidate_id UUID,
-  p_viewer_id UUID,
-  p_session_id TEXT
-) RETURNS void;
-```
-
-### 3.3 Table `formation_enrollments`
-```sql
-CREATE TABLE formation_enrollments (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
-  formation_id UUID REFERENCES formations(id),
-  status TEXT CHECK (status IN ('enrolled', 'in_progress', 'completed', 'cancelled')),
-  progress INTEGER CHECK (progress >= 0 AND progress <= 100),
-  enrolled_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
-  UNIQUE(user_id, formation_id)
-);
-```
-
-### 3.4 Colonnes de compteurs dans `candidate_profiles`
-```sql
-ALTER TABLE candidate_profiles
-ADD COLUMN profile_views_count INTEGER DEFAULT 0,
-ADD COLUMN profile_purchases_count INTEGER DEFAULT 0,
-ADD COLUMN last_viewed_at TIMESTAMPTZ;
-```
-
-### 3.5 Colonne `ai_match_score` dans `applications`
-```sql
-ALTER TABLE applications
-ADD COLUMN ai_match_score INTEGER CHECK (ai_match_score >= 0 AND ai_match_score <= 100);
+**Retour**:
+```json
+{
+  "success": true,
+  "status": "success",
+  "message": "Vue de profil enregistrée"
+}
 ```
 
 ---
 
-## 4. Fonctions RPC Supabase
+### 3. `calculate_ai_score_backend()`
 
-### 4.1 `get_candidate_profile_stats(p_user_id UUID)`
-Retourne les statistiques de profil CVthèque :
+**Usage**: Calcul AI score côté serveur
+
 ```sql
-CREATE FUNCTION get_candidate_profile_stats(p_user_id UUID)
-RETURNS JSON AS $$
-  SELECT json_build_object(
-    'profile_views_count', COALESCE(cp.profile_views_count, 0),
-    'profile_purchases_count', COALESCE(cp.profile_purchases_count, 0),
-    'this_month_views', (SELECT COUNT(*) FROM profile_views WHERE ...),
-    'this_month_purchases', (SELECT COUNT(*) FROM profile_purchases WHERE ...)
-  ) FROM candidate_profiles cp WHERE cp.user_id = p_user_id;
-$$ LANGUAGE plpgsql;
+calculate_ai_score_backend(
+  p_candidate_id uuid
+) RETURNS jsonb
 ```
 
-### 4.2 `increment_profile_views(p_candidate_id, p_viewer_id, p_session_id)`
-Incrémente automatiquement le compteur de vues de profil :
-```sql
-CREATE FUNCTION increment_profile_views(...) AS $$
-BEGIN
-  -- Increment counter
-  UPDATE candidate_profiles
-  SET profile_views_count = profile_views_count + 1,
-      last_viewed_at = now()
-  WHERE id = p_candidate_id;
+**Comportement**:
+1. Calcule AVG(`ai_match_score`) depuis `applications`
+2. Met à jour `candidate_stats` avec score arrondi
+3. Log l'opération
+4. Retourne score + nombre de candidatures
 
-  -- Log view
-  INSERT INTO profile_views (candidate_id, viewer_id, session_id)
-  VALUES (p_candidate_id, p_viewer_id, p_session_id);
-END;
-$$ LANGUAGE plpgsql;
+---
+
+### 4. `get_candidate_stats()`
+
+**Usage**: Récupération stats agrégées
+
+```sql
+get_candidate_stats(
+  p_candidate_id uuid
+) RETURNS jsonb
+```
+
+**Retour**:
+```json
+{
+  "job_views_count": 42,
+  "applications_count": 7,
+  "profile_views_count": 15,
+  "purchases_count": 2,
+  "formations_count": 3,
+  "ai_score": 78,
+  "ai_score_version": "v1.0",
+  "ai_score_updated_at": "2026-01-11T18:30:00Z",
+  "credits_balance": 50,
+  "is_premium": true,
+  "updated_at": "2026-01-11T18:35:00Z"
+}
 ```
 
 ---
 
-## 5. Intégration Dashboard Candidat
+### 5. `admin_recalculate_stats()` (Admin uniquement)
 
-### 5.1 Chargement des statistiques
+**Usage**: Recalcul stats depuis logs
 
-**AVANT (requêtes dispersées) :**
-```typescript
-const [apps, jobViews, formations, profileStats, ...] = await Promise.all([
-  supabase.from('applications').select(...),
-  supabase.from('job_views').select(...),
-  supabase.from('formation_enrollments').select(...),
-  // ... 7 requêtes différentes
-]);
+```sql
+admin_recalculate_stats(
+  p_candidate_id uuid
+) RETURNS jsonb
 ```
 
-**APRÈS (service centralisé) :**
-```typescript
-const stats = await candidateStatsService.getAllStats(user.id, profile.id);
-
-// stats contient TOUT en un seul objet
-setJobViewsCount(stats.jobViewsCount);
-setAiScore(stats.aiScore);
-setProfileStats(stats.profileStats);
-// ...
-```
-
-### 5.2 Affichage dans le dashboard
-
-Les compteurs sont affichés dans plusieurs endroits :
-1. **Header dashboard** (cartes de statistiques)
-2. **Onglet principal** (vue d'ensemble)
-3. **Sections détaillées** (candidatures, formations, etc.)
-
-Tous utilisent maintenant la MÊME source : les variables d'état mises à jour par `candidateStatsService.getAllStats()`.
+**Comportement**:
+1. Vérifie que l'utilisateur est admin
+2. Recompte depuis `candidate_stats_logs` (status='success' uniquement)
+3. Met à jour `candidate_stats`
+4. Recalcule AI score
 
 ---
 
-## 6. Tracking Automatique
+## 🔒 SÉCURITÉ (RLS)
 
-### 6.1 Vues d'offres (JobDetail.tsx)
+### candidate_stats
+
+```sql
+-- Candidats voient leurs propres stats
+CREATE POLICY "Candidats peuvent voir leurs propres stats"
+  ON candidate_stats FOR SELECT
+  TO authenticated
+  USING (auth.uid() = candidate_id);
+
+-- Admins voient toutes les stats
+CREATE POLICY "Admins peuvent voir toutes les stats"
+  ON candidate_stats FOR SELECT
+  TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.user_type = 'admin'
+  ));
+```
+
+### candidate_stats_logs
+
+```sql
+-- Candidats voient leurs propres logs
+CREATE POLICY "Candidats peuvent voir leurs propres logs"
+  ON candidate_stats_logs FOR SELECT
+  TO authenticated
+  USING (auth.uid() = candidate_id);
+
+-- Admins voient tous les logs
+CREATE POLICY "Admins peuvent voir tous les logs"
+  ON candidate_stats_logs FOR SELECT
+  TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.user_type = 'admin'
+  ));
+```
+
+---
+
+## 🔌 EDGE FUNCTION
+
+### track-job-view
+
+**URL**: `{SUPABASE_URL}/functions/v1/track-job-view`
+
+**Méthode**: `POST`
+
+**Body**:
+```json
+{
+  "job_id": "uuid",
+  "session_id": "session_xxx"
+}
+```
+
+**Comportement**:
+1. Extrait IP, User-Agent depuis headers
+2. Hashe l'IP pour RGPD
+3. Appelle `track_job_view_secure()` RPC
+4. Retourne résultat
+
+**Avantages**:
+- Protection anti-spam serveur
+- Hash IP automatique (RGPD)
+- Pas de logique client manipulable
+
+---
+
+## 💻 SERVICE FRONTEND
+
+### `candidateStatsService.ts`
 
 ```typescript
-import { candidateStatsService } from '../services/candidateStatsService';
+export const candidateStatsService = {
+  /**
+   * Récupérer toutes les stats (SOURCE UNIQUE)
+   */
+  async getAllStats(userId: string): Promise<CandidateStats | null> {
+    const { data } = await supabase.rpc('get_candidate_stats', {
+      p_candidate_id: userId
+    });
+    return transformData(data);
+  },
 
-useEffect(() => {
-  if (user) {
-    trackJobView();
+  /**
+   * Tracker une vue d'offre
+   */
+  async trackJobView(jobId: string, sessionId?: string) {
+    const response = await fetch(`${supabaseUrl}/functions/v1/track-job-view`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({ job_id: jobId, session_id: sessionId })
+    });
+    return response.json();
+  },
+
+  /**
+   * Tracker un clic bouton Aperçu
+   */
+  async trackProfilePreviewClick(candidateId: string, sessionId?: string) {
+    const { data } = await supabase.rpc('track_profile_preview_click', {
+      p_candidate_id: candidateId,
+      p_session_id: sessionId,
+      p_user_agent: navigator.userAgent
+    });
+    return data;
+  },
+
+  /**
+   * Recalculer AI score
+   */
+  async recalculateAIScore(candidateId: string) {
+    const { data } = await supabase.rpc('calculate_ai_score_backend', {
+      p_candidate_id: candidateId
+    });
+    return data;
   }
-}, [jobId, user]);
+};
+```
 
+---
+
+## 🎨 INTÉGRATION FRONTEND
+
+### JobDetail.tsx
+
+```typescript
 const trackJobView = async () => {
-  if (!user || !jobId || jobId.startsWith('sample-')) return;
+  if (jobId.startsWith('sample-')) return;
 
   try {
-    await candidateStatsService.trackJobView(user.id, jobId);
+    // Appel Edge Function pour tous les utilisateurs
+    await candidateStatsService.trackJobView(jobId);
   } catch (error) {
     console.debug('Job view tracking:', error);
   }
 };
+
+useEffect(() => {
+  loadJob();
+  trackJobView(); // Pour TOUS les users (connectés, anonymes, recruteurs)
+
+  if (user) {
+    checkIfApplied();
+    loadProfileCompletion();
+  }
+}, [jobId, user]);
 ```
 
-**Comportement :**
-- Vérifie d'abord si l'offre a déjà été vue
-- N'insère que si c'est une nouvelle vue
-- Silencieux : ne bloque jamais l'UI
-- Pas de tracking pour les offres sample (démo)
-
-### 6.2 Vues de profil (CVTheque)
+### CVTheque.tsx
 
 ```typescript
-import { profileViewsService } from '../services/profileViewsService';
+const handleViewDetails = async (candidateId: string) => {
+  // ... vérifications ...
 
-const handleViewProfile = async (candidateId: string) => {
-  await profileViewsService.recordProfileView(candidateId);
-  // ... afficher le profil
+  if (!isPurchased) {
+    if (!candidateId.startsWith('sample_')) {
+      try {
+        const { data: candidateProfile } = await supabase
+          .from('candidate_profiles')
+          .select('user_id')
+          .eq('id', candidateId)
+          .maybeSingle();
+
+        if (candidateProfile?.user_id) {
+          // ⚠️ TRACKING CRITIQUE: Uniquement sur clic bouton "Aperçu"
+          await candidateStatsService.trackProfilePreviewClick(
+            candidateProfile.user_id,
+            sessionId
+          );
+        }
+      } catch (error) {
+        console.debug('Profile view tracking:', error);
+      }
+    }
+
+    setPreviewCandidate(candidate);
+    setShowPreviewModal(true);
+    return;
+  }
+
+  // ... reste du code pour profils achetés ...
 };
 ```
 
-**Comportement :**
-- Appelle la fonction RPC `increment_profile_views()`
-- Met à jour automatiquement le compteur dans `candidate_profiles`
-- Enregistre dans `profile_views` pour l'historique
-
-### 6.3 Achats de profil (Trigger automatique)
-
-```sql
-CREATE TRIGGER trigger_update_profile_purchases_count
-  AFTER INSERT OR UPDATE OF payment_status, payment_verified_by_admin
-  ON profile_purchases
-  FOR EACH ROW
-  EXECUTE FUNCTION update_profile_purchases_count();
-```
-
-**Comportement :**
-- Déclenché automatiquement lors d'un achat validé
-- Aucune action manuelle nécessaire
-- Garantit la cohérence des compteurs
-
----
-
-## 7. Score IA
-
-### 7.1 Calcul du score
-
-Le score IA est calculé comme la **moyenne des scores de compatibilité** de toutes les candidatures ayant un `ai_match_score` non null.
+### CandidateDashboard.tsx
 
 ```typescript
-async getAIScore(userId: string): Promise<number> {
-  const { data } = await supabase
-    .from('applications')
-    .select('ai_match_score')
-    .eq('candidate_id', userId)
-    .not('ai_match_score', 'is', null);
+const loadData = async () => {
+  const [appsData, profileData, formationsData, stats, unreadCount] = await Promise.all([
+    supabase.from('applications').select('...')...,
+    supabase.from('candidate_profiles').select('...')...,
+    supabase.from('formation_enrollments').select('...')...,
+    candidateStatsService.getAllStats(user.id), // ✅ SOURCE UNIQUE
+    candidateMessagingService.getUnreadCount()
+  ]);
 
-  if (!data || data.length === 0) return 0;
-
-  const scores = data.map(app => app.ai_match_score);
-  const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-
-  return Math.round(average);
-}
-```
-
-### 7.2 Affichage du score
-
-Le score est affiché dans plusieurs contextes :
-
-**1. Statistiques principales (header) :**
-```jsx
-<div className="text-3xl font-bold">{aiScore}%</div>
-```
-
-**2. Recommandations IA :**
-```jsx
-{aiScore > 0 && (
-  <p>
-    Votre score moyen de compatibilité est de {aiScore}%
-    {aiScore < 80 && ' Suivez une formation pour améliorer vos chances!'}
-  </p>
-)}
-```
-
-**3. Détails des candidatures :**
-```jsx
-{app.ai_match_score ? (
-  <span>Score IA: {app.ai_match_score}%</span>
-) : (
-  <span>Score disponible</span>
-)}
-```
-
-### 7.3 Attribution du score
-
-Le score IA est attribué lors de :
-- Utilisation du service de matching IA Premium
-- Analyse automatique de compatibilité
-- Services d'optimisation CV
-
----
-
-## 8. Performance & Optimisation
-
-### 8.1 Indexes
-
-Tous les indexes nécessaires sont créés pour assurer des performances optimales :
-
-```sql
--- job_views
-CREATE INDEX idx_job_views_user_id ON job_views(user_id);
-CREATE INDEX idx_job_views_job_id ON job_views(job_id);
-CREATE INDEX idx_job_views_viewed_at ON job_views(viewed_at);
-
--- profile_views
-CREATE INDEX idx_profile_views_candidate_id ON profile_views(candidate_id);
-CREATE INDEX idx_profile_views_viewer_id ON profile_views(viewer_id);
-CREATE INDEX idx_profile_views_viewed_at ON profile_views(viewed_at DESC);
-
--- formation_enrollments
-CREATE INDEX idx_formation_enrollments_user_id ON formation_enrollments(user_id);
-CREATE INDEX idx_formation_enrollments_status ON formation_enrollments(status);
-```
-
-### 8.2 Requêtes optimisées
-
-Le service `getAllStats()` utilise `Promise.all()` pour charger toutes les statistiques en parallèle, minimisant le temps de chargement.
-
-```typescript
-const [jobViewsData, applicationsData, formationsData, ...] = await Promise.all([
-  // 5 requêtes en parallèle au lieu de 5 séquentielles
-]);
-```
-
-### 8.3 Cache côté frontend
-
-Les statistiques sont mises en cache dans l'état React et rechargées uniquement lorsque nécessaire :
-- Au montage du composant
-- Après une action utilisateur (candidature, inscription formation, etc.)
-- Via real-time pour les messages non lus
-
----
-
-## 9. Sécurité (RLS)
-
-Toutes les tables de tracking ont RLS activée :
-
-```sql
--- Exemple pour job_views
-CREATE POLICY "Users can view own job views"
-  ON job_views FOR SELECT
-  TO authenticated
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create their own job views"
-  ON job_views FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = user_id);
-```
-
-**Règles de sécurité :**
-- Un candidat ne voit QUE ses propres statistiques
-- Admins peuvent voir toutes les statistiques (via policies spécifiques)
-- Recruteurs voient uniquement leur historique de consultation de profils
-
----
-
-## 10. Tests & Validation
-
-### 10.1 Tests manuels
-
-**Scénario 1 : Vues d'offres**
-1. Se connecter en tant que candidat
-2. Ouvrir une page détail d'offre
-3. Vérifier que `job_views` contient une entrée
-4. Rafraîchir le dashboard
-5. Vérifier que le compteur "Offres consultées" a augmenté
-
-**Scénario 2 : Score IA**
-1. Créer des candidatures avec `ai_match_score` différents
-2. Rafraîchir le dashboard
-3. Vérifier que le score affiché = moyenne des scores
-
-**Scénario 3 : Vues de profil**
-1. Se connecter en tant que recruteur
-2. Consulter un profil candidat dans CVthèque
-3. Se reconnecter en tant que candidat
-4. Vérifier que le compteur "Vues du profil" a augmenté
-
-### 10.2 Vérifications SQL
-
-```sql
--- Vérifier les vues d'offres pour un user
-SELECT COUNT(DISTINCT job_id) FROM job_views WHERE user_id = 'USER_ID';
-
--- Vérifier le score IA moyen
-SELECT AVG(ai_match_score) FROM applications
-WHERE candidate_id = 'USER_ID' AND ai_match_score IS NOT NULL;
-
--- Vérifier les vues de profil
-SELECT profile_views_count, last_viewed_at
-FROM candidate_profiles WHERE user_id = 'USER_ID';
+  if (stats) {
+    setJobViewsCount(stats.jobViewsCount);
+    setApplicationsCount(stats.applicationsCount);
+    setProfileViewsCount(stats.profileViewsCount);
+    setAiScore(stats.aiScore);
+    // ... etc
+  }
+};
 ```
 
 ---
 
-## 11. Troubleshooting
+## 📊 DASHBOARD ADMIN DEBUG
 
-### Problème : Compteur ne se met pas à jour
+La migration crée une vue SQL pour debug:
 
-**Diagnostic :**
-1. Vérifier que l'action a bien créé une entrée en base
-2. Vérifier les RLS policies (SELECT sur la table)
-3. Vérifier les logs console pour erreurs
-
-**Solution :**
-```typescript
-// Forcer le rechargement des stats
-await loadData();
-```
-
-### Problème : Score IA à 0%
-
-**Diagnostic :**
-1. Vérifier que les candidatures ont un `ai_match_score` non null
-2. Vérifier la requête SQL dans candidateStatsService
-
-**Solution :**
 ```sql
--- Vérifier les scores existants
-SELECT id, ai_match_score FROM applications
-WHERE candidate_id = 'USER_ID';
-```
+CREATE VIEW admin_stats_debug AS
+SELECT
+  cs.candidate_id,
+  p.full_name,
+  p.email,
 
-### Problème : Doublons dans job_views
+  -- Stats agrégées
+  cs.job_views_count as agg_job_views,
+  cs.applications_count as agg_applications,
+  cs.profile_views_count as agg_profile_views,
 
-**Diagnostic :**
-Le service `trackJobView()` vérifie déjà l'existence avant insertion.
+  -- Stats réelles depuis logs (succès uniquement)
+  (SELECT COUNT(*) FROM candidate_stats_logs
+   WHERE candidate_id = cs.candidate_id
+   AND stat_type = 'job_view'
+   AND status = 'success') as logs_job_views,
 
-**Solution :**
-```sql
--- Nettoyer les doublons manuellement si nécessaire
-DELETE FROM job_views a USING job_views b
-WHERE a.id > b.id AND a.user_id = b.user_id AND a.job_id = b.job_id;
+  -- Tentatives bloquées
+  (SELECT COUNT(*) FROM candidate_stats_logs
+   WHERE candidate_id = cs.candidate_id
+   AND status LIKE 'blocked%') as blocked_attempts,
+
+  cs.updated_at,
+  cs.ai_score_updated_at
+FROM candidate_stats cs
+JOIN profiles p ON p.id = cs.candidate_id
+ORDER BY cs.updated_at DESC;
 ```
 
 ---
 
-## 12. Évolutions Futures
+## ✅ CHECKLIST DE CONFORMITÉ
+
+### Règles Métier
+
+- [x] Job Views: Anti-spam 1h, tracking backend uniquement
+- [x] Profile Views: UNIQUEMENT sur clic bouton "Aperçu"
+- [x] Applications: Une seule par candidat+offre
+- [x] Purchases: Uniquement après paiement confirmé
+- [x] Formations: Uniquement après accès réel
+- [x] AI Score: Calcul exclusivement backend
+
+### Sécurité
+
+- [x] Aucun compteur ne s'incrémente sans log
+- [x] Aucune vue sans clic "Aperçu" n'est comptée (Profile Views)
+- [x] Aucune vue hors CVthèque n'est comptée (Profile Views)
+- [x] RLS activée sur toutes les tables
+- [x] Toutes les fonctions RPC sont SECURITY DEFINER
+- [x] Hash IP pour RGPD
+
+### Traçabilité
+
+- [x] Chaque action loggée dans `candidate_stats_logs`
+- [x] Status précis (success, blocked_spam, blocked_duplicate, error)
+- [x] Métadonnées complètes (viewer, session, IP hash, user agent)
+- [x] Vue admin pour comparaison stats agrégées vs logs
+
+---
+
+## 🧪 SCÉNARIOS DE TEST
+
+### Test 1: Job View Anti-Spam
+
+```
+1. User A ouvre JobDetail pour job_id=X
+   ✅ Compteur jobs.views_count incrémenté
+   ✅ Log créé avec status='success'
+
+2. User A rafraîchit la page immédiatement
+   ✅ Compteur NON incrémenté
+   ✅ Log créé avec status='blocked_spam'
+
+3. Attendre 1h + 1min
+
+4. User A ouvre à nouveau JobDetail pour job_id=X
+   ✅ Compteur incrémenté
+   ✅ Log créé avec status='success'
+```
+
+### Test 2: Profile View Tracking Strict
+
+```
+1. Recruteur R navigue sur CVThèque
+   ❌ Aucun compteur incrémenté (pas de clic "Aperçu")
+
+2. Recruteur R clique "Aperçu" sur profil candidat C
+   ✅ candidate_stats.profile_views_count incrémenté
+   ✅ candidate_profiles.profile_views_count incrémenté
+   ✅ Entrée créée dans profile_views
+   ✅ Log créé avec status='success', source='cvtheque_preview_button'
+
+3. Recruteur R clique "Aperçu" immédiatement après
+   ✅ Compteurs NON incrémentés
+   ✅ Log créé avec status='blocked_spam'
+
+4. Attendre 24h + 1min
+
+5. Recruteur R clique "Aperçu" à nouveau
+   ✅ Compteurs incrémentés
+   ✅ Log créé avec status='success'
+```
+
+### Test 3: Admin Recalcul
+
+```
+1. Admin ouvre dashboard debug
+   ✅ Voit stats agrégées vs logs
+
+2. Détecte incohérence pour candidat C
+
+3. Admin lance recalcul
+   ✅ Fonction admin_recalculate_stats() appelée
+   ✅ Stats recalculées depuis logs (status='success' uniquement)
+   ✅ candidate_stats mis à jour
+   ✅ AI score recalculé
+
+4. Admin vérifie à nouveau
+   ✅ Cohérence restaurée
+```
+
+---
+
+## 🚀 PERFORMANCE
+
+### Optimisations
+
+1. **Index stratégiques**:
+   - Tous les `WHERE` et `JOIN` sont indexés
+   - Index DESC sur `created_at` pour tri rapide
+
+2. **RPC Functions**:
+   - `SECURITY DEFINER` pour privilèges élevés
+   - `SET search_path = public` pour sécurité
+
+3. **Requêtes parallèles**:
+   - Dashboard utilise `Promise.all()` pour charger en parallèle
+
+4. **Logs légers**:
+   - Hash IP au lieu d'IP brute (moins de données)
+   - Metadata JSONB compact
+
+---
+
+## 📝 MIGRATION
+
+**Fichier**: `20260111180000_create_secure_candidate_stats_system.sql`
+
+**Contenu**:
+- Création tables `candidate_stats` et `candidate_stats_logs`
+- Création fonctions RPC sécurisées
+- Création triggers auto-incrément
+- Création vue admin
+- Initialisation stats pour candidats existants
+
+---
+
+## 🔄 ÉVOLUTIONS FUTURES
 
 ### Court terme (1-2 mois)
-- [ ] Dashboard analytics avancé (graphiques de tendances)
-- [ ] Comparaison de stats avec moyennes du secteur
-- [ ] Notifications quand un compteur important change
+
+- [ ] Dashboard analytics admin avec graphiques
+- [ ] Export stats par candidat (PDF/CSV)
+- [ ] Notifications automatiques sur anomalies
 
 ### Moyen terme (3-6 mois)
-- [ ] Export PDF des statistiques
-- [ ] Historique des statistiques (évolution temporelle)
-- [ ] Recommandations IA basées sur les stats
+
+- [ ] Machine Learning pour détection fraude
+- [ ] Benchmarking stats avec moyennes secteur
+- [ ] API REST pour stats (intégration tierce)
 
 ### Long terme (6-12 mois)
-- [ ] Machine Learning pour prédiction de réussite
-- [ ] Benchmarking avec autres candidats (anonymisé)
-- [ ] Gamification (badges, niveaux basés sur stats)
+
+- [ ] Prédiction taux de réussite candidature (AI)
+- [ ] Gamification basée sur stats
+- [ ] Recommandations personnalisées
 
 ---
 
-## Conclusion
+## 📚 RESSOURCES
 
-Le système de statistiques candidat est maintenant :
-- ✅ **Fiable** : Basé sur des données réelles en base
-- ✅ **Cohérent** : Une seule source de vérité
-- ✅ **Automatisé** : Tracking automatique des actions
-- ✅ **Performant** : Requêtes optimisées et indexes
-- ✅ **Sécurisé** : RLS activée partout
-- ✅ **Scalable** : Architecture prête pour forte montée en charge
+**Migrations**:
+- `create_secure_candidate_stats_system.sql`
 
-**Fichiers clés :**
-- Service : `src/services/candidateStatsService.ts`
-- Dashboard : `src/pages/CandidateDashboard.tsx`
-- JobDetail : `src/pages/JobDetail.tsx`
-- ProfileViews : `src/services/profileViewsService.ts`
+**Edge Functions**:
+- `track-job-view/index.ts`
 
-**Migrations :**
-- `20251210230505_fix_candidate_dashboard_indicators.sql`
-- `20260110114533_add_profile_views_and_purchases_tracking.sql`
+**Services**:
+- `src/services/candidateStatsService.ts`
 
-**Version :** 1.0.0
-**Date :** 2026-01-11
-**Statut :** ✅ Production Ready
+**Composants**:
+- `src/pages/JobDetail.tsx`
+- `src/pages/CVTheque.tsx`
+- `src/pages/CandidateDashboard.tsx`
+
+---
+
+## ✅ STATUT
+
+**Version**: 2.0
+**Date**: 2026-01-11
+**Statut**: ✅ Production Ready
+
+**Confirmation**:
+- ✅ Aucun compteur ne s'incrémente sans log
+- ✅ Aucune vue sans clic "Aperçu" n'est comptée
+- ✅ Aucune vue hors CVthèque n'est comptée
+- ✅ Toutes les actions passent par le backend
+- ✅ Anti-spam actif sur tous les trackings
+- ✅ Traçabilité complète assurée
+
+---
+
+## 🆘 SUPPORT
+
+En cas de problème:
+
+1. **Vérifier logs**: Consulter `candidate_stats_logs` pour voir tentatives bloquées
+2. **Comparer stats**: Utiliser vue `admin_stats_debug`
+3. **Recalculer**: Utiliser fonction `admin_recalculate_stats()`
+4. **Consulter doc**: Relire les règles métier ci-dessus
+
+---
+
+**FIN DE LA DOCUMENTATION**

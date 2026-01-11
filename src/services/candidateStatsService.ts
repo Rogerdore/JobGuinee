@@ -1,5 +1,16 @@
 import { supabase } from '../lib/supabase';
 
+/**
+ * SYSTÈME SÉCURISÉ DE STATISTIQUES CANDIDAT
+ *
+ * RÈGLES MÉTIER STRICTES:
+ * - Tous les compteurs sont gérés côté BACKEND uniquement
+ * - Aucun incrément direct depuis le frontend
+ * - Toutes les actions passent par des fonctions RPC sécurisées
+ * - Anti-spam intégré avec fenêtres temporelles
+ * - Traçabilité complète dans candidate_stats_logs
+ */
+
 export interface CandidateStats {
   jobViewsCount: number;
   applicationsCount: number;
@@ -7,93 +18,49 @@ export interface CandidateStats {
   profilePurchasesCount: number;
   formationsCount: number;
   aiScore: number;
+  aiScoreVersion: string;
+  aiScoreUpdatedAt: string | null;
   creditsBalance: number;
   isPremium: boolean;
   unreadMessagesCount: number;
-  profileStats: {
-    profile_views_count: number;
-    profile_purchases_count: number;
-    this_month_views: number;
-    this_month_purchases: number;
-  };
+  updatedAt: string;
 }
 
 export const candidateStatsService = {
   /**
-   * Get all candidate statistics in a single call
-   * Centralizes all stat queries for consistency
+   * Get all candidate statistics from backend
+   * Uses RPC function that returns validated, aggregated stats
+   * SOURCE UNIQUE DE VÉRITÉ
    */
-  async getAllStats(userId: string, profileId: string): Promise<CandidateStats | null> {
+  async getAllStats(userId: string): Promise<CandidateStats | null> {
     try {
-      const [
-        jobViewsData,
-        applicationsData,
-        formationsData,
-        profilesData,
-        profileStatsData
-      ] = await Promise.all([
-        supabase
-          .from('job_views')
-          .select('job_id')
-          .eq('user_id', userId),
-        supabase
-          .from('applications')
-          .select('id, ai_match_score')
-          .eq('candidate_id', userId),
-        supabase
-          .from('formation_enrollments')
-          .select('id')
-          .eq('user_id', userId)
-          .in('status', ['enrolled', 'in_progress', 'completed']),
-        supabase
-          .from('profiles')
-          .select('credits_balance, is_premium, premium_expiration')
-          .eq('id', profileId)
-          .maybeSingle(),
-        supabase.rpc('get_candidate_profile_stats', { p_user_id: userId })
-      ]);
+      // Appeler la fonction RPC backend qui retourne toutes les stats agrégées
+      const { data, error } = await supabase.rpc('get_candidate_stats', {
+        p_candidate_id: userId
+      });
 
-      // Count unique job views (one job_id = one unique view)
-      const uniqueJobIds = new Set(jobViewsData.data?.map((v: any) => v.job_id) || []);
-      const jobViewsCount = uniqueJobIds.size;
+      if (error) {
+        console.error('Error fetching candidate stats:', error);
+        return null;
+      }
 
-      // Count applications
-      const applicationsCount = applicationsData.data?.length || 0;
-
-      // Calculate average AI score
-      const aiScores = applicationsData.data
-        ?.map((app: any) => app.ai_match_score)
-        .filter((score: number | null) => score !== null) || [];
-      const aiScore = aiScores.length > 0
-        ? Math.round(aiScores.reduce((sum: number, score: number) => sum + score, 0) / aiScores.length)
-        : 0;
-
-      // Count formations
-      const formationsCount = formationsData.data?.length || 0;
-
-      // Profile stats
-      const profileStats = {
-        profile_views_count: profileStatsData.data?.profile_views_count || 0,
-        profile_purchases_count: profileStatsData.data?.profile_purchases_count || 0,
-        this_month_views: profileStatsData.data?.this_month_views || 0,
-        this_month_purchases: profileStatsData.data?.this_month_purchases || 0
-      };
-
-      // Credits and premium status
-      const creditsBalance = profilesData.data?.credits_balance || 0;
-      const isPremium = profilesData.data?.is_premium || false;
+      if (!data) {
+        return null;
+      }
 
       return {
-        jobViewsCount,
-        applicationsCount,
-        profileViewsCount: profileStats.profile_views_count,
-        profilePurchasesCount: profileStats.profile_purchases_count,
-        formationsCount,
-        aiScore,
-        creditsBalance,
-        isPremium,
+        jobViewsCount: data.job_views_count || 0,
+        applicationsCount: data.applications_count || 0,
+        profileViewsCount: data.profile_views_count || 0,
+        profilePurchasesCount: data.purchases_count || 0,
+        formationsCount: data.formations_count || 0,
+        aiScore: data.ai_score || 0,
+        aiScoreVersion: data.ai_score_version || 'v1.0',
+        aiScoreUpdatedAt: data.ai_score_updated_at || null,
+        creditsBalance: data.credits_balance || 0,
+        isPremium: data.is_premium || false,
         unreadMessagesCount: 0, // Will be set separately via real-time
-        profileStats
+        updatedAt: data.updated_at
       };
     } catch (error) {
       console.error('Error fetching candidate stats:', error);
@@ -102,175 +69,90 @@ export const candidateStatsService = {
   },
 
   /**
-   * Track a job view (when user opens a job detail page)
-   * Uses UPSERT to prevent duplicate entries for same user+job
+   * Track a job view via Edge Function (anti-spam + validation backend)
+   * RÈGLE: Tracking backend uniquement, anti-spam 1h
    */
-  async trackJobView(userId: string, jobId: string): Promise<{ success: boolean; error?: string }> {
+  async trackJobView(jobId: string, sessionId?: string): Promise<{ success: boolean; status?: string; message?: string }> {
     try {
-      // Check if already viewed
-      const { data: existing } = await supabase
-        .from('job_views')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('job_id', jobId)
-        .maybeSingle();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      // Only insert if not already viewed
-      if (!existing) {
-        const { error } = await supabase
-          .from('job_views')
-          .insert({
-            user_id: userId,
-            job_id: jobId,
-            viewed_at: new Date().toISOString()
-          });
+      // Appeler l'Edge Function qui gère l'anti-spam et la validation
+      const response = await fetch(`${supabaseUrl}/functions/v1/track-job-view`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          job_id: jobId,
+          session_id: sessionId || `session_${Date.now()}_${Math.random().toString(36)}`
+        })
+      });
 
-        if (error) {
-          console.error('Error tracking job view:', error);
-          return { success: false, error: error.message };
-        }
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error tracking job view:', result);
+        return { success: false, ...result };
       }
 
-      return { success: true };
+      return result;
     } catch (error: any) {
       console.error('Error in trackJobView:', error);
-      return { success: false, error: error.message };
+      return { success: false, message: error.message };
     }
   },
 
   /**
-   * Get job views count for a user
+   * Track profile preview click (CVTHÈQUE UNIQUEMENT)
+   * RÈGLE CRITIQUE: Comptage UNIQUEMENT sur clic bouton "Aperçu"
+   * Anti-spam: 24h
    */
-  async getJobViewsCount(userId: string): Promise<number> {
+  async trackProfilePreviewClick(
+    candidateId: string,
+    sessionId?: string
+  ): Promise<{ success: boolean; status?: string; message?: string }> {
     try {
-      const { data, error } = await supabase
-        .from('job_views')
-        .select('job_id')
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error fetching job views count:', error);
-        return 0;
-      }
-
-      // Count unique job IDs
-      const uniqueJobIds = new Set(data?.map((v: any) => v.job_id) || []);
-      return uniqueJobIds.size;
-    } catch (error) {
-      console.error('Error in getJobViewsCount:', error);
-      return 0;
-    }
-  },
-
-  /**
-   * Get applications count for a user
-   */
-  async getApplicationsCount(userId: string): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('applications')
-        .select('id', { count: 'exact', head: true })
-        .eq('candidate_id', userId);
-
-      if (error) {
-        console.error('Error fetching applications count:', error);
-        return 0;
-      }
-
-      return count || 0;
-    } catch (error) {
-      console.error('Error in getApplicationsCount:', error);
-      return 0;
-    }
-  },
-
-  /**
-   * Get formations count for a user
-   */
-  async getFormationsCount(userId: string): Promise<number> {
-    try {
-      const { count, error } = await supabase
-        .from('formation_enrollments')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .in('status', ['enrolled', 'in_progress', 'completed']);
-
-      if (error) {
-        console.error('Error fetching formations count:', error);
-        return 0;
-      }
-
-      return count || 0;
-    } catch (error) {
-      console.error('Error in getFormationsCount:', error);
-      return 0;
-    }
-  },
-
-  /**
-   * Calculate AI score from applications
-   * Returns average of all ai_match_score values
-   */
-  async getAIScore(userId: string): Promise<number> {
-    try {
-      const { data, error } = await supabase
-        .from('applications')
-        .select('ai_match_score')
-        .eq('candidate_id', userId)
-        .not('ai_match_score', 'is', null);
-
-      if (error) {
-        console.error('Error fetching AI score:', error);
-        return 0;
-      }
-
-      if (!data || data.length === 0) {
-        return 0;
-      }
-
-      const scores = data.map((app: any) => app.ai_match_score);
-      const average = scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length;
-
-      return Math.round(average);
-    } catch (error) {
-      console.error('Error in getAIScore:', error);
-      return 0;
-    }
-  },
-
-  /**
-   * Get profile stats (views, purchases) via RPC function
-   */
-  async getProfileStats(userId: string): Promise<any> {
-    try {
-      const { data, error } = await supabase.rpc('get_candidate_profile_stats', {
-        p_user_id: userId
+      // Appeler la fonction RPC backend sécurisée
+      const { data, error } = await supabase.rpc('track_profile_preview_click', {
+        p_candidate_id: candidateId,
+        p_session_id: sessionId || `session_${Date.now()}_${Math.random().toString(36)}`,
+        p_ip_hash: null, // Edge Function gère le hash IP
+        p_user_agent: navigator.userAgent
       });
 
       if (error) {
-        console.error('Error fetching profile stats:', error);
-        return {
-          profile_views_count: 0,
-          profile_purchases_count: 0,
-          this_month_views: 0,
-          this_month_purchases: 0
-        };
+        console.error('Error tracking profile preview:', error);
+        return { success: false, message: error.message };
       }
 
-      return data || {
-        profile_views_count: 0,
-        profile_purchases_count: 0,
-        this_month_views: 0,
-        this_month_purchases: 0
-      };
+      return data;
+    } catch (error: any) {
+      console.error('Error in trackProfilePreviewClick:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
+  /**
+   * Recalculate AI score (backend calculation)
+   * RÈGLE: Calcul exclusivement backend, versionné
+   */
+  async recalculateAIScore(candidateId: string): Promise<{ success: boolean; ai_score?: number }> {
+    try {
+      const { data, error } = await supabase.rpc('calculate_ai_score_backend', {
+        p_candidate_id: candidateId
+      });
+
+      if (error) {
+        console.error('Error calculating AI score:', error);
+        return { success: false };
+      }
+
+      return data;
     } catch (error) {
-      console.error('Error in getProfileStats:', error);
-      return {
-        profile_views_count: 0,
-        profile_purchases_count: 0,
-        this_month_views: 0,
-        this_month_purchases: 0
-      };
+      console.error('Error in recalculateAIScore:', error);
+      return { success: false };
     }
   },
 

@@ -148,7 +148,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .select('id, formation_id, status, progress, formations(title)')
           .eq('user_id', user.id)
           .in('status', ['enrolled', 'in_progress', 'completed']),
-        candidateStatsService.getAllStats(user.id, profile.id),
+        candidateStatsService.getAllStats(user.id),
         candidateMessagingService.getUnreadCount()
       ]);
 

@@ -15,6 +15,7 @@ import CheckoutConfirmation from '../components/cvtheque/CheckoutConfirmation';
 import CartHistoryModal from '../components/cvtheque/CartHistoryModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 import { cartHistoryService, CartHistoryItem } from '../services/cartHistoryService';
+import { candidateStatsService } from '../services/candidateStatsService';
 
 interface CVThequeProps {
   onNavigate: (page: string) => void;
@@ -571,6 +572,30 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       if (!candidate) {
         showError('Profil introuvable', 'Impossible de trouver ce profil.');
         return;
+      }
+
+      // ⚠️ TRACKING CRITIQUE: Incrémenter UNIQUEMENT sur clic bouton "Aperçu"
+      // Skip pour les profils sample/demo
+      if (!candidateId.startsWith('sample_')) {
+        try {
+          // Récupérer le user_id depuis candidate_profiles
+          const { data: candidateProfile } = await supabase
+            .from('candidate_profiles')
+            .select('user_id')
+            .eq('id', candidateId)
+            .maybeSingle();
+
+          if (candidateProfile?.user_id) {
+            // Appeler fonction RPC backend sécurisée avec anti-spam (24h)
+            await candidateStatsService.trackProfilePreviewClick(
+              candidateProfile.user_id,
+              sessionId
+            );
+          }
+        } catch (error) {
+          // Silencieux: ne jamais bloquer l'aperçu pour un problème de tracking
+          console.debug('Profile view tracking:', error);
+        }
       }
 
       setPreviewCandidate(candidate);

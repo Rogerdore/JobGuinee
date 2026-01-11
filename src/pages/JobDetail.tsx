@@ -60,8 +60,10 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
 
   useEffect(() => {
     loadJob();
+    // Track job view pour TOUS les utilisateurs (connectés, anonymes, recruteurs)
+    trackJobView();
+
     if (user) {
-      trackJobView();
       checkIfApplied();
       loadProfileCompletion();
     }
@@ -95,11 +97,15 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
   };
 
   const trackJobView = async () => {
-    if (!user || !jobId || jobId.startsWith('sample-')) return;
+    // Skip tracking pour les offres sample/demo
+    if (jobId.startsWith('sample-')) return;
 
     try {
-      await candidateStatsService.trackJobView(user.id, jobId);
+      // Appeler Edge Function qui gère l'anti-spam et la validation backend
+      // Fonctionne pour tous les utilisateurs (connectés, anonymes, recruteurs)
+      await candidateStatsService.trackJobView(jobId);
     } catch (error) {
+      // Silencieux: ne jamais bloquer l'affichage de l'offre pour un problème de tracking
       console.debug('Job view tracking:', error);
     }
   };
