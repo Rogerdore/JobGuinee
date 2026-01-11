@@ -20,19 +20,32 @@ export function calculateRecruiterCompletion(profile: any, company?: any): numbe
 
 export function calculateCandidateCompletion(profile: any): number {
   let score = 0;
-  if (profile.full_name?.trim()) score += 10;
+
+  if (profile.full_name?.trim()) score += 8;
+  if (profile.phone?.trim()) score += 5;
+  if (profile.location?.trim()) score += 5;
+  if (profile.photo_url?.trim()) score += 5;
+
   if (profile.desired_position?.trim()) score += 10;
-  if (profile.bio?.trim()) score += 10;
-  if (profile.phone?.trim()) score += 10;
-  if (profile.location?.trim()) score += 10;
-  if (profile.experience_years !== undefined && profile.experience_years >= 0) score += 10;
+  if (profile.desired_sectors && profile.desired_sectors.length > 0) score += 5;
+  if (profile.desired_contract_types && profile.desired_contract_types.length > 0) score += 3;
+
+  if (profile.experience_years !== undefined && profile.experience_years >= 0) score += 12;
+  if (profile.bio?.trim()) score += 8;
+
   if (profile.education_level?.trim()) score += 10;
+
   if (profile.skills && profile.skills.length > 0) score += 10;
-  if (profile.languages && profile.languages.length > 0) score += 4;
-  if (profile.cv_url?.trim()) score += 4;
-  if (profile.linkedin_url?.trim()) score += 4;
-  if (profile.portfolio_url?.trim()) score += 4;
-  if (profile.desired_salary_min?.trim() || profile.desired_salary_max?.trim()) score += 4;
+  if (profile.languages && profile.languages.length > 0) score += 5;
+
+  if (profile.mobility && profile.mobility.length > 0) score += 3;
+  if (profile.desired_salary_min || profile.desired_salary_max) score += 3;
+
+  if (profile.cv_url?.trim()) score += 8;
+  if (profile.linkedin_url?.trim()) score += 2;
+  if (profile.portfolio_url?.trim()) score += 2;
+  if (profile.certificates_url?.trim()) score += 1;
+
   return score;
 }
 

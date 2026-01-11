@@ -133,6 +133,30 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
     if (!profile?.id || !user) return;
 
     try {
+      const profileData = {
+        full_name: data.fullName,
+        desired_position: data.desiredPosition,
+        bio: data.professionalSummary,
+        phone: data.phone,
+        location: data.city || data.address,
+        experience_years: Array.isArray(data.experiences) ? data.experiences.length : 0,
+        education_level: Array.isArray(data.formations) && data.formations[0] ? data.formations[0].degree : '',
+        skills: data.skills,
+        languages: data.languagesDetailed,
+        cv_url: data.cvUrl || '',
+        linkedin_url: data.linkedinUrl,
+        portfolio_url: data.portfolioUrl,
+        desired_salary_min: data.desiredSalaryMin,
+        desired_salary_max: data.desiredSalaryMax,
+        photo_url: existingPhotoUrl || '',
+        desired_sectors: data.desiredSectors,
+        desired_contract_types: data.desiredContractTypes,
+        mobility: data.mobility,
+        certificates_url: data.certificatesUrl || '',
+      };
+
+      const completionPercentage = calculateCandidateCompletion(profileData);
+
       const { error } = await supabase
         .from('candidate_profiles')
         .upsert({
@@ -157,6 +181,8 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           professional_summary: data.professionalSummary || null,
           work_experience: Array.isArray(data.experiences) ? data.experiences : [],
           education: Array.isArray(data.formations) ? data.formations : [],
+          experience_years: Array.isArray(data.experiences) ? data.experiences.length : 0,
+          education_level: Array.isArray(data.formations) && data.formations[0] ? data.formations[0].degree : '',
           skills: Array.isArray(data.skills) ? data.skills : [],
           languages: Array.isArray(data.languagesDetailed) ? data.languagesDetailed : [],
           mobility: Array.isArray(data.mobility) ? data.mobility : [],
@@ -176,6 +202,7 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           receive_alerts: data.receiveAlerts || false,
           cv_parsed_data: data.cvParsedData || null,
           cv_parsed_at: data.cvParsedAt || null,
+          profile_completion_percentage: completionPercentage,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'profile_id'
@@ -296,15 +323,20 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
       education_level: formData.formations[0]?.degree || '',
       skills: formData.skills,
       languages: formData.languagesDetailed,
-      cv_url: formData.cv ? 'temp' : '',
+      cv_url: formData.cvUrl || (formData.cv ? 'temp' : ''),
       linkedin_url: formData.linkedinUrl,
       portfolio_url: formData.portfolioUrl,
       desired_salary_min: formData.desiredSalaryMin,
       desired_salary_max: formData.desiredSalaryMax,
+      photo_url: existingPhotoUrl || (formData.profilePhoto ? 'temp' : ''),
+      desired_sectors: formData.desiredSectors,
+      desired_contract_types: formData.desiredContractTypes,
+      mobility: formData.mobility,
+      certificates_url: formData.certificatesUrl || (formData.certificates ? 'temp' : ''),
     };
 
     return calculateCandidateCompletion(profileData);
-  }, [formData]);
+  }, [formData, existingPhotoUrl]);
 
   const addFiles = useCallback((files: File[], fileType: FileType) => {
     const newFiles: FileToUpload[] = Array.from(files).map(file => ({
