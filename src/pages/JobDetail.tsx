@@ -20,6 +20,7 @@ import { useSavedJobs } from '../hooks/useSavedJobs';
 import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
 import { socialShareService } from '../services/socialShareService';
+import { candidateStatsService } from '../services/candidateStatsService';
 
 interface JobDetailProps {
   jobId: string;
@@ -97,11 +98,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
     if (!user || !jobId || jobId.startsWith('sample-')) return;
 
     try {
-      await supabase.from('job_views').insert({
-        user_id: user.id,
-        job_id: jobId,
-        viewed_at: new Date().toISOString()
-      });
+      await candidateStatsService.trackJobView(user.id, jobId);
     } catch (error) {
       console.debug('Job view tracking:', error);
     }

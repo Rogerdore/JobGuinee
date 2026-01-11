@@ -6,10 +6,12 @@ import { isPremiumActive } from '../utils/premiumHelpers';
 import CandidateProfileForm from '../components/forms/CandidateProfileForm';
 import CandidateMessaging from '../components/candidate/CandidateMessaging';
 import DocumentsHub from '../components/candidate/DocumentsHub';
+import JobAlertsManager from '../components/candidate/JobAlertsManager';
 import ApplicationTrackingModal from '../components/candidate/ApplicationTrackingModal';
 import ProfileQualityBadge from '../components/profile/ProfileQualityBadge';
 import { candidateMessagingService } from '../services/candidateMessagingService';
 import { candidateApplicationTrackingService } from '../services/candidateApplicationTrackingService';
+import { candidateStatsService } from '../services/candidateStatsService';
 import { usePendingApplication } from '../hooks/usePendingApplication';
 import ExternalApplicationCTA from '../components/candidate/ExternalApplicationCTA';
 import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
@@ -42,6 +44,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   const [jobViewsCount, setJobViewsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [trackingApplicationId, setTrackingApplicationId] = useState<string | null>(null);
+  const [aiScore, setAiScore] = useState(0);
   const [profileStats, setProfileStats] = useState({
     profile_views_count: 0,
     profile_purchases_count: 0,
@@ -128,7 +131,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     setLoading(true);
 
     try {
-      const [appsData, profileData, jobViewsData, formationsData, profilesData, unreadCount, profileStatsData] = await Promise.all([
+      // Load stats via centralized service
+      const [appsData, profileData, formationsData, stats, unreadCount] = await Promise.all([
         supabase
           .from('applications')
           .select('*, jobs(*, companies(*))')
@@ -140,31 +144,20 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           .eq('profile_id', profile.id)
           .maybeSingle(),
         supabase
-          .from('job_views')
-          .select('job_id', { count: 'exact', head: false })
-          .eq('user_id', user.id),
-        supabase
           .from('formation_enrollments')
           .select('id, formation_id, status, progress, formations(title)')
           .eq('user_id', user.id)
           .in('status', ['enrolled', 'in_progress', 'completed']),
-        supabase
-          .from('profiles')
-          .select('credits_balance, is_premium, premium_expiration')
-          .eq('id', profile.id)
-          .maybeSingle(),
-        candidateMessagingService.getUnreadCount(),
-        supabase.rpc('get_candidate_profile_stats', { p_user_id: user.id })
+        candidateStatsService.getAllStats(user.id, profile.id),
+        candidateMessagingService.getUnreadCount()
       ]);
 
       console.log('📊 Data loaded:', {
         applications: appsData.data?.length || 0,
-        jobViews: jobViewsData.data?.length || 0,
+        stats: stats,
         formations: formationsData.data?.length || 0,
         errors: {
-          apps: appsData.error,
-          jobViews: jobViewsData.error,
-          formations: formationsData.error
+          apps: appsData.error
         }
       });
 
@@ -184,17 +177,17 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         });
       }
 
-      // Compter les vues uniques (un job_id = une offre vue)
-      if (jobViewsData.data) {
-        const uniqueJobIds = new Set(jobViewsData.data.map((v: any) => v.job_id));
-        const count = uniqueJobIds.size;
-        console.log('👁️ Job views:', count, 'offres uniques consultées');
-        setJobViewsCount(count);
-      } else {
-        console.log('⚠️ No job views data');
+      // Update stats from centralized service
+      if (stats) {
+        setJobViewsCount(stats.jobViewsCount);
+        setAiScore(stats.aiScore);
+        setProfileStats(stats.profileStats);
+        setCreditsBalance(stats.creditsBalance);
+        setIsPremium(stats.isPremium);
+        console.log('📊 Centralized stats:', stats);
       }
 
-      // Charger les formations inscrites
+      // Load formations
       if (formationsData.data) {
         setFormations(formationsData.data.map((enrollment: any) => ({
           id: enrollment.formation_id,
@@ -204,24 +197,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         })));
       }
 
-      // Charger les statistiques de profil CVthèque
-      if (profileStatsData.data) {
-        setProfileStats({
-          profile_views_count: profileStatsData.data.profile_views_count || 0,
-          profile_purchases_count: profileStatsData.data.profile_purchases_count || 0,
-          this_month_views: profileStatsData.data.this_month_views || 0,
-          this_month_purchases: profileStatsData.data.this_month_purchases || 0
-        });
-        console.log('👁️ Profile stats:', profileStatsData.data);
-      }
-
-      // Charger les crédits et statut premium
-      if (profilesData.data) {
-        setCreditsBalance(profilesData.data.credits_balance || 0);
-        setIsPremium(isPremiumActive(profilesData.data));
-      }
-
-      // Charger le nombre de messages non lus
+      // Load unread messages count
       setUnreadMessagesCount(unreadCount);
     } catch (error) {
       console.error('Error loading candidate data:', error);
@@ -291,12 +267,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     return labels[status] || status;
   };
 
-
-  const getAIScore = () => {
-    return applications.length > 0
-      ? Math.round(applications.reduce((sum, app) => sum + (app.ai_match_score || 0), 0) / applications.length)
-      : 0;
-  };
 
   const premiumServices = [
     {
@@ -525,7 +495,6 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
   }
 
   const profileCompletion = candidateProfile?.profile_completion_percentage || 0;
-  const aiScore = getAIScore();
 
   return (
     <ProtectedPageWrapper
@@ -1819,14 +1788,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
             )}
 
             {activeTab === 'alerts' && (
-              <div className="text-center py-12">
-                <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Alertes Emploi</h3>
-                <p className="text-gray-600 mb-6">
-                  Configurez des alertes pour recevoir les nouvelles offres par email, SMS ou WhatsApp
-                </p>
-                <p className="text-sm text-gray-500">Fonctionnalité bientôt disponible</p>
-              </div>
+              <JobAlertsManager />
             )}
 
             {activeTab === 'messages' && (
