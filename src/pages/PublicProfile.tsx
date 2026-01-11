@@ -226,7 +226,7 @@ export default function PublicProfile({ token, onNavigate }: PublicProfileProps)
         </div>
 
         {profile.professional_summary && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <User className="w-5 h-5 text-orange-600" />
               Résumé professionnel
@@ -237,162 +237,168 @@ export default function PublicProfile({ token, onNavigate }: PublicProfileProps)
           </div>
         )}
 
-        {profile.experiences && profile.experiences.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-orange-600" />
-              Expériences professionnelles
-            </h3>
-            <div className="space-y-6">
-              {profile.experiences.map((exp: any, index: number) => (
-                <div key={index} className="relative pl-8 border-l-2 border-orange-200">
-                  <div className="absolute -left-2 top-0 w-4 h-4 bg-orange-600 rounded-full" />
-                  <h4 className="font-semibold text-gray-900 text-lg">{exp.titre}</h4>
-                  <div className="flex items-center gap-2 text-gray-600 mb-2">
-                    <Building2 className="w-4 h-4" />
-                    <span>{exp.entreprise}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {profile.experiences && profile.experiences.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-orange-600" />
+                Expérience professionnelle
+              </h3>
+              <div className="space-y-4">
+                {profile.experiences.map((exp: any, index: number) => (
+                  <div key={index} className="relative pl-6 border-l-2 border-orange-200">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 bg-orange-600 rounded-full" />
+                    <h4 className="font-semibold text-gray-900">{exp.titre}</h4>
+                    <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
+                      <Building2 className="w-3 h-3" />
+                      <span>{exp.entreprise}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {exp.date_debut} - {exp.en_cours ? 'Présent' : exp.date_fin}
+                      </span>
+                      {exp.lieu && <span>• {exp.lieu}</span>}
+                    </div>
+                    {exp.description && (
+                      <p className="text-gray-700 text-sm whitespace-pre-wrap line-clamp-3">{exp.description}</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {exp.date_debut} - {exp.en_cours ? 'Présent' : exp.date_fin}
-                    </span>
-                    {exp.lieu && <span>• {exp.lieu}</span>}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {profile.education && profile.education.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-orange-600" />
+                Formation
+              </h3>
+              <div className="space-y-4">
+                {profile.education.map((edu: any, index: number) => (
+                  <div key={index} className="relative pl-6 border-l-2 border-orange-200">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 bg-orange-600 rounded-full" />
+                    <h4 className="font-semibold text-gray-900">{edu.diplome}</h4>
+                    <p className="text-gray-600 text-sm mb-1">{edu.etablissement}</p>
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {edu.annee_debut} - {edu.annee_fin}
+                      </span>
+                      {edu.lieu && <span>• {edu.lieu}</span>}
+                    </div>
+                    {edu.description && (
+                      <p className="text-gray-700 text-sm line-clamp-2">{edu.description}</p>
+                    )}
                   </div>
-                  {exp.description && (
-                    <p className="text-gray-700 whitespace-pre-wrap">{exp.description}</p>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {profile.education && profile.education.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-orange-600" />
-              Formation
-            </h3>
-            <div className="space-y-6">
-              {profile.education.map((edu: any, index: number) => (
-                <div key={index} className="relative pl-8 border-l-2 border-orange-200">
-                  <div className="absolute -left-2 top-0 w-4 h-4 bg-orange-600 rounded-full" />
-                  <h4 className="font-semibold text-gray-900 text-lg">{edu.diplome}</h4>
-                  <p className="text-gray-600 mb-2">{edu.etablissement}</p>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm mb-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {edu.annee_debut} - {edu.annee_fin}
-                    </span>
-                    {edu.lieu && <span>• {edu.lieu}</span>}
-                  </div>
-                  {edu.description && (
-                    <p className="text-gray-700">{edu.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {profile.skills && profile.skills.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Award className="w-5 h-5 text-orange-600" />
-              Compétences
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.map((skill: any, index: number) => (
-                <span
-                  key={index}
-                  className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg font-medium"
-                >
-                  {typeof skill === 'string' ? skill : skill.nom}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {profile.languages && profile.languages.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Languages className="w-5 h-5 text-orange-600" />
-              Langues
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {profile.languages.map((lang: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-900">
-                    {typeof lang === 'string' ? lang : lang.langue}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {profile.skills && profile.skills.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Award className="w-5 h-5 text-orange-600" />
+                Compétences
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((skill: any, index: number) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg font-medium text-sm"
+                  >
+                    {typeof skill === 'string' ? skill : skill.nom}
                   </span>
-                  {typeof lang === 'object' && lang.niveau && (
-                    <span className="text-sm text-gray-600">{lang.niveau}</span>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {profile.certifications && profile.certifications.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Award className="w-5 h-5 text-orange-600" />
-              Certifications
-            </h3>
-            <div className="space-y-4">
-              {profile.certifications.map((cert: any, index: number) => (
-                <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold text-gray-900">{cert.nom}</h4>
-                  {cert.organisme && (
-                    <p className="text-gray-600 text-sm">{cert.organisme}</p>
-                  )}
-                  {cert.date_obtention && (
-                    <p className="text-gray-500 text-sm">Obtenu en {cert.date_obtention}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {profile.documents && profile.documents.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-orange-600" />
-              Documents
-            </h3>
-            <div className="space-y-3">
-              {profile.documents.map((doc: any) => (
-                <a
-                  key={doc.id}
-                  href={doc.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{doc.document_name}</p>
-                      <p className="text-sm text-gray-500">
-                        {doc.document_type === 'cv' && 'CV'}
-                        {doc.document_type === 'cover_letter' && 'Lettre de motivation'}
-                        {doc.document_type === 'certificate' && 'Certificat'}
-                        {!['cv', 'cover_letter', 'certificate'].includes(doc.document_type) && 'Document'}
-                      </p>
-                    </div>
+          {profile.languages && profile.languages.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Languages className="w-5 h-5 text-orange-600" />
+                Langues
+              </h3>
+              <div className="grid grid-cols-1 gap-3">
+                {profile.languages.map((lang: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="font-medium text-gray-900">
+                      {typeof lang === 'string' ? lang : lang.langue}
+                    </span>
+                    {typeof lang === 'object' && lang.niveau && (
+                      <span className="text-sm text-gray-600">{lang.niveau}</span>
+                    )}
                   </div>
-                  <Download className="w-5 h-5 text-gray-400" />
-                </a>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {profile.certifications && profile.certifications.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Award className="w-5 h-5 text-orange-600" />
+                Certifications
+              </h3>
+              <div className="space-y-3">
+                {profile.certifications.map((cert: any, index: number) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 text-sm">{cert.nom}</h4>
+                    {cert.organisme && (
+                      <p className="text-gray-600 text-xs">{cert.organisme}</p>
+                    )}
+                    {cert.date_obtention && (
+                      <p className="text-gray-500 text-xs">Obtenu en {cert.date_obtention}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {profile.documents && profile.documents.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-orange-600" />
+                Documents
+              </h3>
+              <div className="space-y-2">
+                {profile.documents.map((doc: any) => (
+                  <a
+                    key={doc.id}
+                    href={doc.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-orange-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{doc.document_name}</p>
+                        <p className="text-xs text-gray-500">
+                          {doc.document_type === 'cv' && 'CV'}
+                          {doc.document_type === 'cover_letter' && 'Lettre'}
+                          {doc.document_type === 'certificate' && 'Certificat'}
+                          {!['cv', 'cover_letter', 'certificate'].includes(doc.document_type) && 'Document'}
+                        </p>
+                      </div>
+                    </div>
+                    <Download className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-lg shadow-md p-8 text-white text-center">
           <h3 className="text-2xl font-bold mb-4">

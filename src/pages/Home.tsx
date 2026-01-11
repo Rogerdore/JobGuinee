@@ -350,8 +350,8 @@ export default function Home({ onNavigate }: HomeProps) {
           style={{ backgroundImage: `url(${heroGif})` }}
         ></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-8 md:py-16">
-          <div className="text-center mb-12">
+        <div className="relative max-w-7xl mx-auto px-4 py-6 md:py-12">
+          <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
               <Zap className="w-4 h-4 text-[#FF8C00]" />
               <span className="text-sm font-medium">{getSetting('site_tagline', 'Plateforme N°1 de l\'emploi en Guinée')}</span>
@@ -362,11 +362,11 @@ export default function Home({ onNavigate }: HomeProps) {
               <span className="text-[#FF8C00]">{getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[1] || 'trouvez votre emploi'}</span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
               {getSetting('homepage_hero_subtitle', 'La première plateforme guinéenne de recrutement digital connectant talents et opportunités')}
             </p>
 
-            <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-4 md:p-6">
+            <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-3 md:p-5">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
                 <div className="md:col-span-5 relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -436,9 +436,9 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent"></div>
       </section>
 
-      <section className="py-12 border-b border-white/30">
+      <section className="py-8 border-b border-white/30">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#0E2F56] mb-2">
                 {animatedStats.candidates.toLocaleString()}+
@@ -467,16 +467,16 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
               Explorez par secteur
             </h2>
             <p className="text-lg text-gray-600">Trouvez les opportunités dans votre domaine</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {categories.map((category) => {
               const Icon = category.icon;
               return (
@@ -487,12 +487,12 @@ export default function Home({ onNavigate }: HomeProps) {
                     params.set('sector', category.name);
                     onNavigate('jobs', params.toString());
                   }}
-                  className="group p-6 neo-clay-card rounded-2xl transition cursor-pointer"
+                  className="group p-4 neo-clay-card rounded-2xl transition cursor-pointer"
                 >
-                  <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>
-                    <Icon className="w-7 h-7 text-white" />
+                  <div className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition`}>
+                    <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 text-sm mb-2 text-center">{category.name}</h3>
+                  <h3 className="font-semibold text-gray-900 text-xs mb-1 text-center">{category.name}</h3>
                   <div className="text-xs text-gray-500 text-center">{category.count} offres</div>
                 </button>
               );
@@ -501,14 +501,14 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
                 Offres récentes
               </h2>
-              <p className="text-lg text-gray-600">Les dernières opportunités publiées</p>
+              <p className="text-gray-600">Les dernières opportunités publiées</p>
             </div>
             <button
               onClick={() => onNavigate('jobs')}
@@ -525,14 +525,14 @@ export default function Home({ onNavigate }: HomeProps) {
               <p className="text-gray-500 text-lg">Aucune offre disponible pour le moment</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recentJobs.slice(0, 6).map((job) => (
                 <div
                   key={job.id}
-                  className="group neo-clay-card rounded-2xl transition p-6 cursor-pointer"
+                  className="group neo-clay-card rounded-2xl transition p-5 cursor-pointer"
                   onClick={() => onNavigate('job-detail', job.id)}
                 >
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-[#0E2F56]">
                         {job.title}
@@ -649,10 +649,10 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] text-white">
+      <section className="py-12 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] text-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-8 border border-white border-opacity-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 border border-white border-opacity-20">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-12 h-12 bg-[#FF8C00] rounded-xl flex items-center justify-center">
                   <Users className="w-6 h-6 text-white" />
@@ -660,11 +660,11 @@ export default function Home({ onNavigate }: HomeProps) {
                 <h3 className="text-2xl font-bold">Espace Candidat</h3>
               </div>
 
-              <p className="text-blue-100 mb-6 text-lg">
+              <p className="text-blue-100 mb-5">
                 Rejoignez la première communauté d'emploi en Guinée. Créez votre profil, déposez votre CV et recevez des offres personnalisées.
               </p>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2 mb-6">
                 {[
                   'Création de profil gratuit',
                   'Matching IA avec les offres',
@@ -690,7 +690,7 @@ export default function Home({ onNavigate }: HomeProps) {
               )}
             </div>
 
-            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-8 border border-white border-opacity-20">
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 border border-white border-opacity-20">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-12 h-12 bg-[#FF8C00] rounded-xl flex items-center justify-center">
                   <Briefcase className="w-6 h-6 text-white" />
@@ -698,11 +698,11 @@ export default function Home({ onNavigate }: HomeProps) {
                 <h3 className="text-2xl font-bold">Espace Recruteur</h3>
               </div>
 
-              <p className="text-blue-100 mb-6 text-lg">
+              <p className="text-blue-100 mb-5">
                 Simplifiez votre recrutement. Publiez vos offres, gérez vos candidatures et trouvez le bon profil plus vite.
               </p>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2 mb-6">
                 {[
                   'Publication d\'offres illimitée',
                   'Accès à la CVthèque',
@@ -740,20 +740,20 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <section className="py-12 bg-gradient-to-br from-blue-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#0E2F56]/10 to-[#FF8C00]/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
               <BookOpen className="w-4 h-4 text-[#FF8C00]" />
               <span className="text-sm font-semibold text-gray-700">Formations à la une</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
               Développez vos compétences
             </h2>
-            <p className="text-lg text-gray-600">Formations professionnelles pour booster votre carrière</p>
+            <p className="text-gray-600">Formations professionnelles pour booster votre carrière</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {featuredFormations.slice(0, 3).map((formation: any) => (
               <div
                 key={formation.id}
@@ -762,11 +762,11 @@ export default function Home({ onNavigate }: HomeProps) {
                 <div className="h-48 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtNi42MjcgNS4zNzMtMTIgMTItMTJzMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTItMTItNS4zNzMtMTItMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
                   <BookOpen className="w-20 h-20 text-white opacity-70 group-hover:scale-110 transition-transform duration-300 relative z-10" />
-                  <div className="absolute top-4 right-4 bg-[#FF8C00] text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  <div className="absolute top-3 right-3 bg-[#FF8C00] text-white px-3 py-1 rounded-full text-xs font-semibold">
                     Populaire
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-5">
                   {formation.category && (
                     <span className="inline-block px-3 py-1 soft-gradient-blue text-primary-700 text-xs font-medium rounded-full mb-3">
                       {formation.category}
@@ -852,18 +852,18 @@ export default function Home({ onNavigate }: HomeProps) {
 
       <VideoGuidesSection />
 
-      <section className="py-16">
+      <section className="py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
               Ils nous font confiance
             </h2>
-            <p className="text-lg text-gray-600">Témoignages de nos utilisateurs</p>
+            <p className="text-gray-600">Témoignages de nos utilisateurs</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
             {testimonials.map((testimonial) => (
-              <div key={testimonial.name} className="neo-clay-card rounded-2xl p-8 transition">
+              <div key={testimonial.name} className="neo-clay-card rounded-2xl p-6 transition">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="text-4xl">{testimonial.avatar}</div>
                   <div>
@@ -993,12 +993,12 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-[#FF8C00] to-[#e67e00] text-white">
+      <section className="py-12 bg-gradient-to-br from-[#FF8C00] to-[#e67e00] text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
             Ne manquez plus aucune offre !
           </h2>
-          <p className="text-xl mb-8">
+          <p className="text-lg mb-6">
             Recevez les dernières annonces directement par email
           </p>
 
@@ -1042,7 +1042,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
       {showLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
             <button
               onClick={() => setShowLoginModal(false)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
@@ -1056,16 +1056,16 @@ export default function Home({ onNavigate }: HomeProps) {
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">
               Créez votre compte candidat
             </h3>
 
-            <p className="text-gray-600 mb-6 text-center">
+            <p className="text-gray-600 mb-5 text-center">
               Pour créer votre profil et accéder à toutes les fonctionnalités de JobGuinée,
               vous devez d'abord créer un compte ou vous connecter.
             </p>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 mb-5">
               <div className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-700">Créez votre profil professionnel complet</p>
@@ -1113,7 +1113,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
       {showRecruiterLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
             <button
               onClick={() => setShowRecruiterLoginModal(false)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
@@ -1127,16 +1127,16 @@ export default function Home({ onNavigate }: HomeProps) {
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">
               Espace Recruteur
             </h3>
 
-            <p className="text-gray-600 mb-6 text-center">
+            <p className="text-gray-600 mb-5 text-center">
               Pour publier des annonces et accéder à votre espace recruteur,
               vous devez d'abord créer un compte recruteur ou vous connecter.
             </p>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 mb-5">
               <div className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-700">Publiez vos offres d'emploi en illimité</p>
@@ -1184,7 +1184,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
       {showTrainerLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
             <button
               onClick={() => setShowTrainerLoginModal(false)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
@@ -1198,16 +1198,16 @@ export default function Home({ onNavigate }: HomeProps) {
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">
               Espace Formateur/Organisme formation
             </h3>
 
-            <p className="text-gray-600 mb-6 text-center">
+            <p className="text-gray-600 mb-5 text-center">
               Pour publier vos formations et accéder à votre espace,
               vous devez d'abord créer un compte ou vous connecter.
             </p>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 mb-5">
               <div className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-700">Publiez vos formations et coachings</p>
