@@ -121,9 +121,9 @@ export class ImageSitemapService {
       // Note: Seulement les profils publics avec photo
       const { data: profiles } = await supabase
         .from('candidate_profiles')
-        .select('id, full_name, profile_headline, location, profile_photo_url')
+        .select('id, full_name, profile_headline, location, photo_url')
         .eq('is_profile_public', true)
-        .not('profile_photo_url', 'is', null)
+        .not('photo_url', 'is', null)
         .limit(50);
 
       if (!profiles) return [];
@@ -134,7 +134,7 @@ export class ImageSitemapService {
         loc: `${baseUrl}/cvtheque?profile=${profile.id}`,
         images: [
           {
-            image_loc: profile.profile_photo_url!,
+            image_loc: profile.photo_url!,
             title: `${profile.full_name} - Profil professionnel`,
             caption: profile.profile_headline || `Profil ${profile.full_name}`,
             geo_location: profile.location || 'Guinée'

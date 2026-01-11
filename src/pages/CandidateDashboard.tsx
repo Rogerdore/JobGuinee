@@ -537,9 +537,9 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              {candidateProfile?.profile_photo ? (
+              {candidateProfile?.photo_url ? (
                 <img
-                  src={candidateProfile.profile_photo}
+                  src={candidateProfile.photo_url}
                   alt={profile?.full_name || 'Photo de profil'}
                   className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
                 />
@@ -1195,11 +1195,11 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                           </div>
 
                           {/* Photo de profil */}
-                          {candidateProfile.profile_photo && (
+                          {candidateProfile.photo_url && (
                             <div className="mb-6 flex justify-center">
                               <div className="relative">
                                 <img
-                                  src={candidateProfile.profile_photo}
+                                  src={candidateProfile.photo_url}
                                   alt={profile?.full_name || 'Photo de profil'}
                                   className="w-32 h-32 rounded-full object-cover border-4 border-blue-100 shadow-lg"
                                 />

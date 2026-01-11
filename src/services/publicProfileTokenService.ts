@@ -154,7 +154,7 @@ class PublicProfileTokenService {
         professional_title: candidateProfile?.titre_professionnel || candidateProfile?.professional_title,
         phone: candidateProfile?.telephone || candidateProfile?.phone,
         location: candidateProfile?.lieu || candidateProfile?.location || candidateProfile?.city,
-        profile_photo_url: candidateProfile?.profile_photo || candidateProfile?.profile_photo_url,
+        profile_photo_url: candidateProfile?.photo_url || candidateProfile?.profile_photo_url,
         professional_summary: candidateProfile?.resume_professionnel || candidateProfile?.bio,
         experiences: candidateProfile?.experiences || candidateProfile?.work_experience || [],
         education: candidateProfile?.formations || candidateProfile?.education || [],
