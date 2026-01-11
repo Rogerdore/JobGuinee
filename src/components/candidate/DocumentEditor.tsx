@@ -183,24 +183,46 @@ export default function DocumentEditor({ document, onClose, onSave }: DocumentEd
     );
   }
 
+  const handleDirectDownload = () => {
+    const link = document.createElement('a');
+    link.href = document.file_url;
+    link.download = document.file_name;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification('success', 'Téléchargement en cours...');
+  };
+
   if (!originalContent?.editable) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl max-w-md w-full p-6">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="w-8 h-8 text-orange-500" />
-            <h3 className="text-xl font-bold text-gray-900">Document non éditable</h3>
+            <h3 className="text-xl font-bold text-gray-900">Document non éditable en ligne</h3>
           </div>
-          <p className="text-gray-600 mb-6">
-            Ce type de fichier ne peut pas être édité directement. Veuillez télécharger le fichier
-            et le modifier avec un logiciel approprié.
+          <p className="text-gray-600 mb-4">
+            Ce type de fichier ne peut pas être édité directement dans le navigateur.
           </p>
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
-          >
-            Fermer
-          </button>
+          <p className="text-gray-700 mb-6 font-medium">
+            Téléchargez-le pour l'ouvrir avec {originalContent.format === 'pdf' ? 'Adobe Reader, un lecteur PDF' : 'Microsoft Word, LibreOffice'} ou un logiciel approprié sur votre ordinateur.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleDirectDownload}
+              className="flex-1 px-4 py-2 bg-[#0E2F56] hover:bg-blue-800 text-white rounded-lg transition flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Télécharger
+            </button>
+          </div>
         </div>
       </div>
     );

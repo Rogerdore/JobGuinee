@@ -6,6 +6,7 @@ import {
   AlertCircle, ExternalLink, Copy, Share2, Edit3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import {
   candidateDocumentService,
   CandidateDocument,
@@ -202,10 +203,49 @@ export default function DocumentsHub() {
   const handleDownload = async (doc: CandidateDocument) => {
     try {
       await candidateDocumentService.trackUsage(doc.id, 'downloaded');
-      window.open(doc.file_url, '_blank');
+
+      const bucket = doc.document_type === 'cv' ? 'candidate-cvs'
+        : doc.document_type === 'cover_letter' ? 'candidate-cover-letters'
+        : doc.document_type === 'certificate' ? 'candidate-certificates'
+        : 'candidate-cvs';
+
+      const filePath = doc.file_url.split('/').slice(-2).join('/');
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .download(filePath);
+
+      if (error || !data) {
+        console.error('Download error:', error);
+        window.open(doc.file_url, '_blank');
+        return;
+      }
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setNotification({
+        show: true,
+        type: 'success',
+        title: 'Téléchargement réussi',
+        message: `${doc.file_name} a été téléchargé avec succès.`
+      });
+
       loadData();
     } catch (error) {
-      console.error('Error tracking download:', error);
+      console.error('Error downloading:', error);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Erreur de téléchargement',
+        message: 'Impossible de télécharger le fichier. Veuillez réessayer.'
+      });
     }
   };
 
