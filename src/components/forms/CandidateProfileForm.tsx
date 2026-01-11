@@ -114,7 +114,7 @@ interface CandidateProfileFormProps {
 }
 
 export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboard }: CandidateProfileFormProps = {}) {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { mapToFormData } = useCVParsing();
   const { balance } = useCreditBalance();
   const { serviceCost: cvParseCost } = useServiceCost('cv_parse');
@@ -210,11 +210,14 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
 
       if (error) {
         console.error('Error auto-saving to database:', error);
+      } else {
+        // Rafraîchir le profil dans le contexte pour synchroniser le pourcentage de complétion
+        await refreshProfile();
       }
     } catch (error) {
       console.error('Error auto-saving to database:', error);
     }
-  }, [profile?.id, user, existingPhotoUrl]);
+  }, [profile?.id, user, existingPhotoUrl, refreshProfile]);
 
   const { status: autoSaveStatus, lastSaved, lastDatabaseSave } = useAutoSave({
     data: formData,
@@ -862,6 +865,9 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           phone: formData.phone,
         })
         .eq('id', profile.id);
+
+      // Rafraîchir le profil dans le contexte pour synchroniser le pourcentage de complétion
+      await refreshProfile();
 
       localStorage.removeItem('candidateProfileDraft');
 
