@@ -1422,11 +1422,29 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                 </div>
                                 <div className="space-y-4">
                                   {candidateProfile.work_experience.map((exp: any, index: number) => {
-                                    // Calculer la durée de l'expérience
-                                    const startDate = exp['Date de début'] || exp.start_date;
-                                    const endDate = exp['Date de fin'] || exp.end_date;
-                                    let duration = '';
+                                    // Debug: Log la structure des données
+                                    if (index === 0) {
+                                      console.log('Work Experience Object Keys:', Object.keys(exp));
+                                      console.log('Work Experience Full Object:', exp);
+                                    }
 
+                                    // Calculer la durée de l'expérience - Chercher dans toutes les clés possibles
+                                    const startDate = exp['Date de début'] || exp['date_debut'] || exp.start_date || exp.startDate || exp.debut || exp.from;
+                                    const endDate = exp['Date de fin'] || exp['date_fin'] || exp.end_date || exp.endDate || exp.fin || exp.to;
+                                    const period = exp['Période'] || exp['periode'] || exp.period || exp.duration;
+
+                                    let duration = '';
+                                    let displayDate = '';
+
+                                    // Si on a une période pré-formatée, l'utiliser
+                                    if (period) {
+                                      displayDate = period;
+                                    } else if (startDate) {
+                                      // Construire la période à partir des dates
+                                      displayDate = `${startDate} - ${endDate || 'Présent'}`;
+                                    }
+
+                                    // Calculer la durée si on a des dates
                                     if (startDate) {
                                       try {
                                         const start = new Date(startDate);
@@ -1446,7 +1464,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                           }
                                         }
                                       } catch (e) {
-                                        // Ignore les erreurs de parsing de date
+                                        console.error('Error parsing dates:', e);
                                       }
                                     }
 
@@ -1454,8 +1472,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                       <div key={index} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                                         <div className="flex items-start justify-between gap-2">
                                           <div className="flex-1">
-                                            <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || '-'}</h4>
-                                            <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || '-'}</p>
+                                            <h4 className="font-bold text-gray-900">{exp['Poste occupé'] || exp.title || exp.position || exp.poste || '-'}</h4>
+                                            <p className="text-gray-600 text-sm mt-1">{exp['Entreprise'] || exp['Nom de l\'entreprise'] || exp.company || exp.entreprise || '-'}</p>
                                           </div>
                                           {duration && (
                                             <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full whitespace-nowrap">
@@ -1463,12 +1481,14 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                             </span>
                                           )}
                                         </div>
-                                        <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                                          <Calendar className="w-3 h-3" />
-                                          {exp['Période'] || (exp['Date de début'] && `${exp['Date de début']} - ${exp['Date de fin'] || 'Présent'}`) || (exp.start_date && `${exp.start_date} - ${exp.end_date || 'Présent'}`) || '-'}
-                                        </p>
-                                        {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description) && (
-                                          <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description}</p>
+                                        {displayDate && (
+                                          <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" />
+                                            {displayDate}
+                                          </p>
+                                        )}
+                                        {(exp['Missions principales'] || exp['Description des responsabilités'] || exp.description || exp.missions) && (
+                                          <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{exp['Missions principales'] || exp['Description des responsabilités'] || exp.description || exp.missions}</p>
                                         )}
                                       </div>
                                     );
@@ -1478,8 +1498,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                 {(() => {
                                   let totalMonths = 0;
                                   candidateProfile.work_experience.forEach((exp: any) => {
-                                    const startDate = exp['Date de début'] || exp.start_date;
-                                    const endDate = exp['Date de fin'] || exp.end_date;
+                                    const startDate = exp['Date de début'] || exp['date_debut'] || exp.start_date || exp.startDate || exp.debut || exp.from;
+                                    const endDate = exp['Date de fin'] || exp['date_fin'] || exp.end_date || exp.endDate || exp.fin || exp.to;
 
                                     if (startDate) {
                                       try {
