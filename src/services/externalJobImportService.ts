@@ -5,6 +5,7 @@ interface ImportedJobData {
   recruiter_email?: string;
   recruiter_name?: string;
   job_url: string;
+  external_application_url?: string;
 }
 
 interface ImportResult {

@@ -1,37 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  ArrowLeft, Briefcase, Building2, Mail, Link as LinkIcon, FileText, Upload, Check,
-  Loader2, Eye, Send, AlertCircle, CheckCircle, X, Edit2, Trash2, Plus, ExternalLink
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Briefcase, Building2, Mail, Link as LinkIcon, FileText, Upload, Check, Loader2, Eye, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../contexts/NotificationContext';
 import { externalJobImportService } from '../services/externalJobImportService';
-import { externalApplicationService, SupplementaryDocument } from '../services/externalApplicationService';
+import { externalApplicationService } from '../services/externalApplicationService';
 import { externalApplicationEmailService } from '../services/externalApplicationEmailService';
 import { candidateDocumentService } from '../services/candidateDocumentService';
 import RichTextEditor from '../components/forms/RichTextEditor';
 
-type Step = 'import' | 'details' | 'cv' | 'letter' | 'supplements' | 'message' | 'preview';
+type Step = 'import' | 'details' | 'cv' | 'letter' | 'message' | 'preview';
 
-interface ExternalApplicationUpgradedProps {
+interface ExternalApplicationProps {
   onNavigate?: (page: string, param?: string) => void;
 }
 
-export default function ExternalApplicationUpgraded({ onNavigate }: ExternalApplicationUpgradedProps) {
+export default function ExternalApplication({ onNavigate }: ExternalApplicationProps) {
   const { user } = useAuth();
-  const { showNotification } = useNotifications();
 
   const [currentStep, setCurrentStep] = useState<Step>('import');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [savingDraft, setSavingDraft] = useState(false);
 
   const [hasAccess, setHasAccess] = useState(false);
   const [accessMessage, setAccessMessage] = useState('');
   const [profileCompletion, setProfileCompletion] = useState(0);
 
-  const [draftId, setDraftId] = useState<string>('');
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
 
@@ -39,7 +32,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
     job_title: '',
     company_name: '',
     job_url: '',
-    external_application_url: '',
     job_description: '',
     recruiter_email: '',
     recruiter_name: '',
@@ -56,22 +48,12 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
   const [selectedLetterId, setSelectedLetterId] = useState('');
   const [availableLetters, setAvailableLetters] = useState<any[]>([]);
 
-  const [supplementaryDocs, setSupplementaryDocs] = useState<SupplementaryDocument[]>([]);
-  const [uploadingSupp, setUploadingSupp] = useState(false);
-  const [editingDocId, setEditingDocId] = useState<string>('');
-  const [editingDocName, setEditingDocName] = useState('');
+  const [additionalDocuments, setAdditionalDocuments] = useState<string[]>([]);
 
   useEffect(() => {
     checkAccess();
-    initializeDraft();
     loadDocuments();
   }, [user]);
-
-  useEffect(() => {
-    if (draftId && user) {
-      saveDraftData();
-    }
-  }, [formData, currentStep, cvOption, selectedCvId, letterOption, selectedLetterId, letterContent]);
 
   const checkAccess = async () => {
     if (!user) return;
@@ -89,52 +71,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
     }
   };
 
-  const initializeDraft = async () => {
-    if (!user) return;
-
-    const result = await externalApplicationService.getOrCreateDraft(user.id);
-    if (result.success && result.data) {
-      setDraftId(result.data.id);
-
-      if (result.data.draft_data) {
-        const draftData = result.data.draft_data;
-        setFormData(prev => ({ ...prev, ...draftData.formData }));
-        if (draftData.currentStep) setCurrentStep(draftData.currentStep);
-        if (draftData.cvOption) setCvOption(draftData.cvOption);
-        if (draftData.selectedCvId) setSelectedCvId(draftData.selectedCvId);
-        if (draftData.letterOption) setLetterOption(draftData.letterOption);
-        if (draftData.selectedLetterId) setSelectedLetterId(draftData.selectedLetterId);
-        if (draftData.letterContent) setLetterContent(draftData.letterContent);
-      }
-
-      if (result.data.draft_step) {
-        setCurrentStep(result.data.draft_step as Step);
-      }
-
-      if (result.data.id) {
-        loadSupplementaryDocs(result.data.id);
-      }
-    }
-  };
-
-  const saveDraftData = useCallback(async () => {
-    if (!draftId || !user || savingDraft) return;
-
-    setSavingDraft(true);
-    const draftData = {
-      formData,
-      currentStep,
-      cvOption,
-      selectedCvId,
-      letterOption,
-      selectedLetterId,
-      letterContent
-    };
-
-    await externalApplicationService.saveDraft(draftId, user.id, currentStep, draftData);
-    setSavingDraft(false);
-  }, [draftId, user, formData, currentStep, cvOption, selectedCvId, letterOption, selectedLetterId, letterContent, savingDraft]);
-
   const loadDocuments = async () => {
     if (!user) return;
 
@@ -148,16 +84,9 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
     }
   };
 
-  const loadSupplementaryDocs = async (applicationId: string) => {
-    const result = await externalApplicationService.getSupplementaryDocuments(applicationId);
-    if (result.success && result.data) {
-      setSupplementaryDocs(result.data);
-    }
-  };
-
   const handleImportUrl = async () => {
     if (!importUrl.trim()) {
-      showNotification('Veuillez saisir une URL', 'error');
+      setError('Veuillez saisir une URL');
       return;
     }
 
@@ -174,14 +103,13 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
         job_description: result.data?.job_description || prev.job_description,
         recruiter_email: result.data?.recruiter_email || prev.recruiter_email,
         recruiter_name: result.data?.recruiter_name || prev.recruiter_name,
-        job_url: importUrl,
-        external_application_url: result.data?.external_application_url || prev.external_application_url
+        job_url: importUrl
       }));
 
-      showNotification('Offre importée avec succès!', 'success');
+      setSuccess('Offre importée avec succès!');
       setTimeout(() => setCurrentStep('details'), 1000);
     } else {
-      showNotification(result.error || 'Extraction partielle. Vous pouvez compléter manuellement.', 'warning');
+      setError(result.error || 'Échec de l\'import. Veuillez saisir manuellement.');
       setFormData(prev => ({ ...prev, job_url: importUrl }));
       setTimeout(() => setCurrentStep('details'), 2000);
     }
@@ -189,54 +117,8 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
     setImporting(false);
   };
 
-  const handleUploadSupplementary = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !draftId || !user) return;
-
-    const file = e.target.files[0];
-    setUploadingSupp(true);
-
-    const result = await externalApplicationService.uploadSupplementaryDocument(
-      draftId,
-      user.id,
-      file
-    );
-
-    if (result.success) {
-      showNotification('Document ajouté avec succès', 'success');
-      loadSupplementaryDocs(draftId);
-    } else {
-      showNotification(result.error || 'Échec de l\'upload', 'error');
-    }
-
-    setUploadingSupp(false);
-    e.target.value = '';
-  };
-
-  const handleDeleteSupplementary = async (doc: SupplementaryDocument) => {
-    const result = await externalApplicationService.deleteSupplementaryDocument(doc.id, doc.storage_path);
-    if (result.success) {
-      showNotification('Document supprimé', 'success');
-      loadSupplementaryDocs(draftId);
-    } else {
-      showNotification(result.error || 'Échec de la suppression', 'error');
-    }
-  };
-
-  const handleRenameSupplementary = async (docId: string, newName: string) => {
-    if (!newName.trim()) return;
-
-    const result = await externalApplicationService.renameSupplementaryDocument(docId, newName);
-    if (result.success) {
-      showNotification('Document renommé', 'success');
-      loadSupplementaryDocs(draftId);
-      setEditingDocId('');
-    } else {
-      showNotification(result.error || 'Échec du renommage', 'error');
-    }
-  };
-
   const handleSubmit = async () => {
-    if (!user || !draftId) return;
+    if (!user) return;
 
     setLoading(true);
     setError('');
@@ -277,28 +159,33 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
         }
       }
 
-      const finalizeResult = await externalApplicationService.finalizeDraft(draftId, user.id);
+      const applicationData = {
+        ...formData,
+        cv_document_id: cvDocId || undefined,
+        cover_letter_document_id: letterDocId || undefined,
+        additional_document_ids: additionalDocuments,
+        cv_source: cvOption,
+        imported_from_url: !!importUrl
+      };
 
-      if (!finalizeResult.success) {
-        throw new Error(finalizeResult.error || 'Échec de la finalisation');
+      const result = await externalApplicationService.createApplication(
+        user.id,
+        applicationData
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Échec de la création');
       }
 
-      if (draftId) {
-        await externalApplicationEmailService.sendApplicationEmail(draftId);
+      if (result.data) {
+        await externalApplicationEmailService.sendApplicationEmail(result.data.id);
       }
 
-      showNotification('Votre dossier est prêt. Cliquez sur le lien du recruteur pour finaliser votre candidature.', 'success');
-
-      if (formData.external_application_url) {
-        setTimeout(() => {
-          window.open(formData.external_application_url, '_blank');
-        }, 2000);
-      }
-
-      setTimeout(() => onNavigate?.('external-applications'), 3000);
+      setSuccess('Candidature envoyée avec succès!');
+      setTimeout(() => onNavigate?.('external-applications'), 2000);
 
     } catch (err: any) {
-      showNotification(err.message || 'Erreur lors de l\'envoi', 'error');
+      setError(err.message || 'Erreur lors de l\'envoi');
     } finally {
       setLoading(false);
     }
@@ -309,12 +196,7 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
       case 'import':
         return true;
       case 'details':
-        return !!(
-          formData.job_title &&
-          formData.company_name &&
-          formData.recruiter_email &&
-          formData.external_application_url
-        );
+        return !!(formData.job_title && formData.company_name && formData.recruiter_email);
       case 'cv':
         return !!(
           (cvOption === 'profile') ||
@@ -322,11 +204,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
           (cvOption === 'upload' && uploadedCv)
         );
       case 'letter':
-        return !!(
-          (letterOption === 'new' && letterContent) ||
-          (letterOption === 'existing' && selectedLetterId)
-        );
-      case 'supplements':
         return true;
       case 'message':
         return true;
@@ -335,20 +212,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
       default:
         return false;
     }
-  };
-
-  const getStepStatus = (step: Step): 'completed' | 'current' | 'locked' | 'pending' => {
-    const steps: Step[] = ['import', 'details', 'cv', 'letter', 'supplements', 'message', 'preview'];
-    const currentIndex = steps.indexOf(currentStep);
-    const stepIndex = steps.indexOf(step);
-
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
-
-    if (step === 'cv' && (!formData.job_title || !formData.external_application_url)) return 'locked';
-    if (step === 'letter' && !isStepValid()) return 'locked';
-
-    return 'pending';
   };
 
   if (loading && !hasAccess) {
@@ -406,11 +269,10 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
   }
 
   const steps = [
-    { id: 'import', label: 'Import', icon: LinkIcon },
+    { id: 'import', label: 'Import offre', icon: LinkIcon },
     { id: 'details', label: 'Détails', icon: FileText },
     { id: 'cv', label: 'CV', icon: Upload },
     { id: 'letter', label: 'Lettre', icon: Mail },
-    { id: 'supplements', label: 'Documents', icon: Plus },
     { id: 'message', label: 'Message', icon: Briefcase },
     { id: 'preview', label: 'Aperçu', icon: Eye }
   ];
@@ -419,7 +281,7 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <button
           onClick={() => onNavigate?.('candidate-dashboard')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
@@ -434,14 +296,8 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
               Postuler à une offre externe
             </h1>
             <p className="text-orange-100">
-              Pipeline complet et sécurisé - Toutes vos données sont sauvegardées automatiquement
+              Utilisez votre profil JobGuinée pour candidater à des offres externes
             </p>
-            {savingDraft && (
-              <p className="text-orange-100 text-sm mt-2 flex items-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Sauvegarde automatique...
-              </p>
-            )}
           </div>
 
           <div className="p-8">
@@ -449,10 +305,8 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
               <div className="flex items-center justify-between mb-4">
                 {steps.map((step, index) => {
                   const Icon = step.icon;
-                  const status = getStepStatus(step.id as Step);
                   const isActive = step.id === currentStep;
-                  const isCompleted = status === 'completed';
-                  const isLocked = status === 'locked';
+                  const isCompleted = index < currentStepIndex;
 
                   return (
                     <React.Fragment key={step.id}>
@@ -463,8 +317,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                               ? 'bg-green-500 text-white'
                               : isActive
                               ? 'bg-orange-600 text-white'
-                              : isLocked
-                              ? 'bg-gray-300 text-gray-500'
                               : 'bg-gray-200 text-gray-400'
                           }`}
                         >
@@ -473,9 +325,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                         <span className={`text-xs ${isActive ? 'text-orange-600 font-semibold' : 'text-gray-500'}`}>
                           {step.label}
                         </span>
-                        {isLocked && (
-                          <span className="text-xs text-red-500 mt-1">Requis</span>
-                        )}
                       </div>
                       {index < steps.length - 1 && (
                         <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`} />
@@ -486,10 +335,22 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
               </div>
             </div>
 
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+                {success}
+              </div>
+            )}
+
             {currentStep === 'import' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Importer une offre via URL (optionnel)
+                  Importer une offre via URL
                 </h3>
                 <p className="text-gray-600 mb-6">
                   Collez l'URL de l'offre d'emploi pour extraire automatiquement les informations.
@@ -574,29 +435,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lien de candidature externe *
-                      <span className="text-xs text-gray-500 ml-2">
-                        (URL où vous devez postuler après préparation)
-                      </span>
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.external_application_url}
-                      onChange={(e) => setFormData({ ...formData, external_application_url: e.target.value })}
-                      placeholder="https://exemple.com/postuler"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      required
-                    />
-                    {formData.external_application_url && (
-                      <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
-                        <CheckCircle className="w-4 h-4" />
-                        Lien enregistré - Vous serez redirigé après préparation du dossier
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Email du recruteur *
                     </label>
                     <input
@@ -622,7 +460,7 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL de l'offre (pour référence)
+                      URL de l'offre
                     </label>
                     <input
                       type="url"
@@ -649,13 +487,9 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
 
             {currentStep === 'cv' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Sélectionner votre CV *
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Sélectionner votre CV
                 </h3>
-                <p className="text-red-600 text-sm mb-4 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  Le CV est obligatoire pour continuer
-                </p>
 
                 <div className="space-y-4">
                   <div
@@ -757,8 +591,7 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                           className="w-full"
                         />
                         {uploadedCv && (
-                          <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
+                          <p className="mt-2 text-sm text-green-600">
                             Fichier sélectionné: {uploadedCv.name}
                           </p>
                         )}
@@ -771,15 +604,32 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
 
             {currentStep === 'letter' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Lettre de motivation *
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Lettre de motivation
                 </h3>
-                <p className="text-red-600 text-sm mb-4 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  La lettre de motivation est obligatoire pour continuer
-                </p>
 
                 <div className="space-y-4">
+                  <div
+                    onClick={() => setLetterOption('none')}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                      letterOption === 'none'
+                        ? 'border-orange-600 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        letterOption === 'none' ? 'border-orange-600' : 'border-gray-300'
+                      }`}>
+                        {letterOption === 'none' && <div className="w-3 h-3 bg-orange-600 rounded-full" />}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Ne pas joindre de lettre</p>
+                        <p className="text-sm text-gray-600">Si l'offre ne l'exige pas</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div
                     onClick={() => setLetterOption('new')}
                     className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
@@ -807,12 +657,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                           onChange={setLetterContent}
                           placeholder="Rédigez votre lettre de motivation..."
                         />
-                        {letterContent && (
-                          <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
-                            Lettre rédigée ({letterContent.length} caractères)
-                          </p>
-                        )}
                       </div>
                     )}
                   </div>
@@ -869,104 +713,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
               </div>
             )}
 
-            {currentStep === 'supplements' && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Documents complémentaires (optionnel)
-                </h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Certains recruteurs demandent des documents supplémentaires (diplômes, attestations, portfolio, etc.)
-                </p>
-
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <input
-                      type="file"
-                      id="supp-upload"
-                      onChange={handleUploadSupplementary}
-                      className="hidden"
-                      multiple={false}
-                    />
-                    <label
-                      htmlFor="supp-upload"
-                      className="cursor-pointer flex flex-col items-center"
-                    >
-                      {uploadingSupp ? (
-                        <Loader2 className="w-8 h-8 text-orange-600 animate-spin mb-2" />
-                      ) : (
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      )}
-                      <span className="text-sm text-gray-600">
-                        {uploadingSupp ? 'Upload en cours...' : 'Cliquez pour ajouter un document'}
-                      </span>
-                      <span className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX, JPG, PNG (max 10 MB)</span>
-                    </label>
-                  </div>
-
-                  {supplementaryDocs.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-gray-900">Documents joints ({supplementaryDocs.length})</h4>
-                      {supplementaryDocs.map(doc => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          {editingDocId === doc.id ? (
-                            <div className="flex-1 flex gap-2">
-                              <input
-                                type="text"
-                                value={editingDocName}
-                                onChange={(e) => setEditingDocName(e.target.value)}
-                                className="flex-1 px-3 py-1 border border-gray-300 rounded"
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => handleRenameSupplementary(doc.id, editingDocName)}
-                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setEditingDocId('')}
-                                className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{doc.document_name}</p>
-                                <p className="text-xs text-gray-500">
-                                  {doc.file_type.toUpperCase()} - {(doc.file_size / 1024).toFixed(1)} KB
-                                </p>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    setEditingDocId(doc.id);
-                                    setEditingDocName(doc.document_name);
-                                  }}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                                  title="Renommer"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteSupplementary(doc)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                  title="Supprimer"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {currentStep === 'message' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -995,27 +741,33 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                 <div className="space-y-6">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                     <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5" />
-                      Dossier complet - Prêt à envoyer
+                      <Check className="w-5 h-5" />
+                      Checklist de validation
                     </h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-gray-700">CV sélectionné</span>
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">
+                          CV sélectionné ({cvOption === 'profile' ? 'Profil principal' : cvOption === 'document_center' ? 'Depuis mes documents' : 'Nouveau CV uploadé'})
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-gray-700">Lettre de motivation incluse</span>
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">
+                          Lettre de motivation {letterOption === 'none' ? 'non requise' : letterOption === 'new' ? 'créée' : 'sélectionnée'}
+                        </span>
                       </div>
-                      {supplementaryDocs.length > 0 && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="text-gray-700">{supplementaryDocs.length} document(s) supplémentaire(s)</span>
-                        </div>
-                      )}
                       <div className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-gray-700">Lien de candidature externe configuré</span>
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">Email recruteur valide: {formData.recruiter_email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">Profil complété à {profileCompletion}%</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-gray-700">Taille des pièces jointes conforme</span>
                       </div>
                     </div>
                   </div>
@@ -1024,23 +776,20 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                     <h4 className="font-semibold text-gray-900 mb-2">Offre</h4>
                     <p className="text-gray-700"><strong>{formData.job_title}</strong></p>
                     <p className="text-gray-600">{formData.company_name}</p>
-                    {formData.external_application_url && (
-                      <a
-                        href={formData.external_application_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-600 hover:text-orange-700 text-sm flex items-center gap-1 mt-2"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Lien de candidature externe
-                      </a>
-                    )}
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-gray-900 mb-2">Destinataire</h4>
                     <p className="text-gray-700">{formData.recruiter_name || 'Recruteur'}</p>
                     <p className="text-gray-600">{formData.recruiter_email}</p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Documents joints</h4>
+                    <ul className="space-y-1 text-gray-700">
+                      <li>✓ CV ({cvOption === 'profile' ? 'Profil' : cvOption === 'document_center' ? 'Mes documents' : 'Uploadé'})</li>
+                      {letterOption !== 'none' && <li>✓ Lettre de motivation</li>}
+                    </ul>
                   </div>
 
                   {formData.custom_message && (
@@ -1052,8 +801,8 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
 
                   <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                     <p className="text-sm text-blue-800">
-                      Après validation, votre dossier sera envoyé au recruteur par email et vous serez automatiquement
-                      redirigé vers le lien de candidature externe pour finaliser votre candidature.
+                      Un lien vers votre profil public JobGuinée sera automatiquement inclus dans l'email,
+                      permettant au recruteur de consulter votre profil complet sans créer de compte.
                     </p>
                   </div>
                 </div>
@@ -1078,19 +827,6 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
               {currentStep !== 'preview' ? (
                 <button
                   onClick={() => {
-                    if (!isStepValid()) {
-                      if (currentStep === 'details' && !formData.external_application_url) {
-                        showNotification('Le lien de candidature externe est obligatoire', 'warning');
-                      } else if (currentStep === 'cv') {
-                        showNotification('Le CV est obligatoire pour continuer', 'warning');
-                      } else if (currentStep === 'letter') {
-                        showNotification('La lettre de motivation est obligatoire pour continuer', 'warning');
-                      } else {
-                        showNotification('Veuillez compléter cette étape avant de continuer', 'warning');
-                      }
-                      return;
-                    }
-
                     const stepIndex = steps.findIndex(s => s.id === currentStep);
                     if (stepIndex < steps.length - 1) {
                       setCurrentStep(steps[stepIndex + 1].id as Step);
@@ -1110,12 +846,12 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Préparation en cours...
+                      Envoi en cours...
                     </>
                   ) : (
                     <>
                       <Send className="w-5 h-5" />
-                      Finaliser et accéder au lien externe
+                      Envoyer la candidature
                     </>
                   )}
                 </button>

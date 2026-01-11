@@ -6,6 +6,7 @@ export interface ExternalApplication {
   job_title: string;
   company_name: string;
   job_url?: string;
+  external_application_url?: string;
   job_description?: string;
   recruiter_email: string;
   recruiter_name?: string;
@@ -15,7 +16,13 @@ export interface ExternalApplication {
   cv_source?: 'profile' | 'document_center' | 'uploaded';
   custom_message?: string;
   public_profile_token?: string;
-  status: 'sent' | 'in_progress' | 'relance_sent' | 'rejected' | 'accepted' | 'no_response' | 'cancelled';
+  status: 'draft' | 'sent' | 'in_progress' | 'relance_sent' | 'rejected' | 'accepted' | 'no_response' | 'cancelled';
+  is_draft: boolean;
+  draft_step?: string;
+  draft_data?: any;
+  cv_validated: boolean;
+  cover_letter_validated: boolean;
+  has_supplementary_docs: boolean;
   sent_at: string;
   email_sent_successfully: boolean;
   email_error_message?: string;
@@ -32,6 +39,7 @@ export interface CreateExternalApplicationParams {
   job_title: string;
   company_name: string;
   job_url?: string;
+  external_application_url?: string;
   job_description?: string;
   recruiter_email: string;
   recruiter_name?: string;
@@ -42,6 +50,20 @@ export interface CreateExternalApplicationParams {
   custom_message?: string;
   imported_from_url?: boolean;
   import_method?: string;
+}
+
+export interface SupplementaryDocument {
+  id: string;
+  external_application_id: string;
+  candidate_id: string;
+  document_name: string;
+  original_filename: string;
+  file_size: number;
+  file_type: string;
+  storage_path: string;
+  display_order: number;
+  custom_label?: string;
+  uploaded_at: string;
 }
 
 export interface ExternalApplicationConfig {
@@ -443,7 +465,8 @@ class ExternalApplicationService {
       const { data } = await supabase
         .from('external_applications')
         .select('status')
-        .eq('candidate_id', candidateId);
+        .eq('candidate_id', candidateId)
+        .eq('is_draft', false);
 
       const stats = {
         total: data?.length || 0,
@@ -467,6 +490,208 @@ class ExternalApplicationService {
       console.error('Error fetching statistics:', error);
       return { total: 0, sent: 0, in_progress: 0, accepted: 0, rejected: 0, no_response: 0 };
     }
+  }
+
+  /**
+   * Get or create draft application
+   */
+  async getOrCreateDraft(candidateId: string): Promise<{ success: boolean; data?: ExternalApplication; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('get_or_create_draft_application', {
+        p_candidate_id: candidateId
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      const draftId = data;
+      return await this.getApplication(draftId);
+    } catch (error) {
+      console.error('Error getting or creating draft:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Save draft application data
+   */
+  async saveDraft(
+    applicationId: string,
+    candidateId: string,
+    step: string,
+    data: any
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: result, error } = await supabase.rpc('save_draft_application_data', {
+        p_application_id: applicationId,
+        p_candidate_id: candidateId,
+        p_step: step,
+        p_data: data
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Finalize application (convert draft to submitted)
+   */
+  async finalizeDraft(
+    applicationId: string,
+    candidateId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('finalize_external_application', {
+        p_application_id: applicationId,
+        p_candidate_id: candidateId
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error finalizing draft:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Upload supplementary document
+   */
+  async uploadSupplementaryDocument(
+    applicationId: string,
+    candidateId: string,
+    file: File,
+    customLabel?: string
+  ): Promise<{ success: boolean; data?: SupplementaryDocument; error?: string }> {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${candidateId}/${applicationId}/${Date.now()}_${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('external-application-supplements')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        return { success: false, error: uploadError.message };
+      }
+
+      const { data, error: insertError } = await supabase
+        .from('external_application_supplementary_docs')
+        .insert({
+          external_application_id: applicationId,
+          candidate_id: candidateId,
+          document_name: customLabel || file.name,
+          original_filename: file.name,
+          file_size: file.size,
+          file_type: fileExt || 'unknown',
+          storage_path: fileName
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        return { success: false, error: insertError.message };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error uploading supplementary document:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Get supplementary documents for application
+   */
+  async getSupplementaryDocuments(applicationId: string): Promise<{ success: boolean; data?: SupplementaryDocument[]; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('external_application_supplementary_docs')
+        .select('*')
+        .eq('external_application_id', applicationId)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      console.error('Error fetching supplementary documents:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Delete supplementary document
+   */
+  async deleteSupplementaryDocument(documentId: string, storagePath: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error: storageError } = await supabase.storage
+        .from('external-application-supplements')
+        .remove([storagePath]);
+
+      if (storageError) {
+        console.warn('Storage deletion failed:', storageError);
+      }
+
+      const { error: dbError } = await supabase
+        .from('external_application_supplementary_docs')
+        .delete()
+        .eq('id', documentId);
+
+      if (dbError) {
+        return { success: false, error: dbError.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting supplementary document:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Rename supplementary document
+   */
+  async renameSupplementaryDocument(documentId: string, newName: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('external_application_supplementary_docs')
+        .update({ document_name: newName, custom_label: newName })
+        .eq('id', documentId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error renaming supplementary document:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Get public URL for supplementary document
+   */
+  getSupplementaryDocumentUrl(storagePath: string): string {
+    const { data } = supabase.storage
+      .from('external-application-supplements')
+      .getPublicUrl(storagePath);
+
+    return data.publicUrl;
   }
 }
 
