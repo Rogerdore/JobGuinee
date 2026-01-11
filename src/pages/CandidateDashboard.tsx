@@ -1455,43 +1455,47 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                                       console.log('Work Experience Full Object:', exp);
                                     }
 
-                                    // Calculer la durée de l'expérience - Chercher dans toutes les clés possibles
-                                    const startDate = exp['Date de début'] || exp['date_debut'] || exp.start_date || exp.startDate || exp.debut || exp.from;
-                                    const endDate = exp['Date de fin'] || exp['date_fin'] || exp.end_date || exp.endDate || exp.fin || exp.to;
-                                    const period = exp['Période'] || exp['periode'] || exp.period || exp.duration;
-
-                                    let duration = '';
+                                    let duration = exp.duration || '';
                                     let displayDate = '';
 
-                                    // Si on a une période pré-formatée, l'utiliser
-                                    if (period) {
-                                      displayDate = period;
-                                    } else if (startDate) {
-                                      // Construire la période à partir des dates
-                                      displayDate = `${startDate} - ${endDate || 'Présent'}`;
-                                    }
+                                    // Vérifier si on a les champs du formulaire (startMonth, startYear, etc.)
+                                    if (exp.startMonth && exp.startYear) {
+                                      const isCurrent = exp.current || false;
+                                      displayDate = `${exp.startMonth} ${exp.startYear} - ${isCurrent ? 'Présent' : (exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : '')}`;
+                                    } else {
+                                      // Fallback pour les anciens formats de données
+                                      const startDate = exp['Date de début'] || exp['date_debut'] || exp.start_date || exp.startDate || exp.debut || exp.from;
+                                      const endDate = exp['Date de fin'] || exp['date_fin'] || exp.end_date || exp.endDate || exp.fin || exp.to;
+                                      const period = exp['Période'] || exp['periode'] || exp.period;
 
-                                    // Calculer la durée si on a des dates
-                                    if (startDate) {
-                                      try {
-                                        const start = new Date(startDate);
-                                        const end = endDate ? new Date(endDate) : new Date();
+                                      if (period) {
+                                        displayDate = period;
+                                      } else if (startDate) {
+                                        displayDate = `${startDate} - ${endDate || 'Présent'}`;
+                                      }
 
-                                        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-                                          const months = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
-                                          const years = Math.floor(months / 12);
-                                          const remainingMonths = months % 12;
+                                      // Calculer la durée si on a des dates et pas de durée pré-calculée
+                                      if (!duration && startDate) {
+                                        try {
+                                          const start = new Date(startDate);
+                                          const end = endDate ? new Date(endDate) : new Date();
 
-                                          if (years > 0 && remainingMonths > 0) {
-                                            duration = `${years} an${years > 1 ? 's' : ''} ${remainingMonths} mois`;
-                                          } else if (years > 0) {
-                                            duration = `${years} an${years > 1 ? 's' : ''}`;
-                                          } else if (months > 0) {
-                                            duration = `${months} mois`;
+                                          if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                            const months = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+                                            const years = Math.floor(months / 12);
+                                            const remainingMonths = months % 12;
+
+                                            if (years > 0 && remainingMonths > 0) {
+                                              duration = `${years} an${years > 1 ? 's' : ''} et ${remainingMonths} mois`;
+                                            } else if (years > 0) {
+                                              duration = `${years} an${years > 1 ? 's' : ''}`;
+                                            } else if (months > 0) {
+                                              duration = `${months} mois`;
+                                            }
                                           }
+                                        } catch (e) {
+                                          console.error('Error parsing dates:', e);
                                         }
-                                      } catch (e) {
-                                        console.error('Error parsing dates:', e);
                                       }
                                     }
 
