@@ -125,15 +125,16 @@ export const socialShareService = {
   },
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
-    const jobUrl = `${BASE_URL}/offres/${job.id}`;
-    const encodedUrl = encodeURIComponent(jobUrl);
+    // Utiliser la route /s/{job_id} pour le tracking avec OG tags
+    const shareUrl = `${BASE_URL}/s/${job.id}`;
+    const encodedUrl = encodeURIComponent(shareUrl);
     const jobTitle = job.title || 'Offre d\'emploi';
     const encodedTitle = encodeURIComponent(jobTitle);
     const company = job.company_name || job.company || '';
 
     const whatsappText = company
-      ? `${jobTitle} chez ${company}\n${jobUrl}`
-      : `${jobTitle}\n${jobUrl}`;
+      ? `${jobTitle} chez ${company}\n${shareUrl}`
+      : `${jobTitle}\n${shareUrl}`;
     const encodedWhatsappText = encodeURIComponent(whatsappText);
 
     const twitterText = company
