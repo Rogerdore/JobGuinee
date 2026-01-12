@@ -11,7 +11,7 @@
   # This ensures Facebook, LinkedIn, WhatsApp, X get proper Open Graph metadata
   RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|SkypeUriPreview|Slackbot|Discordbot) [NC]
   RewriteCond %{REQUEST_URI} ^/s/
-  RewriteRule ^s/(.*)$ https://qefmegwobvuxmnfnvshx.supabase.co/functions/v1/job-og-preview?job_id=$1&%{QUERY_STRING} [R=302,L]
+  RewriteRule ^s/(.*)$ https://hhhjzgeidjqctuveopso.supabase.co/functions/v1/job-og-preview?job_id=$1&%{QUERY_STRING} [R=302,L]
 
   # For regular users, serve the SPA (React will handle /s/ routes)
   # Rewrite everything else to index.html to allow html5 state links
