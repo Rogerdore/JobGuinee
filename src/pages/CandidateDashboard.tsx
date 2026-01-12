@@ -181,7 +181,12 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
       if (stats) {
         setJobViewsCount(stats.jobViewsCount);
         setAiScore(stats.aiScore);
-        setProfileStats(stats.profileStats);
+        setProfileStats({
+          profile_views_count: stats.profileViewsCount || 0,
+          profile_purchases_count: stats.profilePurchasesCount || 0,
+          this_month_views: 0,
+          this_month_purchases: 0
+        });
         setCreditsBalance(stats.creditsBalance);
         setIsPremium(stats.isPremium);
         console.log('📊 Centralized stats:', stats);
