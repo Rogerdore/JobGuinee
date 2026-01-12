@@ -109,9 +109,31 @@ function generateJobMetadata(job: JobData) {
   const location = job.location || "Guinée";
   const contractType = job.contract_type || "CDI";
 
+  // Nettoyer la description: enlever HTML et résumer
+  let description = "Découvrez cette opportunité professionnelle sur JobGuinée";
+
+  if (job.description) {
+    // Enlever les balises HTML
+    const cleanedDesc = job.description
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Couper à 220 caractères et ajouter l'appel à action
+    if (cleanedDesc.length > 220) {
+      description = cleanedDesc.substring(0, 217) + "... – Postulez via JobGuinée";
+    } else if (cleanedDesc.length > 0) {
+      description = cleanedDesc + " – Postulez via JobGuinée";
+    }
+  } else {
+    // Fallback si pas de description
+    description = `${contractType} à ${location} • Rejoins ${company} – Postulez via JobGuinée`;
+  }
+
   return {
     title: `${jobTitle} – ${company}`,
-    description: `${contractType} • ${location} • JobGuinée`,
+    description,
     url: `${baseUrl}/s/${job.id}?src=facebook`,
     company,
   };
