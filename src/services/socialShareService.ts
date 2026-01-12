@@ -22,8 +22,9 @@ const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.svg`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
-    // Utiliser la Share Gateway /s/ pour bénéficier des OG tags serveur
-    const jobUrl = `${BASE_URL}/s/${job.id}`;
+    // Use Social Gateway /share/{job_id} for robust OG tag serving
+    // This route is handled by the server-side Edge Function
+    const jobUrl = `${BASE_URL}/share/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const company = job.company_name || job.company || 'Entreprise';
     const location = job.location || 'Guinée';
@@ -126,13 +127,14 @@ export const socialShareService = {
   },
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
-    // Utiliser la route /s/{job_id} pour le tracking avec OG tags
-    const baseShareUrl = `${BASE_URL}/s/${job.id}`;
+    // Use /share/{job_id} route with server-side OG tag serving
+    // Crawlers will receive HTML with proper OG tags from Edge Function
+    const baseShareUrl = `${BASE_URL}/share/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const encodedTitle = encodeURIComponent(jobTitle);
     const company = job.company_name || job.company || '';
 
-    // Ajouter le paramètre src={network} pour tracker la source du partage
+    // Add src={network} parameter for tracking which platform shared the job
     const facebookUrl = `${baseShareUrl}?src=facebook`;
     const linkedinUrl = `${baseShareUrl}?src=linkedin`;
     const twitterUrl = `${baseShareUrl}?src=twitter`;
