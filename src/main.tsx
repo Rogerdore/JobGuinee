@@ -3,15 +3,6 @@ import App from './App.tsx';
 import './index.css';
 import { validateEnvOnStartup } from './utils/envValidator';
 import { initializeChameleonGuard } from './utils/chameleonGuard';
-import { initializeChameleonGuard } from './utils/chameleonGuard';
-// PROTECTION CHAMELEON: Bloquer sur les routes critiques AVANT TOUT
-// Empêche les crashes, 502, et pages Facebook vides
-try {
-  initializeChameleonGuard();
-} catch (error) {
-  console.error('⚠️ Erreur lors de l\'initialisation du Chameleon Guard:', error);
-}
-
 
 // PROTECTION CHAMELEON: Bloquer sur les routes critiques AVANT TOUT
 // Empêche les crashes, 502, et pages Facebook vides
