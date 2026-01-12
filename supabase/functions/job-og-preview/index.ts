@@ -67,7 +67,19 @@ Deno.serve(async (req: Request) => {
     }
 
     const metadata = generateJobMetadata(job as JobData);
-    const ogImage = job.featured_image_url || "https://jobguinee-pro.com/assets/share/default-job.svg";
+    // Cascade de préférence pour l'image OG
+    let ogImage = "https://jobguinee-pro.com/assets/share/default-job.png";
+
+    // 1. Image OG générée (si elle existe)
+    const generatedOGImage = `https://jobguinee-pro.com/og-images/jobs/${job.id}/facebook.png`;
+    // Note: On l'utilise si elle existe (vérification côté client/Facebook)
+    ogImage = generatedOGImage;
+
+    // 2. Fallback: Image mise en avant du recruteur
+    if (job.featured_image_url && typeof job.featured_image_url === 'string' && job.featured_image_url.startsWith('http')) {
+      ogImage = job.featured_image_url;
+    }
+
     const html = generateHTMLWithOGTags(metadata, ogImage, job as JobData);
 
     return new Response(html, {
@@ -98,9 +110,9 @@ function generateJobMetadata(job: JobData) {
   const contractType = job.contract_type || "CDI";
 
   return {
-    title: `${jobTitle} chez ${company} | JobGuinée`,
-    description: `${company} recrute pour un poste de ${jobTitle} à ${location}. ${contractType}. Postulez maintenant sur JobGuinée!`,
-    url: `${baseUrl}/s/${job.id}`,
+    title: `${jobTitle} – ${company}`,
+    description: `${contractType} • ${location} • JobGuinée`,
+    url: `${baseUrl}/s/${job.id}?src=facebook`,
     company,
   };
 }
@@ -125,8 +137,10 @@ function generateHTMLWithOGTags(
   <meta property="og:image" content="${ogImage}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
   <meta property="og:url" content="${metadata.url}" />
   <meta property="og:site_name" content="JobGuinée" />
+  <meta property="og:locale" content="fr_GN" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(metadata.title)}" />
