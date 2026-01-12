@@ -7,13 +7,19 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Redirect share URLs to Edge Function for social media crawlers
+  # Redirect share URLs to Social Gateway Edge Function for social media crawlers
   # This ensures Facebook, LinkedIn, WhatsApp, X get proper Open Graph metadata
+  # New route: /share/{job_id}
+  RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|SkypeUriPreview|Slackbot|Discordbot|Pinterestbot|bingbot|Googlebot) [NC]
+  RewriteCond %{REQUEST_URI} ^/share/
+  RewriteRule ^share/(.*)$ https://hhhjzgeidjqctuveopso.supabase.co/functions/v1/social-gateway/$1 [P,L]
+
+  # Legacy /s/ route for backward compatibility
   RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|SkypeUriPreview|Slackbot|Discordbot) [NC]
   RewriteCond %{REQUEST_URI} ^/s/
-  RewriteRule ^s/(.*)$ https://hhhjzgeidjqctuveopso.supabase.co/functions/v1/job-og-preview?job_id=$1&%{QUERY_STRING} [R=302,L]
+  RewriteRule ^s/(.*)$ https://hhhjzgeidjqctuveopso.supabase.co/functions/v1/social-gateway/$1 [P,L]
 
-  # For regular users, serve the SPA (React will handle /s/ routes)
+  # For regular users, serve the SPA (React will handle /share/ and other routes)
   # Rewrite everything else to index.html to allow html5 state links
   RewriteRule ^ index.html [L]
 </IfModule>
