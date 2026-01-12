@@ -19,6 +19,7 @@ import MarkdownRenderer from '../components/common/MarkdownRenderer';
 import { useSavedJobs } from '../hooks/useSavedJobs';
 import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
+import { useSocialShareTracking } from '../hooks/useSocialShareTracking';
 import { socialShareService } from '../services/socialShareService';
 import { candidateStatsService } from '../services/candidateStatsService';
 
@@ -48,6 +49,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
 
   const shareMetadata = job ? socialShareService.generateJobMetadata(job) : null;
   useSocialShareMeta(shareMetadata);
+  useSocialShareTracking(jobId);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
