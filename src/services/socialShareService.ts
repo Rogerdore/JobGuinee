@@ -22,7 +22,8 @@ const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.svg`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
-    const jobUrl = `${BASE_URL}/offres/${job.id}`;
+    // Utiliser la Share Gateway /s/ pour bénéficier des OG tags serveur
+    const jobUrl = `${BASE_URL}/s/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const company = job.company_name || job.company || 'Entreprise';
     const location = job.location || 'Guinée';
@@ -126,15 +127,24 @@ export const socialShareService = {
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
     // Utiliser la route /s/{job_id} pour le tracking avec OG tags
-    const shareUrl = `${BASE_URL}/s/${job.id}`;
-    const encodedUrl = encodeURIComponent(shareUrl);
+    const baseShareUrl = `${BASE_URL}/s/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const encodedTitle = encodeURIComponent(jobTitle);
     const company = job.company_name || job.company || '';
 
+    // Ajouter le paramètre src={network} pour tracker la source du partage
+    const facebookUrl = `${baseShareUrl}?src=facebook`;
+    const linkedinUrl = `${baseShareUrl}?src=linkedin`;
+    const twitterUrl = `${baseShareUrl}?src=twitter`;
+    const whatsappUrl = `${baseShareUrl}?src=whatsapp`;
+
+    const encodedFacebookUrl = encodeURIComponent(facebookUrl);
+    const encodedLinkedinUrl = encodeURIComponent(linkedinUrl);
+    const encodedTwitterUrl = encodeURIComponent(twitterUrl);
+
     const whatsappText = company
-      ? `${jobTitle} chez ${company}\n${shareUrl}`
-      : `${jobTitle}\n${shareUrl}`;
+      ? `${jobTitle} chez ${company}\n${whatsappUrl}`
+      : `${jobTitle}\n${whatsappUrl}`;
     const encodedWhatsappText = encodeURIComponent(whatsappText);
 
     const twitterText = company
@@ -143,9 +153,9 @@ export const socialShareService = {
     const encodedTwitterText = encodeURIComponent(twitterText);
 
     return {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-      twitter: `https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedFacebookUrl}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedLinkedinUrl}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedTwitterUrl}`,
       whatsapp: `https://wa.me/?text=${encodedWhatsappText}`
     };
   },
