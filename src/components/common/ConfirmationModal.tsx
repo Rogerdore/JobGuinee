@@ -47,7 +47,10 @@ export default function ConfirmationModal({
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-        <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div
+          className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="absolute top-4 right-4">
             <button
               onClick={onClose}
@@ -72,7 +75,12 @@ export default function ConfirmationModal({
           <div className="bg-white px-6 py-4 space-y-3">
             {primaryAction && (
               <button
-                onClick={primaryAction.onClick}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  primaryAction.onClick();
+                }}
+                type="button"
                 className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold shadow-md hover:shadow-lg"
               >
                 {primaryAction.label}
@@ -80,7 +88,12 @@ export default function ConfirmationModal({
             )}
             {secondaryAction && (
               <button
-                onClick={secondaryAction.onClick}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  secondaryAction.onClick();
+                }}
+                type="button"
                 className="w-full px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
               >
                 {secondaryAction.label}

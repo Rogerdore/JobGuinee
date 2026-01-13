@@ -103,14 +103,18 @@ export default function AccessRestrictionModal({
   const config = restrictionConfig[restrictionType];
   const Icon = config.icon;
 
-  const handlePrimaryAction = () => {
+  const handlePrimaryAction = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     onClose();
     if (onNavigate && config.primaryAction.page) {
       onNavigate(config.primaryAction.page);
     }
   };
 
-  const handleSecondaryAction = (page: string) => {
+  const handleSecondaryAction = (e: React.MouseEvent, page: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     onClose();
     if (onNavigate) {
       onNavigate(page);
@@ -127,7 +131,10 @@ export default function AccessRestrictionModal({
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-        <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div
+          className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="absolute top-4 right-4 z-10">
             <button
               onClick={onClose}
@@ -178,6 +185,7 @@ export default function AccessRestrictionModal({
             <div className="space-y-3">
               <button
                 onClick={handlePrimaryAction}
+                type="button"
                 className="w-full px-6 py-3.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 {React.createElement(config.primaryAction.icon, { className: "w-5 h-5" })}
@@ -187,7 +195,8 @@ export default function AccessRestrictionModal({
               {config.secondaryActions.map((action, index) => (
                 <button
                   key={index}
-                  onClick={() => handleSecondaryAction(action.page)}
+                  onClick={(e) => handleSecondaryAction(e, action.page)}
+                  type="button"
                   className="w-full px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2"
                 >
                   <ArrowRight className="w-4 h-4" />
@@ -196,7 +205,12 @@ export default function AccessRestrictionModal({
               ))}
 
               <button
-                onClick={onClose}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
+                type="button"
                 className="w-full px-6 py-3 text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm"
               >
                 Annuler

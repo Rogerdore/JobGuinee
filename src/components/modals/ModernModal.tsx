@@ -104,10 +104,18 @@ export default function ModernModal({
 
   if (!isOpen || !mounted) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (onConfirm) {
       onConfirm();
     }
+    onClose();
+  };
+
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     onClose();
   };
 
@@ -167,7 +175,8 @@ export default function ModernModal({
           <div className={`flex gap-3 ${showCancel ? 'justify-end' : 'justify-center'}`}>
             {showCancel && (
               <button
-                onClick={onClose}
+                onClick={handleCancel}
+                type="button"
                 className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-colors min-w-[120px]"
               >
                 {cancelText}
@@ -175,6 +184,7 @@ export default function ModernModal({
             )}
             <button
               onClick={handleConfirm}
+              type="button"
               className={`px-6 py-3 rounded-xl text-white font-semibold transition-all transform hover:scale-105 shadow-lg ${config.buttonBg} min-w-[120px]`}
             >
               {confirmText}
