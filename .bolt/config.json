@@ -1,13 +1,19 @@
 {
   "versionControl": {
     "enabled": true,
+    "provider": "github",
     "sourceOfTruth": "github",
     "autoSync": true,
     "localSnapshots": false,
-    "githubRepo": "Rogerdore/JobGuinee",
+    "repository": {
+      "owner": "Rogerdore",
+      "name": "JobGuinee",
+      "url": "https://github.com/Rogerdore/JobGuinee.git"
+    },
     "branch": "main",
     "pullBeforeWork": true,
-    "commitOnSave": false
+    "commitOnSave": false,
+    "preventDivergence": true
   },
   "deployment": {
     "autoCommit": false,

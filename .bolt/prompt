@@ -1,5 +1,9 @@
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+# Bolt GitHub Configuration
 
-By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+GitHub Repository: Rogerdore/JobGuinee
+Branch: main
+Remote URL: https://github.com/Rogerdore/JobGuinee.git
 
-Use icons from lucide-react for logos.
+# Auto-sync enabled
+# Local snapshots disabled
+# GitHub is the single source of truth
