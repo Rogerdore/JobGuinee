@@ -4,6 +4,7 @@ import { ChatbotService, ChatbotSettings, ChatbotStyle, QuickAction, UserContext
 import { ChatbotNavigationService, UserNavigationContext } from '../../services/chatbotNavigationService';
 import { NavigationIntent } from '../../services/navigationMap';
 import { ChatbotIAAccessControl, EnhancedUserContext, ServiceCode } from '../../services/chatbotIAAccessControl';
+import { chatbotConversationService } from '../../services/chatbotConversationService';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -46,6 +47,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
   const [iconAnimation, setIconAnimation] = useState<string>('animate-chatbot-wave');
   const [alphaState, setAlphaState] = useState<AlphaIconState>('greeting');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Protection contre insertBefore: montage différé
@@ -64,10 +66,41 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       const init = async () => {
         await loadQuickActions();
         await loadUserContext();
+        await initializeConversation();
       };
       init();
     }
   }, [mounted, user, profile]);
+
+  const initializeConversation = async () => {
+    try {
+      if (user) {
+        const conversations = await chatbotConversationService.getConversations();
+
+        if (conversations.length > 0) {
+          const lastConversation = conversations[0];
+          setConversationId(lastConversation.id);
+
+          const restoredMessages: Message[] = lastConversation.messages.map((msg, index) => ({
+            id: `${msg.role}-${index}-${Date.now()}`,
+            type: msg.role === 'user' ? 'user' : 'bot',
+            content: msg.content,
+            timestamp: new Date(msg.timestamp)
+          }));
+
+          setMessages(restoredMessages);
+        } else {
+          const newConversation = await chatbotConversationService.createConversation(user.id);
+          setConversationId(newConversation.id);
+        }
+      } else {
+        const newConversation = await chatbotConversationService.createConversation();
+        setConversationId(newConversation.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation de la conversation:', error);
+    }
+  };
 
   useEffect(() => {
     const animations = ['animate-chatbot-wave', 'animate-chatbot-bounce', 'animate-chatbot-excited'];
@@ -124,7 +157,9 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     }
   };
 
-  const displayWelcomeMessage = () => {
+  const displayWelcomeMessage = async () => {
+    if (messages.length > 0) return;
+
     let welcomeMsg = '';
 
     if (userContext?.is_premium && settings.premium_welcome_message) {
@@ -139,7 +174,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       }
     }
 
-    addBotMessage(welcomeMsg);
+    await addBotMessage(welcomeMsg);
     setAlphaState('greeting');
     setTimeout(() => setAlphaState('idle'), 3000);
   };
@@ -162,7 +197,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     }
   };
 
-  const addBotMessage = (
+  const addBotMessage = async (
     content: string,
     suggested_links?: Array<{ label: string; page: string }>,
     navigationIntent?: NavigationIntent,
@@ -186,6 +221,18 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       actionButtons
     };
     setMessages(prev => [...prev, botMessage]);
+
+    if (conversationId) {
+      try {
+        await chatbotConversationService.addMessage(conversationId, {
+          role: 'assistant',
+          content,
+          timestamp: botMessage.timestamp.toISOString()
+        });
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde du message bot:', error);
+      }
+    }
   };
 
   const getUserNavigationContext = (): UserNavigationContext => {
@@ -197,7 +244,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
     };
   };
 
-  const addUserMessage = (content: string) => {
+  const addUserMessage = async (content: string) => {
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       type: 'user',
@@ -205,12 +252,24 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
+
+    if (conversationId) {
+      try {
+        await chatbotConversationService.addMessage(conversationId, {
+          role: 'user',
+          content,
+          timestamp: userMessage.timestamp.toISOString()
+        });
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde du message utilisateur:', error);
+      }
+    }
   };
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
 
-    addUserMessage(message);
+    await addUserMessage(message);
     setLoading(true);
 
     try {
@@ -226,8 +285,8 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
             navContext
           );
 
-          setTimeout(() => {
-            addBotMessage(
+          setTimeout(async () => {
+            await addBotMessage(
               navigationResponse.message,
               undefined,
               navigationResponse.intent || undefined,
@@ -248,20 +307,20 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
       );
 
       if (response.success) {
-        setTimeout(() => {
-          addBotMessage(response.answer, response.suggested_links);
+        setTimeout(async () => {
+          await addBotMessage(response.answer, response.suggested_links);
           setLoading(false);
         }, 500);
       } else {
-        setTimeout(() => {
-          addBotMessage('Désolé, une erreur est survenue. Veuillez réessayer.');
+        setTimeout(async () => {
+          await addBotMessage('Désolé, une erreur est survenue. Veuillez réessayer.');
           setLoading(false);
         }, 500);
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      setTimeout(() => {
-        addBotMessage('Désolé, je n\'ai pas pu traiter votre demande.');
+      setTimeout(async () => {
+        await addBotMessage('Désolé, je n\'ai pas pu traiter votre demande.');
         setLoading(false);
       }, 500);
     }
@@ -283,7 +342,7 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
           const formattedMessage = ChatbotIAAccessControl.formatAccessMessage(accessResult);
           const actionButtons = ChatbotIAAccessControl.getActionButtons(accessResult);
 
-          addBotMessage(
+          await addBotMessage(
             formattedMessage,
             undefined,
             undefined,
@@ -298,12 +357,12 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
 
     if (onNavigate) {
       onNavigate(intent.route);
-      addBotMessage(`✓ Je vous ai dirigé vers ${intent.displayName}.`);
+      await addBotMessage(`✓ Je vous ai dirigé vers ${intent.displayName}.`);
     }
   };
 
-  const handleNavigationCancel = () => {
-    addBotMessage('D\'accord, je reste à votre disposition pour d\'autres questions.');
+  const handleNavigationCancel = async () => {
+    await addBotMessage('D\'accord, je reste à votre disposition pour d\'autres questions.');
   };
 
   const handleQuickAction = (action: QuickAction) => {
