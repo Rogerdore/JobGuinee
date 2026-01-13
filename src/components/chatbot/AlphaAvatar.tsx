@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import avatarAlphaGif from '../../assets/chatbot/avatar_alpha_gif copy copy.gif';
+import avatarAlphaGif from '../../assets/chatbot/avatar_alpha.gif';
 
 export type AlphaAvatarState =
   | 'idle'
