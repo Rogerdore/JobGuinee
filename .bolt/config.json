@@ -1,3 +1,28 @@
 {
-  "template": "bolt-vite-react-ts"
+  "versionControl": {
+    "enabled": true,
+    "sourceOfTruth": "github",
+    "autoSync": true,
+    "localSnapshots": false,
+    "githubRepo": "Rogerdore/JobGuinee",
+    "branch": "main",
+    "pullBeforeWork": true,
+    "commitOnSave": false
+  },
+  "deployment": {
+    "autoCommit": false,
+    "requirePullBeforePush": true,
+    "preventDivergence": true
+  },
+  "project": {
+    "name": "JobGuinee",
+    "type": "vite-react-typescript",
+    "database": "supabase"
+  },
+  "rules": {
+    "alwaysPullFirst": true,
+    "neverUseLocalSnapshots": true,
+    "githubIsSourceOfTruth": true,
+    "supabaseReadOnly": true
+  }
 }
