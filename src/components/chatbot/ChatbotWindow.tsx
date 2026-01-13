@@ -89,16 +89,20 @@ export default function ChatbotWindow({ settings, style, onClose, onNavigate }: 
           }));
 
           setMessages(restoredMessages);
+          console.log('✅ Chatbot: Conversation restaurée', lastConversation.id);
         } else {
           const newConversation = await chatbotConversationService.createConversation(user.id);
           setConversationId(newConversation.id);
+          console.log('✅ Chatbot: Nouvelle conversation créée', newConversation.id);
         }
       } else {
         const newConversation = await chatbotConversationService.createConversation();
         setConversationId(newConversation.id);
+        console.log('✅ Chatbot: Conversation anonyme créée', newConversation.id);
       }
     } catch (error) {
-      console.error('Erreur lors de l\'initialisation de la conversation:', error);
+      console.error('❌ Chatbot: Erreur initialisation conversation:', error);
+      console.warn('⚠️ Chatbot fonctionnera sans sauvegarde');
     }
   };
 
