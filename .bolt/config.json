@@ -1,34 +1,3 @@
 {
-  "versionControl": {
-    "enabled": true,
-    "provider": "github",
-    "sourceOfTruth": "github",
-    "autoSync": true,
-    "localSnapshots": false,
-    "repository": {
-      "owner": "Rogerdore",
-      "name": "JobGuinee",
-      "url": "https://github.com/Rogerdore/JobGuinee.git"
-    },
-    "branch": "main",
-    "pullBeforeWork": true,
-    "commitOnSave": false,
-    "preventDivergence": true
-  },
-  "deployment": {
-    "autoCommit": false,
-    "requirePullBeforePush": true,
-    "preventDivergence": true
-  },
-  "project": {
-    "name": "JobGuinee",
-    "type": "vite-react-typescript",
-    "database": "supabase"
-  },
-  "rules": {
-    "alwaysPullFirst": true,
-    "neverUseLocalSnapshots": true,
-    "githubIsSourceOfTruth": true,
-    "supabaseReadOnly": true
-  }
+  "template": "bolt-vite-react-ts"
 }
