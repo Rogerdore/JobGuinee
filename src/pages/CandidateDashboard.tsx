@@ -179,17 +179,29 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
       // Update stats from centralized service
       if (stats) {
-        setJobViewsCount(stats.jobViewsCount);
-        setAiScore(stats.aiScore);
+        setJobViewsCount(stats.jobViewsCount || 0);
+        setAiScore(stats.aiScore || 0);
         setProfileStats({
           profile_views_count: stats.profileViewsCount || 0,
           profile_purchases_count: stats.profilePurchasesCount || 0,
           this_month_views: 0,
           this_month_purchases: 0
         });
-        setCreditsBalance(stats.creditsBalance);
-        setIsPremium(stats.isPremium);
+        setCreditsBalance(stats.creditsBalance || 0);
+        setIsPremium(stats.isPremium || false);
         console.log('📊 Centralized stats:', stats);
+      } else {
+        setJobViewsCount(0);
+        setAiScore(0);
+        setProfileStats({
+          profile_views_count: 0,
+          profile_purchases_count: 0,
+          this_month_views: 0,
+          this_month_purchases: 0
+        });
+        setCreditsBalance(0);
+        setIsPremium(false);
+        console.warn('⚠️ No stats available, using defaults');
       }
 
       // Load formations
