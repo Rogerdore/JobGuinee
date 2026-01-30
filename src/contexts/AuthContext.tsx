@@ -16,6 +16,7 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   getAndClearRedirectIntent: () => AuthRedirectIntent | null;
   resetPassword: (email: string) => Promise<void>;
+  resendConfirmationEmail: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -236,14 +237,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        throw new Error('EMAIL_NOT_CONFIRMED');
+      }
       if (error.message.includes('Invalid login credentials')) {
-        throw new Error('Email ou mot de passe incorrect');
+        throw new Error('INVALID_CREDENTIALS');
       }
       throw error;
     }
 
     if (!data.user) {
       throw new Error('Connexion échouée');
+    }
+
+    if (data.user && !data.user.confirmed_at) {
+      throw new Error('EMAIL_NOT_CONFIRMED');
     }
   };
 
@@ -252,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: fullName,
           user_type: role,
@@ -259,8 +268,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    if (error) throw error;
-    if (!data.user) throw new Error('Inscription échouée. Veuillez réessayer.');
+    if (error) {
+      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        throw new Error('EMAIL_EXISTS');
+      }
+      if (error.message.includes('Password')) {
+        throw new Error('WEAK_PASSWORD');
+      }
+      throw error;
+    }
+
+    if (!data.user) {
+      throw new Error('Inscription échouée. Veuillez réessayer.');
+    }
+
+    if (data.user && !data.user.confirmed_at && !data.session) {
+      throw new Error('EMAIL_CONFIRMATION_REQUIRED');
+    }
 
     let profileData = null;
     let attempts = 0;
@@ -343,6 +367,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resendConfirmationEmail = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+
+    if (error) {
+      if (error.message.includes('already confirmed')) {
+        throw new Error('EMAIL_ALREADY_CONFIRMED');
+      }
+      throw new Error('Impossible de renvoyer l\'email. Veuillez réessayer.');
+    }
+  };
+
   const getAndClearRedirectIntent = (): AuthRedirectIntent | null => {
     const intent = getAuthRedirectIntent();
     if (intent) {
@@ -383,6 +424,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshProfile,
     getAndClearRedirectIntent,
     resetPassword,
+    resendConfirmationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

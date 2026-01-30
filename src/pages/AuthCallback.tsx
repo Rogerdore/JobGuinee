@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase, UserRole } from '../lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
 
 interface AuthCallbackProps {
   onNavigate: (page: string) => void;
@@ -8,10 +8,22 @@ interface AuthCallbackProps {
 
 export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
   const [error, setError] = useState<string | null>(null);
+  const [confirmationSuccess, setConfirmationSuccess] = useState(false);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const type = hashParams.get('type');
+
+        if (type === 'signup') {
+          setConfirmationSuccess(true);
+          setTimeout(() => {
+            onNavigate('auth');
+          }, 3000);
+          return;
+        }
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -141,6 +153,25 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
     handleCallback();
   }, [onNavigate]);
+
+  if (confirmationSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Email confirmé !</h2>
+          <p className="text-gray-600 mb-4">
+            Votre compte a été activé avec succès.
+          </p>
+          <p className="text-sm text-gray-500">
+            Redirection vers la page de connexion...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

@@ -3,6 +3,7 @@ import { Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Eye, EyeOff } 
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../lib/supabase';
 import { getAuthRedirectIntent } from '../hooks/useAuthRedirect';
+import { EmailConfirmationModal } from '../components/auth/EmailConfirmationModal';
 
 interface AuthProps {
   mode: 'login' | 'signup';
@@ -23,6 +24,8 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +68,25 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
         onNavigate('home');
       }
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+      const errorMessage = err.message || '';
+
+      if (errorMessage === 'EMAIL_CONFIRMATION_REQUIRED') {
+        setPendingConfirmationEmail(email);
+        setShowEmailConfirmation(true);
+        setError('');
+      } else if (errorMessage === 'EMAIL_NOT_CONFIRMED') {
+        setPendingConfirmationEmail(email);
+        setShowEmailConfirmation(true);
+        setError('Compte non activé. Vérifiez votre boîte mail.');
+      } else if (errorMessage === 'INVALID_CREDENTIALS') {
+        setError('Email ou mot de passe incorrect');
+      } else if (errorMessage === 'EMAIL_EXISTS') {
+        setError('Cet email est déjà utilisé. Essayez de vous connecter ou utilisez un autre email.');
+      } else if (errorMessage === 'WEAK_PASSWORD') {
+        setError('Le mot de passe doit contenir au moins 6 caractères');
+      } else {
+        setError(errorMessage || 'Une erreur est survenue');
+      }
     } finally {
       setLoading(false);
     }
@@ -427,6 +448,16 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
             )}
           </div>
         </div>
+      )}
+
+      {showEmailConfirmation && (
+        <EmailConfirmationModal
+          email={pendingConfirmationEmail}
+          onClose={() => {
+            setShowEmailConfirmation(false);
+            setPendingConfirmationEmail('');
+          }}
+        />
       )}
     </div>
   );
