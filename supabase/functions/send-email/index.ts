@@ -234,7 +234,7 @@ async function sendViaSMTP(config: any, toEmail: string, toName: string | undefi
     }
 
     const port = config.smtp_port || 587;
-    const secure = config.smtp_secure !== false;
+    const useTLS = port === 465;
 
     const boundary = `----boundary_${Date.now()}`;
     const from = toName ? `${config.from_name} <${config.from_email}>` : config.from_email;
@@ -315,7 +315,7 @@ async function sendViaSMTP(config: any, toEmail: string, toName: string | undefi
       await writeLine(conn, `EHLO ${config.smtp_host}`);
       await readLine(conn);
 
-      if (port !== 465 && !secure) {
+      if (!useTLS && port === 587) {
         await writeLine(conn, "STARTTLS");
         await readLine(conn);
         const tlsConn = await Deno.startTls(conn, { hostname: config.smtp_host });
