@@ -380,6 +380,21 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-4">
+              <button
+                onClick={() => onNavigate('privacy-policy')}
+                className="hover:text-white transition underline"
+              >
+                Politique de confidentialité
+              </button>
+              <span className="hidden md:inline">•</span>
+              <button
+                onClick={() => onNavigate('terms-of-service')}
+                className="hover:text-white transition underline"
+              >
+                Conditions d'utilisation
+              </button>
+            </div>
             <p>&copy; 2025 JobGuinée. Tous droits réservés.</p>
           </div>
         </div>

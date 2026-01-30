@@ -307,6 +307,18 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
             </span>
           </button>
 
+          {!isLogin && (
+            <p className="mt-4 text-xs text-center text-gray-500">
+              En vous inscrivant, vous acceptez notre{' '}
+              <button
+                onClick={() => onNavigate('privacy-policy')}
+                className="text-blue-900 hover:text-blue-700 underline"
+              >
+                Politique de confidentialité
+              </button>
+            </p>
+          )}
+
           <div className="mt-6 text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
