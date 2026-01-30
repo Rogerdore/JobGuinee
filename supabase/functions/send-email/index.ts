@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
         result = await sendViaMailgun(config, emailRequest.to_email, emailRequest.to_name, subject, htmlBody, textBody);
         break;
       case "smtp":
-        result = { success: false, error: "SMTP not yet implemented" };
+        result = await sendViaSMTP(config, emailRequest.to_email, emailRequest.to_name, subject, htmlBody, textBody);
         break;
       default:
         result = { success: false, error: `Provider ${config.provider_type} not supported` };
@@ -224,5 +224,152 @@ async function sendViaMailgun(config: any, toEmail: string, toName: string | und
     return { success: true, messageId: data.id };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+}
+
+async function sendViaSMTP(config: any, toEmail: string, toName: string | undefined, subject: string, htmlBody: string, textBody: string) {
+  try {
+    if (!config.smtp_host || !config.smtp_user || !config.smtp_password) {
+      return { success: false, error: "Configuration SMTP incomplete" };
+    }
+
+    const port = config.smtp_port || 587;
+    const secure = config.smtp_secure !== false;
+
+    const boundary = `----boundary_${Date.now()}`;
+    const from = toName ? `${config.from_name} <${config.from_email}>` : config.from_email;
+    const to = toName ? `${toName} <${toEmail}>` : toEmail;
+
+    const emailContent = [
+      `From: ${from}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/plain; charset=UTF-8`,
+      `Content-Transfer-Encoding: 7bit`,
+      ``,
+      textBody || htmlBody.replace(/<[^>]*>/g, ''),
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: 7bit`,
+      ``,
+      htmlBody,
+      ``,
+      `--${boundary}--`,
+    ].join('\r\n');
+
+    const smtpUrl = `smtp://${config.smtp_user}:${encodeURIComponent(config.smtp_password)}@${config.smtp_host}:${port}`;
+
+    const smtpConfig = {
+      hostname: config.smtp_host,
+      port: port,
+      username: config.smtp_user,
+      password: config.smtp_password,
+      from: config.from_email,
+      to: toEmail,
+      subject: subject,
+      content: emailContent,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      let conn;
+      if (port === 465) {
+        conn = await Deno.connectTls({
+          hostname: config.smtp_host,
+          port: 465,
+          signal: controller.signal,
+        });
+      } else {
+        conn = await Deno.connect({
+          hostname: config.smtp_host,
+          port: port,
+          signal: controller.signal,
+        });
+      }
+
+      clearTimeout(timeoutId);
+
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+
+      async function readLine(conn: Deno.Conn): Promise<string> {
+        const buffer = new Uint8Array(1024);
+        const n = await conn.read(buffer);
+        if (n === null) return "";
+        return decoder.decode(buffer.subarray(0, n));
+      }
+
+      async function writeLine(conn: Deno.Conn, line: string) {
+        await conn.write(encoder.encode(line + "\r\n"));
+      }
+
+      await readLine(conn);
+
+      await writeLine(conn, `EHLO ${config.smtp_host}`);
+      await readLine(conn);
+
+      if (port !== 465 && !secure) {
+        await writeLine(conn, "STARTTLS");
+        await readLine(conn);
+        const tlsConn = await Deno.startTls(conn, { hostname: config.smtp_host });
+        conn = tlsConn;
+        await writeLine(conn, `EHLO ${config.smtp_host}`);
+        await readLine(conn);
+      }
+
+      await writeLine(conn, "AUTH LOGIN");
+      await readLine(conn);
+
+      await writeLine(conn, btoa(config.smtp_user));
+      await readLine(conn);
+
+      await writeLine(conn, btoa(config.smtp_password));
+      const authResponse = await readLine(conn);
+
+      if (!authResponse.startsWith("235")) {
+        conn.close();
+        return { success: false, error: "Authentification SMTP échouée" };
+      }
+
+      await writeLine(conn, `MAIL FROM:<${config.from_email}>`);
+      await readLine(conn);
+
+      await writeLine(conn, `RCPT TO:<${toEmail}>`);
+      await readLine(conn);
+
+      await writeLine(conn, "DATA");
+      await readLine(conn);
+
+      await writeLine(conn, emailContent);
+      await writeLine(conn, ".");
+      const sendResponse = await readLine(conn);
+
+      await writeLine(conn, "QUIT");
+      conn.close();
+
+      if (sendResponse.startsWith("250")) {
+        const messageId = `${Date.now()}@${config.smtp_host}`;
+        return { success: true, messageId };
+      } else {
+        return { success: false, error: "Échec envoi SMTP" };
+      }
+    } catch (smtpError) {
+      clearTimeout(timeoutId);
+      console.error("SMTP error:", smtpError);
+      return {
+        success: false,
+        error: `Erreur SMTP: ${smtpError.message || "Connexion impossible"}`
+      };
+    }
+  } catch (error) {
+    console.error("SMTP setup error:", error);
+    return { success: false, error: `Configuration SMTP: ${error.message}` };
   }
 }
