@@ -167,6 +167,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         { id: 'comm-create', label: 'Créer Communication', icon: Send, route: 'admin-communication-create' },
         { id: 'comm-logs', label: 'Historique Communications', icon: Database, route: 'admin-communication-logs' },
         { id: 'comm-templates', label: 'Templates Communications', icon: FileText, route: 'admin-communication-templates' },
+        { id: 'email-config', label: 'Configuration Email', icon: Settings, route: 'admin-email-config' },
         { id: 'email-templates', label: 'Templates Emails', icon: Mail, route: 'admin-email-templates' }
       ]
     },
