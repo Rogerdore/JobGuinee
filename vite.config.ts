@@ -13,7 +13,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'supabase': ['@supabase/supabase-js'],
-          'pdf-vendor': ['jspdf', 'html2canvas'],
+          'pdf-vendor': ['jspdf'],
           'editor': ['quill', 'react-quill'],
           'docx-vendor': ['docx', 'docx-preview', 'mammoth', 'jszip', 'file-saver'],
         },
