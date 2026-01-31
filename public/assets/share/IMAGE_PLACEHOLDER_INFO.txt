@@ -1,0 +1,10 @@
+
+IMAGE PLACEHOLDER OG
+
+Pour test immédiat, vous pouvez:
+1. Télécharger cette image: https://via.placeholder.com/1200x630/0E2F56/FFFFFF?text=JobGuinee+%7C+Offre+d%27emploi
+2. Renommer en: default-job.png
+3. Placer dans: /tmp/cc-agent/62496075/project/public/assets/share
+
+Cela permettra au système OG de fonctionner immédiatement.
+Remplacer ensuite par une vraie image avec le générateur HTML.
