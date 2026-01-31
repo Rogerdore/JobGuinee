@@ -156,13 +156,16 @@ function generateOGImageSVG(job: JobData): string {
     salary = `${formatSalary(job.salary_min)} - ${formatSalary(job.salary_max)} GNF`;
   }
 
-  // Get logo URL
+  // Cascade intelligente pour le logo
+  // 1. Image de mise en avant (si fournie)
+  // 2. Logo de l'entreprise (prioritaire)
+  // 3. Fallback vers logo JobGuinée
   let logoUrl = "";
   if (job.featured_image_url && job.featured_image_url.startsWith("http")) {
     logoUrl = job.featured_image_url;
-  } else if (job.company_logo_url) {
+  } else if (job.company_logo_url && job.company_logo_url.startsWith("http")) {
     logoUrl = job.company_logo_url;
-  } else if (job.companies?.logo_url) {
+  } else if (job.companies?.logo_url && job.companies.logo_url.startsWith("http")) {
     logoUrl = job.companies.logo_url;
   }
 
