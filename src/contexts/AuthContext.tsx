@@ -250,9 +250,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Connexion échouée');
     }
 
-    if (data.user && !data.user.confirmed_at) {
-      throw new Error('EMAIL_NOT_CONFIRMED');
-    }
+    // Email confirmation désactivée - connexion immédiate
+    // L'email de bienvenue est envoyé via le service SMTP custom
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
@@ -282,9 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Inscription échouée. Veuillez réessayer.');
     }
 
-    if (data.user && !data.user.confirmed_at && !data.session) {
-      throw new Error('EMAIL_CONFIRMATION_REQUIRED');
-    }
+    // Email confirmation désactivée - l'utilisateur peut se connecter immédiatement
+    // Un email de bienvenue sera envoyé automatiquement via le service SMTP custom
 
     let profileData = null;
     let attempts = 0;
