@@ -118,6 +118,27 @@ function AppContent() {
     const hash = window.location.hash;
     if (hash && hash.includes('access_token')) {
       setCurrentPage('auth-callback');
+      return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    const id = urlParams.get('id');
+    const token = urlParams.get('token');
+    const src = urlParams.get('src');
+
+    if (page && page === 'job-detail' && id) {
+      setCurrentPage('job-detail');
+      setSelectedJobId(id);
+      if (src) {
+        setJobDetailState({ jobId: id, sourceNetwork: src });
+      }
+    } else if (page && page === 'public-profile' && token) {
+      setCurrentPage('public-profile');
+      setPublicProfileToken(token);
+    } else if (page && page === 'external-application' && id) {
+      setCurrentPage('external-application');
+      setSelectedJobId(id);
     }
   }, []);
 

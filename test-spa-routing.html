@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Routage SPA - JobGuinée</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2.5rem;
+    }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    h2 {
+      color: #1f2937;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    .url-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .url-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: #f3f4f6;
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+    }
+    .url-item:hover {
+      background: #e5e7eb;
+      transform: translateX(5px);
+    }
+    .url-text {
+      font-family: monospace;
+      color: #4b5563;
+      font-size: 0.9rem;
+    }
+    .url-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background 0.2s;
+    }
+    .url-button:hover {
+      background: #2563eb;
+    }
+    .status {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .status.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .instructions {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+    .instructions p {
+      color: #1e40af;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Test Routage SPA - JobGuinée</h1>
+
+    <div class="card">
+      <h2>1. Partage Social <span class="status success">CRITIQUE</span></h2>
+      <div class="url-list">
+        <div class="url-item">
+          <span class="url-text">/share/test-job-id?src=facebook</span>
+          <button class="url-button" onclick="testUrl('/share/test-job-id?src=facebook')">Tester</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">/s/test-job-id?src=linkedin</span>
+          <button class="url-button" onclick="testUrl('/s/test-job-id?src=linkedin')">Tester</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">/share/another-job?src=twitter</span>
+          <button class="url-button" onclick="testUrl('/share/another-job?src=twitter')">Tester</button>
+        </div>
+      </div>
+      <div class="instructions">
+        <p><strong>Attendu :</strong> Redirection vers la page de détail de l'offre avec tracking du partage.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Deep Links Offres <span class="status success">CRITIQUE</span></h2>
+      <div class="url-list">
+        <div class="url-item">
+          <span class="url-text">/jobs/test-job-id</span>
+          <button class="url-button" onclick="testUrl('/jobs/test-job-id')">Tester</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">/job/another-job</span>
+          <button class="url-button" onclick="testUrl('/job/another-job')">Tester</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">/offres/poste-ingenieur-logiciel</span>
+          <button class="url-button" onclick="testUrl('/offres/poste-ingenieur-logiciel')">Tester</button>
+        </div>
+      </div>
+      <div class="instructions">
+        <p><strong>Attendu :</strong> Redirection vers la page de détail de l'offre.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. Profils Publics <span class="status pending">IMPORTANT</span></h2>
+      <div class="url-list">
+        <div class="url-item">
+          <span class="url-text">/profile/abc123token</span>
+          <button class="url-button" onclick="testUrl('/profile/abc123token')">Tester</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">/public/xyz789token</span>
+          <button class="url-button" onclick="testUrl('/public/xyz789token')">Tester</button>
+        </div>
+      </div>
+      <div class="instructions">
+        <p><strong>Attendu :</strong> Affichage du profil public du candidat.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>4. Candidatures Externes <span class="status pending">IMPORTANT</span></h2>
+      <div class="url-list">
+        <div class="url-item">
+          <span class="url-text">/candidatures/app-id-123</span>
+          <button class="url-button" onclick="testUrl('/candidatures/app-id-123')">Tester</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">/external/app-id-456</span>
+          <button class="url-button" onclick="testUrl('/external/app-id-456')">Tester</button>
+        </div>
+      </div>
+      <div class="instructions">
+        <p><strong>Attendu :</strong> Affichage de la page de candidature externe.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>5. Test Refresh & Favoris</h2>
+      <div class="instructions">
+        <p><strong>Test manuel :</strong></p>
+        <ol style="padding-left: 1.5rem; color: #1e40af; line-height: 2;">
+          <li>Cliquez sur n'importe quel lien ci-dessus</li>
+          <li>Une fois la page chargée, appuyez sur F5 (refresh)</li>
+          <li>La page doit se recharger correctement (pas d'erreur 404)</li>
+          <li>Ajoutez la page en favoris (Ctrl+D)</li>
+          <li>Rouvrez le favori - doit fonctionner</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>6. Test Open Graph (Crawlers)</h2>
+      <div class="url-list">
+        <div class="url-item">
+          <span class="url-text">Facebook Debugger</span>
+          <button class="url-button" onclick="window.open('https://developers.facebook.com/tools/debug/', '_blank')">Ouvrir</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">LinkedIn Inspector</span>
+          <button class="url-button" onclick="window.open('https://www.linkedin.com/post-inspector/', '_blank')">Ouvrir</button>
+        </div>
+        <div class="url-item">
+          <span class="url-text">Twitter Validator</span>
+          <button class="url-button" onclick="window.open('https://cards-dev.twitter.com/validator', '_blank')">Ouvrir</button>
+        </div>
+      </div>
+      <div class="instructions">
+        <p><strong>Test :</strong> Collez une URL de partage JobGuinée et vérifiez que les meta tags s'affichent correctement.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function testUrl(path) {
+      const baseUrl = window.location.origin;
+      const fullUrl = baseUrl + path;
+      console.log('Testing URL:', fullUrl);
+      window.open(fullUrl, '_blank');
+    }
+  </script>
+</body>
+</html>
