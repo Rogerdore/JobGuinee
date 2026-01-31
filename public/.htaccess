@@ -7,7 +7,19 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Rewrite everything else to index.html to allow html5 state links
+  # ========================================
+  # OPEN GRAPH - SOCIAL MEDIA CRAWLERS
+  # ========================================
+  # Detect social media crawlers and serve Open Graph HTML
+  # via Supabase Edge Function instead of React SPA
+
+  # Match /share/{job_id} requests from crawlers
+  RewriteCond %{REQUEST_URI} ^/share/([a-zA-Z0-9\-]+)$ [NC]
+  RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Facebot|LinkedInBot|Twitterbot|WhatsApp|TelegramBot|Discordbot|Slackbot|Pinterest|SkypeUriPreview|vkShare) [NC,OR]
+  RewriteCond %{HTTP_USER_AGENT} (tumblr|flipboard|nuzzel|redditbot|Embedly|quora|outbrain|ia_archiver) [NC]
+  RewriteRule ^share/([a-zA-Z0-9\-]+)$ https://hhhjzgeidjqctuveopso.supabase.co/functions/v1/social-gateway/$1 [P,L]
+
+  # For human users: serve React SPA normally
   RewriteRule ^ index.html [L]
 </IfModule>
 

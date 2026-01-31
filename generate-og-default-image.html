@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générer Image OG par Défaut - JobGuinée</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #0E2F56;
+      margin-bottom: 10px;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #2196f3;
+    }
+    button {
+      background: #0E2F56;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1a4a7e;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    canvas {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 20px 0;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #28a745;
+      margin-top: 20px;
+    }
+    .specs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .spec-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+    .spec-label {
+      font-weight: 600;
+      color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .spec-value {
+      font-size: 18px;
+      color: #0E2F56;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎨 Générateur d'Image Open Graph par Défaut</h1>
+    <p>Cet outil génère l'image PNG par défaut (1200x630) pour les partages sociaux JobGuinée.</p>
+
+    <div class="info">
+      <strong>📌 Instructions:</strong><br>
+      1. Cliquez sur "Générer l'image"<br>
+      2. L'image s'affichera ci-dessous en aperçu<br>
+      3. Cliquez sur "Télécharger PNG" pour sauvegarder<br>
+      4. Renommez le fichier en <code>default-job.png</code><br>
+      5. Placez-le dans <code>public/assets/share/default-job.png</code>
+    </div>
+
+    <div class="specs">
+      <div class="spec-item">
+        <div class="spec-label">Largeur</div>
+        <div class="spec-value">1200px</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Hauteur</div>
+        <div class="spec-value">630px</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Ratio</div>
+        <div class="spec-value">1.91:1</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Format</div>
+        <div class="spec-value">PNG</div>
+      </div>
+    </div>
+
+    <button id="generateBtn" onclick="generateImage()">🚀 Générer l'image</button>
+
+    <canvas id="canvas" width="1200" height="630" style="display: none;"></canvas>
+
+    <div id="preview" style="display: none;">
+      <h3>Aperçu (1200x630)</h3>
+      <img id="previewImg" style="max-width: 100%; border: 2px solid #ddd; border-radius: 8px;">
+      <button onclick="downloadImage()" style="margin-top: 15px;">💾 Télécharger PNG</button>
+      <div class="success">
+        ✅ Image générée avec succès ! Cliquez sur "Télécharger PNG" pour sauvegarder.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function generateImage() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Dimensions OG standards
+      const width = 1200;
+      const height = 630;
+
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#0E2F56');
+      gradient.addColorStop(1, '#1a4a7e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      // Logo area - top left
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fillRect(60, 50, 300, 100);
+
+      // JobGuinée branding
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 48px Arial, sans-serif';
+      ctx.fillText('JobGuinée', 80, 115);
+
+      // Subtitle
+      ctx.font = '24px Arial, sans-serif';
+      ctx.fillStyle = '#FFA500';
+      ctx.fillText('Première plateforme d\'emploi en Guinée', 80, 155);
+
+      // Main content area
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.fillRect(60, 220, width - 120, 280);
+
+      // Icon placeholder
+      ctx.fillStyle = '#0E2F56';
+      ctx.beginPath();
+      ctx.arc(150, 320, 50, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Briefcase icon simulation
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(135, 310, 30, 25);
+      ctx.fillRect(145, 300, 10, 15);
+
+      // Title text
+      ctx.fillStyle = '#0E2F56';
+      ctx.font = 'bold 42px Arial, sans-serif';
+      ctx.fillText('Offre d\'emploi', 240, 300);
+
+      // Description
+      ctx.font = '28px Arial, sans-serif';
+      ctx.fillStyle = '#555';
+      ctx.fillText('Découvrez des opportunités professionnelles', 240, 350);
+      ctx.fillText('en Guinée et postulez en ligne', 240, 390);
+
+      // CTA Badge
+      ctx.fillStyle = '#FFA500';
+      ctx.fillRect(240, 420, 320, 50);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.fillText('Postuler maintenant', 280, 453);
+
+      // Bottom branding
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.font = '20px Arial, sans-serif';
+      ctx.fillText('jobguinee-pro.com', 60, 590);
+
+      // Convert to image and show preview
+      const dataUrl = canvas.toDataURL('image/png');
+      const preview = document.getElementById('preview');
+      const previewImg = document.getElementById('previewImg');
+
+      previewImg.src = dataUrl;
+      canvas.style.display = 'block';
+      preview.style.display = 'block';
+
+      // Store for download
+      window.generatedImageUrl = dataUrl;
+
+      document.getElementById('generateBtn').disabled = true;
+      document.getElementById('generateBtn').textContent = '✅ Image générée';
+    }
+
+    function downloadImage() {
+      if (!window.generatedImageUrl) {
+        alert('Veuillez d\'abord générer l\'image');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.download = 'default-job.png';
+      link.href = window.generatedImageUrl;
+      link.click();
+
+      alert('✅ Image téléchargée ! Renommez-la en "default-job.png" et placez-la dans public/assets/share/');
+    }
+  </script>
+</body>
+</html>

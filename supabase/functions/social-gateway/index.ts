@@ -107,18 +107,29 @@ function cleanDescription(desc: string | null | undefined): string {
 
 function generateShareHTML(job: JobData): string {
   const baseUrl = "https://jobguinee-pro.com";
-  
+
   const title = `${job.title || "Offre d'emploi"} – ${job.company_name || job.company || "JobGuinée"}`;
-  
+
   const rawDescription = cleanDescription(job.description);
   const description = rawDescription.length > 220
     ? rawDescription.substring(0, 217) + "..."
     : rawDescription || `Découvrez cette opportunité professionnelle sur JobGuinée`;
 
-  // Use generated OG image or fallback
-  const ogImage = job.featured_image_url && typeof job.featured_image_url === 'string' && job.featured_image_url.startsWith('http')
-    ? job.featured_image_url
-    : `${baseUrl}/assets/share/default-job.svg`;
+  // OG Image Cascade (PNG/JPG only, NO SVG)
+  // Priority: featured_image_url → job-specific image → default PNG
+  let ogImage = `${baseUrl}/assets/share/default-job.png`; // Final fallback
+
+  if (job.featured_image_url && typeof job.featured_image_url === 'string') {
+    if (job.featured_image_url.startsWith('http')) {
+      // External URL - validate it's not SVG
+      if (!job.featured_image_url.toLowerCase().endsWith('.svg')) {
+        ogImage = job.featured_image_url;
+      }
+    }
+  }
+
+  // Check if job-specific image exists (would need server-side validation in production)
+  // For now, we use the featured_image_url if available, otherwise fallback
 
   const shareUrl = `${baseUrl}/share/${job.id}`;
   const redirectUrl = `${baseUrl}/offres/${job.slug || job.id}`;
