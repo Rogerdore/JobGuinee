@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../lib/supabase';
 import { getAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { EmailConfirmationModal } from '../components/auth/EmailConfirmationModal';
+import { SignupHelpModal } from '../components/auth/SignupHelpModal';
 
 interface AuthProps {
   mode: 'login' | 'signup';
@@ -11,7 +12,7 @@ interface AuthProps {
 }
 
 export default function Auth({ mode, onNavigate }: AuthProps) {
-  const { signIn, signUp, signInWithGoogle, getAndClearRedirectIntent, resetPassword } = useAuth();
+  const { signIn, signUp, signInWithGoogle, getAndClearRedirectIntent, resetPassword, cleanupIncompleteAccount } = useAuth();
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +27,8 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
+  const [showSignupHelp, setShowSignupHelp] = useState(false);
+  const [signupHelpScenario, setSignupHelpScenario] = useState<'email_exists' | 'profile_timeout' | 'account_incomplete' | 'weak_password' | 'general_error'>('general_error');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +84,25 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
       } else if (errorMessage === 'INVALID_CREDENTIALS') {
         setError('Email ou mot de passe incorrect');
       } else if (errorMessage === 'EMAIL_EXISTS') {
-        setError('Cet email est déjà utilisé. Essayez de vous connecter ou utilisez un autre email.');
+        setSignupHelpScenario('email_exists');
+        setShowSignupHelp(true);
+        setError('');
+      } else if (errorMessage === 'ACCOUNT_INCOMPLETE') {
+        setSignupHelpScenario('account_incomplete');
+        setShowSignupHelp(true);
+        setError('');
+      } else if (errorMessage === 'PROFILE_TIMEOUT') {
+        setSignupHelpScenario('profile_timeout');
+        setShowSignupHelp(true);
+        setError('');
       } else if (errorMessage === 'WEAK_PASSWORD') {
-        setError('Le mot de passe doit contenir au moins 6 caractères');
+        setSignupHelpScenario('weak_password');
+        setShowSignupHelp(true);
+        setError('');
+      } else if (errorMessage === 'GENERAL_ERROR') {
+        setSignupHelpScenario('general_error');
+        setShowSignupHelp(true);
+        setError('');
       } else {
         setError(errorMessage || 'Une erreur est survenue');
       }
@@ -456,6 +475,30 @@ export default function Auth({ mode, onNavigate }: AuthProps) {
           onClose={() => {
             setShowEmailConfirmation(false);
             setPendingConfirmationEmail('');
+          }}
+        />
+      )}
+
+      {showSignupHelp && (
+        <SignupHelpModal
+          isOpen={showSignupHelp}
+          onClose={() => setShowSignupHelp(false)}
+          scenario={signupHelpScenario}
+          email={email}
+          onSwitchToLogin={() => {
+            setIsLogin(true);
+            setShowSignupHelp(false);
+          }}
+          onRetry={async () => {
+            setShowSignupHelp(false);
+            setError('');
+            if (signupHelpScenario === 'account_incomplete') {
+              try {
+                await cleanupIncompleteAccount(email);
+              } catch (err) {
+                console.error('Error cleaning up account:', err);
+              }
+            }
           }}
         />
       )}

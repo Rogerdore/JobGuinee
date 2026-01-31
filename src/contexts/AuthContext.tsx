@@ -17,6 +17,7 @@ interface AuthContextType {
   getAndClearRedirectIntent: () => AuthRedirectIntent | null;
   resetPassword: (email: string) => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<void>;
+  cleanupIncompleteAccount: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -255,6 +256,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
+    // Vérifier si l'utilisateur existe déjà avant de tenter l'inscription
+    const { data: existingUsers } = await supabase
+      .from('profiles')
+      .select('id, email, user_type')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (existingUsers) {
+      // Le compte existe déjà avec un profil complet
+      throw new Error('EMAIL_EXISTS');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -269,7 +282,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-        throw new Error('EMAIL_EXISTS');
+        // L'email existe dans auth.users mais pas dans profiles (compte incomplet)
+        throw new Error('ACCOUNT_INCOMPLETE');
       }
       if (error.message.includes('Password')) {
         throw new Error('WEAK_PASSWORD');
@@ -278,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!data.user) {
-      throw new Error('Inscription échouée. Veuillez réessayer.');
+      throw new Error('GENERAL_ERROR');
     }
 
     // Email confirmation désactivée - l'utilisateur peut se connecter immédiatement
@@ -306,7 +320,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!profileData) {
-      throw new Error('Inscription échouée. Veuillez rafraîchir et vous reconnecter.');
+      // Le compte a été créé mais le profil prend du temps
+      throw new Error('PROFILE_TIMEOUT');
     }
 
     if (role === 'trainer') {
@@ -362,6 +377,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       throw new Error('Impossible d\'envoyer l\'email de réinitialisation. Vérifiez votre adresse email.');
+    }
+  };
+
+  const cleanupIncompleteAccount = async (email: string) => {
+    try {
+      const { error } = await supabase.rpc('cleanup_incomplete_account', { user_email: email });
+
+      if (error) {
+        console.error('Error cleaning up incomplete account:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error cleaning up incomplete account:', error);
+      throw error;
     }
   };
 
@@ -421,6 +450,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     refreshProfile,
     getAndClearRedirectIntent,
+    cleanupIncompleteAccount,
     resetPassword,
     resendConfirmationEmail,
   };
