@@ -74,6 +74,7 @@ const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const AdminExternalApplications = lazy(() => import('./pages/AdminExternalApplications'));
 const AdminEmailTemplates = lazy(() => import('./pages/AdminEmailTemplates'));
 const AdminEmailConfig = lazy(() => import('./pages/AdminEmailConfig'));
+const AdminTestEmail = lazy(() => import('./pages/AdminTestEmail'));
 const CampaignCreate = lazy(() => import('./pages/CampaignCreate'));
 const AdminCampaignPayments = lazy(() => import('./pages/AdminCampaignPayments'));
 const AdminDiffusionSettings = lazy(() => import('./pages/AdminDiffusionSettings'));
@@ -282,6 +283,7 @@ function AppContent() {
         {currentPage === 'admin-applications-list' && <AdminApplicationsList />}
         {currentPage === 'admin-email-templates' && <AdminEmailTemplates />}
         {currentPage === 'admin-email-config' && <AdminEmailConfig />}
+        {currentPage === 'admin-test-email' && <AdminTestEmail />}
         {currentPage === 'campaign-create' && <CampaignCreate onNavigate={handleNavigate} />}
         {currentPage === 'admin-campaign-payments' && <AdminCampaignPayments />}
         {currentPage === 'admin-diffusion-settings' && <AdminDiffusionSettings />}
