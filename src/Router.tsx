@@ -4,6 +4,12 @@ import { supabase } from './lib/supabase';
 import { socialShareService } from './services/socialShareService';
 import { jobClickTrackingService } from './services/jobClickTrackingService';
 import App from './App';
+import SolutionEntreprises from './pages/SolutionEntreprises';
+import SolutionMines from './pages/SolutionMines';
+import SolutionONG from './pages/SolutionONG';
+import SolutionCabinets from './pages/SolutionCabinets';
+import SolutionFormation from './pages/SolutionFormation';
+import SolutionCoachs from './pages/SolutionCoachs';
 
 function ShareRedirect() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -140,6 +146,12 @@ export default function Router() {
           <Route path="/public/:token" element={<PublicProfileRedirect />} />
           <Route path="/candidatures/:applicationId" element={<ExternalApplicationRedirect />} />
           <Route path="/external/:applicationId" element={<ExternalApplicationRedirect />} />
+          <Route path="/solutions/entreprises-pme" element={<SolutionEntreprises />} />
+          <Route path="/solutions/mines-grands-projets" element={<SolutionMines />} />
+          <Route path="/solutions/ong-institutions" element={<SolutionONG />} />
+          <Route path="/solutions/cabinets-rh-agences" element={<SolutionCabinets />} />
+          <Route path="/solutions/centres-formation" element={<SolutionFormation />} />
+          <Route path="/solutions/coachs-consultants" element={<SolutionCoachs />} />
           <Route path="*" element={<App />} />
         </Routes>
       </Suspense>

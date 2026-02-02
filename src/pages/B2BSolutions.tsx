@@ -370,7 +370,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Entreprises et PME */}
-            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00]">
+            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00] cursor-pointer" onClick={() => window.location.href = '/solutions/entreprises-pme'}>
               <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
                 <Building2 className="w-8 h-8 text-white" />
               </div>
@@ -381,7 +381,6 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
                 Que vous soyez une startup, une PME en croissance ou une grande entreprise établie en Guinée, nos solutions de recrutement, d'ATS digital et de CVthèque vous permettent de structurer vos processus RH et d'accéder aux meilleurs talents du marché local. Optimisez vos recrutements avec nos outils digitaux et notre accompagnement personnalisé.
               </p>
               <button
-                onClick={() => setShowForm(true)}
                 className="flex items-center text-[#0E2F56] font-medium group-hover:text-[#FF8C00]"
               >
                 Découvrir nos solutions entreprise
@@ -390,7 +389,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
             </div>
 
             {/* Secteur Minier */}
-            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00]">
+            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00] cursor-pointer" onClick={() => window.location.href = '/solutions/mines-grands-projets'}>
               <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
                 <Hammer className="w-8 h-8 text-white" />
               </div>
@@ -401,7 +400,6 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
                 Le secteur minier guinéen nécessite des solutions RH robustes et scalables. Nos services d'externalisation de recrutement, de matching IA et notre CVthèque spécialisée vous permettent de recruter rapidement des profils techniques qualifiés (ingénieurs, géologues, techniciens) tout en respectant les exigences de conformité et de contentu local.
               </p>
               <button
-                onClick={() => setShowForm(true)}
                 className="flex items-center text-[#0E2F56] font-medium group-hover:text-[#FF8C00]"
               >
                 Solutions pour le secteur minier
@@ -410,7 +408,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
             </div>
 
             {/* ONG et Institutions */}
-            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00]">
+            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00] cursor-pointer" onClick={() => window.location.href = '/solutions/ong-institutions'}>
               <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
                 <Landmark className="w-8 h-8 text-white" />
               </div>
@@ -421,7 +419,6 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
                 Les organisations internationales, ONG humanitaires et institutions publiques guinéennes bénéficient de nos processus de recrutement conformes aux standards internationaux. Accédez à notre réseau de professionnels qualifiés et gérez vos recrutements de manière transparente et efficace avec nos outils de reporting avancés.
               </p>
               <button
-                onClick={() => setShowForm(true)}
                 className="flex items-center text-[#0E2F56] font-medium group-hover:text-[#FF8C00]"
               >
                 Solutions pour ONG et institutions
@@ -430,7 +427,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
             </div>
 
             {/* Cabinets RH */}
-            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00]">
+            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00] cursor-pointer" onClick={() => window.location.href = '/solutions/cabinets-rh-agences'}>
               <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
                 <Users className="w-8 h-8 text-white" />
               </div>
@@ -441,7 +438,6 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
                 Cabinets de recrutement, agences de placement et consultants RH en Guinée : renforcez votre offre de services avec notre plateforme B2B. Accédez à notre CVthèque premium, utilisez nos outils d'ATS pour gérer vos missions clients, et proposez des services de matching IA à valeur ajoutée pour vous démarquer sur le marché.
               </p>
               <button
-                onClick={() => setShowForm(true)}
                 className="flex items-center text-[#0E2F56] font-medium group-hover:text-[#FF8C00]"
               >
                 Devenir partenaire cabinet RH
@@ -450,7 +446,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
             </div>
 
             {/* Centres de formation */}
-            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00]">
+            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00] cursor-pointer" onClick={() => window.location.href = '/solutions/centres-formation'}>
               <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
                 <School className="w-8 h-8 text-white" />
               </div>
@@ -461,7 +457,6 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
                 Organismes de formation professionnelle, centres de coaching et formateurs indépendants : publiez vos programmes de formation sur JobGuinée, bénéficiez de notre mise en avant premium et accédez à un réseau qualifié de professionnels guinéens cherchant à développer leurs compétences. Développez votre visibilité et remplissez vos sessions de formation.
               </p>
               <button
-                onClick={() => setShowForm(true)}
                 className="flex items-center text-[#0E2F56] font-medium group-hover:text-[#FF8C00]"
               >
                 Solutions pour la formation
@@ -470,7 +465,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
             </div>
 
             {/* Formateurs individuels */}
-            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00]">
+            <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition p-8 border-2 border-transparent hover:border-[#FF8C00] cursor-pointer" onClick={() => window.location.href = '/solutions/coachs-consultants'}>
               <div className="w-16 h-16 bg-gradient-to-br from-[#0E2F56] to-[#1a4275] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition">
                 <User className="w-8 h-8 text-white" />
               </div>
@@ -481,7 +476,6 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
                 Coachs professionnels, consultants en développement personnel et experts métiers : utilisez JobGuinée pour promouvoir vos services de coaching individuel ou collectif. Créez votre profil formateur premium, publiez vos offres de coaching et connectez-vous avec des professionnels et entreprises guinéennes en quête d'accompagnement personnalisé.
               </p>
               <button
-                onClick={() => setShowForm(true)}
                 className="flex items-center text-[#0E2F56] font-medium group-hover:text-[#FF8C00]"
               >
                 Devenir coach partenaire
