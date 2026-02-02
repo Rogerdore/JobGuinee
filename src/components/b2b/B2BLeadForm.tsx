@@ -231,22 +231,104 @@ export default function B2BLeadForm({ onSuccess, onCancel, sourcePage, landingPa
 
   if (submitStatus === 'success') {
     return (
-      <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-green-600" />
+      <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center relative overflow-hidden">
+        {/* Decorative background */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-500 via-emerald-500 to-green-600"></div>
+
+        {/* Animated checkmark */}
+        <div className="relative">
+          <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <CheckCircle2 className="w-12 h-12 text-green-600" />
+          </div>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Demande envoyée avec succès !
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Merci pour votre intérêt. Un spécialiste JobGuinée vous contactera dans les plus brefs délais.
+
+        {/* Success message */}
+        <div className="mb-6">
+          <h3 className="text-3xl font-bold text-gray-900 mb-3">
+            Demande envoyée avec succès !
+          </h3>
+          <p className="text-lg text-gray-700 mb-4">
+            Merci pour votre intérêt, <strong>{formData.contact_name}</strong>
+          </p>
+          <p className="text-gray-600">
+            Votre demande a été transmise à notre équipe B2B et apparaît en temps réel dans notre système.
+          </p>
+        </div>
+
+        {/* What happens next */}
+        <div className="bg-blue-50 rounded-xl p-6 mb-6 text-left">
+          <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-600" />
+            Prochaines étapes
+          </h4>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                1
+              </div>
+              <p className="text-gray-700">
+                <strong>Confirmation email :</strong> Vous recevrez un accusé de réception sous quelques minutes à <span className="text-blue-600">{formData.contact_email}</span>
+              </p>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                2
+              </div>
+              <p className="text-gray-700">
+                <strong>Analyse de votre besoin :</strong> Un spécialiste JobGuinée étudie votre demande (sous 2-4h)
+              </p>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                3
+              </div>
+              <p className="text-gray-700">
+                <strong>Prise de contact :</strong> Nous vous contactons par {formData.contact_phone ? 'téléphone ou email' : 'email'} sous 24h pour discuter de votre projet
+              </p>
+            </li>
+          </ul>
+        </div>
+
+        {/* Contact info */}
+        <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600">
+          <p className="mb-2">
+            <strong>Besoin urgent ?</strong> Contactez-nous directement :
+          </p>
+          <div className="flex items-center justify-center gap-4 text-blue-600">
+            <a href="tel:+224621000000" className="flex items-center gap-2 hover:underline">
+              <Phone className="w-4 h-4" />
+              +224 621 00 00 00
+            </a>
+            <a href="mailto:b2b@jobguinee.com" className="flex items-center gap-2 hover:underline">
+              <Mail className="w-4 h-4" />
+              b2b@jobguinee.com
+            </a>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={() => setSubmitStatus('idle')}
+            className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+          >
+            <Send className="w-5 h-5" />
+            Envoyer une nouvelle demande
+          </button>
+          {onSuccess && (
+            <button
+              onClick={onSuccess}
+              className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition"
+            >
+              Fermer
+            </button>
+          )}
+        </div>
+
+        {/* Reference number */}
+        <p className="text-xs text-gray-400 mt-6">
+          Référence de votre demande : #{Date.now().toString().slice(-8)}
         </p>
-        <button
-          onClick={() => setSubmitStatus('idle')}
-          className="text-[#0E2F56] hover:underline font-medium"
-        >
-          Envoyer une nouvelle demande
-        </button>
       </div>
     );
   }

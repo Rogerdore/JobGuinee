@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   Users, CheckCircle, XCircle, Clock, TrendingUp, Mail, Phone,
   Building2, MessageSquare, User, Calendar, Eye, Edit, Save, X,
-  ToggleLeft, ToggleRight, Globe, FileText, HelpCircle
+  ToggleLeft, ToggleRight, Globe, FileText, HelpCircle, Bell
 } from 'lucide-react';
 import { b2bLeadsService, B2BLead, B2BPageConfig } from '../services/b2bLeadsService';
+import { supabase } from '../lib/supabase';
 
 type TabType = 'leads' | 'config' | 'seo';
 
@@ -15,6 +16,7 @@ export default function AdminB2BManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<B2BLead | null>(null);
   const [editingSection, setEditingSection] = useState<B2BPageConfig | null>(null);
+  const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [seoSettings, setSeoSettings] = useState({
     title: 'Solutions B2B RH en Guinée | Recrutement, Externalisation & IA – JobGuinée',
     description: 'Solutions RH B2B complètes : externalisation du recrutement, ATS, matching IA, formation et conseil RH pour entreprises et institutions en Guinée et Afrique de l\'Ouest.',
@@ -24,6 +26,62 @@ export default function AdminB2BManagement() {
   useEffect(() => {
     loadData();
   }, [activeTab]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('b2b_leads_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'b2b_leads'
+        },
+        (payload) => {
+          const newLead = payload.new as B2BLead;
+
+          setLeads(prevLeads => [newLead, ...prevLeads]);
+          setNewLeadsCount(prev => prev + 1);
+
+          if (Notification.permission === 'granted') {
+            new Notification('Nouvelle demande B2B JobGuinée', {
+              body: `${newLead.organization_name} - ${newLead.primary_need}`,
+              icon: '/favicon.png',
+              tag: 'b2b-lead'
+            });
+          }
+
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGG0fPTgjMGHm7A7OihUBELTKXh8bllHAU2jdXzzn0vBSd7yfDglkoOFGG46OumWRQLSKHf8sFuJAUuhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKDf8sFtJAUvhM/z1YU2Bhxqvu7mnlIOD1Cr5O+vZSAHNIzU8tGAMgYebrzt56FRDQtIoN/ywW0kBS+Ez/PVhTYGHGq+7uaeUg4PUKvk769lIAc0jNTy0YAyBh5uvO3noVENC0ig3/LBbSQFL4TP89WFNgYcar7u5p5SDg9Qq+Tvr2UgBzSM1PLRgDIGHm687eehUQ0LSKAAAAAAAAAAAAAAAAAAAA');
+          audio.volume = 0.3;
+          audio.play().catch(() => {});
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'b2b_leads'
+        },
+        (payload) => {
+          const updatedLead = payload.new as B2BLead;
+          setLeads(prevLeads =>
+            prevLeads.map(lead =>
+              lead.id === updatedLead.id ? updatedLead : lead
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -121,12 +179,40 @@ export default function AdminB2BManagement() {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Gestion B2B Solutions
-          </h1>
-          <p className="text-gray-600">
-            Gérez les leads B2B et configurez la page Solutions
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Gestion B2B Solutions
+                </h1>
+                {newLeadsCount > 0 && (
+                  <span className="relative flex h-10 w-10">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-10 w-10 bg-green-500 items-center justify-center">
+                      <span className="text-white font-bold text-sm">{newLeadsCount}</span>
+                    </span>
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-600 mt-2">
+                Gérez les leads B2B et configurez la page Solutions
+                {newLeadsCount > 0 && (
+                  <span className="ml-2 text-green-600 font-semibold">
+                    • {newLeadsCount} nouvelle{newLeadsCount > 1 ? 's' : ''} demande{newLeadsCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </p>
+            </div>
+            {newLeadsCount > 0 && (
+              <button
+                onClick={() => setNewLeadsCount(0)}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Marquer comme vu
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
