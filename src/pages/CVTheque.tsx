@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Grid, List, ShoppingCart, TrendingUp, Sparkles, Filter as FilterIcon, ChevronLeft, ChevronRight, Circle, Hexagon, Star } from 'lucide-react';
+import { Users, Grid, List, ShoppingCart, TrendingUp, Filter as FilterIcon, ChevronLeft, ChevronRight, Circle, Hexagon, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/notifications/ToastContainer';
@@ -16,8 +16,6 @@ import CartHistoryModal from '../components/cvtheque/CartHistoryModal';
 import { sampleProfiles } from '../utils/sampleProfiles';
 import { cartHistoryService, CartHistoryItem } from '../services/cartHistoryService';
 import { candidateStatsService } from '../services/candidateStatsService';
-import { cvScoringService } from '../services/cvScoringService';
-import { recruiterAISearchService, AISearchResult } from '../services/recruiterAISearchService';
 
 interface CVThequeProps {
   onNavigate: (page: string) => void;
@@ -51,9 +49,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   const [showCartHistory, setShowCartHistory] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [activeCartHistory, setActiveCartHistory] = useState<CartHistoryItem[]>([]);
-  const [aiSearchLoading, setAiSearchLoading] = useState(false);
-  const [aiSearchResult, setAiSearchResult] = useState<AISearchResult | null>(null);
-  const [showAISearchModal, setShowAISearchModal] = useState(false);
 
   useEffect(() => {
     loadCandidates();
@@ -214,102 +209,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     applyFilters(query, filters);
   };
 
-  /**
-   * RECHERCHE IA OPTIONNELLE - MOTEUR CENTRAL
-   * RÈGLE: Appelle recruiterAISearchService (débite 5 crédits IA)
-   * Recherche complémentaire à la recherche classique
-   */
-  const handleAISearch = async () => {
-    if (!user?.id) {
-      showError('Connexion requise', 'Veuillez vous connecter pour utiliser la recherche IA');
-      return;
-    }
-
-    if (!searchQuery || searchQuery.trim().length < 3) {
-      showInfo('Requête trop courte', 'Veuillez entrer au moins 3 caractères pour la recherche IA');
-      return;
-    }
-
-    try {
-      setAiSearchLoading(true);
-
-      // Vérifier les crédits disponibles
-      const creditCheck = await recruiterAISearchService.canAffordSearch(user.id);
-      if (!creditCheck.canAfford) {
-        showError(
-          'Crédits insuffisants',
-          `Cette recherche coûte ${creditCheck.creditsNeeded} crédits. Vous avez ${creditCheck.creditsAvailable} crédits.`
-        );
-        return;
-      }
-
-      // Appeler le service IA central
-      const result = await recruiterAISearchService.searchCandidates(user.id, {
-        query: searchQuery,
-        currentFilters: filters
-      });
-
-      if (!result.success) {
-        if (result.insufficientCredits) {
-          showError('Crédits insuffisants', result.error || 'Pas assez de crédits pour cette recherche');
-        } else {
-          showError('Erreur de recherche', result.error || 'Une erreur est survenue');
-        }
-        return;
-      }
-
-      // Afficher les résultats
-      if (result.result) {
-        setAiSearchResult(result.result);
-        setShowAISearchModal(true);
-
-        showSuccess(
-          'Recherche IA complétée',
-          `${result.creditsUsed} crédits débités. Résultats analysés par IA.`
-        );
-
-        // Optionnel: appliquer automatiquement les critères suggérés
-        // (laisser l'utilisateur décider via modal pour l'instant)
-      }
-    } catch (error: any) {
-      console.error('AI Search error:', error);
-      showError('Erreur', error.message || 'Une erreur est survenue lors de la recherche IA');
-    } finally {
-      setAiSearchLoading(false);
-    }
-  };
-
-  /**
-   * Applique les critères de recherche IA aux filtres
-   */
-  const applyAISearchCriteria = () => {
-    if (!aiSearchResult) return;
-
-    const newFilters: FilterValues = { ...filters };
-
-    if (aiSearchResult.searchCriteria.location) {
-      newFilters.location = aiSearchResult.searchCriteria.location;
-    }
-
-    if (aiSearchResult.searchCriteria.educationLevel) {
-      newFilters.educationLevel = aiSearchResult.searchCriteria.educationLevel;
-    }
-
-    if (aiSearchResult.searchCriteria.experienceMin !== undefined) {
-      newFilters.experienceMin = aiSearchResult.searchCriteria.experienceMin;
-    }
-
-    if (aiSearchResult.searchCriteria.experienceMax !== undefined) {
-      newFilters.experienceMax = aiSearchResult.searchCriteria.experienceMax;
-    }
-
-    setFilters(newFilters);
-    applyFilters(searchQuery, newFilters);
-    setShowAISearchModal(false);
-
-    showSuccess('Filtres appliqués', 'Les critères de recherche IA ont été appliqués');
-  };
-
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
     setCurrentPage(1);
@@ -375,11 +274,27 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       results = results.filter(c => c.is_verified);
     }
 
-    if (filterValues.min_score) {
-      results = results.filter(c => c.ai_score >= filterValues.min_score!);
+    if (filterValues.gender) {
+      results = results.filter(c => c.gender === filterValues.gender);
     }
 
-    results.sort((a, b) => b.ai_score - a.ai_score);
+    if (filterValues.salary_min !== undefined) {
+      results = results.filter(c => (c.expected_salary_min || 0) >= filterValues.salary_min!);
+    }
+
+    if (filterValues.salary_max !== undefined) {
+      results = results.filter(c => (c.expected_salary_max || 0) <= filterValues.salary_max!);
+    }
+
+    if (filterValues.date_available) {
+      results = results.filter(c => c.availability === filterValues.date_available);
+    }
+
+    results.sort((a, b) => {
+      const scoreA = a.ai_score || a.profile_completion_percentage || 0;
+      const scoreB = b.ai_score || b.profile_completion_percentage || 0;
+      return scoreB - scoreA;
+    });
 
     setFilteredCandidates(results);
   };
@@ -965,20 +880,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
 
           <div className="space-y-3">
             <SearchBar onSearch={handleSearch} loading={loading} />
-
-            {/* Bouton Recherche IA Optionnelle */}
-            {profile?.user_type === 'recruiter' && searchQuery && (
-              <button
-                onClick={handleAISearch}
-                disabled={aiSearchLoading || loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Sparkles className={`w-5 h-5 ${aiSearchLoading ? 'animate-spin' : ''}`} />
-                <span className="font-semibold">
-                  {aiSearchLoading ? 'Recherche IA en cours...' : 'Recherche IA (5 crédits)'}
-                </span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -1194,136 +1095,6 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
             );
           }}
         />
-      )}
-
-      {/* Modal Résultats Recherche IA */}
-      {showAISearchModal && aiSearchResult && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-4 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-6 h-6" />
-                  <h2 className="text-xl font-bold">Résultats Recherche IA</h2>
-                </div>
-                <button
-                  onClick={() => setShowAISearchModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Interprétation de la requête */}
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">Interprétation IA</h3>
-                <p className="text-blue-800">{aiSearchResult.interpretedQuery}</p>
-              </div>
-
-              {/* Critères extraits */}
-              {Object.keys(aiSearchResult.searchCriteria).length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Critères identifiés</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {aiSearchResult.searchCriteria.skills && aiSearchResult.searchCriteria.skills.length > 0 && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-gray-600 mb-1">Compétences</div>
-                        <div className="flex flex-wrap gap-1">
-                          {aiSearchResult.searchCriteria.skills.map((skill, idx) => (
-                            <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {aiSearchResult.searchCriteria.experienceMin !== undefined && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-gray-600 mb-1">Expérience</div>
-                        <div className="text-sm text-gray-800">
-                          {aiSearchResult.searchCriteria.experienceMin} - {aiSearchResult.searchCriteria.experienceMax || '+'} ans
-                        </div>
-                      </div>
-                    )}
-
-                    {aiSearchResult.searchCriteria.educationLevel && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-gray-600 mb-1">Éducation</div>
-                        <div className="text-sm text-gray-800 capitalize">{aiSearchResult.searchCriteria.educationLevel}</div>
-                      </div>
-                    )}
-
-                    {aiSearchResult.searchCriteria.location && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-gray-600 mb-1">Localisation</div>
-                        <div className="text-sm text-gray-800">{aiSearchResult.searchCriteria.location}</div>
-                      </div>
-                    )}
-
-                    {aiSearchResult.searchCriteria.domain && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm font-medium text-gray-600 mb-1">Domaine</div>
-                        <div className="text-sm text-gray-800">{aiSearchResult.searchCriteria.domain}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Mots-clés suggérés */}
-              {aiSearchResult.suggestedKeywords && aiSearchResult.suggestedKeywords.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Mots-clés suggérés</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {aiSearchResult.suggestedKeywords.map((keyword, idx) => (
-                      <span key={idx} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Facteurs de pertinence */}
-              {aiSearchResult.relevanceFactors && aiSearchResult.relevanceFactors.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Facteurs de pertinence</h3>
-                  <ul className="space-y-2">
-                    {aiSearchResult.relevanceFactors.map((factor, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="text-green-500 mt-0.5">✓</span>
-                        <span>{factor}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-2xl border-t flex gap-3">
-              <button
-                onClick={applyAISearchCriteria}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all font-semibold"
-              >
-                Appliquer les critères
-              </button>
-              <button
-                onClick={() => setShowAISearchModal(false)}
-                className="px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

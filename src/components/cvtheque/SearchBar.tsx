@@ -1,4 +1,4 @@
-import { Search, Sparkles } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
 
 interface SearchBarProps {
@@ -29,8 +29,8 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
           <Search className="w-8 h-8 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1">Recherche IA de Talents</h2>
-          <p className="text-blue-100">Trouvez le profil idéal grâce à l'intelligence artificielle</p>
+          <h2 className="text-2xl font-bold text-white mb-1">Recherche Avancée de Talents</h2>
+          <p className="text-blue-100">Trouvez le profil idéal parmi notre base de talents qualifiés</p>
         </div>
       </div>
 
@@ -40,12 +40,12 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ex: Technicien électricité, Conakry, 5 ans d'expérience..."
+            placeholder="Ex: Comptable, Ingénieur mines, Responsable RH, développeur..."
             className="w-full px-6 py-4 pr-32 text-lg border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-white/50 focus:border-white bg-white/10 text-white placeholder-white/60"
           />
           <button
             type="submit"
-            disabled={loading || !query.trim()}
+            disabled={loading}
             className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-white text-blue-900 font-semibold rounded-lg hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 transition flex items-center gap-2"
           >
             {loading ? (
@@ -55,7 +55,7 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5" />
+                <Search className="w-5 h-5" />
                 Rechercher
               </>
             )}

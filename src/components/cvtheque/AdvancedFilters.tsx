@@ -12,7 +12,10 @@ export interface FilterValues {
   languages?: string[];
   mobility?: string;
   verified_only?: boolean;
-  min_score?: number;
+  gender?: string;
+  salary_min?: number;
+  salary_max?: number;
+  date_available?: string;
 }
 
 interface AdvancedFiltersProps {
@@ -170,6 +173,63 @@ export default function AdvancedFilters({ onApply, onClear }: AdvancedFiltersPro
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Genre</label>
+              <select
+                value={filters.gender || ''}
+                onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Tous</option>
+                <option value="Masculin">Masculin</option>
+                <option value="Féminin">Féminin</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Disponibilité
+              </label>
+              <select
+                value={filters.date_available || ''}
+                onChange={(e) => setFilters({ ...filters, date_available: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Toutes</option>
+                <option value="immediate">Immédiate</option>
+                <option value="1_month">Dans 1 mois</option>
+                <option value="3_months">Dans 3 mois</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Prétentions salariales (GNF/mois)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="Min"
+                value={filters.salary_min || ''}
+                onChange={(e) => setFilters({ ...filters, salary_min: parseInt(e.target.value) || undefined })}
+                className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                min="0"
+                step="100000"
+              />
+              <input
+                type="number"
+                placeholder="Max"
+                value={filters.salary_max || ''}
+                onChange={(e) => setFilters({ ...filters, salary_max: parseInt(e.target.value) || undefined })}
+                className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                min="0"
+                step="100000"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -180,21 +240,6 @@ export default function AdvancedFilters({ onApply, onClear }: AdvancedFiltersPro
               />
               <span className="text-sm font-medium text-gray-700">Profils vérifiés uniquement</span>
             </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Score IA minimum: {filters.min_score || 50}%
-            </label>
-            <input
-              type="range"
-              min="50"
-              max="100"
-              step="5"
-              value={filters.min_score || 50}
-              onChange={(e) => setFilters({ ...filters, min_score: parseInt(e.target.value) })}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-900"
-            />
           </div>
 
           <div className="flex gap-3 pt-2">
