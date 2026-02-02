@@ -138,8 +138,6 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
 
   const totalExp = calculateTotalExperience(exps);
 
-  console.log('Expériences à afficher:', exps.length);
-
   return (
     <div className="space-y-4">
       {exps.map((exp, index) => (

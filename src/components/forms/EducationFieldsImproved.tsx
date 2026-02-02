@@ -65,8 +65,6 @@ export default function EducationFieldsImproved({ educations, onChange }: Educat
     onChange(updated);
   };
 
-  console.log('Formations à afficher:', edus.length);
-
   const YEARS = Array.from({ length: 60 }, (_, i) => (new Date().getFullYear() - i).toString());
 
   return (

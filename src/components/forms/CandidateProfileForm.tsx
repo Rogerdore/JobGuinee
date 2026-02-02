@@ -358,7 +358,6 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           .single();
 
         if (error || !data) {
-          console.log('No existing candidate profile found');
           return;
         }
 
@@ -717,11 +716,9 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
         const useDraft = draftData && draftTimestamp && dbTimestamp && draftTimestamp > dbTimestamp;
 
         if (useDraft) {
-          console.log('Loading from draft (more recent than database)');
           setExistingPhotoUrl(draftData.profilePhoto || data?.photo_url || '');
           setFormData(draftData);
         } else if (data) {
-          console.log('Loading from database');
           setExistingPhotoUrl(data.photo_url || '');
 
           setFormData({
@@ -780,7 +777,6 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
             cvParsedAt: data.cv_parsed_at || null,
           });
         } else if (draftData) {
-          console.log('Loading from draft (no database data)');
           setFormData(draftData);
         }
       } catch (error) {
