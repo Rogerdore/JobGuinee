@@ -36,7 +36,7 @@ export function useCVParsing() {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits_balance')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single();
 
       if (profileError || !profile) {

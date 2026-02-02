@@ -62,7 +62,7 @@ export default function CVUploadWithParser({
         const { data, error } = await supabase
           .from('profiles')
           .select('credits_balance')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single();
 
         if (!error && data) {
@@ -96,7 +96,7 @@ export default function CVUploadWithParser({
         const { data } = await supabase
           .from('profiles')
           .select('credits_balance')
-          .eq('user_id', user?.id)
+          .eq('id', user?.id)
           .single();
         if (data) {
           setCreditsBalance(data.credits_balance || 0);
