@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, Briefcase, Calendar } from 'lucide-react';
 
 interface Experience {
@@ -84,19 +84,7 @@ export function calculateTotalExperience(experiences: Experience[]): string {
 }
 
 export default function ExperienceFieldsImproved({ experiences, onChange }: ExperienceFieldsImprovedProps) {
-  const [exps, setExps] = useState<Experience[]>(experiences);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!initializedRef.current && experiences.length > 0) {
-      setExps(experiences);
-      initializedRef.current = true;
-    }
-  }, [experiences]);
-
-  useEffect(() => {
-    onChange(exps);
-  }, [exps, onChange]);
+  const [exps, setExps] = useState<Experience[]>(() => experiences.length > 0 ? experiences : []);
 
   const addExperience = () => {
     const newExp: Experience = {
@@ -110,11 +98,15 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
       description: '',
       duration: ''
     };
-    setExps([...exps, newExp]);
+    const newList = [...exps, newExp];
+    setExps(newList);
+    onChange(newList);
   };
 
   const removeExperience = (index: number) => {
-    setExps(exps.filter((_, i) => i !== index));
+    const newList = exps.filter((_, i) => i !== index);
+    setExps(newList);
+    onChange(newList);
   };
 
   const updateExperience = (index: number, field: keyof Experience, value: any) => {
@@ -135,9 +127,12 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
     );
 
     setExps(updated);
+    onChange(updated);
   };
 
   const totalExp = calculateTotalExperience(exps);
+
+  console.log('Expériences à afficher:', exps.length);
 
   return (
     <div className="space-y-4">

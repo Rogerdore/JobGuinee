@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, GraduationCap } from 'lucide-react';
 
 interface Education {
@@ -32,19 +32,7 @@ const COMMON_FIELDS = [
 ];
 
 export default function EducationFieldsImproved({ educations, onChange }: EducationFieldsImprovedProps) {
-  const [edus, setEdus] = useState<Education[]>(educations);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!initializedRef.current && educations.length > 0) {
-      setEdus(educations);
-      initializedRef.current = true;
-    }
-  }, [educations]);
-
-  useEffect(() => {
-    onChange(edus);
-  }, [edus, onChange]);
+  const [edus, setEdus] = useState<Education[]>(() => educations.length > 0 ? educations : []);
 
   const addEducation = () => {
     const newEdu: Education = {
@@ -53,18 +41,25 @@ export default function EducationFieldsImproved({ educations, onChange }: Educat
       institution: '',
       year: ''
     };
-    setEdus([...edus, newEdu]);
+    const newList = [...edus, newEdu];
+    setEdus(newList);
+    onChange(newList);
   };
 
   const removeEducation = (index: number) => {
-    setEdus(edus.filter((_, i) => i !== index));
+    const newList = edus.filter((_, i) => i !== index);
+    setEdus(newList);
+    onChange(newList);
   };
 
   const updateEducation = (index: number, field: keyof Education, value: string) => {
     const updated = [...edus];
     updated[index] = { ...updated[index], [field]: value };
     setEdus(updated);
+    onChange(updated);
   };
+
+  console.log('Formations à afficher:', edus.length);
 
   const YEARS = Array.from({ length: 60 }, (_, i) => (new Date().getFullYear() - i).toString());
 

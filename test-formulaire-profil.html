@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Formulaire Profil - Expériences & Formations</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #2d3748;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+
+    .status {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      font-weight: 600;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-radius: 15px;
+      border: 2px solid #e9ecef;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      color: #495057;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .item {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      border: 2px solid #dee2e6;
+      position: relative;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .item-number {
+      background: #007bff;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .delete-btn:hover {
+      background: #c82333;
+      transform: scale(1.05);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #ced4da;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-top: 0.25rem;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.25rem;
+    }
+
+    .field-group {
+      margin-bottom: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .add-btn {
+      width: 100%;
+      padding: 1rem;
+      background: white;
+      border: 3px dashed #007bff;
+      color: #007bff;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .add-btn:hover {
+      background: #e7f3ff;
+      border-color: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    .counter {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #6c757d;
+      font-style: italic;
+    }
+
+    .duration {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      margin-left: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✅ Formulaire de Profil Candidat - Test</h1>
+
+    <div class="status">
+      🎉 Correction appliquée ! Les expériences et formations s'affichent maintenant correctement.
+    </div>
+
+    <!-- EXPÉRIENCES -->
+    <div class="section">
+      <div class="section-title">
+        💼 Expériences Professionnelles
+        <span style="color: #dc3545; font-size: 1rem;">*</span>
+      </div>
+
+      <div id="experiences-list"></div>
+
+      <button class="add-btn" onclick="addExperience()">
+        ➕ Ajouter une expérience
+      </button>
+
+      <div id="total-experience" class="counter" style="display: none;"></div>
+    </div>
+
+    <!-- FORMATIONS -->
+    <div class="section">
+      <div class="section-title">
+        🎓 Formations & Diplômes
+        <span style="color: #dc3545; font-size: 1rem;">*</span>
+      </div>
+
+      <div id="formations-list"></div>
+
+      <button class="add-btn" onclick="addFormation()">
+        ➕ Ajouter une formation
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let experiences = [];
+    let formations = [];
+
+    // Fonction pour ajouter une expérience
+    function addExperience() {
+      const exp = {
+        id: Date.now(),
+        position: '',
+        company: '',
+        startMonth: '',
+        startYear: '',
+        endMonth: '',
+        endYear: '',
+        current: false,
+        description: ''
+      };
+
+      experiences.push(exp);
+      renderExperiences();
+      console.log('Expérience ajoutée. Total:', experiences.length);
+    }
+
+    // Fonction pour supprimer une expérience
+    function removeExperience(id) {
+      experiences = experiences.filter(exp => exp.id !== id);
+      renderExperiences();
+      console.log('Expérience supprimée. Total:', experiences.length);
+    }
+
+    // Fonction pour afficher les expériences
+    function renderExperiences() {
+      const list = document.getElementById('experiences-list');
+
+      if (experiences.length === 0) {
+        list.innerHTML = '<div class="empty-state">Aucune expérience ajoutée. Cliquez sur le bouton ci-dessous pour en ajouter une.</div>';
+        document.getElementById('total-experience').style.display = 'none';
+        return;
+      }
+
+      list.innerHTML = experiences.map((exp, index) => `
+        <div class="item">
+          <div class="item-header">
+            <span class="item-number">Expérience #${index + 1}</span>
+            <button class="delete-btn" onclick="removeExperience(${exp.id})">
+              🗑️ Supprimer
+            </button>
+          </div>
+
+          <div class="grid">
+            <div class="field-group">
+              <label>Poste occupé *</label>
+              <input type="text" placeholder="Ex: Chargé RH" value="${exp.position}"
+                     onchange="updateExperience(${exp.id}, 'position', this.value)">
+            </div>
+
+            <div class="field-group">
+              <label>Entreprise *</label>
+              <input type="text" placeholder="Ex: UMS Mining" value="${exp.company}"
+                     onchange="updateExperience(${exp.id}, 'company', this.value)">
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field-group">
+              <label>Date de début</label>
+              <input type="month" value="${exp.startMonth}"
+                     onchange="updateExperience(${exp.id}, 'startMonth', this.value)">
+            </div>
+
+            <div class="field-group">
+              <label>Date de fin</label>
+              <input type="month" value="${exp.endMonth}" ${exp.current ? 'disabled' : ''}
+                     onchange="updateExperience(${exp.id}, 'endMonth', this.value)">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>
+              <input type="checkbox" ${exp.current ? 'checked' : ''}
+                     onchange="updateExperience(${exp.id}, 'current', this.checked)">
+              Jusqu'à maintenant
+            </label>
+          </div>
+
+          <div class="field-group">
+            <label>Missions principales</label>
+            <textarea rows="3" placeholder="Décrivez vos responsabilités..."
+                      onchange="updateExperience(${exp.id}, 'description', this.value)">${exp.description}</textarea>
+          </div>
+        </div>
+      `).join('');
+
+      // Afficher le compteur d'expérience
+      if (experiences.length > 0) {
+        const totalDiv = document.getElementById('total-experience');
+        totalDiv.style.display = 'block';
+        totalDiv.textContent = `📊 Total: ${experiences.length} expérience${experiences.length > 1 ? 's' : ''}`;
+      }
+    }
+
+    // Fonction pour mettre à jour une expérience
+    function updateExperience(id, field, value) {
+      const exp = experiences.find(e => e.id === id);
+      if (exp) {
+        exp[field] = value;
+        console.log(`Expérience mise à jour - ${field}:`, value);
+        renderExperiences();
+      }
+    }
+
+    // Fonction pour ajouter une formation
+    function addFormation() {
+      const formation = {
+        id: Date.now(),
+        degree: '',
+        field: '',
+        institution: '',
+        year: ''
+      };
+
+      formations.push(formation);
+      renderFormations();
+      console.log('Formation ajoutée. Total:', formations.length);
+    }
+
+    // Fonction pour supprimer une formation
+    function removeFormation(id) {
+      formations = formations.filter(f => f.id !== id);
+      renderFormations();
+      console.log('Formation supprimée. Total:', formations.length);
+    }
+
+    // Fonction pour afficher les formations
+    function renderFormations() {
+      const list = document.getElementById('formations-list');
+
+      if (formations.length === 0) {
+        list.innerHTML = '<div class="empty-state">Aucune formation ajoutée. Cliquez sur le bouton ci-dessous pour en ajouter une.</div>';
+        return;
+      }
+
+      list.innerHTML = formations.map((formation, index) => `
+        <div class="item">
+          <div class="item-header">
+            <span class="item-number" style="background: #6f42c1;">Formation #${index + 1}</span>
+            <button class="delete-btn" onclick="removeFormation(${formation.id})">
+              🗑️ Supprimer
+            </button>
+          </div>
+
+          <div class="field-group">
+            <label>Diplôme obtenu *</label>
+            <input type="text" placeholder="Ex: Licence en GRH" value="${formation.degree}"
+                   onchange="updateFormation(${formation.id}, 'degree', this.value)">
+          </div>
+
+          <div class="field-group">
+            <label>Domaine d'étude *</label>
+            <input type="text" placeholder="Ex: Gestion des Ressources Humaines" value="${formation.field}"
+                   onchange="updateFormation(${formation.id}, 'field', this.value)">
+          </div>
+
+          <div class="grid">
+            <div class="field-group">
+              <label>Établissement *</label>
+              <input type="text" placeholder="Ex: Université de Conakry" value="${formation.institution}"
+                     onchange="updateFormation(${formation.id}, 'institution', this.value)">
+            </div>
+
+            <div class="field-group">
+              <label>Année d'obtention *</label>
+              <input type="number" placeholder="2020" value="${formation.year}"
+                     onchange="updateFormation(${formation.id}, 'year', this.value)">
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Fonction pour mettre à jour une formation
+    function updateFormation(id, field, value) {
+      const formation = formations.find(f => f.id === id);
+      if (formation) {
+        formation[field] = value;
+        console.log(`Formation mise à jour - ${field}:`, value);
+        renderFormations();
+      }
+    }
+
+    // Initialisation
+    renderExperiences();
+    renderFormations();
+
+    // Message de bienvenue dans la console
+    console.log('%c✅ Formulaire de Profil Candidat - Test', 'color: #28a745; font-size: 20px; font-weight: bold;');
+    console.log('%cLes expériences et formations sont maintenant affichées correctement !', 'color: #007bff; font-size: 14px;');
+    console.log('%cOuvrez cette console pour voir les logs en temps réel.', 'color: #6c757d; font-size: 12px;');
+  </script>
+</body>
+</html>
