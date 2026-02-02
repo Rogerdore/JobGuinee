@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Briefcase, Calendar } from 'lucide-react';
 
 interface Experience {
@@ -85,12 +85,14 @@ export function calculateTotalExperience(experiences: Experience[]): string {
 
 export default function ExperienceFieldsImproved({ experiences, onChange }: ExperienceFieldsImprovedProps) {
   const [exps, setExps] = useState<Experience[]>(experiences);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (experiences.length > 0 && exps.length === 0) {
+    if (!initializedRef.current && experiences.length > 0) {
       setExps(experiences);
+      initializedRef.current = true;
     }
-  }, [experiences, exps.length]);
+  }, [experiences]);
 
   useEffect(() => {
     onChange(exps);

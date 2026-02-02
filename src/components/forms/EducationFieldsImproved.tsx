@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GraduationCap } from 'lucide-react';
 
 interface Education {
@@ -33,12 +33,14 @@ const COMMON_FIELDS = [
 
 export default function EducationFieldsImproved({ educations, onChange }: EducationFieldsImprovedProps) {
   const [edus, setEdus] = useState<Education[]>(educations);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (educations.length > 0 && edus.length === 0) {
+    if (!initializedRef.current && educations.length > 0) {
       setEdus(educations);
+      initializedRef.current = true;
     }
-  }, [educations, edus.length]);
+  }, [educations]);
 
   useEffect(() => {
     onChange(edus);
