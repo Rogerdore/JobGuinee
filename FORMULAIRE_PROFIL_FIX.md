@@ -4,42 +4,34 @@
 
 Les expériences et formations ne s'affichaient pas après ajout dans le formulaire de profil candidat.
 
-## Solution Appliquée
+## Solution Appliquée - Version Finale
 
-### Architecture Simplifiée
+### Architecture avec Synchronisation Bidirectionnelle
 
-J'ai complètement refait la logique de synchronisation dans les composants :
+J'ai refait la logique de synchronisation dans les composants :
 - `ExperienceFieldsImproved.tsx`
 - `EducationFieldsImproved.tsx`
 
-### Avant (Problématique)
+### Problème Identifié
+
+Le problème principal était que les composants enfants ne synchronisaient PAS leur état local quand le parent (CandidateProfileForm) chargeait des données depuis :
+- LocalStorage (auto-sauvegarde)
+- Base de données (chargement du profil existant)
+
+### Solution Finale
 
 ```javascript
-// Logique complexe avec useEffect qui empêchait l'affichage
-const [exps, setExps] = useState<Experience[]>(experiences);
-const initializedRef = useRef(false);
+// État local vide au départ
+const [exps, setExps] = useState<Experience[]>([]);
 
+// Synchronisation parent → enfant
 useEffect(() => {
-  if (!initializedRef.current && experiences.length > 0) {
+  if (JSON.stringify(exps) !== JSON.stringify(experiences)) {
     setExps(experiences);
-    initializedRef.current = true;
   }
 }, [experiences]);
 
-useEffect(() => {
-  onChange(exps);
-}, [exps, onChange]);
-```
-
-### Après (Solution)
-
-```javascript
-// État local simple initialisé une seule fois
-const [exps, setExps] = useState<Experience[]>(() =>
-  experiences.length > 0 ? experiences : []
-);
-
-// Mise à jour directe et propagation immédiate
+// Propagation enfant → parent
 const addExperience = () => {
   const newExp: Experience = { /* ... */ };
   const newList = [...exps, newExp];
@@ -47,6 +39,42 @@ const addExperience = () => {
   onChange(newList);        // Propagation au parent
 };
 ```
+
+### Flux de Synchronisation
+
+```
+PARENT (CandidateProfileForm)
+  ↓
+  formData.experiences = [...]
+  ↓
+PROP → experiences={formData.experiences}
+  ↓
+ENFANT (ExperienceFieldsImproved)
+  ↓
+useEffect détecte le changement
+  ↓
+setExps([...]) → AFFICHAGE
+  ↓
+Utilisateur clique "Ajouter"
+  ↓
+setExps([...]) + onChange([...])
+  ↓
+PARENT reçoit les nouvelles données
+  ↓
+Auto-sauvegarde (localStorage + database)
+```
+
+## Pourquoi Cette Solution Fonctionne
+
+### Synchronisation Bidirectionnelle
+
+**Parent → Enfant** : Quand le parent charge des données (localStorage ou DB), le useEffect dans l'enfant détecte le changement et met à jour l'affichage.
+
+**Enfant → Parent** : Quand l'utilisateur modifie les données, l'enfant appelle `onChange()` pour propager au parent.
+
+### Éviter les Boucles Infinies
+
+La comparaison `JSON.stringify(exps) !== JSON.stringify(experiences)` empêche les re-rendus inutiles et les boucles infinies.
 
 ## Comment ça fonctionne maintenant
 
@@ -92,6 +120,74 @@ Mise à jour de l'affichage
 Propagation au parent
   ↓
 Auto-sauvegarde
+```
+
+## Cas d'Usage Couverts
+
+### 1. Premier Chargement (Nouveau Profil)
+```
+formData.experiences = []  (vide)
+  ↓
+ExperienceFieldsImproved reçoit []
+  ↓
+useEffect: exps === experiences (tous deux vides)
+  ↓
+Aucun changement nécessaire
+  ↓
+Utilisateur clique "Ajouter"
+  ↓
+setExps([newExp]) + onChange([newExp])
+  ↓
+AFFICHAGE IMMÉDIAT du formulaire
+```
+
+### 2. Chargement depuis LocalStorage
+```
+Page rechargée
+  ↓
+useAutoSave charge localStorage
+  ↓
+formData.experiences = [exp1, exp2]
+  ↓
+ExperienceFieldsImproved reçoit [exp1, exp2]
+  ↓
+useEffect détecte [] !== [exp1, exp2]
+  ↓
+setExps([exp1, exp2])
+  ↓
+AFFICHAGE IMMÉDIAT de exp1 et exp2
+```
+
+### 3. Chargement depuis Base de Données
+```
+Connexion utilisateur
+  ↓
+Chargement profil depuis Supabase
+  ↓
+formData.experiences = [exp1, exp2, exp3]
+  ↓
+ExperienceFieldsImproved reçoit [exp1, exp2, exp3]
+  ↓
+useEffect détecte le changement
+  ↓
+setExps([exp1, exp2, exp3])
+  ↓
+AFFICHAGE IMMÉDIAT de toutes les expériences
+```
+
+### 4. Modification en Temps Réel
+```
+Utilisateur tape dans un champ
+  ↓
+updateExperience(index, 'position', value)
+  ↓
+setExps([...updated]) + onChange([...updated])
+  ↓
+Parent reçoit les nouvelles données
+  ↓
+Auto-sauvegarde après 2s (localStorage)
+  ↓
+Auto-sauvegarde après 15s (database)
 ```
 
 ## Test Manuel
