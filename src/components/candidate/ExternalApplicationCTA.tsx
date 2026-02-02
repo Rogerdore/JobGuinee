@@ -27,11 +27,11 @@ export default function ExternalApplicationCTA({
   };
 
   React.useEffect(() => {
-    const hasShownSuccess = sessionStorage.getItem('external_app_unlocked_shown');
+    const hasShownSuccess = localStorage.getItem('external_app_unlocked_shown');
 
     if (isUnlocked && !hasShownSuccess) {
       setShowSuccessModal(true);
-      sessionStorage.setItem('external_app_unlocked_shown', 'true');
+      localStorage.setItem('external_app_unlocked_shown', 'true');
     }
   }, [isUnlocked]);
 
