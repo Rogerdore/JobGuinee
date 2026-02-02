@@ -46,9 +46,9 @@ export default function CVUploadWithParser({
     if (onNavigateToCreditStore) {
       onNavigateToCreditStore();
     } else {
-      navigate('/?page=credit-store');
+      window.location.href = '/?page=credit-store';
     }
-  }, [onNavigateToCreditStore, navigate]);
+  }, [onNavigateToCreditStore]);
 
   // Charger le solde de crédits
   useEffect(() => {

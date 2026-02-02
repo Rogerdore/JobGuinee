@@ -1095,7 +1095,14 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
                   });
                   setShowCVUploadModal(false);
                 }}
-                onNavigateToCreditStore={() => onNavigate?.('credit-store')}
+                onNavigateToCreditStore={() => {
+                  setShowCVUploadModal(false);
+                  if (onNavigate) {
+                    onNavigate('credit-store');
+                  } else {
+                    window.location.href = '/?page=credit-store';
+                  }
+                }}
               />
             </div>
           </div>
