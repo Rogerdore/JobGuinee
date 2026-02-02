@@ -276,7 +276,7 @@ function AppContent() {
         {currentPage === 'admin-formation-list' && <AdminFormationList />}
         {currentPage === 'admin-trainer-management' && <AdminTrainerManagement />}
         {currentPage === 'admin-formation-boost' && <AdminFormationBoost onNavigate={handleNavigate} />}
-        {currentPage === 'candidate-profile-form' && <CandidateProfileForm onNavigateDashboard={() => handleNavigate('candidate-dashboard')} />}
+        {currentPage === 'candidate-profile-form' && <CandidateProfileForm onNavigateDashboard={() => handleNavigate('candidate-dashboard')} onNavigate={handleNavigate} />}
         {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
         {currentPage === 'enterprise-subscribe' && <EnterpriseSubscribe onNavigate={handleNavigate} />}
         {currentPage === 'recruiter-messaging' && <RecruiterMessaging onNavigate={handleNavigate} />}
@@ -342,7 +342,7 @@ function AppContent() {
         {currentPage === 'blog' && <Blog onNavigate={handleNavigate} />}
         {currentPage === 'resources' && <Resources />}
         {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
-        {currentPage === 'candidate-profile-form' && <CandidateProfileForm onNavigateDashboard={() => handleNavigate('candidate-dashboard')} />}
+        {currentPage === 'candidate-profile-form' && <CandidateProfileForm onNavigateDashboard={() => handleNavigate('candidate-dashboard')} onNavigate={handleNavigate} />}
         {currentPage === 'premium-subscribe' && <PremiumSubscribe onNavigate={handleNavigate} />}
         {currentPage === 'enterprise-subscribe' && <EnterpriseSubscribe onNavigate={handleNavigate} />}
         {currentPage === 'recruiter-messaging' && <RecruiterMessaging onNavigate={handleNavigate} />}

@@ -111,9 +111,10 @@ interface FileToUpload {
 interface CandidateProfileFormProps {
   onSaveSuccess?: () => void;
   onNavigateDashboard?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboard }: CandidateProfileFormProps = {}) {
+export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboard, onNavigate }: CandidateProfileFormProps = {}) {
   const { user, profile, refreshProfile } = useAuth();
   const { mapToFormData } = useCVParsing();
   const { balance } = useCreditBalance();
@@ -1094,6 +1095,7 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
                   });
                   setShowCVUploadModal(false);
                 }}
+                onNavigateToCreditStore={() => onNavigate?.('credit-store')}
               />
             </div>
           </div>
