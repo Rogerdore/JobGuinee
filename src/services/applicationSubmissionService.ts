@@ -234,6 +234,9 @@ export const applicationSubmissionService = {
         };
       }
 
+      const companyName = job.companies?.name || 'Entreprise confidentielle';
+      const companyProfileId = job.companies?.profile_id;
+
       const { data: candidateProfile } = await supabase
         .from('candidate_profiles')
         .select('skills, experience_years')
@@ -282,26 +285,28 @@ export const applicationSubmissionService = {
         candidateEmail: candidate.email,
         candidateName: candidate.full_name || 'Candidat',
         jobTitle: job.title,
-        companyName: job.companies.name,
+        companyName: companyName,
         jobLocation: job.location || 'Non spécifié',
         applicationReference: application.application_reference,
         applicationId: application.id,
         appliedDate
       });
 
-      await this.sendRecruiterAlert({
-        recruiterId: job.companies.profile_id,
-        recruiterEmail: '',
-        candidateName: candidate.full_name || 'Candidat',
-        candidateEmail: candidate.email,
-        candidatePhone: candidate.phone,
-        jobTitle: job.title,
-        jobId: job.id,
-        applicationId: application.id,
-        applicationReference: application.application_reference,
-        aiScore: application.ai_matching_score || 0,
-        appliedDate
-      });
+      if (companyProfileId) {
+        await this.sendRecruiterAlert({
+          recruiterId: companyProfileId,
+          recruiterEmail: '',
+          candidateName: candidate.full_name || 'Candidat',
+          candidateEmail: candidate.email,
+          candidatePhone: candidate.phone,
+          jobTitle: job.title,
+          jobId: job.id,
+          applicationId: application.id,
+          applicationReference: application.application_reference,
+          aiScore: application.ai_matching_score || 0,
+          appliedDate
+        });
+      }
 
       const nextSteps = [
         'Votre candidature est en cours d\'examen',
