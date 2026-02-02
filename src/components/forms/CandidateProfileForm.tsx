@@ -316,6 +316,120 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
     };
   }
 
+  useEffect(() => {
+    const normalizeExperience = (exp: any) => {
+      if (exp.position && exp.company && exp.startYear !== undefined) {
+        return exp;
+      }
+
+      return {
+        position: exp['Poste occupé'] || exp.position || '',
+        company: exp['Entreprise'] || exp.company || '',
+        startMonth: exp.startMonth || '',
+        startYear: exp.startYear || '',
+        endMonth: exp.endMonth || '',
+        endYear: exp.endYear || '',
+        current: exp.current || false,
+        description: exp['Missions principales'] || exp.description || '',
+      };
+    };
+
+    const normalizeEducation = (edu: any) => {
+      if (edu.degree && edu.institution && edu.field !== undefined) {
+        return edu;
+      }
+
+      return {
+        degree: edu['Diplôme obtenu'] || edu.degree || '',
+        field: edu.field || '',
+        institution: edu['Établissement'] || edu.institution || '',
+        year: edu['Année d\'obtention'] || edu.year || '',
+      };
+    };
+
+    const loadCandidateData = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('candidate_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !data) {
+          console.log('No existing candidate profile found');
+          return;
+        }
+
+        const normalizedExperiences = Array.isArray(data.work_experience)
+          ? data.work_experience.map(normalizeExperience)
+          : (data.work_experience ? [normalizeExperience(data.work_experience)] : []);
+
+        const normalizedFormations = Array.isArray(data.education)
+          ? data.education.map(normalizeEducation)
+          : (data.education ? [normalizeEducation(data.education)] : []);
+
+        setFormData(prev => ({
+          ...prev,
+          fullName: data.full_name || prev.fullName,
+          phone: data.phone || prev.phone,
+          birthDate: data.birth_date || prev.birthDate,
+          gender: data.gender || prev.gender,
+          nationality: data.nationality || prev.nationality,
+          address: data.address || prev.address,
+          city: data.city || prev.city,
+          region: data.region || prev.region,
+
+          desiredPosition: data.desired_position || prev.desiredPosition,
+          desiredSectors: data.desired_sectors || prev.desiredSectors,
+          desiredContractTypes: data.desired_contract_types || prev.desiredContractTypes,
+          availability: data.availability || prev.availability,
+
+          professionalStatus: data.professional_status || prev.professionalStatus,
+          currentPosition: data.current_position || prev.currentPosition,
+          currentCompany: data.current_company || prev.currentCompany,
+          professionalSummary: data.bio || prev.professionalSummary,
+
+          experiences: normalizedExperiences,
+          formations: normalizedFormations,
+
+          skills: data.skills || prev.skills,
+          languagesDetailed: data.languages || prev.languagesDetailed,
+
+          mobility: data.mobility || prev.mobility,
+          willingToRelocate: data.willing_to_relocate || prev.willingToRelocate,
+
+          desiredSalaryMin: data.desired_salary_min?.toString() || prev.desiredSalaryMin,
+          desiredSalaryMax: data.desired_salary_max?.toString() || prev.desiredSalaryMax,
+
+          linkedinUrl: data.linkedin_url || prev.linkedinUrl,
+          portfolioUrl: data.portfolio_url || prev.portfolioUrl,
+          githubUrl: data.github_url || prev.githubUrl,
+
+          drivingLicense: data.driving_license || prev.drivingLicense,
+          cvUrl: data.cv_url || prev.cvUrl,
+          coverLetterUrl: data.cover_letter_url || prev.coverLetterUrl,
+          certificatesUrl: data.certificates_url || prev.certificatesUrl,
+
+          visibleInCVTheque: data.visible_in_cvtheque || prev.visibleInCVTheque,
+          receiveAlerts: data.receive_alerts || prev.receiveAlerts,
+
+          cvParsedData: data.cv_parsed_data || prev.cvParsedData,
+          cvParsedAt: data.cv_parsed_at || prev.cvParsedAt,
+        }));
+
+        if (data.photo_url) {
+          setExistingPhotoUrl(data.photo_url);
+        }
+      } catch (error) {
+        console.error('Error loading candidate data:', error);
+      }
+    };
+
+    loadCandidateData();
+  }, [user?.id]);
+
   const calculateProgress = useCallback(() => {
     const profileData = {
       full_name: formData.fullName,

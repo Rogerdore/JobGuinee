@@ -168,20 +168,30 @@ export function useCVParsing() {
 
       // Expériences - convertir au format attendu par le formulaire
       experiences: parsedData.experiences.length > 0
-        ? parsedData.experiences.map(exp => ({
-            'Poste occupé': exp.position,
-            'Entreprise': exp.company,
-            'Période': exp.period,
-            'Missions principales': exp.missions.join('\n'),
-          }))
+        ? parsedData.experiences.map(exp => {
+            const period = exp.period || '';
+            const [startPart, endPart] = period.split('-').map(p => p.trim());
+
+            return {
+              position: exp.position,
+              company: exp.company,
+              startMonth: '',
+              startYear: startPart || '',
+              endMonth: '',
+              endYear: endPart || '',
+              current: endPart?.toLowerCase().includes('présent') || endPart?.toLowerCase().includes('actuel'),
+              description: exp.missions.join('\n'),
+            };
+          })
         : currentFormData.experiences || [],
 
       // Formations
       formations: parsedData.education.length > 0
         ? parsedData.education.map(edu => ({
-            'Diplôme obtenu': edu.degree,
-            'Établissement': edu.institution,
-            'Année d\'obtention': edu.year,
+            degree: edu.degree,
+            field: edu.field || '',
+            institution: edu.institution,
+            year: edu.year,
           }))
         : currentFormData.formations || [],
 
