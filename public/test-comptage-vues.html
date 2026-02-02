@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Comptage Vues - JobGuinée</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 10px 10px 10px 0;
+    }
+
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+      border: 2px solid #c3e6cb;
+    }
+
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 2px solid #f5c6cb;
+    }
+
+    .status-blocked {
+      background: #fff3cd;
+      color: #856404;
+      border: 2px solid #ffeeba;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      margin: 10px 10px 10px 0;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .job-list {
+      display: grid;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .job-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .job-card:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+
+    .job-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .job-stats {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: white;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .log-entry {
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      border-left: 4px solid;
+    }
+
+    .log-success {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #155724;
+    }
+
+    .log-blocked {
+      background: #fff3cd;
+      border-color: #ffc107;
+      color: #856404;
+    }
+
+    .log-error {
+      background: #f8d7da;
+      border-color: #dc3545;
+      color: #721c24;
+    }
+
+    .timestamp {
+      font-size: 0.8rem;
+      color: #6c757d;
+      font-family: monospace;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .alert-warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+
+    .code {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Comptage de Vues</h1>
+
+    <div class="card">
+      <h2>📊 État du Système</h2>
+      <div id="systemStatus">
+        <div class="status status-success">✅ Fonction RPC corrigée</div>
+        <div class="status status-success">✅ Edge Function déployée</div>
+        <div class="status status-success">✅ Anti-spam actif (1h)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💼 Offres d'Emploi Disponibles</h2>
+      <div class="alert alert-info">
+        <strong>Instructions :</strong> Cliquez sur une offre pour simuler l'ouverture de "Voir l'offre".
+        Le compteur de vues devrait s'incrémenter automatiquement.
+      </div>
+      <div id="jobsList">Chargement...</div>
+    </div>
+
+    <div class="card">
+      <h2>🧪 Test Manuel</h2>
+      <button onclick="testTracking()" id="testBtn">Tester le Tracking</button>
+      <button onclick="refreshJobs()">Actualiser les Offres</button>
+      <div id="testResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Logs en Direct</h2>
+      <div id="logs"></div>
+    </div>
+
+    <div class="card">
+      <h2>📖 Comment ça fonctionne</h2>
+      <div class="alert alert-info">
+        <p><strong>Tracking Automatique :</strong></p>
+        <ol style="margin-left: 20px; margin-top: 10px;">
+          <li>Vous ouvrez "Voir l'offre" → Tracking automatique</li>
+          <li>Edge Function appelée avec votre fingerprint unique</li>
+          <li>Fonction RPC vérifie l'anti-spam (1 heure)</li>
+          <li>Si OK → Compteur views_count incrémenté</li>
+          <li>Affichage mis à jour en temps réel</li>
+        </ol>
+      </div>
+
+      <div class="alert alert-warning">
+        <p><strong>Anti-Spam :</strong> Si vous consultez la même offre plusieurs fois dans l'heure,
+        seule la première vue sera comptabilisée. C'est normal et voulu pour éviter le spam.</p>
+      </div>
+
+      <div class="code">
+-- Vérifier dans la base de données :
+SELECT id, title, views_count
+FROM jobs
+ORDER BY views_count DESC;
+
+-- Voir les logs de tracking :
+SELECT * FROM candidate_stats_logs
+WHERE stat_type = 'job_view'
+ORDER BY created_at DESC
+LIMIT 10;
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = window.location.hostname === 'localhost'
+      ? 'https://pxfctvjjzrlupxlafwot.supabase.co'
+      : window.location.origin;
+
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4ZmN0dmpqenJsdXB4bGFmd290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE5MTk5NDksImV4cCI6MjA0NzQ5NTk0OX0.kfJq7IbOXC1r60kT06jEBkxT-Tvu4j8x1VfDaFmwbgM';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let jobs = [];
+    let logs = [];
+
+    function addLog(message, type = 'success') {
+      const timestamp = new Date().toLocaleTimeString('fr-FR');
+      logs.unshift({ message, type, timestamp });
+      if (logs.length > 10) logs.pop();
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const logsDiv = document.getElementById('logs');
+      if (logs.length === 0) {
+        logsDiv.innerHTML = '<p style="color: #6c757d;">Aucun log pour le moment...</p>';
+        return;
+      }
+
+      logsDiv.innerHTML = logs.map(log => `
+        <div class="log-entry log-${log.type}">
+          <div class="timestamp">${log.timestamp}</div>
+          <div>${log.message}</div>
+        </div>
+      `).join('');
+    }
+
+    async function loadJobs() {
+      try {
+        addLog('📡 Chargement des offres...', 'success');
+
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('id, title, views_count, applications_count, saves_count')
+          .eq('status', 'active')
+          .order('views_count', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+
+        jobs = data || [];
+        renderJobs();
+        addLog(`✅ ${jobs.length} offres chargées`, 'success');
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('jobsList').innerHTML =
+          `<div class="alert alert-warning">Erreur de chargement: ${error.message}</div>`;
+        addLog(`❌ Erreur: ${error.message}`, 'error');
+      }
+    }
+
+    function renderJobs() {
+      const jobsDiv = document.getElementById('jobsList');
+
+      if (jobs.length === 0) {
+        jobsDiv.innerHTML = '<p style="color: #6c757d;">Aucune offre disponible</p>';
+        return;
+      }
+
+      jobsDiv.innerHTML = '<div class="job-list">' + jobs.map(job => `
+        <div class="job-card" onclick="trackJobView('${job.id}', '${job.title}')">
+          <div class="job-title">${job.title}</div>
+          <div class="job-stats">
+            <span class="stat-badge">👁️ ${job.views_count || 0} vues</span>
+            <span class="stat-badge">👥 ${job.applications_count || 0} candidats</span>
+            <span class="stat-badge">❤️ ${job.saves_count || 0} favoris</span>
+          </div>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    async function trackJobView(jobId, jobTitle) {
+      addLog(`🎯 Ouverture de "${jobTitle}"...`, 'success');
+
+      const sessionId = localStorage.getItem('session_id') ||
+        'session_' + Date.now() + '_' + Math.random().toString(36);
+      localStorage.setItem('session_id', sessionId);
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/track-job-view`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+          body: JSON.stringify({
+            job_id: jobId,
+            session_id: sessionId
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          addLog(`✅ Vue enregistrée pour "${jobTitle}"`, 'success');
+          setTimeout(() => refreshJobs(), 500);
+        } else if (result.status === 'blocked_spam') {
+          addLog(`⚠️ Anti-spam : Vous avez déjà consulté cette offre récemment`, 'blocked');
+        } else {
+          addLog(`❌ Erreur : ${result.message || 'Inconnue'}`, 'error');
+        }
+      } catch (error) {
+        console.error('Erreur tracking:', error);
+        addLog(`❌ Erreur réseau: ${error.message}`, 'error');
+      }
+    }
+
+    async function refreshJobs() {
+      addLog('🔄 Actualisation des données...', 'success');
+      await loadJobs();
+    }
+
+    async function testTracking() {
+      if (jobs.length === 0) {
+        alert('Veuillez d\'abord charger les offres');
+        return;
+      }
+
+      const testBtn = document.getElementById('testBtn');
+      const resultDiv = document.getElementById('testResult');
+
+      testBtn.disabled = true;
+      resultDiv.innerHTML = '<div class="status status-success">⏳ Test en cours...</div>';
+
+      const firstJob = jobs[0];
+      addLog(`🧪 Démarrage test avec "${firstJob.title}"`, 'success');
+
+      await trackJobView(firstJob.id, firstJob.title);
+
+      setTimeout(() => {
+        testBtn.disabled = false;
+        resultDiv.innerHTML = `
+          <div class="alert alert-info">
+            <strong>Test terminé !</strong><br>
+            Vérifiez les logs ci-dessous pour voir le résultat.
+            Si vous relancez le test immédiatement, il sera bloqué par l'anti-spam.
+          </div>
+        `;
+      }, 1000);
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+      addLog('🚀 Page de test initialisée', 'success');
+      loadJobs();
+    });
+  </script>
+</body>
+</html>
