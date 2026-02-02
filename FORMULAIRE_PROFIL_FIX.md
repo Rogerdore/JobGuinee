@@ -1,8 +1,9 @@
 # Correction du Formulaire de Profil Candidat
 
-## Problème Résolu
+## Problèmes Résolus
 
-Les expériences et formations ne s'affichaient pas après ajout dans le formulaire de profil candidat.
+1. Les expériences et formations ne s'affichaient pas après ajout
+2. La photo de profil enregistrée ne s'affichait pas au chargement
 
 ## Solution Appliquée - Version Finale
 
@@ -11,6 +12,7 @@ Les expériences et formations ne s'affichaient pas après ajout dans le formula
 J'ai refait la logique de synchronisation dans les composants :
 - `ExperienceFieldsImproved.tsx`
 - `EducationFieldsImproved.tsx`
+- `ProfilePhotoUpload.tsx`
 
 ### Problème Identifié
 
@@ -190,6 +192,36 @@ Auto-sauvegarde après 2s (localStorage)
 Auto-sauvegarde après 15s (database)
 ```
 
+### 5. Photo de Profil
+```
+Page charge
+  ↓
+CandidateProfileForm charge existingPhotoUrl depuis DB
+  ↓
+existingPhotoUrl = "https://..."
+  ↓
+ProfilePhotoUpload reçoit currentPhotoUrl="https://..."
+  ↓
+useEffect détecte le changement
+  ↓
+setPreview("https://...")
+  ↓
+AFFICHAGE de la photo dans le cercle
+```
+
+**Cas Utilisateur Change la Photo** :
+```
+Utilisateur sélectionne nouvelle photo
+  ↓
+setUserChangedPhoto(true)
+  ↓
+setPreview(nouvelle photo)
+  ↓
+useEffect n'écrase PAS (userChangedPhoto = true)
+  ↓
+AFFICHAGE de la nouvelle photo
+```
+
 ## Test Manuel
 
 1. **Ouvrir** : `http://localhost:5173` (en mode dev)
@@ -212,18 +244,20 @@ Auto-sauvegarde après 15s (database)
    - Même comportement
    - Ajout, édition, suppression fonctionnent parfaitement
 
-## Logs de Debug
+6. **Photo de Profil** :
+   - Si vous avez déjà une photo enregistrée :
+     - ✅ Elle s'affiche IMMÉDIATEMENT dans le cercle
+   - Cliquer sur "Ajouter une photo" / "Changer la photo"
+     - Sélectionner une nouvelle image
+     - ✅ La nouvelle photo s'affiche dans le cercle
+   - Recharger la page
+     - ✅ La photo enregistrée s'affiche automatiquement
 
-J'ai ajouté des console.log pour vous aider à débuguer :
-
-```javascript
-console.log('Expériences à afficher:', exps.length);
-console.log('Formations à afficher:', edus.length);
-```
-
-Ouvrez la console du navigateur (F12) pour voir :
-- Le nombre d'expériences affichées
-- Le nombre de formations affichées
+7. **Test Persistance** :
+   - Recharger la page (F5)
+   - ✅ Toutes les données sont restaurées (expériences, formations, photo)
+   - Se déconnecter et reconnecter
+   - ✅ Toutes les données chargées depuis la base de données
 
 ## Caractéristiques
 
@@ -246,8 +280,9 @@ Pour les expériences, un compteur affiche l'expérience totale calculée.
 
 ```
 src/components/forms/
-├── ExperienceFieldsImproved.tsx    ← Géré les expériences
+├── ExperienceFieldsImproved.tsx    ← Gère les expériences
 ├── EducationFieldsImproved.tsx     ← Gère les formations
+├── ProfilePhotoUpload.tsx          ← Gère la photo de profil
 └── CandidateProfileForm.tsx        ← Formulaire principal
 ```
 
@@ -257,14 +292,20 @@ src/components/forms/
 CandidateProfileForm (parent)
 ├── formData.experiences []
 ├── formData.formations []
+├── existingPhotoUrl string
 │
 ├── ExperienceFieldsImproved (enfant)
 │   ├── État local: exps []
 │   └── onChange() → Remonte au parent
 │
-└── EducationFieldsImproved (enfant)
-    ├── État local: edus []
-    └── onChange() → Remonte au parent
+├── EducationFieldsImproved (enfant)
+│   ├── État local: edus []
+│   └── onChange() → Remonte au parent
+│
+└── ProfilePhotoUpload (enfant)
+    ├── État local: preview string
+    ├── État local: userChangedPhoto boolean
+    └── onPhotoChange() → Remonte au parent
 ```
 
 ## Points Techniques

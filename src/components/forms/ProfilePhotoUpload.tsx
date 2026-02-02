@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, X, Upload } from 'lucide-react';
 import ModernModal from '../modals/ModernModal';
 
@@ -8,8 +8,15 @@ interface ProfilePhotoUploadProps {
 }
 
 export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoChange }: ProfilePhotoUploadProps) {
-  const [preview, setPreview] = useState<string | null>(currentPhotoUrl || null);
+  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userChangedPhoto, setUserChangedPhoto] = useState(false);
+
+  useEffect(() => {
+    if (currentPhotoUrl && !userChangedPhoto) {
+      setPreview(currentPhotoUrl);
+    }
+  }, [currentPhotoUrl, userChangedPhoto]);
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     title: string;
@@ -52,6 +59,7 @@ export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoChange }: P
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreview(reader.result as string);
+      setUserChangedPhoto(true);
     };
     reader.readAsDataURL(file);
 
@@ -60,6 +68,7 @@ export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoChange }: P
 
   const handleRemove = () => {
     setPreview(null);
+    setUserChangedPhoto(true);
     onPhotoChange(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
