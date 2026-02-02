@@ -34,21 +34,26 @@ export const candidateStatsService = {
    */
   async getAllStats(userId: string): Promise<CandidateStats | null> {
     try {
+      console.log('🔄 Fetching candidate stats for user:', userId);
+
       // Appeler la fonction RPC backend qui retourne toutes les stats agrégées
       const { data, error } = await supabase.rpc('get_candidate_stats', {
         p_candidate_id: userId
       });
 
+      console.log('📊 RPC Response:', { data, error });
+
       if (error) {
-        console.error('Error fetching candidate stats:', error);
+        console.error('❌ Error fetching candidate stats:', error);
         return null;
       }
 
       if (!data) {
+        console.warn('⚠️ No data returned from get_candidate_stats');
         return null;
       }
 
-      return {
+      const stats = {
         jobViewsCount: data.job_views_count || 0,
         applicationsCount: data.applications_count || 0,
         profileViewsCount: data.profile_views_count || 0,
@@ -62,8 +67,12 @@ export const candidateStatsService = {
         unreadMessagesCount: 0, // Will be set separately via real-time
         updatedAt: data.updated_at
       };
+
+      console.log('✅ Parsed candidate stats:', stats);
+
+      return stats;
     } catch (error) {
-      console.error('Error fetching candidate stats:', error);
+      console.error('❌ Exception fetching candidate stats:', error);
       return null;
     }
   },

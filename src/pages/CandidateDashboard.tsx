@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, FileText, Bell, BellOff, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, CheckCircle2, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity, Send } from 'lucide-react';
+import { Briefcase, FileText, Bell, BellOff, Settings, Upload, MapPin, Award, TrendingUp, Target, Calendar, Clock, MessageCircle, Eye, Heart, Star, CheckCircle, CheckCircle2, AlertCircle, Sparkles, Brain, Crown, Lock, Unlock, Download, Share2, CreditCard as Edit, Trash2, Filter, Search, BarChart3, BookOpen, Users, Zap, Shield, Cloud, DollarSign, ChevronRight, X, Plus, GraduationCap, User, Activity, Send, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Application, Job, Company, CandidateProfile } from '../lib/supabase';
 import { isPremiumActive } from '../utils/premiumHelpers';
@@ -539,12 +539,24 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
                 <p className="text-blue-100">Bienvenue dans votre espace candidat intelligent</p>
               </div>
             </div>
-            {isPremium && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-[#FF8C00] rounded-full">
-                <Crown className="w-5 h-5" />
-                <span className="font-bold">Premium</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {isPremium && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#FF8C00] rounded-full">
+                  <Crown className="w-5 h-5" />
+                  <span className="font-bold">Premium</span>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  console.log('🔄 Manual stats refresh requested');
+                  loadData();
+                }}
+                className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full transition-all"
+                title="Actualiser les statistiques"
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
