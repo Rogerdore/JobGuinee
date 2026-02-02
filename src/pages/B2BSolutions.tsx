@@ -4,22 +4,25 @@ import {
   CheckCircle2, Sparkles, BarChart3, Database, FileText, TrendingUp,
   Award, Shield, Zap, Target, ArrowRight, Hammer, School, HelpCircle,
   ChevronDown, ChevronUp, Cpu, Clock, Globe, UserCheck, Phone, MessageCircle,
-  Send, Mail, MessageSquare, Handshake
+  Send, Mail, MessageSquare, Handshake, LogIn, UserPlus, X
 } from 'lucide-react';
 import { b2bLeadsService, B2BPageConfig } from '../services/b2bLeadsService';
 import B2BLeadForm from '../components/b2b/B2BLeadForm';
 import { useSEO } from '../hooks/useSEO';
 import { schemaService } from '../services/schemaService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface B2BSolutionsProps {
   onNavigate?: (page: string) => void;
 }
 
 export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProps) {
+  const { profile } = useAuth();
   const [pageConfig, setPageConfig] = useState<B2BPageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [showRecruiterModal, setShowRecruiterModal] = useState(false);
 
   const faqItems = [
     {
@@ -71,6 +74,15 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
     };
     return icons[iconName] || Building2;
   };
+
+  const handleCreateRecruiterAccount = () => {
+    if (profile && profile.user_type === 'recruiter') {
+      return;
+    }
+    setShowRecruiterModal(true);
+  };
+
+  const isRecruiterAccount = profile?.user_type === 'recruiter';
 
   const heroSection = getConfigSection('hero');
   const seoConfig = (heroSection?.seo_config as any) || {};
@@ -1003,12 +1015,17 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
               </div>
 
               <button
-                onClick={() => onNavigate('signup')}
-                className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg"
+                onClick={handleCreateRecruiterAccount}
+                disabled={isRecruiterAccount}
+                className={`w-full px-6 py-4 rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-lg ${
+                  isRecruiterAccount
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                }`}
               >
                 <User className="w-5 h-5" />
-                Créer un compte recruteur
-                <ArrowRight className="w-5 h-5" />
+                {isRecruiterAccount ? 'Compte recruteur actif' : 'Créer un compte recruteur'}
+                {!isRecruiterAccount && <ArrowRight className="w-5 h-5" />}
               </button>
             </div>
           </div>
@@ -1355,6 +1372,88 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
               onSuccess={() => setShowForm(false)}
               onCancel={() => setShowForm(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Recruiter Account Modal */}
+      {showRecruiterModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+            <button
+              onClick={() => setShowRecruiterModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UserCheck className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Accès Recruteur
+              </h3>
+              <p className="text-gray-600">
+                Choisissez votre action pour accéder aux outils professionnels
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Option: Se connecter */}
+              <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-500 transition">
+                <div className="flex items-start gap-3 mb-3">
+                  <LogIn className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      J'ai déjà un compte recruteur
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Connectez-vous pour accéder à votre espace
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowRecruiterModal(false);
+                    onNavigate('login');
+                  }}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Se connecter
+                </button>
+              </div>
+
+              {/* Option: S'inscrire */}
+              <div className="border-2 border-green-200 bg-green-50 rounded-xl p-4 hover:border-green-500 transition">
+                <div className="flex items-start gap-3 mb-3">
+                  <UserPlus className="w-5 h-5 text-green-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      Je n'ai pas encore de compte
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Créez votre compte recruteur gratuitement
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowRecruiterModal(false);
+                    onNavigate('signup');
+                  }}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Créer mon compte
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 text-center mt-6">
+              Inscription gratuite - Accès immédiat aux outils RH professionnels
+            </p>
           </div>
         </div>
       )}
