@@ -490,7 +490,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                   <Heart className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{(job as any).saves_count || 0}</div>
-                <div className="text-xs text-gray-600">Sauvegardes</div>
+                <div className="text-xs text-gray-600">Favoris</div>
               </div>
 
               <div className="text-center">
