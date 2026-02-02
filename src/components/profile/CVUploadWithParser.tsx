@@ -46,7 +46,7 @@ export default function CVUploadWithParser({
     if (onNavigateToCreditStore) {
       onNavigateToCreditStore();
     } else {
-      navigate('/credit-store');
+      navigate('/?page=credit-store');
     }
   }, [onNavigateToCreditStore, navigate]);
 
@@ -452,7 +452,11 @@ export default function CVUploadWithParser({
             <div className="mt-3">
               <button
                 type="button"
-                onClick={handleNavigateToCreditStore}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleNavigateToCreditStore();
+                }}
                 className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 <Coins className="w-5 h-5" />
