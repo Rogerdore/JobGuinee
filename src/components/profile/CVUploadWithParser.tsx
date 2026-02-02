@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Upload,
   FileText,
@@ -9,9 +9,12 @@ import {
   Loader2,
   FileCheck,
   Sparkles,
+  Coins,
 } from 'lucide-react';
 import { useCVParsing } from '../../hooks/useCVParsing';
 import { ParsedCVData } from '../../services/cvUploadParserService';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 interface CVUploadWithParserProps {
   onParsed: (data: ParsedCVData) => void;
@@ -24,15 +27,51 @@ export default function CVUploadWithParser({
   onError,
   disabled = false,
 }: CVUploadWithParserProps) {
+  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [creditsBalance, setCreditsBalance] = useState<number>(0);
+  const [loadingCredits, setLoadingCredits] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { isParsing, progress, error, parsedData, parseCV, reset } = useCVParsing();
 
+  const requiredCredits = 10;
+
+  // Charger le solde de crédits
+  useEffect(() => {
+    const loadCredits = async () => {
+      if (!user?.id) {
+        setLoadingCredits(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('credits_balance')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!error && data) {
+          setCreditsBalance(data.credits_balance || 0);
+        }
+      } catch (err) {
+        console.error('Error loading credits:', err);
+      } finally {
+        setLoadingCredits(false);
+      }
+    };
+
+    loadCredits();
+  }, [user?.id]);
+
+  const hasEnoughCredits = creditsBalance >= requiredCredits;
+  const isDisabled = disabled || !hasEnoughCredits || loadingCredits;
+
   const handleFileSelect = useCallback(
     async (selectedFile: File) => {
-      if (disabled) return;
+      if (isDisabled) return;
 
       setFile(selectedFile);
       reset();
@@ -41,11 +80,20 @@ export default function CVUploadWithParser({
 
       if (success && parsedData) {
         onParsed(parsedData);
+        // Recharger le solde de crédits après l'analyse
+        const { data } = await supabase
+          .from('profiles')
+          .select('credits_balance')
+          .eq('user_id', user?.id)
+          .single();
+        if (data) {
+          setCreditsBalance(data.credits_balance || 0);
+        }
       } else if (error) {
         onError?.(error);
       }
     },
-    [disabled, parseCV, parsedData, error, onParsed, onError, reset]
+    [isDisabled, parseCV, parsedData, error, onParsed, onError, reset, user?.id]
   );
 
   const handleDrop = useCallback(
@@ -53,22 +101,22 @@ export default function CVUploadWithParser({
       e.preventDefault();
       setIsDragging(false);
 
-      if (disabled || isParsing) return;
+      if (isDisabled || isParsing) return;
 
       const droppedFile = e.dataTransfer.files[0];
       if (droppedFile) {
         handleFileSelect(droppedFile);
       }
     },
-    [disabled, isParsing, handleFileSelect]
+    [isDisabled, isParsing, handleFileSelect]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (!disabled && !isParsing) {
+    if (!isDisabled && !isParsing) {
       setIsDragging(true);
     }
-  }, [disabled, isParsing]);
+  }, [isDisabled, isParsing]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -133,11 +181,11 @@ export default function CVUploadWithParser({
             : file
             ? 'border-gray-300 bg-white'
             : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
-        } ${disabled || isParsing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        } ${isDisabled || isParsing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onClick={() => !disabled && !isParsing && !file && fileInputRef.current?.click()}
+        onClick={() => !isDisabled && !isParsing && !file && fileInputRef.current?.click()}
       >
         <input
           ref={fileInputRef}
@@ -145,7 +193,7 @@ export default function CVUploadWithParser({
           accept=".pdf,.docx,.doc,image/jpeg,image/jpg,image/png"
           onChange={handleFileInputChange}
           className="hidden"
-          disabled={disabled || isParsing}
+          disabled={isDisabled || isParsing}
         />
 
         <div className="flex flex-col items-center justify-center space-y-4">
@@ -168,15 +216,21 @@ export default function CVUploadWithParser({
               </div>
               <button
                 type="button"
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                className={`px-6 py-2.5 rounded-lg font-medium transition-all shadow-md hover:shadow-lg flex items-center gap-2 ${
+                  isDisabled
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+                }`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  fileInputRef.current?.click();
+                  if (!isDisabled) {
+                    fileInputRef.current?.click();
+                  }
                 }}
-                disabled={disabled || isParsing}
+                disabled={isDisabled || isParsing}
               >
                 <Upload className="w-5 h-5" />
-                Choisir un fichier
+                {loadingCredits ? 'Chargement...' : !hasEnoughCredits ? 'Crédits insuffisants' : 'Choisir un fichier'}
               </button>
             </>
           ) : (
@@ -322,24 +376,79 @@ export default function CVUploadWithParser({
 
       {/* Conseils et informations */}
       {!file && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex gap-3">
-            <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">
-                Gagnez du temps avec l'analyse IA
-              </h4>
-              <p className="text-sm text-blue-800">
-                Notre IA analysera automatiquement votre CV et remplira tous les champs du
-                formulaire (identité, expériences, formations, compétences, etc.). Vous pourrez
-                ensuite modifier les informations si nécessaire.
-              </p>
-              <p className="text-xs text-blue-700 mt-2">
-                Coût: 10 crédits • Temps d'analyse: ~10 secondes
-              </p>
+        <>
+          <div className={`mt-4 p-4 rounded-lg border ${
+            hasEnoughCredits
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex gap-3">
+              {hasEnoughCredits ? (
+                <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1">
+                <h4 className={`font-semibold mb-1 ${
+                  hasEnoughCredits ? 'text-blue-900' : 'text-red-900'
+                }`}>
+                  {hasEnoughCredits
+                    ? 'Gagnez du temps avec l\'analyse IA'
+                    : 'Crédits insuffisants'
+                  }
+                </h4>
+                <p className={`text-sm ${
+                  hasEnoughCredits ? 'text-blue-800' : 'text-red-800'
+                }`}>
+                  {hasEnoughCredits
+                    ? 'Notre IA analysera automatiquement votre CV et remplira tous les champs du formulaire (identité, expériences, formations, compétences, etc.). Vous pourrez ensuite modifier les informations si nécessaire.'
+                    : `Vous avez besoin de ${requiredCredits} crédits pour utiliser l'analyse IA de CV. Rechargez votre solde pour accéder à cette fonctionnalité.`
+                  }
+                </p>
+                <div className="flex items-center gap-4 mt-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Coins className={`w-4 h-4 ${
+                      hasEnoughCredits ? 'text-blue-700' : 'text-red-700'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      hasEnoughCredits ? 'text-blue-700' : 'text-red-700'
+                    }`}>
+                      Coût: {requiredCredits} crédits
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Coins className={`w-4 h-4 ${
+                      hasEnoughCredits ? 'text-blue-700' : 'text-red-700'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      hasEnoughCredits ? 'text-blue-700' : 'text-red-700'
+                    }`}>
+                      {loadingCredits ? 'Chargement...' : `Solde: ${creditsBalance} crédits`}
+                    </span>
+                  </div>
+                  {hasEnoughCredits && (
+                    <span className="text-xs text-blue-700">
+                      • Temps d'analyse: ~10 secondes
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+
+          {!hasEnoughCredits && !loadingCredits && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => window.location.href = '/credit-store'}
+                className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              >
+                <Coins className="w-5 h-5" />
+                Acheter des crédits
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

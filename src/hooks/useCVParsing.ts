@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import { cvUploadParserService, CVParseResult, ParsedCVData } from '../services/cvUploadParserService';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export interface CVParsingState {
   isParsing: boolean;
@@ -10,6 +12,7 @@ export interface CVParsingState {
 }
 
 export function useCVParsing() {
+  const { user } = useAuth();
   const [state, setState] = useState<CVParsingState>({
     isParsing: false,
     progress: 0,
@@ -20,6 +23,39 @@ export function useCVParsing() {
 
   const parseCV = useCallback(async (file: File): Promise<boolean> => {
     try {
+      // Vérifier que l'utilisateur est connecté
+      if (!user?.id) {
+        setState(prev => ({
+          ...prev,
+          error: 'Vous devez être connecté pour utiliser cette fonctionnalité',
+        }));
+        return false;
+      }
+
+      // Vérifier le solde de crédits AVANT de commencer
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('credits_balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        setState(prev => ({
+          ...prev,
+          error: 'Impossible de vérifier votre solde de crédits',
+        }));
+        return false;
+      }
+
+      const requiredCredits = 10;
+      if (profile.credits_balance < requiredCredits) {
+        setState(prev => ({
+          ...prev,
+          error: `Crédits insuffisants. Vous avez ${profile.credits_balance} crédits, mais ${requiredCredits} sont nécessaires pour l'analyse de CV.`,
+        }));
+        return false;
+      }
+
       // Vérifier que le fichier est valide
       if (!file) {
         setState(prev => ({
@@ -90,7 +126,7 @@ export function useCVParsing() {
         return false;
       }
 
-      // Succès - parsing CV gratuit, aucun crédit consommé
+      // Succès - 10 crédits IA ont été consommés
       setState({
         isParsing: false,
         progress: 100,
@@ -111,7 +147,7 @@ export function useCVParsing() {
       });
       return false;
     }
-  }, []);
+  }, [user?.id]);
 
   /**
    * Mapper les données parsées vers le format du formulaire

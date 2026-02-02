@@ -367,13 +367,13 @@ class CVUploadParserService {
 
   /**
    * Parser le texte extrait avec l'IA
-   * GRATUIT - Ne consomme AUCUN crédit IA
+   * COÛT: 10 crédits IA
    */
   private async parseTextWithAI(text: string): Promise<ParsedCVData | null> {
     try {
       const result = await iaConfigService.executeService('ai_cv_parser', {
         cv_text: text
-      }, { skipCreditConsumption: true });
+      }, { skipCreditConsumption: false });
 
       if (!result.success || !result.data) {
         console.error('AI parsing failed:', result.error);
