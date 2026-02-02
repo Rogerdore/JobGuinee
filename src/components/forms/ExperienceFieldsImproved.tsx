@@ -84,7 +84,15 @@ export function calculateTotalExperience(experiences: Experience[]): string {
 }
 
 export default function ExperienceFieldsImproved({ experiences, onChange }: ExperienceFieldsImprovedProps) {
-  const [exps, setExps] = useState<Experience[]>(experiences.length > 0 ? experiences : []);
+  const [exps, setExps] = useState<Experience[]>(experiences);
+
+  useEffect(() => {
+    if (JSON.stringify(experiences) !== JSON.stringify(exps)) {
+      if (experiences.length > 0 || exps.length === 0) {
+        setExps(experiences);
+      }
+    }
+  }, [experiences]);
 
   useEffect(() => {
     onChange(exps);

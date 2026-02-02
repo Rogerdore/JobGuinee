@@ -32,7 +32,15 @@ const COMMON_FIELDS = [
 ];
 
 export default function EducationFieldsImproved({ educations, onChange }: EducationFieldsImprovedProps) {
-  const [edus, setEdus] = useState<Education[]>(educations.length > 0 ? educations : []);
+  const [edus, setEdus] = useState<Education[]>(educations);
+
+  useEffect(() => {
+    if (JSON.stringify(educations) !== JSON.stringify(edus)) {
+      if (educations.length > 0 || edus.length === 0) {
+        setEdus(educations);
+      }
+    }
+  }, [educations]);
 
   useEffect(() => {
     onChange(edus);
