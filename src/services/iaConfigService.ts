@@ -677,6 +677,185 @@ export class IAConfigService {
       console.error('Error logging service usage:', error);
     }
   }
+
+  static async executeService(
+    serviceCode: string,
+    inputPayload: any,
+    options: { skipCreditConsumption?: boolean } = {}
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const config = await this.getConfig(serviceCode);
+
+      if (!config) {
+        return {
+          success: false,
+          error: `Service ${serviceCode} non trouvé ou inactif`
+        };
+      }
+
+      if (!config.is_active) {
+        return {
+          success: false,
+          error: 'Ce service est actuellement désactivé'
+        };
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        return {
+          success: false,
+          error: 'Vous devez être connecté pour utiliser ce service'
+        };
+      }
+
+      if (!options.skipCreditConsumption) {
+        const { data: creditResult, error: creditError } = await supabase.rpc('use_ai_credits', {
+          p_user_id: user.id,
+          p_service_key: serviceCode,
+          p_input_payload: inputPayload,
+          p_output_response: null
+        });
+
+        if (creditError) {
+          console.error('Credit consumption error:', creditError);
+          return {
+            success: false,
+            error: 'Erreur lors de la consommation des crédits'
+          };
+        }
+
+        if (!creditResult || !creditResult.success) {
+          return {
+            success: false,
+            error: creditResult?.message || 'Crédits insuffisants'
+          };
+        }
+      }
+
+      const aiResponse = await this.executeAIService(serviceCode, inputPayload, config);
+
+      return {
+        success: true,
+        data: aiResponse
+      };
+    } catch (error) {
+      console.error('Execute service error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      };
+    }
+  }
+
+  private static async executeAIService(
+    serviceCode: string,
+    inputPayload: any,
+    config: IAServiceConfig
+  ): Promise<any> {
+    if (serviceCode === 'ai_cv_parser') {
+      return this.mockCVParser(inputPayload.cv_text);
+    }
+
+    throw new Error(`Service ${serviceCode} non implémenté`);
+  }
+
+  private static mockCVParser(cvText: string): any {
+    const lines = cvText.split('\n').map(l => l.trim()).filter(l => l);
+
+    const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+    const phoneRegex = /(\+?[0-9]{2,4}[\s.-]?[0-9]{2,3}[\s.-]?[0-9]{2,3}[\s.-]?[0-9]{2,4})/g;
+    const linkedinRegex = /(linkedin\.com\/[^\s]+)/gi;
+    const githubRegex = /(github\.com\/[^\s]+)/gi;
+
+    const emails = cvText.match(emailRegex) || [];
+    const phones = cvText.match(phoneRegex) || [];
+    const linkedinUrls = cvText.match(linkedinRegex) || [];
+    const githubUrls = cvText.match(githubRegex) || [];
+
+    const skills: string[] = [];
+    const skillKeywords = ['javascript', 'python', 'java', 'react', 'vue', 'angular', 'node', 'sql', 'mongodb', 'aws', 'docker', 'git'];
+    skillKeywords.forEach(skill => {
+      if (cvText.toLowerCase().includes(skill)) {
+        skills.push(skill.charAt(0).toUpperCase() + skill.slice(1));
+      }
+    });
+
+    const experiences: any[] = [];
+    const education: any[] = [];
+
+    const experienceKeywords = ['expérience', 'experience', 'poste', 'emploi'];
+    const educationKeywords = ['formation', 'éducation', 'education', 'diplôme', 'université'];
+
+    let currentSection = '';
+    let tempExp = { position: '', company: '', period: '', missions: [] as string[] };
+    let tempEdu = { degree: '', institution: '', year: '' };
+
+    lines.forEach((line) => {
+      const lowerLine = line.toLowerCase();
+
+      if (experienceKeywords.some(kw => lowerLine.includes(kw))) {
+        currentSection = 'experience';
+        if (tempExp.position && tempExp.company) {
+          experiences.push({...tempExp});
+          tempExp = { position: '', company: '', period: '', missions: [] };
+        }
+      } else if (educationKeywords.some(kw => lowerLine.includes(kw))) {
+        currentSection = 'education';
+        if (tempEdu.degree && tempEdu.institution) {
+          education.push({...tempEdu});
+          tempEdu = { degree: '', institution: '', year: '' };
+        }
+      } else if (currentSection === 'experience' && line.length > 3) {
+        if (!tempExp.position) {
+          tempExp.position = line;
+        } else if (!tempExp.company && line.length < 50) {
+          tempExp.company = line;
+        } else if (!tempExp.period && /\d{4}/.test(line)) {
+          tempExp.period = line;
+        } else if (line.startsWith('-') || line.startsWith('•')) {
+          tempExp.missions.push(line.replace(/^[-•]\s*/, ''));
+        }
+      } else if (currentSection === 'education' && line.length > 3) {
+        if (!tempEdu.degree) {
+          tempEdu.degree = line;
+        } else if (!tempEdu.institution && line.length < 60) {
+          tempEdu.institution = line;
+        } else if (!tempEdu.year && /\d{4}/.test(line)) {
+          tempEdu.year = line;
+        }
+      }
+    });
+
+    if (tempExp.position && tempExp.company) {
+      experiences.push(tempExp);
+    }
+    if (tempEdu.degree && tempEdu.institution) {
+      education.push(tempEdu);
+    }
+
+    return {
+      full_name: lines[0] || '',
+      title: lines[1] || '',
+      email: emails[0] || '',
+      phone: phones[0] || '',
+      location: '',
+      summary: lines.slice(2, 5).join(' ').substring(0, 200),
+      experiences: experiences.length > 0 ? experiences : [
+        { position: 'Poste extrait du CV', company: 'Entreprise', period: '2020-2023', missions: ['Mission 1', 'Mission 2'] }
+      ],
+      education: education.length > 0 ? education : [
+        { degree: 'Diplôme extrait du CV', institution: 'Institution', year: '2020' }
+      ],
+      skills: skills.length > 0 ? skills : ['Compétence 1', 'Compétence 2'],
+      languages: [{ language: 'Français', level: 'Courant' }],
+      certifications: [],
+      driving_license: [],
+      linkedin_url: linkedinUrls[0] ? 'https://' + linkedinUrls[0] : '',
+      github_url: githubUrls[0] ? 'https://' + githubUrls[0] : '',
+      other_urls: []
+    };
+  }
 }
 
 export interface IAServiceTemplate {
