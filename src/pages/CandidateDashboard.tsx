@@ -78,6 +78,90 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     }
   }, [profile?.id, user?.id]);
 
+  // Auto-refresh des stats toutes les 30 secondes
+  useEffect(() => {
+    if (!user?.id || !profile?.id) return;
+
+    const intervalId = setInterval(async () => {
+      console.log('⏰ Auto-refresh des statistiques...');
+      const stats = await candidateStatsService.getAllStats(user.id);
+      if (stats) {
+        setJobViewsCount(stats.jobViewsCount);
+        setProfileStats({
+          profile_views_count: stats.profileViewsCount,
+          profile_purchases_count: stats.profilePurchasesCount,
+          this_month_views: 0,
+          this_month_purchases: 0
+        });
+        setCreditsBalance(stats.creditsBalance);
+        setAiScore(stats.aiScore);
+      }
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(intervalId);
+  }, [user?.id, profile?.id]);
+
+  // Recharger les stats quand l'utilisateur revient sur la page
+  useEffect(() => {
+    if (!user?.id || !profile?.id) return;
+
+    const handleVisibilityChange = async () => {
+      if (!document.hidden) {
+        console.log('👀 Page visible - rechargement des stats...');
+        const stats = await candidateStatsService.getAllStats(user.id);
+        if (stats) {
+          setJobViewsCount(stats.jobViewsCount);
+          setProfileStats({
+            profile_views_count: stats.profileViewsCount,
+            profile_purchases_count: stats.profilePurchasesCount,
+            this_month_views: 0,
+            this_month_purchases: 0
+          });
+          setCreditsBalance(stats.creditsBalance);
+          setAiScore(stats.aiScore);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id, profile?.id]);
+
+  // Synchronisation en temps réel des clics sur les offres
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const updateJobViewsCount = async () => {
+      console.log('🔄 Nouveau clic détecté - mise à jour du compteur...');
+      const stats = await candidateStatsService.getAllStats(user.id);
+      if (stats) {
+        setJobViewsCount(stats.jobViewsCount);
+      }
+    };
+
+    // Écouter les changements dans job_clicks
+    const jobClicksChannel = supabase
+      .channel('candidate_job_clicks_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'job_clicks',
+          filter: `user_id=eq.${user.id}`
+        },
+        updateJobViewsCount
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(jobClicksChannel);
+    };
+  }, [user?.id]);
+
   // Synchronisation en temps réel des messages non lus
   useEffect(() => {
     if (!user?.id) return;
