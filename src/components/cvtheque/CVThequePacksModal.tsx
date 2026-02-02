@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Check, Building, Users, Sparkles, TrendingUp, Crown, Copy, MessageCircle, AlertCircle, Circle, Hexagon, Star } from 'lucide-react';
+import { X, Check, Building, Users, TrendingUp, Crown, Copy, MessageCircle, AlertCircle, Circle, Hexagon, Star, Award } from 'lucide-react';
 import { cvthequePricingService, CVThequePack, PackPurchase } from '../../services/cvthequePricingService';
 import { CreditStoreService, CreditStoreSettings } from '../../services/creditStoreService';
 
@@ -137,7 +137,7 @@ export default function CVThequePacksModal({
       case 'gold':
         return Crown;
       default:
-        return Sparkles;
+        return Award;
     }
   };
 

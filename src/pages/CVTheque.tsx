@@ -752,7 +752,7 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
                 CVThèque - Base de Talents
               </h1>
               <p className="text-gray-600 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-900" />
+                <Users className="w-5 h-5 text-blue-900" />
                 Parcourez les profils et sélectionnez ceux qui vous intéressent
               </p>
             </div>
