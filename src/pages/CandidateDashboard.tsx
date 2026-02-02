@@ -14,7 +14,7 @@ import { candidateApplicationTrackingService } from '../services/candidateApplic
 import { candidateStatsService } from '../services/candidateStatsService';
 import { usePendingApplication } from '../hooks/usePendingApplication';
 import ExternalApplicationCTA from '../components/candidate/ExternalApplicationCTA';
-import ProfileCompletionBar from '../components/common/ProfileCompletionBar';
+import ProfileProgressBar from '../components/candidate/ProfileProgressBar';
 import { ProtectedPageWrapper } from '../components/common/AccessControlExample';
 import { useModalContext } from '../contexts/ModalContext';
 
@@ -659,85 +659,10 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
           <div className="p-6">
             {activeTab === 'dashboard' && (
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-base font-semibold text-gray-900">Complétion de votre Profil</h3>
-                        <ProfileQualityBadge completion={profileCompletion} variant="compact" />
-                      </div>
-                      <p className="text-sm text-gray-600">Votre profil est complété à <span className="font-semibold text-orange-600">{profileCompletion}%</span></p>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('profile')}
-                      className="px-3 py-1.5 bg-[#0E2F56] text-white rounded-md hover:bg-[#1a4275] transition text-sm font-medium"
-                    >
-                      Compléter
-                    </button>
-                  </div>
-
-                  {/* Barre de progression */}
-                  <div className="relative">
-                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden relative">
-                      <div
-                        className="h-full transition-all duration-1000 ease-out bg-gradient-to-r from-amber-500 to-orange-500"
-                        style={{ width: `${profileCompletion}%` }}
-                      >
-                        {/* Animation de brillance */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse"></div>
-                      </div>
-
-                      {/* Marqueurs d'étapes clés */}
-                      <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white opacity-30"></div>
-                      <div className="absolute top-0 left-[80%] w-0.5 h-full bg-white opacity-40"></div>
-                    </div>
-
-                    {/* Labels des étapes positionnés exactement */}
-                    <div className="relative mt-2 h-5">
-                      {/* 0% */}
-                      <span className="absolute left-0 text-xs text-gray-600 font-medium">
-                        0%
-                      </span>
-
-                      {/* 50% */}
-                      <span className="absolute left-1/2 -translate-x-1/2 text-xs text-gray-600 font-medium">
-                        50%
-                      </span>
-
-                      {/* 80% CVthèque */}
-                      <span className={`absolute left-[80%] -translate-x-1/2 text-xs ${
-                        profileCompletion >= 80 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
-                      } flex items-center gap-1 whitespace-nowrap`}>
-                        {profileCompletion >= 80 && <CheckCircle2 className="w-3 h-3" />}
-                        80% CVthèque
-                      </span>
-
-                      {/* 100% */}
-                      <span className={`absolute right-0 text-xs ${
-                        profileCompletion >= 100 ? 'text-orange-600 font-semibold' : 'text-gray-500 font-medium'
-                      } flex items-center gap-1`}>
-                        {profileCompletion >= 100 && <CheckCircle2 className="w-3 h-3" />}
-                        100%
-                      </span>
-                    </div>
-                  </div>
-
-                  {profileCompletion >= 80 && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-semibold text-green-900 text-sm">
-                            Félicitations !
-                          </h4>
-                          <p className="text-xs text-green-800">
-                            Votre profil est bien complété. Vous maximisez vos chances d'être contacté par les recruteurs.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <ProfileProgressBar
+                  compact={true}
+                  onNavigate={(section) => setActiveTab('profile')}
+                />
 
                 <ExternalApplicationCTA
                   profileCompletion={profileCompletion}
