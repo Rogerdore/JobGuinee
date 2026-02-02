@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Grid, List, ShoppingCart, TrendingUp, Filter as FilterIcon, ChevronLeft, ChevronRight, Circle, Hexagon, Star } from 'lucide-react';
+import { Users, Grid, List, ShoppingCart, TrendingUp, Filter as FilterIcon, ChevronLeft, ChevronRight, Circle, Hexagon, Star, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/notifications/ToastContainer';
@@ -209,6 +209,12 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
     applyFilters(query, filters);
   };
 
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setCurrentPage(1);
+    applyFilters('', filters);
+  };
+
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
     setCurrentPage(1);
@@ -217,6 +223,13 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
   };
 
   const handleFilterClear = () => {
+    setFilters({});
+    setCurrentPage(1);
+    setFilteredCandidates(candidates);
+  };
+
+  const handleClearAll = () => {
+    setSearchQuery('');
     setFilters({});
     setCurrentPage(1);
     setFilteredCandidates(candidates);
@@ -879,7 +892,37 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
           </div>
 
           <div className="space-y-3">
-            <SearchBar onSearch={handleSearch} loading={loading} />
+            <SearchBar
+              onSearch={handleSearch}
+              onClear={handleClearSearch}
+              loading={loading}
+              initialQuery={searchQuery}
+            />
+
+            {(searchQuery || Object.keys(filters).some(key => filters[key as keyof FilterValues])) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-medium text-blue-900">Recherche active :</span>
+                  {searchQuery && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+                      "{searchQuery}"
+                    </span>
+                  )}
+                  {Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '' && (Array.isArray(value) ? value.length > 0 : true)).map(([key, value]) => (
+                    <span key={key} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                      {key}: {Array.isArray(value) ? value.join(', ') : String(value)}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={handleClearAll}
+                  className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg transition flex items-center gap-2 whitespace-nowrap"
+                >
+                  <X className="w-4 h-4" />
+                  Tout effacer
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

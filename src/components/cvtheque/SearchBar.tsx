@@ -1,17 +1,29 @@
-import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { Search, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
+  onClear?: () => void;
   loading?: boolean;
+  initialQuery?: string;
 }
 
-export default function SearchBar({ onSearch, loading }: SearchBarProps) {
-  const [query, setQuery] = useState('');
+export default function SearchBar({ onSearch, onClear, loading, initialQuery = '' }: SearchBarProps) {
+  const [query, setQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(query);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    onSearch('');
+    onClear?.();
   };
 
   const exampleSearches = [
@@ -41,25 +53,37 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ex: Comptable, Ingénieur mines, Responsable RH, développeur..."
-            className="w-full px-6 py-4 pr-32 text-lg border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-white/50 focus:border-white bg-white/10 text-white placeholder-white/60"
+            className="w-full px-6 py-4 pr-48 text-lg border-2 border-white/30 rounded-xl focus:ring-4 focus:ring-white/50 focus:border-white bg-white/10 text-white placeholder-white/60"
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 bg-white text-blue-900 font-semibold rounded-lg hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 transition flex items-center gap-2"
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
-                Recherche...
-              </>
-            ) : (
-              <>
-                <Search className="w-5 h-5" />
-                Rechercher
-              </>
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+            {query && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="p-2 hover:bg-white/20 text-white rounded-lg transition flex items-center gap-1"
+                title="Effacer la recherche"
+              >
+                <X className="w-5 h-5" />
+              </button>
             )}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-white text-blue-900 font-semibold rounded-lg hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 transition flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
+                  Recherche...
+                </>
+              ) : (
+                <>
+                  <Search className="w-5 h-5" />
+                  Rechercher
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
 
