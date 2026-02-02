@@ -4,7 +4,7 @@ import {
   FileText, Users, GraduationCap, Globe, Mail, CheckCircle2,
   Clock, Tag, Languages, BookmarkPlus, Bookmark, Share2, Star,
   Target, TrendingUp, Award, Eye, MessageCircle, Heart, Zap,
-  AlertCircle, Info, Download, ExternalLink
+  AlertCircle, Info, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Job, Company } from '../lib/supabase';
@@ -694,13 +694,10 @@ export default function JobDetailComplete({ jobId, onNavigate, autoOpenApply, me
                     {(job as any).required_documents && (job as any).required_documents.length > 0 && (
                       <div>
                         <div className="text-sm font-semibold text-gray-600 mb-2">Documents requis :</div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="text-gray-700">
                           {(job as any).required_documents.map((doc: string, index: number) => (
-                            <span
-                              key={index}
-                              className="px-4 py-2 bg-yellow-200 text-gray-800 rounded-lg text-sm font-medium flex items-center gap-2"
-                            >
-                              <Download className="w-4 h-4" />
+                            <span key={index}>
+                              {index > 0 && ', '}
                               {doc}
                             </span>
                           ))}
