@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Upload,
   FileText,
@@ -20,14 +21,17 @@ interface CVUploadWithParserProps {
   onParsed: (data: ParsedCVData) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
+  onNavigateToCreditStore?: () => void;
 }
 
 export default function CVUploadWithParser({
   onParsed,
   onError,
   disabled = false,
+  onNavigateToCreditStore,
 }: CVUploadWithParserProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [creditsBalance, setCreditsBalance] = useState<number>(0);
@@ -37,6 +41,14 @@ export default function CVUploadWithParser({
   const { isParsing, progress, error, parsedData, parseCV, reset } = useCVParsing();
 
   const requiredCredits = 10;
+
+  const handleNavigateToCreditStore = useCallback(() => {
+    if (onNavigateToCreditStore) {
+      onNavigateToCreditStore();
+    } else {
+      navigate('/credit-store');
+    }
+  }, [onNavigateToCreditStore, navigate]);
 
   // Charger le solde de crédits
   useEffect(() => {
@@ -440,7 +452,7 @@ export default function CVUploadWithParser({
             <div className="mt-3">
               <button
                 type="button"
-                onClick={() => window.location.href = '/credit-store'}
+                onClick={handleNavigateToCreditStore}
                 className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 <Coins className="w-5 h-5" />
