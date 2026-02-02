@@ -21,8 +21,20 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Récupérer le token de l'utilisateur depuis le header Authorization
+    const authHeader = req.headers.get('Authorization');
+    const userToken = authHeader?.replace('Bearer ', '') || '';
+
+    // Créer un client avec le token utilisateur pour auth.uid()
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      global: {
+        headers: {
+          Authorization: authHeader || ''
+        }
+      }
+    });
 
     const { job_id, session_id } = await req.json() as TrackJobViewRequest;
 

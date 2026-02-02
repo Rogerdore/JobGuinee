@@ -84,14 +84,17 @@ export const candidateStatsService = {
   async trackJobView(jobId: string, sessionId?: string): Promise<{ success: boolean; status?: string; message?: string }> {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      // Récupérer le token de session de l'utilisateur connecté
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       // Appeler l'Edge Function qui gère l'anti-spam et la validation
       const response = await fetch(`${supabaseUrl}/functions/v1/track-job-view`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           job_id: jobId,
