@@ -19,6 +19,7 @@ import { useSavedJobs } from '../hooks/useSavedJobs';
 import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
 import { socialShareService } from '../services/socialShareService';
+import { candidateStatsService } from '../services/candidateStatsService';
 
 interface JobDetailCompleteProps {
   jobId: string;
@@ -58,8 +59,10 @@ export default function JobDetailComplete({ jobId, onNavigate, autoOpenApply, me
 
   useEffect(() => {
     loadJob();
+    // Track job view pour TOUS les utilisateurs (connectés, anonymes, recruteurs)
+    trackJobView();
+
     if (user) {
-      trackJobView();
       checkIfApplied();
       loadProfileCompletion();
     }
@@ -93,14 +96,12 @@ export default function JobDetailComplete({ jobId, onNavigate, autoOpenApply, me
   };
 
   const trackJobView = async () => {
-    if (!user || !jobId || jobId.startsWith('sample-')) return;
+    if (jobId.startsWith('sample-')) return;
 
     try {
-      await supabase.from('job_views').insert({
-        user_id: user.id,
-        job_id: jobId,
-        viewed_at: new Date().toISOString()
-      });
+      // Utiliser le service centralisé qui gère l'anti-spam et la validation backend
+      // Fonctionne pour tous les utilisateurs (connectés, anonymes, recruteurs)
+      await candidateStatsService.trackJobView(jobId);
     } catch (error) {
       console.debug('Job view tracking:', error);
     }
