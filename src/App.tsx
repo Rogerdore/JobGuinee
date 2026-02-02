@@ -139,6 +139,8 @@ function AppContent() {
     } else if (page && page === 'external-application' && id) {
       setCurrentPage('external-application');
       setSelectedJobId(id);
+    } else if (page) {
+      setCurrentPage(page as Page);
     }
   }, []);
 
