@@ -87,12 +87,10 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
   const [exps, setExps] = useState<Experience[]>(experiences);
 
   useEffect(() => {
-    if (JSON.stringify(experiences) !== JSON.stringify(exps)) {
-      if (experiences.length > 0 || exps.length === 0) {
-        setExps(experiences);
-      }
+    if (experiences.length > 0 && exps.length === 0) {
+      setExps(experiences);
     }
-  }, [experiences]);
+  }, [experiences, exps.length]);
 
   useEffect(() => {
     onChange(exps);
