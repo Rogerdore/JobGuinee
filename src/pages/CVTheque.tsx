@@ -340,12 +340,23 @@ export default function CVTheque({ onNavigate }: CVThequeProps) {
       });
     }
 
+    if (filterValues.sector) {
+      results = results.filter(c => {
+        const candidateText = `${c.title || ''} ${c.bio || ''} ${c.skills?.join(' ') || ''}`.toLowerCase();
+        return candidateText.includes(filterValues.sector!.toLowerCase());
+      });
+    }
+
     if (filterValues.location) {
       results = results.filter(c => c.location?.includes(filterValues.location));
     }
 
     if (filterValues.education_level) {
       results = results.filter(c => c.education_level === filterValues.education_level);
+    }
+
+    if (filterValues.contract_type) {
+      results = results.filter(c => c.preferred_contract_type === filterValues.contract_type);
     }
 
     if (filterValues.experience_min !== undefined) {

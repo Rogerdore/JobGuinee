@@ -15,11 +15,11 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
   };
 
   const exampleSearches = [
-    'Comptable OHADA à Boké',
-    'Chargé RH bilingue anglais',
-    'Ingénieur maintenance industrielle',
-    'Chauffeur engins miniers',
-    'Secrétaire direction expérimentée',
+    'Comptable OHADA Conakry',
+    'Responsable RH bilingue',
+    'Ingénieur Électricité Boké',
+    'Chauffeur Poids Lourds',
+    'Secrétaire de Direction',
   ];
 
   return (
