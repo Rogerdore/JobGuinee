@@ -40,7 +40,7 @@ interface CandidateProfile {
   experience_years?: number;
   education_level?: string;
   skills?: string[];
-  professional_summary?: string;
+  bio?: string;
   location?: string;
   desired_salary_min?: number;
   desired_salary_max?: number;
@@ -162,7 +162,7 @@ export default function JobApplicationModal({
       setProfileData(profile);
       setCandidateProfile(candidateProf);
 
-      if (candidateProf?.professional_summary) {
+      if (candidateProf?.bio) {
         setCustomData(prev => ({ ...prev, coverLetter: candidateProf.professional_summary || '' }));
       }
     } catch (error) {
@@ -188,7 +188,7 @@ export default function JobApplicationModal({
       return;
     }
 
-    if (jobDetails?.cover_letter_required && !candidateProfile?.professional_summary?.trim()) {
+    if (jobDetails?.cover_letter_required && !candidateProfile?.bio?.trim()) {
       alert('Une lettre de motivation est requise. Veuillez utiliser la candidature classique.');
       return;
     }
@@ -198,7 +198,7 @@ export default function JobApplicationModal({
       const result = await applicationSubmissionService.submitApplication({
         jobId,
         candidateId,
-        coverLetter: sanitizeText(candidateProfile?.professional_summary),
+        coverLetter: sanitizeText(candidateProfile?.bio),
         cvUrl: candidateProfile?.cv_url
       });
 
@@ -395,7 +395,7 @@ export default function JobApplicationModal({
 
   const completionPercentage = candidateProfile?.profile_completion_percentage || 0;
   const hasCV = !!candidateProfile?.cv_url;
-  const hasCoverLetter = !!candidateProfile?.professional_summary?.trim();
+  const hasCoverLetter = !!candidateProfile?.bio?.trim();
   const coverLetterRequired = jobDetails?.cover_letter_required || false;
 
   const MultipleFileUploadSection = ({ fileType, label, required = false }: { fileType: FileType; label: string; required?: boolean }) => {

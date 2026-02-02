@@ -44,7 +44,7 @@ export async function checkFastApplicationEligibility(
 
     const { data: candidateProfile } = await supabase
       .from('candidate_profiles')
-      .select('cv_url, professional_summary, full_name, phone')
+      .select('cv_url, bio, full_name, phone')
       .eq('profile_id', candidateId)
       .maybeSingle();
 
@@ -108,9 +108,9 @@ export async function checkFastApplicationEligibility(
     }
 
     if (job?.cover_letter_required) {
-      if (!candidateProfile?.professional_summary || candidateProfile.professional_summary.trim() === '') {
+      if (!candidateProfile?.bio || candidateProfile.bio.trim() === '') {
         missingFields.push({
-          field: 'professional_summary',
+          field: 'bio',
           label: 'Lettre de motivation',
           description: 'Cette offre exige une lettre de motivation (résumé professionnel)',
           required: true,
@@ -127,7 +127,7 @@ export async function checkFastApplicationEligibility(
         email: profile.email,
         phone: phone,
         cv_url: candidateProfile?.cv_url,
-        professional_summary: candidateProfile?.professional_summary
+        professional_summary: candidateProfile?.bio
       }
     };
 
@@ -167,7 +167,7 @@ export async function getProfileCompletionStatus(candidateId: string) {
       hasEmail: !!(profile?.email && profile.email.trim()),
       hasPhone: !!(profile?.phone && profile.phone.trim()),
       hasCV: !!(candidateProfile?.cv_url && candidateProfile.cv_url.trim()),
-      hasProfessionalSummary: !!(candidateProfile?.professional_summary && candidateProfile.professional_summary.trim()),
+      hasProfessionalSummary: !!(candidateProfile?.bio && candidateProfile.bio.trim()),
       profileCompletionPercentage: candidateProfile?.profile_completion_percentage || 0
     };
   } catch (error) {
