@@ -44,7 +44,7 @@ export async function checkFastApplicationEligibility(
 
     const { data: candidateProfile } = await supabase
       .from('candidate_profiles')
-      .select('cv_url, professional_summary')
+      .select('cv_url, professional_summary, full_name, phone')
       .eq('profile_id', candidateId)
       .maybeSingle();
 
@@ -68,7 +68,10 @@ export async function checkFastApplicationEligibility(
 
     const missingFields: MissingField[] = [];
 
-    if (!profile.full_name || profile.full_name.trim() === '') {
+    const fullName = profile.full_name || candidateProfile?.full_name;
+    const phone = profile.phone || candidateProfile?.phone;
+
+    if (!fullName || fullName.trim() === '') {
       missingFields.push({
         field: 'full_name',
         label: 'Nom complet',
@@ -86,7 +89,7 @@ export async function checkFastApplicationEligibility(
       });
     }
 
-    if (!profile.phone || profile.phone.trim() === '') {
+    if (!phone || phone.trim() === '') {
       missingFields.push({
         field: 'phone',
         label: 'Téléphone',
@@ -120,9 +123,9 @@ export async function checkFastApplicationEligibility(
       isEligible: missingFields.length === 0,
       missingFields,
       profileData: {
-        full_name: profile.full_name,
+        full_name: fullName,
         email: profile.email,
-        phone: profile.phone,
+        phone: phone,
         cv_url: candidateProfile?.cv_url,
         professional_summary: candidateProfile?.professional_summary
       }
