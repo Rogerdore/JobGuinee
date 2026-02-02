@@ -22,12 +22,23 @@ export interface SavedJob {
 class SavedJobsService {
   async toggleSaveJob(jobId: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('toggle_save_job', {
+      const isSavedNow = await this.isSaved(jobId);
+      const action = isSavedNow ? 'unsave' : 'save';
+
+      const { data, error } = await supabase.rpc('track_job_save', {
         p_job_id: jobId,
+        p_action: action
       });
 
       if (error) throw error;
-      return data as boolean;
+
+      const result = data as { success: boolean; status: string; message: string };
+
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      return action === 'save';
     } catch (error) {
       console.error('Error toggling saved job:', error);
       throw error;

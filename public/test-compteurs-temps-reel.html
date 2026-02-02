@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Compteurs en Temps Réel - JobGuinée</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.9);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 20px;
+      color: white;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      margin: 5px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .platform-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn-facebook {
+      background: linear-gradient(135deg, #1877f2 0%, #0d5dbf 100%);
+    }
+
+    .btn-linkedin {
+      background: linear-gradient(135deg, #0077b5 0%, #005885 100%);
+    }
+
+    .btn-twitter {
+      background: linear-gradient(135deg, #1da1f2 0%, #0d8bd9 100%);
+    }
+
+    .btn-whatsapp {
+      background: linear-gradient(135deg, #25d366 0%, #1da851 100%);
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .btn-unsave {
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+
+    .alert-success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+
+    .alert-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+
+    .log-entry {
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      border-left: 4px solid;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .log-success {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #155724;
+    }
+
+    .log-blocked {
+      background: #fff3cd;
+      border-color: #ffc107;
+      color: #856404;
+    }
+
+    .log-error {
+      background: #f8d7da;
+      border-color: #dc3545;
+      color: #721c24;
+    }
+
+    .timestamp {
+      font-size: 0.8rem;
+      color: #6c757d;
+      font-family: monospace;
+    }
+
+    .job-selector {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Test Compteurs en Temps Réel</h1>
+    <p class="subtitle">Testez les favoris, commentaires, partages et vues en direct</p>
+
+    <div class="card">
+      <h2>💼 Sélectionner une Offre</h2>
+      <select id="jobSelector" class="job-selector">
+        <option value="">Chargement des offres...</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>📊 Compteurs en Temps Réel</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👁️</div>
+          <div class="stat-number" id="viewsCount">-</div>
+          <div class="stat-label">Vues</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">❤️</div>
+          <div class="stat-number" id="savesCount">-</div>
+          <div class="stat-label">Favoris</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💬</div>
+          <div class="stat-number" id="commentsCount">-</div>
+          <div class="stat-label">Commentaires</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📤</div>
+          <div class="stat-number" id="sharesCount">-</div>
+          <div class="stat-label">Partages</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-number" id="applicationsCount">-</div>
+          <div class="stat-label">Candidatures</div>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <strong>ℹ️ Mise à jour automatique :</strong> Les compteurs se mettent à jour en temps réel dès qu'une action est effectuée.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>❤️ Test des Favoris</h2>
+      <div class="action-buttons">
+        <button onclick="testSave()" id="saveBtn">
+          <span id="saveBtnText">❤️ Ajouter aux favoris</span>
+        </button>
+        <button onclick="testUnsave()" id="unsaveBtn" disabled>
+          🗑️ Retirer des favoris
+        </button>
+        <button onclick="refreshStats()">
+          🔄 Actualiser les stats
+        </button>
+      </div>
+      <div id="saveResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📤 Test des Partages</h2>
+      <div class="platform-buttons">
+        <button class="btn-facebook" onclick="testShare('facebook')">
+          📘 Facebook
+        </button>
+        <button class="btn-linkedin" onclick="testShare('linkedin')">
+          💼 LinkedIn
+        </button>
+        <button class="btn-twitter" onclick="testShare('twitter')">
+          🐦 Twitter/X
+        </button>
+        <button class="btn-whatsapp" onclick="testShare('whatsapp')">
+          💬 WhatsApp
+        </button>
+      </div>
+      <div class="alert alert-warning" style="margin-top: 20px;">
+        <strong>⚠️ Anti-Spam :</strong> Vous ne pouvez partager sur la même plateforme qu'une fois par heure.
+      </div>
+      <div id="shareResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Logs d'Actions</h2>
+      <div id="logs"></div>
+    </div>
+
+    <div class="card">
+      <h2>📖 Comment ça fonctionne</h2>
+      <div class="alert alert-info">
+        <h3 style="margin-bottom: 10px;">✅ Fonctionnalités Actives</h3>
+        <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+          <li><strong>Comptage automatique :</strong> Les triggers se déclenchent automatiquement lors d'insertions/suppressions</li>
+          <li><strong>Temps réel :</strong> Les compteurs sont mis à jour instantanément dans la base de données</li>
+          <li><strong>Anti-spam :</strong> Protection contre les actions répétées (1h pour les partages)</li>
+          <li><strong>Audit :</strong> Tous les événements sont loggés dans candidate_stats_logs</li>
+          <li><strong>Sécurité :</strong> Validation côté serveur avec fonctions RPC</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = window.location.hostname === 'localhost'
+      ? 'https://pxfctvjjzrlupxlafwot.supabase.co'
+      : window.location.origin;
+
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4ZmN0dmpqenJsdXB4bGFmd290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE5MTk5NDksImV4cCI6MjA0NzQ5NTk0OX0.kfJq7IbOXC1r60kT06jEBkxT-Tvu4j8x1VfDaFmwbgM';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let selectedJobId = null;
+    let currentStats = {};
+    let logs = [];
+
+    function addLog(message, type = 'success') {
+      const timestamp = new Date().toLocaleTimeString('fr-FR');
+      logs.unshift({ message, type, timestamp });
+      if (logs.length > 15) logs.pop();
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const logsDiv = document.getElementById('logs');
+      if (logs.length === 0) {
+        logsDiv.innerHTML = '<p style="color: #6c757d;">Aucune action pour le moment...</p>';
+        return;
+      }
+
+      logsDiv.innerHTML = logs.map(log => `
+        <div class="log-entry log-${log.type}">
+          <div class="timestamp">${log.timestamp}</div>
+          <div>${log.message}</div>
+        </div>
+      `).join('');
+    }
+
+    async function loadJobs() {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('id, title, status')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+
+        const selector = document.getElementById('jobSelector');
+        selector.innerHTML = '<option value="">-- Sélectionnez une offre --</option>' +
+          data.map(job => `<option value="${job.id}">${job.title}</option>`).join('');
+
+        selector.addEventListener('change', (e) => {
+          selectedJobId = e.target.value;
+          if (selectedJobId) {
+            loadStats(selectedJobId);
+            addLog(`Offre sélectionnée: ${data.find(j => j.id === selectedJobId)?.title}`, 'success');
+          }
+        });
+
+        addLog(`✅ ${data.length} offres chargées`, 'success');
+      } catch (error) {
+        console.error('Erreur:', error);
+        addLog(`❌ Erreur de chargement: ${error.message}`, 'error');
+      }
+    }
+
+    async function loadStats(jobId) {
+      try {
+        const { data, error } = await supabase.rpc('get_job_stats', {
+          p_job_id: jobId
+        });
+
+        if (error) throw error;
+
+        currentStats = data;
+        updateStatsDisplay(data);
+        updateSaveButtons(data.is_saved);
+
+        addLog('📊 Statistiques chargées', 'success');
+      } catch (error) {
+        console.error('Erreur stats:', error);
+        addLog(`❌ Erreur stats: ${error.message}`, 'error');
+      }
+    }
+
+    function updateStatsDisplay(stats) {
+      document.getElementById('viewsCount').textContent = stats.views_count || 0;
+      document.getElementById('savesCount').textContent = stats.saves_count || 0;
+      document.getElementById('commentsCount').textContent = stats.comments_count || 0;
+      document.getElementById('sharesCount').textContent = stats.shares_count || 0;
+      document.getElementById('applicationsCount').textContent = stats.applications_count || 0;
+    }
+
+    function updateSaveButtons(isSaved) {
+      const saveBtn = document.getElementById('saveBtn');
+      const unsaveBtn = document.getElementById('unsaveBtn');
+      const saveBtnText = document.getElementById('saveBtnText');
+
+      if (isSaved) {
+        saveBtnText.textContent = '✅ Déjà dans les favoris';
+        saveBtn.disabled = true;
+        unsaveBtn.disabled = false;
+      } else {
+        saveBtnText.textContent = '❤️ Ajouter aux favoris';
+        saveBtn.disabled = false;
+        unsaveBtn.disabled = true;
+      }
+    }
+
+    async function testSave() {
+      if (!selectedJobId) {
+        alert('Veuillez sélectionner une offre');
+        return;
+      }
+
+      addLog('❤️ Ajout aux favoris...', 'success');
+      document.getElementById('saveResult').innerHTML = '<div class="alert alert-info pulse">⏳ En cours...</div>';
+
+      try {
+        const { data, error } = await supabase.rpc('track_job_save', {
+          p_job_id: selectedJobId,
+          p_action: 'save'
+        });
+
+        if (error) throw error;
+
+        document.getElementById('saveResult').innerHTML =
+          `<div class="alert alert-success">✅ ${data.message}</div>`;
+
+        if (data.success) {
+          addLog('✅ Ajouté aux favoris', 'success');
+          await refreshStats();
+        } else {
+          addLog(`⚠️ ${data.message}`, 'blocked');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('saveResult').innerHTML =
+          `<div class="alert alert-error">❌ Erreur: ${error.message}</div>`;
+        addLog(`❌ Erreur: ${error.message}`, 'error');
+      }
+    }
+
+    async function testUnsave() {
+      if (!selectedJobId) {
+        alert('Veuillez sélectionner une offre');
+        return;
+      }
+
+      addLog('🗑️ Retrait des favoris...', 'success');
+      document.getElementById('saveResult').innerHTML = '<div class="alert alert-info pulse">⏳ En cours...</div>';
+
+      try {
+        const { data, error } = await supabase.rpc('track_job_save', {
+          p_job_id: selectedJobId,
+          p_action: 'unsave'
+        });
+
+        if (error) throw error;
+
+        document.getElementById('saveResult').innerHTML =
+          `<div class="alert alert-success">✅ ${data.message}</div>`;
+
+        if (data.success) {
+          addLog('✅ Retiré des favoris', 'success');
+          await refreshStats();
+        } else {
+          addLog(`⚠️ ${data.message}`, 'blocked');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('saveResult').innerHTML =
+          `<div class="alert alert-error">❌ Erreur: ${error.message}</div>`;
+        addLog(`❌ Erreur: ${error.message}`, 'error');
+      }
+    }
+
+    async function testShare(platform) {
+      if (!selectedJobId) {
+        alert('Veuillez sélectionner une offre');
+        return;
+      }
+
+      addLog(`📤 Partage sur ${platform}...`, 'success');
+      document.getElementById('shareResult').innerHTML = '<div class="alert alert-info pulse">⏳ En cours...</div>';
+
+      const sessionId = localStorage.getItem('session_id') ||
+        'session_' + Date.now() + '_' + Math.random().toString(36);
+      localStorage.setItem('session_id', sessionId);
+
+      try {
+        const { data, error } = await supabase.rpc('track_job_share', {
+          p_job_id: selectedJobId,
+          p_platform: platform,
+          p_share_type: 'manual',
+          p_session_id: sessionId
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          document.getElementById('shareResult').innerHTML =
+            `<div class="alert alert-success">✅ ${data.message}</div>`;
+          addLog(`✅ Partagé sur ${platform}`, 'success');
+          await refreshStats();
+        } else if (data.status === 'blocked_spam') {
+          document.getElementById('shareResult').innerHTML =
+            `<div class="alert alert-warning">⚠️ ${data.message}</div>`;
+          addLog(`⚠️ Anti-spam: ${data.message}`, 'blocked');
+        } else {
+          document.getElementById('shareResult').innerHTML =
+            `<div class="alert alert-error">❌ ${data.message}</div>`;
+          addLog(`❌ ${data.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('shareResult').innerHTML =
+          `<div class="alert alert-error">❌ Erreur: ${error.message}</div>`;
+        addLog(`❌ Erreur: ${error.message}`, 'error');
+      }
+    }
+
+    async function refreshStats() {
+      if (!selectedJobId) return;
+      addLog('🔄 Actualisation...', 'success');
+      await loadStats(selectedJobId);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      addLog('🚀 Page initialisée', 'success');
+      loadJobs();
+      renderLogs();
+    });
+  </script>
+</body>
+</html>

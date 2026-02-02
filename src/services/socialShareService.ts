@@ -181,15 +181,17 @@ export const socialShareService = {
 
   async trackShare(jobId: string, platform: keyof SocialShareLinks): Promise<void> {
     try {
-      const { supabase } = await import('../lib/supabase');
+      const { realtimeCountersService } = await import('./realtimeCountersService');
 
-      await supabase
-        .from('social_share_analytics')
-        .insert({
-          job_id: jobId,
-          platform,
-          shared_at: new Date().toISOString()
-        });
+      const result = await realtimeCountersService.trackShare(
+        jobId,
+        platform as 'facebook' | 'linkedin' | 'twitter' | 'whatsapp',
+        'manual'
+      );
+
+      if (!result.success && result.status !== 'blocked_spam') {
+        console.warn('Share tracking failed:', result.message);
+      }
     } catch (error) {
       console.error('Error tracking share:', error);
     }
