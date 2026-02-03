@@ -516,18 +516,29 @@ export default function JobApplicationModal({
                 {/* OPTION 1 - CANDIDATURE RAPIDE */}
                 <button
                   onClick={handleQuickApplyClick}
-                  className="group relative p-6 rounded-xl border-2 border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all"
+                  disabled={coverLetterRequired}
+                  className={`group relative p-6 rounded-xl border-2 transition-all ${
+                    coverLetterRequired
+                      ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 cursor-not-allowed opacity-60'
+                      : 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl'
+                  }`}
                 >
                   <div className="flex flex-col h-full">
                     <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <Zap className="w-7 h-7 text-white" />
                     </div>
 
-                    <h4 className="text-lg font-bold text-gray-900 mb-2 text-left">
+                    <h4 className={`text-lg font-bold mb-2 text-left ${
+                      coverLetterRequired ? 'text-gray-500' : 'text-gray-900'
+                    }`}>
                       Candidature Rapide
                     </h4>
-                    <p className="text-sm text-gray-700 mb-4 text-left flex-1">
-                      Utilisez votre profil JobGuinée existant
+                    <p className={`text-sm mb-4 text-left flex-1 ${
+                      coverLetterRequired ? 'text-gray-500' : 'text-gray-700'
+                    }`}>
+                      {coverLetterRequired
+                        ? 'Non disponible: lettre de motivation requise'
+                        : 'Utilisez votre profil JobGuinée existant'}
                     </p>
 
                     <div className="space-y-2 text-left">
