@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import { useMemo } from 'react';
 
 interface MarkdownRendererProps {
   content: string;
@@ -11,6 +12,41 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
       <div className={`text-gray-500 italic ${className}`}>
         Aucune description disponible
       </div>
+    );
+  }
+
+  const sanitizedContent = useMemo(() => {
+    let cleaned = content;
+
+    cleaned = cleaned.replace(/<img[^>]*src="data:image\/[^"]*"[^>]*>/gi, '');
+
+    cleaned = cleaned.replace(/<p><br><\/p>/gi, '\n');
+    cleaned = cleaned.replace(/<p>\s*<\/p>/gi, '');
+    cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+
+    return cleaned;
+  }, [content]);
+
+  const isHTML = /<[a-z][\s\S]*>/i.test(sanitizedContent);
+
+  if (isHTML) {
+    const htmlContent = sanitizedContent
+      .replace(/<p>/gi, '<p class="text-gray-700 leading-relaxed mb-4">')
+      .replace(/<h1>/gi, '<h1 class="text-3xl font-bold text-gray-900 mt-6 mb-4">')
+      .replace(/<h2>/gi, '<h2 class="text-2xl font-bold text-gray-900 mt-5 mb-3">')
+      .replace(/<h3>/gi, '<h3 class="text-xl font-bold text-gray-900 mt-4 mb-2">')
+      .replace(/<ul>/gi, '<ul class="list-disc list-inside space-y-2 mb-4 text-gray-700 ml-4">')
+      .replace(/<ol>/gi, '<ol class="list-decimal list-inside space-y-2 mb-4 text-gray-700 ml-4">')
+      .replace(/<li>/gi, '<li class="ml-4">')
+      .replace(/<strong>/gi, '<strong class="font-bold text-gray-900">')
+      .replace(/<em>/gi, '<em class="italic text-gray-800">')
+      .replace(/<a /gi, '<a class="text-[#0E2F56] hover:text-[#1a4275] underline font-medium" target="_blank" rel="noopener noreferrer" ');
+
+    return (
+      <div
+        className={`prose prose-blue max-w-none ${className}`}
+        dangerouslySetInnerHTML={{ __html: htmlContent }}
+      />
     );
   }
 
@@ -87,7 +123,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
         disallowedElements={['script', 'iframe', 'object', 'embed', 'style']}
         unwrapDisallowed
       >
-        {content}
+        {sanitizedContent}
       </ReactMarkdown>
     </div>
   );

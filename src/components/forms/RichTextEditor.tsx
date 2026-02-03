@@ -85,23 +85,18 @@ const RichTextEditor = memo(function RichTextEditor({
 
         if (item.type.indexOf('image') !== -1) {
           e.preventDefault();
-          const blob = item.getAsFile();
 
-          if (blob) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              const base64 = event.target?.result as string;
-              const range = quill.getSelection(true);
-
-              if (range) {
-                quill.insertEmbed(range.index, 'image', base64);
-                quill.setSelection(range.index + 1);
-                setHasUnsavedChanges(true);
-              }
-            };
-            reader.readAsDataURL(blob);
-          }
-          break;
+          const notification = document.createElement('div');
+          notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50';
+          notification.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>Les images ne sont pas autorisées dans la description</span>
+          `;
+          document.body.appendChild(notification);
+          setTimeout(() => notification.remove(), 4000);
+          return;
         }
       }
     };
@@ -240,7 +235,7 @@ const RichTextEditor = memo(function RichTextEditor({
       [{ direction: 'rtl' }],
       [{ align: [] }],
       ['blockquote', 'code-block'],
-      ['link', 'image', 'video'],
+      ['link'],
       ['clean'],
     ],
     history: {
@@ -269,8 +264,6 @@ const RichTextEditor = memo(function RichTextEditor({
     'blockquote',
     'code-block',
     'link',
-    'image',
-    'video',
   ], []);
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
