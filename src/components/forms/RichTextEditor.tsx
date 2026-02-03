@@ -404,9 +404,13 @@ const RichTextEditor = memo(function RichTextEditor({
     }
 
     try {
-      console.log('[PDF Block] Rendu visuel du PDF...');
+      console.log('[PDF Block] Début du rendu visuel du PDF...');
+      console.log('[PDF Block] Fichier:', file.name, 'Taille:', file.size);
 
       const arrayBuffer = await file.arrayBuffer();
+      console.log('[PDF Block] ArrayBuffer créé:', arrayBuffer.byteLength, 'bytes');
+
+      console.log('[PDF Block] Chargement du PDF avec pdf.js...');
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         verbosity: 0,
@@ -416,37 +420,47 @@ const RichTextEditor = memo(function RichTextEditor({
       });
 
       const pdf = await loadingTask.promise;
-      const numPages = Math.min(pdf.numPages, 10);
+      console.log('[PDF Block] PDF chargé avec succès, nombre de pages:', pdf.numPages);
+
+      const numPages = Math.min(pdf.numPages, 5);
       console.log(`[PDF Block] Rendu de ${numPages} page(s) sur ${pdf.numPages}`);
 
       const pageImages: string[] = [];
 
       for (let i = 1; i <= numPages; i++) {
         try {
+          console.log(`[PDF Block] Rendu de la page ${i}...`);
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.5 });
+          const viewport = page.getViewport({ scale: 1.2 });
 
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
 
           if (!context) {
-            throw new Error('Impossible de créer le contexte canvas');
+            console.error('[PDF Block] Impossible de créer le contexte 2D');
+            continue;
           }
 
           canvas.height = viewport.height;
           canvas.width = viewport.width;
+
+          console.log(`[PDF Block] Canvas créé: ${canvas.width}x${canvas.height}`);
 
           await page.render({
             canvasContext: context,
             viewport: viewport,
           }).promise;
 
-          const imageDataUrl = canvas.toDataURL('image/png', 0.92);
+          console.log(`[PDF Block] Page ${i} rendue, conversion en image...`);
+          const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
           pageImages.push(imageDataUrl);
+          console.log(`[PDF Block] Page ${i} convertie avec succès`);
         } catch (pageError) {
           console.error(`[PDF Block] Erreur rendu page ${i}:`, pageError);
         }
       }
+
+      console.log('[PDF Block] Total de pages rendues:', pageImages.length);
 
       if (pageImages.length === 0) {
         throw new Error('Aucune page du PDF n\'a pu être rendue');
@@ -455,37 +469,37 @@ const RichTextEditor = memo(function RichTextEditor({
       const blockId = `pdf-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
       const pagesHtml = pageImages.map((imageData, index) => `
-        <div style="margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <div style="background: #f3f4f6; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
-            <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">Page ${index + 1}/${numPages}</p>
+        <div style="margin: 12px 0; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; background: white;">
+          <div style="background: #f3f4f6; padding: 6px 10px; border-bottom: 1px solid #e5e7eb;">
+            <p style="margin: 0; font-size: 11px; color: #6b7280; font-weight: 600;">Page ${index + 1}/${numPages}</p>
           </div>
           <img src="${imageData}" alt="PDF Page ${index + 1}" style="width: 100%; height: auto; display: block;" />
         </div>
       `).join('');
 
-      const warningText = pdf.numPages > 10
-        ? `<p style="color: #f59e0b; font-size: 12px; margin: 8px 0; text-align: center;">⚠️ Seules les 10 premières pages sont affichées (${pdf.numPages} pages au total)</p>`
+      const warningText = pdf.numPages > 5
+        ? `<p style="color: #f59e0b; font-size: 12px; margin: 8px 0; text-align: center;">⚠️ Seules les 5 premières pages sont affichées (${pdf.numPages} pages au total)</p>`
         : '';
 
       const pdfBlock = `
         <div class="pdf-visual-block" data-block-type="pdf" data-block-id="${blockId}" data-file-name="${file.name}" data-file-size="${file.size}" data-num-pages="${pdf.numPages}">
-          <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 12px;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 24px;">📄</span>
+          <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 20px;">📄</span>
               </div>
               <div>
-                <p style="color: white; font-weight: bold; margin: 0; font-size: 14px;">${file.name}</p>
-                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">${(file.size / 1024).toFixed(2)} KB • ${pdf.numPages} page(s)</p>
+                <p style="color: white; font-weight: bold; margin: 0; font-size: 13px;">${file.name}</p>
+                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 11px;">${(file.size / 1024).toFixed(2)} KB • ${pdf.numPages} page(s)</p>
               </div>
             </div>
           </div>
-          <div style="padding: 16px; background: #fafafa;">
+          <div style="padding: 12px; background: #fafafa;">
             ${warningText}
             ${pagesHtml}
           </div>
-          <div style="background: #eff6ff; padding: 8px 12px; border-top: 1px solid #bfdbfe; text-align: center;">
-            <p style="color: #1e40af; font-size: 12px; margin: 0;">📄 Document PDF intégré • ♻️ Exploitable par IA</p>
+          <div style="background: #eff6ff; padding: 6px 10px; border-top: 1px solid #bfdbfe; text-align: center;">
+            <p style="color: #1e40af; font-size: 11px; margin: 0;">📄 Document PDF intégré • ♻️ Exploitable par IA</p>
           </div>
         </div>
         <p><br></p>
@@ -494,7 +508,11 @@ const RichTextEditor = memo(function RichTextEditor({
       console.log('[PDF Block] Bloc visuel créé avec succès');
       return pdfBlock;
     } catch (error) {
-      console.error('[PDF Block] Erreur:', error);
+      console.error('[PDF Block] Erreur détaillée:', error);
+      if (error instanceof Error) {
+        console.error('[PDF Block] Message:', error.message);
+        console.error('[PDF Block] Stack:', error.stack);
+      }
       throw new Error(
         `❌ Impossible de créer le bloc PDF\n\n` +
         `Une erreur est survenue lors du traitement du fichier.\n\n` +
