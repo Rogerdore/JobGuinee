@@ -676,11 +676,13 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                   </h2>
                   <div className="flex items-start space-x-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
                     {(job.featured_image_url || job.company_logo_url || job.companies.logo_url) && (
-                      <img
-                        src={job.featured_image_url || job.company_logo_url || job.companies.logo_url}
-                        alt={job.companies.name}
-                        className="w-24 h-24 rounded-xl object-cover border-2 border-gray-300 shadow-lg"
-                      />
+                      <div className="flex-shrink-0 w-24 h-24 bg-white rounded-xl border-2 border-gray-300 shadow-lg overflow-hidden flex items-center justify-center">
+                        <img
+                          src={job.featured_image_url || job.company_logo_url || job.companies.logo_url}
+                          alt={job.companies.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
                     )}
                     <div className="flex-1">
                       <h3 className="font-bold text-2xl text-gray-900 mb-3">{job.companies.name}</h3>

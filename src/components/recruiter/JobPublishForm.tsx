@@ -950,11 +950,13 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
 
               {formData.featured_image_url ? (
                 <div className="space-y-3">
-                  <img
-                    src={formData.featured_image_url}
-                    alt="Image de mise en avant"
-                    className="w-full h-48 object-cover rounded-lg border-2 border-purple-300"
-                  />
+                  <div className="w-full bg-gray-100 rounded-lg border-2 border-purple-300 overflow-hidden">
+                    <img
+                      src={formData.featured_image_url}
+                      alt="Image de mise en avant"
+                      className="w-full h-auto object-contain max-h-96"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => updateFormField('featured_image_url', '')}
