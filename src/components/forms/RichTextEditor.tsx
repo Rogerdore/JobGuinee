@@ -75,7 +75,59 @@ const RichTextEditor = memo(function RichTextEditor({
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
 
-    const handlePaste = (e: ClipboardEvent) => {
+    const compressImage = (file: File, maxSizeKB: number = 500): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            const maxWidth = 800;
+            const maxHeight = 600;
+
+            if (width > maxWidth || height > maxHeight) {
+              if (width > height) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              } else {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('Cannot get canvas context'));
+              return;
+            }
+
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let quality = 0.8;
+            let result = canvas.toDataURL('image/jpeg', quality);
+
+            while (result.length / 1024 > maxSizeKB && quality > 0.1) {
+              quality -= 0.1;
+              result = canvas.toDataURL('image/jpeg', quality);
+            }
+
+            resolve(result);
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+    };
+
+    const handlePaste = async (e: ClipboardEvent) => {
       const clipboardData = e.clipboardData;
       if (!clipboardData) return;
 
@@ -85,18 +137,43 @@ const RichTextEditor = memo(function RichTextEditor({
 
         if (item.type.indexOf('image') !== -1) {
           e.preventDefault();
+          const blob = item.getAsFile();
 
-          const notification = document.createElement('div');
-          notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50';
-          notification.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>Les images ne sont pas autorisées dans la description</span>
-          `;
-          document.body.appendChild(notification);
-          setTimeout(() => notification.remove(), 4000);
-          return;
+          if (blob) {
+            try {
+              const compressedImage = await compressImage(blob);
+              const range = quill.getSelection(true);
+
+              if (range) {
+                quill.insertEmbed(range.index, 'image', compressedImage);
+                quill.setSelection(range.index + 1);
+                setHasUnsavedChanges(true);
+
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50';
+                notification.innerHTML = `
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span>Image compressée et insérée</span>
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+              }
+            } catch (error) {
+              const notification = document.createElement('div');
+              notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-50';
+              notification.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Erreur lors de la compression de l'image</span>
+              `;
+              document.body.appendChild(notification);
+              setTimeout(() => notification.remove(), 4000);
+            }
+          }
+          break;
         }
       }
     };
@@ -235,13 +312,16 @@ const RichTextEditor = memo(function RichTextEditor({
       [{ direction: 'rtl' }],
       [{ align: [] }],
       ['blockquote', 'code-block'],
-      ['link'],
+      ['link', 'image'],
       ['clean'],
     ],
     history: {
       delay: 1000,
       maxStack: 100,
       userOnly: true,
+    },
+    clipboard: {
+      matchVisual: false,
     },
   }), []);
 
@@ -264,6 +344,7 @@ const RichTextEditor = memo(function RichTextEditor({
     'blockquote',
     'code-block',
     'link',
+    'image',
   ], []);
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {

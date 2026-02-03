@@ -18,7 +18,13 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
   const sanitizedContent = useMemo(() => {
     let cleaned = content;
 
-    cleaned = cleaned.replace(/<img[^>]*src="data:image\/[^"]*"[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<img[^>]*src="data:image\/[^"]*"[^>]*>/gi, (match) => {
+      const sizeInKB = match.length / 1024;
+      if (sizeInKB > 800) {
+        return '';
+      }
+      return match;
+    });
 
     cleaned = cleaned.replace(/<p><br><\/p>/gi, '\n');
     cleaned = cleaned.replace(/<p>\s*<\/p>/gi, '');
@@ -40,7 +46,8 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
       .replace(/<li>/gi, '<li class="ml-4">')
       .replace(/<strong>/gi, '<strong class="font-bold text-gray-900">')
       .replace(/<em>/gi, '<em class="italic text-gray-800">')
-      .replace(/<a /gi, '<a class="text-[#0E2F56] hover:text-[#1a4275] underline font-medium" target="_blank" rel="noopener noreferrer" ');
+      .replace(/<a /gi, '<a class="text-[#0E2F56] hover:text-[#1a4275] underline font-medium" target="_blank" rel="noopener noreferrer" ')
+      .replace(/<img /gi, '<img class="max-w-full h-auto rounded-lg shadow-md my-4" ');
 
     return (
       <div
