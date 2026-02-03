@@ -5,26 +5,12 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
-function isHTML(str: string): boolean {
-  const htmlRegex = /<\/?[a-z][\s\S]*>/i;
-  return htmlRegex.test(str);
-}
-
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
   if (!content || content.trim() === '') {
     return (
       <div className={`text-gray-500 italic ${className}`}>
         Aucune description disponible
       </div>
-    );
-  }
-
-  if (isHTML(content)) {
-    return (
-      <div
-        className={`prose prose-blue max-w-none ${className}`}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
     );
   }
 

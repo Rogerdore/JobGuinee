@@ -723,22 +723,30 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
               </div>
 
               <div>
-                <RichTextEditor
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Missions principales
+                </label>
+                <textarea
+                  name="responsibilities"
                   value={formData.responsibilities}
-                  onChange={handleResponsibilitiesChange}
-                  placeholder="• Mission 1
-• Mission 2
-• Mission 3"
-                  label="Missions principales"
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
+                  placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
                 />
               </div>
 
               <div>
-                <RichTextEditor
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Profil recherché
+                </label>
+                <textarea
+                  name="profile"
                   value={formData.profile}
-                  onChange={handleProfileChange}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
                   placeholder="Indiquez le type de profil souhaité..."
-                  label="Profil recherché"
                 />
               </div>
 
