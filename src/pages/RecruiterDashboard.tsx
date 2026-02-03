@@ -98,7 +98,6 @@ type Tab = 'dashboard' | 'view-profile' | 'projects' | 'applications' | 'ai-gene
 export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardProps) {
   const { showSuccess, showError, showWarning, showConfirm } = useModalContext();
   const { profile } = useAuth();
-  const { showNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -455,33 +454,18 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
 
   const handlePublishJob = useCallback(async (data: JobFormData) => {
     if (!profile?.id) {
-      showNotification({
-        type: 'error',
-        title: 'Erreur d\'authentification',
-        message: 'Profil utilisateur introuvable. Veuillez vous reconnecter.',
-        duration: 5000
-      });
+      showError('Erreur d\'authentification', 'Profil utilisateur introuvable. Veuillez vous reconnecter.');
       return;
     }
 
     if (!company?.id) {
-      showNotification({
-        type: 'error',
-        title: 'Profil entreprise manquant',
-        message: 'Veuillez d\'abord créer votre profil entreprise dans l\'onglet Profil',
-        duration: 5000
-      });
+      showError('Profil entreprise manquant', 'Veuillez d\'abord créer votre profil entreprise dans l\'onglet Profil');
       return;
     }
 
     const validation = validateJobData(data, false);
     if (!validation.isValid) {
-      showNotification({
-        type: 'error',
-        title: 'Erreur de validation',
-        message: validation.errors.join('\n'),
-        duration: 7000
-      });
+      showError('Erreur de validation', validation.errors.join('\n'));
       return;
     }
 
@@ -499,12 +483,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
           .upload(fileName, data.company_logo, { upsert: true });
 
         if (uploadError) {
-          showNotification({
-            type: 'warning',
-            title: 'Erreur upload logo',
-            message: 'Le logo n\'a pas pu être uploadé. L\'offre sera publiée sans logo.',
-            duration: 5000
-          });
+          showWarning('Erreur upload logo', 'Le logo n\'a pas pu être uploadé. L\'offre sera publiée sans logo.');
         } else if (uploadData) {
           const { data: urlData } = supabase.storage
             .from('company-logos')
@@ -563,12 +542,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
     }).select('id, title').single();
 
     if (!error && insertedJob) {
-      showNotification({
-        type: 'success',
-        title: 'Offre soumise avec succès',
-        message: `Votre offre "${insertedJob.title}" est en attente de modération.`,
-        duration: 5000
-      });
+      showSuccess('Offre soumise avec succès', `Votre offre "${insertedJob.title}" est en attente de modération.`);
 
       setShowJobForm(false);
       await loadData();
@@ -582,14 +556,9 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
       }, 1500);
     } else {
       console.error('Error publishing job:', error);
-      showNotification({
-        type: 'error',
-        title: 'Erreur de publication',
-        message: error?.message || 'Une erreur est survenue lors de la soumission de l\'offre',
-        duration: 7000
-      });
+      showError('Erreur de publication', error?.message || 'Une erreur est survenue lors de la soumission de l\'offre');
     }
-  }, [company, profile, showNotification]);
+  }, [company, profile, showError, showSuccess, showWarning]);
 
   const handleMoveApplication = async (applicationId: string, newStage: string) => {
     const { error } = await supabase

@@ -4,7 +4,6 @@ import {
   Loader2, Eye, Send, AlertCircle, CheckCircle, X, Edit2, Trash2, Plus, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../contexts/NotificationContext';
 import { externalJobImportService } from '../services/externalJobImportService';
 import { externalApplicationService, SupplementaryDocument } from '../services/externalApplicationService';
 import { externalApplicationEmailService } from '../services/externalApplicationEmailService';
@@ -19,7 +18,6 @@ interface ExternalApplicationUpgradedProps {
 
 export default function ExternalApplicationUpgraded({ onNavigate }: ExternalApplicationUpgradedProps) {
   const { user } = useAuth();
-  const { showNotification } = useNotifications();
 
   const [currentStep, setCurrentStep] = useState<Step>('import');
   const [loading, setLoading] = useState(false);
@@ -60,6 +58,18 @@ export default function ExternalApplicationUpgraded({ onNavigate }: ExternalAppl
   const [uploadingSupp, setUploadingSupp] = useState(false);
   const [editingDocId, setEditingDocId] = useState<string>('');
   const [editingDocName, setEditingDocName] = useState('');
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'warning') => {
+    if (type === 'error') {
+      setError(message);
+      setSuccess('');
+      setTimeout(() => setError(''), 5000);
+    } else {
+      setSuccess(message);
+      setError('');
+      setTimeout(() => setSuccess(''), 5000);
+    }
+  };
 
   useEffect(() => {
     checkAccess();
