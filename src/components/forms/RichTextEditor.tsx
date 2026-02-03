@@ -22,8 +22,6 @@ import mammoth from 'mammoth';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -415,8 +413,9 @@ const RichTextEditor = memo(function RichTextEditor({
         data: arrayBuffer,
         verbosity: 0,
         isEvalSupported: false,
-        disableFontFace: false,
-        standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
+        useSystemFonts: true,
+        disableFontFace: true,
+        useWorkerFetch: false,
       });
 
       const pdf = await loadingTask.promise;
@@ -557,8 +556,9 @@ const RichTextEditor = memo(function RichTextEditor({
         data: arrayBuffer,
         verbosity: 0,
         isEvalSupported: false,
-        disableFontFace: false,
-        standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
+        useSystemFonts: true,
+        disableFontFace: true,
+        useWorkerFetch: false,
       });
 
       const pdf = await loadingTask.promise;
