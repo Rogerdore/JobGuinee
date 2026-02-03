@@ -1065,9 +1065,9 @@ export default function JobApplicationModal({
 
       {showQuickCoverLetterModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">Ajouter une lettre de motivation</h3>
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h3 className="text-lg font-bold text-gray-900">Documents manquants</h3>
               <button
                 onClick={() => {
                   setShowQuickCoverLetterModal(false);
@@ -1079,54 +1079,89 @@ export default function JobApplicationModal({
               </button>
             </div>
 
-            <div className="p-6">
-              <p className="text-sm text-gray-600 mb-6">
-                Le recruteur exige une lettre de motivation. Téléchargez-la pour continuer avec votre candidature rapide.
-              </p>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Fichier de lettre de motivation
-                </label>
-
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        const file = e.target.files[0];
-                        if (file.size > 5 * 1024 * 1024) {
-                          alert('Le fichier ne doit pas dépasser 5 MB');
-                          return;
-                        }
-                        if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-                          alert('Format accepté: PDF, DOC, DOCX');
-                          return;
-                        }
-                        setQuickCoverLetterFile(file);
-                      }
-                    }}
-                    disabled={uploadingQuickCoverLetter}
-                    className="hidden"
-                    id="quick-cover-letter-input"
-                  />
-                  <label
-                    htmlFor="quick-cover-letter-input"
-                    className="flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition"
-                  >
-                    <Upload className="w-5 h-5 text-blue-600" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-gray-900">
-                        {quickCoverLetterFile ? quickCoverLetterFile.name : 'Cliquez pour télécharger'}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        PDF, DOC ou DOCX (max 5 MB)
-                      </div>
-                    </div>
-                  </label>
+            <div className="p-6 space-y-6">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-900 mb-1">Fichiers requis manquants</p>
+                  <p className="text-sm text-amber-800">
+                    Le recruteur exige certains documents. Téléchargez-les pour continuer avec votre candidature rapide.
+                  </p>
                 </div>
               </div>
+
+              {jobDetails?.cover_letter_required && !quickCoverLetterFile && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <label className="font-semibold text-gray-900">
+                      Lettre de motivation <span className="text-red-600">*</span>
+                    </label>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          const file = e.target.files[0];
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert('Le fichier ne doit pas dépasser 5 MB');
+                            return;
+                          }
+                          if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type)) {
+                            alert('Formats acceptés: PDF, DOC, DOCX, TXT');
+                            return;
+                          }
+                          setQuickCoverLetterFile(file);
+                        }
+                      }}
+                      disabled={uploadingQuickCoverLetter}
+                      className="hidden"
+                      id="quick-cover-letter-input"
+                    />
+                    <label
+                      htmlFor="quick-cover-letter-input"
+                      className="flex items-center justify-center gap-3 w-full px-6 py-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition"
+                    >
+                      <Upload className="w-5 h-5 text-blue-600" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-gray-900">
+                          {quickCoverLetterFile ? quickCoverLetterFile.name : 'Cliquez ou glissez un fichier'}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          PDF, DOC, DOCX ou TXT (max 5 MB)
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {quickCoverLetterFile && (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-900">{quickCoverLetterFile.name}</p>
+                      </div>
+                      <button
+                        onClick={() => setQuickCoverLetterFile(null)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {quickCoverLetterFile && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-900">
+                    Tous les documents requis sont maintenant prêts. Vous pouvez continuer avec votre candidature.
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button
@@ -1135,24 +1170,24 @@ export default function JobApplicationModal({
                     setQuickCoverLetterFile(null);
                   }}
                   disabled={uploadingQuickCoverLetter}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleQuickCoverLetterUpload}
                   disabled={!quickCoverLetterFile || uploadingQuickCoverLetter}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {uploadingQuickCoverLetter ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Téléchargement...
+                      Upload en cours...
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4" />
-                      Continuer
+                      Continuer la candidature
                     </>
                   )}
                 </button>
