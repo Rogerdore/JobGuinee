@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Affichage Offre - Assistant Logistique</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    h1 { color: #0E2F56; margin-bottom: 16px; }
+    h2 { color: #1f2937; margin-top: 32px; margin-bottom: 16px; border-top: 2px solid #e5e7eb; padding-top: 24px; }
+    h3 { color: #374151; margin-top: 20px; margin-bottom: 12px; }
+    p { color: #4b5563; line-height: 1.7; margin-bottom: 16px; }
+    ul { color: #4b5563; line-height: 1.8; margin-left: 20px; }
+    strong { color: #111827; font-weight: 600; }
+    .button-section {
+      margin-top: 40px;
+      padding-top: 32px;
+      border-top: 2px solid #e5e7eb;
+    }
+    .apply-button {
+      width: 100%;
+      padding: 20px;
+      background: #0E2F56;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .apply-button:hover {
+      background: #1a4275;
+    }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .action-button {
+      padding: 12px;
+      border: 2px solid #d1d5db;
+      background: white;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .action-button:hover {
+      background: #f9fafb;
+    }
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 20px;
+    }
+    .success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Test d'affichage - Assistant Logistique</h1>
+
+    <div class="info-box">
+      <strong>Statut de l'offre:</strong> published<br>
+      <strong>Candidatures via plateforme:</strong> ✓ Activé<br>
+      <strong>Email de contact:</strong> doreroger07@gmail.com
+    </div>
+
+    <div id="content"></div>
+
+    <div class="button-section">
+      <h3>Section Candidature</h3>
+      <p><em>Ces boutons devraient s'afficher pour les candidats (non-recruteurs)</em></p>
+
+      <button class="apply-button">
+        ✓ Postuler maintenant
+      </button>
+
+      <div class="action-buttons">
+        <button class="action-button">
+          🔖 Sauvegarder
+        </button>
+        <button class="action-button">
+          📤 Partager
+        </button>
+      </div>
+    </div>
+
+    <div class="info-box success" style="margin-top: 32px;">
+      <strong>✓ Test réussi!</strong><br>
+      Si vous voyez ce contenu et les boutons ci-dessus, l'affichage fonctionne correctement.
+    </div>
+  </div>
+
+  <script>
+    const markdown = `# Assistant Logistique
+
+**Catégorie:** Transport et Logistique | **Contrat:** CDI | **Postes:** 1
+
+## Présentation du poste
+
+## Missions principales
+Gestion des flux de marchandises : Superviser la réception, le déchargement et le contrôle qualité/quantité des produits à leur arrivée, ainsi que l'organisation des expéditions.
+
+Optimisation et suivi des stocks : Piloter les inventaires, organiser le stockage pour maximiser l'espace et garantir la disponibilité des produits (éviter les ruptures ou le surstock).
+
+Administration et Traçabilité : Assurer la saisie rigoureuse des données dans le logiciel de gestion (ERP/WMS) et établir les documents de transport (bons de livraison, lettres de voiture).
+
+Coordination logistique : Planifier les rotations des transporteurs, gérer les priorités de livraison et assurer l'interface entre les fournisseurs, la production et les clients.
+
+## Profil recherché
+Gestionnaire rigoureux capable de piloter les flux de marchandises, d'assurer le suivi des stocks et de coordonner les expéditions avec précision. Maîtrise impérative des outils de gestion (ERP/WMS) et aisance relationnelle pour assurer l'interface avec les transporteurs et les fournisseurs. Profil autonome et réactif, garant du respect des délais logistiques et de la conformité documentaire du site.
+
+## Compétences clés
+Achats • Approvisionnement • Transport
+
+## Qualifications
+- **Niveau d'études:** Licence
+- **Expérience:** 3–5 ans
+- **Langues exigées:**
+  • Français: Maîtrise (C2)
+  • Anglais: Intermédiaire (B1)
+
+## Rémunération
+- **Salaire:** 2 500 000 GNF - 3 000 000 GNF
+- **Type:** Négociable
+- **Avantages:** Prise en charge médicale de 80%
+
+## Modalités de candidature
+- **Email:** doreroger07@gmail.com
+- **Date limite:** 2026-02-28
+- **Documents requis:** CV, Lettre de motivation
+
+## Conformité légale
+Poste soumis au Code du Travail Guinéen (Loi L/2014/072/CNT du 16 janvier 2014).
+Nous encourageons les candidatures guinéennes dans le cadre de la politique de guinéisation.`;
+
+    document.getElementById('content').innerHTML = marked.parse(markdown);
+  </script>
+</body>
+</html>
