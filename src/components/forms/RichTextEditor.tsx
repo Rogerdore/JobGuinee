@@ -285,7 +285,7 @@ const RichTextEditor = memo(function RichTextEditor({
       let blockType: 'pdf' | 'docx' | 'image' | 'text' = 'text';
 
       if (fileType === 'pdf') {
-        extractedContent = await extractPDFContent(file);
+        extractedContent = await createPDFVisualBlock(file);
         blockType = 'pdf';
       } else if (fileType === 'docx') {
         extractedContent = await extractDOCXContent(file);
@@ -306,15 +306,26 @@ const RichTextEditor = memo(function RichTextEditor({
       } else if (file.type.startsWith('image/')) {
         extractedContent = await extractImageAsBase64(file);
         blockType = 'image';
+      } else if (fileType === 'txt') {
+        extractedContent = await file.text();
+        const lines = extractedContent.split('\n').filter(line => line.trim());
+        extractedContent = lines.map(line => `<p>${line}</p>`).join('');
+        blockType = 'text';
       } else {
         extractedContent = await file.text();
         blockType = 'text';
       }
 
       const separator = value.trim() ? '<p><br></p><hr class="my-4 border-t-2 border-gray-200"><p><br></p>' : '';
-      const header = blockType === 'image'
-        ? `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded"><p class="text-sm text-blue-700 font-medium">📷 Image importée : ${file.name}</p></div>`
-        : `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded"><p class="text-sm text-blue-700 font-medium">📄 Contenu importé depuis : ${file.name}</p></div>`;
+
+      let header = '';
+      if (blockType === 'pdf' || blockType === 'image') {
+        header = '';
+      } else if (blockType === 'docx') {
+        header = `<div class="bg-green-50 border-l-4 border-green-500 p-3 mb-4 rounded"><p class="text-sm text-green-700 font-medium">📝 Texte extrait de : ${file.name}</p></div>`;
+      } else {
+        header = `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded"><p class="text-sm text-blue-700 font-medium">📄 Contenu importé depuis : ${file.name}</p></div>`;
+      }
 
       const newContent = value + separator + header + extractedContent;
 
@@ -369,6 +380,114 @@ const RichTextEditor = memo(function RichTextEditor({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const createPDFVisualBlock = async (file: File): Promise<string> => {
+    if (file.size === 0) {
+      throw new Error('Le fichier PDF est vide');
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      throw new Error('Le fichier PDF est trop volumineux (max 15 MB)');
+    }
+
+    try {
+      console.log('[PDF Block] Création du bloc visuel PDF...');
+
+      const reader = new FileReader();
+      return new Promise((resolve, reject) => {
+        reader.onload = () => {
+          try {
+            const base64 = reader.result as string;
+            const blockId = `pdf-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            const pdfBlock = `
+              <div
+                class="pdf-visual-block my-6 border-2 border-blue-300 rounded-xl overflow-hidden bg-white shadow-lg"
+                data-block-type="pdf"
+                data-block-id="${blockId}"
+                data-file-name="${file.name}"
+                data-file-size="${file.size}"
+                data-file-type="${file.type}"
+                style="max-width: 100%; position: relative;"
+              >
+                <div class="bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <div>
+                      <p class="text-white font-bold text-sm">${file.name}</p>
+                      <p class="text-red-100 text-xs">${(file.size / 1024).toFixed(2)} KB • PDF</p>
+                    </div>
+                  </div>
+                  <button
+                    onclick="this.closest('.pdf-visual-block').remove()"
+                    class="text-white hover:bg-red-800 p-2 rounded-lg transition"
+                    title="Supprimer ce bloc PDF"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="p-4 bg-gray-50">
+                  <div class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <svg class="w-16 h-16 mx-auto text-red-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="text-gray-700 font-semibold mb-2">Document PDF intégré</p>
+                    <p class="text-sm text-gray-600 mb-4">
+                      Ce fichier PDF est attaché à votre offre et sera visible par les candidats
+                    </p>
+                    <div class="flex gap-2 justify-center text-xs text-gray-500">
+                      <span>📄 Bloc visuel</span>
+                      <span>•</span>
+                      <span>🔒 Sécurisé</span>
+                      <span>•</span>
+                      <span>♻️ Exploitable par IA</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-blue-50 px-4 py-2 border-t border-blue-200">
+                  <p class="text-xs text-blue-700 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Bloc manipulable : vous pouvez ajouter du texte avant et après ce PDF</span>
+                  </p>
+                </div>
+              </div>
+            `;
+
+            console.log('[PDF Block] Bloc visuel créé avec succès');
+            resolve(pdfBlock);
+          } catch (error) {
+            console.error('[PDF Block] Erreur création:', error);
+            reject(new Error('Erreur lors de la création du bloc PDF'));
+          }
+        };
+
+        reader.onerror = () => {
+          console.error('[PDF Block] Erreur lecture fichier');
+          reject(new Error('Erreur lors de la lecture du fichier PDF'));
+        };
+
+        reader.readAsDataURL(file);
+      });
+    } catch (error) {
+      console.error('[PDF Block] Erreur:', error);
+      throw new Error(
+        `❌ Impossible de créer le bloc PDF\n\n` +
+        `Une erreur est survenue lors du traitement du fichier.\n\n` +
+        `Solutions :\n` +
+        `• Vérifiez que le fichier n'est pas corrompu\n` +
+        `• Essayez avec un autre fichier PDF\n` +
+        `• Réduisez la taille du fichier (max 15 MB)`
+      );
     }
   };
 
@@ -835,47 +954,73 @@ const RichTextEditor = memo(function RichTextEditor({
         </div>
       </div>
 
-      <div className="border-2 border-dashed border-blue-300 rounded-xl p-5 bg-gradient-to-br from-blue-50 to-gray-50 hover:border-blue-400 hover:bg-blue-100 transition-all">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.docx,image/jpeg,image/jpg,image/png,image/gif,image/webp,.txt"
-          onChange={handleFileImport}
-          className="hidden"
-          id="file-import-rich"
-          disabled={isImporting}
-        />
-        <label
-          htmlFor="file-import-rich"
-          className="flex items-center justify-center gap-4 cursor-pointer"
-        >
-          {isImporting ? (
-            <>
-              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600"></div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-blue-700">Import en cours...</p>
-                <p className="text-xs text-blue-600 mt-1">Veuillez patienter</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex-shrink-0 p-2 bg-blue-600 rounded-lg">
-                <Upload className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-bold text-gray-800 mb-1">
-                  Cliquez pour importer un fichier
-                </p>
-                <p className="text-xs text-gray-600">
-                  📄 PDF • 📝 DOCX (pas .doc) • 🖼️ Images (JPG, PNG, GIF, WebP) • 📋 TXT
-                </p>
-                <p className="text-xs text-blue-600 mt-1 font-medium">
-                  Max: 15 MB (PDF/DOCX) • 5 MB (Images)
-                </p>
-              </div>
-            </>
-          )}
-        </label>
+      <div className="space-y-3">
+        <div className="border-2 border-dashed border-blue-300 rounded-xl p-5 bg-gradient-to-br from-blue-50 to-gray-50 hover:border-blue-400 hover:bg-blue-100 transition-all">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,image/jpeg,image/jpg,image/png,image/gif,image/webp,.txt"
+            onChange={handleFileImport}
+            className="hidden"
+            id="file-import-rich"
+            disabled={isImporting}
+          />
+          <label
+            htmlFor="file-import-rich"
+            className="flex items-center justify-center gap-4 cursor-pointer"
+          >
+            {isImporting ? (
+              <>
+                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600"></div>
+                <div className="text-center">
+                  <p className="text-sm font-bold text-blue-700">Import en cours...</p>
+                  <p className="text-xs text-blue-600 mt-1">Veuillez patienter</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-shrink-0 p-2 bg-blue-600 rounded-lg">
+                  <Upload className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-gray-800 mb-1">
+                    Cliquez pour importer un fichier
+                  </p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    📄 PDF • 📝 DOCX • 🖼️ Images (JPG, PNG, GIF, WebP) • 📋 TXT
+                  </p>
+                  <p className="text-xs text-blue-600 font-medium">
+                    Max: 15 MB (PDF/DOCX) • 5 MB (Images)
+                  </p>
+                </div>
+              </>
+            )}
+          </label>
+        </div>
+
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1 text-xs text-gray-700">
+              <p className="font-semibold text-green-800 mb-1">📋 Comportement intelligent par type de fichier :</p>
+              <ul className="space-y-1 ml-1">
+                <li className="flex items-start gap-1">
+                  <span className="text-green-600 font-bold">•</span>
+                  <span><strong className="text-green-700">Word/TXT</strong> → Le texte est extrait et devient éditable</span>
+                </li>
+                <li className="flex items-start gap-1">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span><strong className="text-blue-700">PDF/Images</strong> → Affichés comme blocs visuels manipulables</span>
+                </li>
+              </ul>
+              <p className="mt-2 text-purple-700 font-medium">
+                ♻️ Tous les contenus sont exploitables par l'IA pour le matching et la génération automatique
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="border-2 border-gray-300 rounded-xl overflow-hidden" style={{ contain: 'layout' }}>
