@@ -603,14 +603,14 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                 </div>
               )}
 
-              {(job as any).profile_sought && (
+              {(job as any).profile && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <Users className="w-6 h-6 text-[#0E2F56]" />
                     Profil recherché
                   </h2>
                   <div className="bg-white p-6 rounded-xl border border-gray-200">
-                    <MarkdownRenderer content={(job as any).profile_sought} />
+                    <MarkdownRenderer content={(job as any).profile} />
                   </div>
                 </div>
               )}
