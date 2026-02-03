@@ -20,6 +20,7 @@ import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
 import { socialShareService } from '../services/socialShareService';
 import { candidateStatsService } from '../services/candidateStatsService';
+import MarkdownRenderer from '../components/common/MarkdownRenderer';
 
 interface JobDetailCompleteProps {
   jobId: string;
@@ -609,10 +610,7 @@ export default function JobDetailComplete({ jobId, onNavigate, autoOpenApply, me
                   📝 Description complète du poste
                 </h2>
                 <div className="prose prose-blue max-w-none bg-gray-50 p-6 rounded-xl">
-                  <div
-                    className="text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }}
-                  />
+                  <MarkdownRenderer content={job.description} />
                 </div>
               </div>
 

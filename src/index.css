@@ -659,6 +659,49 @@
 .prose img {
   border-radius: 0.5rem;
   margin: 1em 0;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.prose .ql-align-center {
+  text-align: center;
+}
+
+.prose .ql-align-right {
+  text-align: right;
+}
+
+.prose .ql-align-left {
+  text-align: left;
+}
+
+.prose .ql-align-justify {
+  text-align: justify;
+}
+
+.prose .ql-size-small {
+  font-size: 0.75em;
+}
+
+.prose .ql-size-large {
+  font-size: 1.5em;
+}
+
+.prose .ql-size-huge {
+  font-size: 2.5em;
+}
+
+.prose .ql-indent-1 {
+  padding-left: 3em;
+}
+
+.prose .ql-indent-2 {
+  padding-left: 6em;
+}
+
+.prose .ql-indent-3 {
+  padding-left: 9em;
 }
 
 .prose ul,

@@ -1,6 +1,7 @@
 import { X, CheckCircle2, Briefcase, MapPin, Calendar, DollarSign, Eye, Clock, Users } from 'lucide-react';
 import { JobFormData } from '../../types/jobFormTypes';
 import { generateJobDescription } from '../../services/jobDescriptionService';
+import MarkdownRenderer from '../common/MarkdownRenderer';
 
 interface JobPreviewModalProps {
   jobData: JobFormData;
@@ -80,17 +81,7 @@ export default function JobPreviewModal({ jobData, onClose, onPublish }: JobPrev
           </div>
 
           <div className="prose max-w-none">
-            <div
-              className="text-gray-700 leading-relaxed job-description-preview"
-              dangerouslySetInnerHTML={{
-                __html: fullDescription
-                  .replace(/\n/g, '<br/>')
-                  .replace(/# (.+)/g, '<h2 class="text-2xl font-bold text-gray-900 mt-6 mb-3">$1</h2>')
-                  .replace(/## (.+)/g, '<h3 class="text-xl font-bold text-gray-900 mt-5 mb-3">$1</h3>')
-                  .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-                  .replace(/• /g, '&bull; ')
-              }}
-            />
+            <MarkdownRenderer content={fullDescription} />
           </div>
 
           {jobData.salary_range && (
