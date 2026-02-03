@@ -98,6 +98,40 @@
     }
   }
 
+  .pdf-visual-block {
+    display: block !important;
+    margin: 1.5rem 0 !important;
+    border: 2px solid #93c5fd !important;
+    border-radius: 0.75rem !important;
+    overflow: hidden !important;
+    background: white !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  .pdf-visual-block * {
+    pointer-events: auto !important;
+  }
+
+  .image-visual-block {
+    display: block !important;
+    margin: 1rem 0 !important;
+    border: 2px solid #93c5fd !important;
+    border-radius: 0.5rem !important;
+    overflow: hidden !important;
+    background: white !important;
+  }
+
+  .image-visual-block img {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  .ql-editor .pdf-visual-block,
+  .ql-editor .image-visual-block {
+    user-select: none;
+  }
+
   @keyframes status-pulse-green {
     0%, 100% {
       opacity: 1;

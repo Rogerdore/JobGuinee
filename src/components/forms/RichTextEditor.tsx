@@ -316,6 +316,15 @@ const RichTextEditor = memo(function RichTextEditor({
         blockType = 'text';
       }
 
+      const quill = quillRef.current?.getEditor();
+      if (!quill) {
+        console.error('[Import] Éditeur Quill non disponible');
+        return;
+      }
+
+      const range = quill.getSelection(true);
+      const cursorPosition = range ? range.index : quill.getLength();
+
       const separator = value.trim() ? '<p><br></p><hr class="my-4 border-t-2 border-gray-200"><p><br></p>' : '';
 
       let header = '';
@@ -327,9 +336,11 @@ const RichTextEditor = memo(function RichTextEditor({
         header = `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded"><p class="text-sm text-blue-700 font-medium">📄 Contenu importé depuis : ${file.name}</p></div>`;
       }
 
-      const newContent = value + separator + header + extractedContent;
+      const contentToInsert = (separator || '') + header + extractedContent;
 
-      onChange(newContent);
+      quill.clipboard.dangerouslyPasteHTML(cursorPosition, contentToInsert);
+
+      quill.setSelection(cursorPosition + contentToInsert.length);
 
       const successNotification = document.createElement('div');
       successNotification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 animate-fade-in';
@@ -403,64 +414,35 @@ const RichTextEditor = memo(function RichTextEditor({
             const blockId = `pdf-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
             const pdfBlock = `
-              <div
-                class="pdf-visual-block my-6 border-2 border-blue-300 rounded-xl overflow-hidden bg-white shadow-lg"
-                data-block-type="pdf"
-                data-block-id="${blockId}"
-                data-file-name="${file.name}"
-                data-file-size="${file.size}"
-                data-file-type="${file.type}"
-                style="max-width: 100%; position: relative;"
-              >
-                <div class="bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
+              <div class="pdf-visual-block" data-block-type="pdf" data-block-id="${blockId}" data-file-name="${file.name}" data-file-size="${file.size}">
+                <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 12px; display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 24px;">📄</span>
+                    </div>
                     <div>
-                      <p class="text-white font-bold text-sm">${file.name}</p>
-                      <p class="text-red-100 text-xs">${(file.size / 1024).toFixed(2)} KB • PDF</p>
+                      <p style="color: white; font-weight: bold; margin: 0; font-size: 14px;">${file.name}</p>
+                      <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">${(file.size / 1024).toFixed(2)} KB • PDF</p>
                     </div>
                   </div>
-                  <button
-                    onclick="this.closest('.pdf-visual-block').remove()"
-                    class="text-white hover:bg-red-800 p-2 rounded-lg transition"
-                    title="Supprimer ce bloc PDF"
-                  >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
                 </div>
-
-                <div class="p-4 bg-gray-50">
-                  <div class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <svg class="w-16 h-16 mx-auto text-red-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <p class="text-gray-700 font-semibold mb-2">Document PDF intégré</p>
-                    <p class="text-sm text-gray-600 mb-4">
-                      Ce fichier PDF est attaché à votre offre et sera visible par les candidats
-                    </p>
-                    <div class="flex gap-2 justify-center text-xs text-gray-500">
+                <div style="padding: 24px; background: #f9fafb; text-align: center;">
+                  <div style="background: white; border: 2px dashed #d1d5db; border-radius: 8px; padding: 32px;">
+                    <div style="font-size: 48px; margin-bottom: 12px;">📑</div>
+                    <p style="color: #374151; font-weight: 600; margin: 8px 0;">Document PDF intégré</p>
+                    <p style="color: #6b7280; font-size: 14px; margin: 8px 0;">Ce fichier PDF est attaché à votre offre</p>
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
                       <span>📄 Bloc visuel</span>
-                      <span>•</span>
-                      <span>🔒 Sécurisé</span>
                       <span>•</span>
                       <span>♻️ Exploitable par IA</span>
                     </div>
                   </div>
                 </div>
-
-                <div class="bg-blue-50 px-4 py-2 border-t border-blue-200">
-                  <p class="text-xs text-blue-700 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span>Bloc manipulable : vous pouvez ajouter du texte avant et après ce PDF</span>
-                  </p>
+                <div style="background: #eff6ff; padding: 8px 12px; border-top: 1px solid #bfdbfe;">
+                  <p style="color: #1e40af; font-size: 12px; margin: 0;">💡 Vous pouvez ajouter du texte avant et après ce bloc PDF</p>
                 </div>
               </div>
+              <p><br></p>
             `;
 
             console.log('[PDF Block] Bloc visuel créé avec succès');
@@ -761,21 +743,15 @@ const RichTextEditor = memo(function RichTextEditor({
             return;
           }
 
+          const blockId = `image-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           const imageHtml = `
-            <div class="my-4 border-2 border-blue-200 rounded-lg overflow-hidden bg-white">
-              <img
-                src="${base64}"
-                alt="${file.name}"
-                class="w-full h-auto object-contain"
-                style="max-width: 100%; height: auto; display: block;"
-                title="${file.name}"
-              />
-              <div class="px-3 py-2 bg-gray-50 border-t border-gray-200">
-                <p class="text-xs text-gray-600 font-medium truncate" title="${file.name}">
-                  📷 ${file.name}
-                </p>
+            <div class="image-visual-block" data-block-type="image" data-block-id="${blockId}" data-file-name="${file.name}">
+              <img src="${base64}" alt="${file.name}" style="max-width: 100%; height: auto; display: block;" />
+              <div style="padding: 8px 12px; background: #f9fafb; border-top: 1px solid #d1d5db;">
+                <p style="color: #4b5563; font-size: 12px; margin: 0; font-weight: 500;">📷 ${file.name}</p>
               </div>
             </div>
+            <p><br></p>
           `;
 
           console.log('[Image] Image convertie avec succès');
