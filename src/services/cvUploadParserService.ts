@@ -3,6 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { iaConfigService } from './iaConfigService';
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-js/pdf.worker.min.mjs';
+
 export interface ParsedCVData {
   full_name: string;
   title: string;
@@ -146,10 +148,6 @@ class CVUploadParserService {
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         verbosity: 0,
-        isEvalSupported: false,
-        useSystemFonts: true,
-        disableFontFace: true,
-        useWorkerFetch: false,
       });
       const pdf = await loadingTask.promise;
 
@@ -354,10 +352,6 @@ class CVUploadParserService {
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       verbosity: 0,
-      isEvalSupported: false,
-      useSystemFonts: true,
-      disableFontFace: true,
-      useWorkerFetch: false,
     });
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1); // Première page seulement

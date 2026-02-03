@@ -22,6 +22,8 @@ import mammoth from 'mammoth';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-js/pdf.worker.min.mjs';
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -412,10 +414,6 @@ const RichTextEditor = memo(function RichTextEditor({
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         verbosity: 0,
-        isEvalSupported: false,
-        useSystemFonts: true,
-        disableFontFace: true,
-        useWorkerFetch: false,
       });
 
       const pdf = await loadingTask.promise;
@@ -555,10 +553,6 @@ const RichTextEditor = memo(function RichTextEditor({
       const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
         verbosity: 0,
-        isEvalSupported: false,
-        useSystemFonts: true,
-        disableFontFace: true,
-        useWorkerFetch: false,
       });
 
       const pdf = await loadingTask.promise;
