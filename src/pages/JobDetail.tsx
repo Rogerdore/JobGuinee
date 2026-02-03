@@ -574,43 +574,57 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                   <FileText className="w-6 h-6 text-[#0E2F56]" />
                   Description du poste
                 </h2>
-                <div className="bg-white p-6 rounded-xl border border-gray-200">
-                  <MarkdownRenderer content={job.description} />
+                <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                  {job.description && job.description.trim() !== '' ? (
+                    <div className="text-gray-800 leading-relaxed">
+                      <MarkdownRenderer content={job.description} />
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 italic py-4 text-center">
+                      Aucune description disponible pour cette offre
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {job.responsibilities && (
+              {job.responsibilities && job.responsibilities.trim() !== '' && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <Target className="w-6 h-6 text-[#0E2F56]" />
                     Responsabilités
                   </h2>
-                  <div className="bg-white p-6 rounded-xl border border-gray-200">
-                    <MarkdownRenderer content={job.responsibilities} />
+                  <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="text-gray-800 leading-relaxed">
+                      <MarkdownRenderer content={job.responsibilities} />
+                    </div>
                   </div>
                 </div>
               )}
 
-              {job.requirements && (
+              {job.requirements && job.requirements.trim() !== '' && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <CheckCircle2 className="w-6 h-6 text-[#0E2F56]" />
                     Exigences et compétences
                   </h2>
-                  <div className="bg-white p-6 rounded-xl border border-gray-200">
-                    <MarkdownRenderer content={job.requirements} />
+                  <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="text-gray-800 leading-relaxed">
+                      <MarkdownRenderer content={job.requirements} />
+                    </div>
                   </div>
                 </div>
               )}
 
-              {(job as any).profile_sought && (
+              {(job as any).profile_sought && (job as any).profile_sought.trim() !== '' && (
                 <div className="border-t-2 border-gray-200 pt-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <Users className="w-6 h-6 text-[#0E2F56]" />
                     Profil recherché
                   </h2>
-                  <div className="bg-white p-6 rounded-xl border border-gray-200">
-                    <MarkdownRenderer content={(job as any).profile_sought} />
+                  <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="text-gray-800 leading-relaxed">
+                      <MarkdownRenderer content={(job as any).profile_sought} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -621,7 +635,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     <Mail className="w-6 h-6 text-[#0E2F56]" />
                     Modalités de candidature
                   </h2>
-                  <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 space-y-4">
+                  <div className="bg-blue-50 p-8 rounded-xl border border-blue-200 shadow-sm space-y-4">
                     {(job as any).application_email && (
                       <div>
                         <div className="text-sm font-semibold text-gray-600 mb-2">Email de candidature :</div>
@@ -674,7 +688,7 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                     <Building className="w-6 h-6 text-[#0E2F56]" />
                     À propos de l'entreprise
                   </h2>
-                  <div className="flex items-start space-x-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div className="flex items-start space-x-4 bg-gray-50 p-8 rounded-xl border border-gray-200 shadow-sm">
                     {(job.featured_image_url || job.company_logo_url || job.companies.logo_url) && (
                       <div className="flex-shrink-0 w-24 h-24 bg-white rounded-xl border-2 border-gray-300 shadow-lg overflow-hidden flex items-center justify-center">
                         <img
@@ -688,9 +702,9 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
                       <h3 className="font-bold text-2xl text-gray-900 mb-3">{job.companies.name}</h3>
 
                       {((job as any).company_description || job.companies.description) && (
-                        <p className="text-gray-700 mb-4 leading-relaxed">
-                          {(job as any).company_description || job.companies.description}
-                        </p>
+                        <div className="text-gray-700 mb-4 leading-relaxed">
+                          <MarkdownRenderer content={(job as any).company_description || job.companies.description} />
+                        </div>
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
