@@ -64,10 +64,6 @@ export function validateJobData(data: JobFormData, isDraft: boolean = false): Va
     errors.push('La description doit contenir au moins 20 caractères');
   }
 
-  if (data.description && data.description.length > 5000) {
-    errors.push('La description ne peut pas dépasser 5000 caractères');
-  }
-
   if (!data.location || data.location.trim().length < 2) {
     errors.push('La localisation est obligatoire (minimum 2 caractères)');
   }
