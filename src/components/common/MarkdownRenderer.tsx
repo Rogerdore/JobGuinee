@@ -18,17 +18,8 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
   const sanitizedContent = useMemo(() => {
     let cleaned = content;
 
-    cleaned = cleaned.replace(/<img[^>]*src="data:image\/[^"]*"[^>]*>/gi, (match) => {
-      const sizeInKB = match.length / 1024;
-      if (sizeInKB > 800) {
-        return '';
-      }
-      return match;
-    });
-
     cleaned = cleaned.replace(/<p><br><\/p>/gi, '\n');
     cleaned = cleaned.replace(/<p>\s*<\/p>/gi, '');
-    cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
 
     return cleaned;
   }, [content]);
@@ -36,18 +27,31 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
   const isHTML = /<[a-z][\s\S]*>/i.test(sanitizedContent);
 
   if (isHTML) {
-    const htmlContent = sanitizedContent
+    let htmlContent = sanitizedContent
       .replace(/<p>/gi, '<p class="text-gray-700 leading-relaxed mb-4">')
       .replace(/<h1>/gi, '<h1 class="text-3xl font-bold text-gray-900 mt-6 mb-4">')
       .replace(/<h2>/gi, '<h2 class="text-2xl font-bold text-gray-900 mt-5 mb-3">')
       .replace(/<h3>/gi, '<h3 class="text-xl font-bold text-gray-900 mt-4 mb-2">')
+      .replace(/<h4>/gi, '<h4 class="text-lg font-bold text-gray-900 mt-3 mb-2">')
+      .replace(/<h5>/gi, '<h5 class="text-base font-bold text-gray-900 mt-2 mb-1">')
       .replace(/<ul>/gi, '<ul class="list-disc list-inside space-y-2 mb-4 text-gray-700 ml-4">')
       .replace(/<ol>/gi, '<ol class="list-decimal list-inside space-y-2 mb-4 text-gray-700 ml-4">')
-      .replace(/<li>/gi, '<li class="ml-4">')
+      .replace(/<li>/gi, '<li class="ml-4 text-gray-700">')
       .replace(/<strong>/gi, '<strong class="font-bold text-gray-900">')
       .replace(/<em>/gi, '<em class="italic text-gray-800">')
-      .replace(/<a /gi, '<a class="text-[#0E2F56] hover:text-[#1a4275] underline font-medium" target="_blank" rel="noopener noreferrer" ')
-      .replace(/<img /gi, '<img class="max-w-full h-auto rounded-lg shadow-md my-4" ');
+      .replace(/<blockquote>/gi, '<blockquote class="border-l-4 border-[#0E2F56] pl-4 italic text-gray-700 my-4 bg-gray-50 py-2">')
+      .replace(/<a /gi, '<a class="text-[#0E2F56] hover:text-[#1a4275] underline font-medium" target="_blank" rel="noopener noreferrer" ');
+
+    htmlContent = htmlContent.replace(/<img ([^>]*)>/gi, (match, attrs) => {
+      if (!attrs.includes('class=')) {
+        return `<img ${attrs} class="max-w-full h-auto rounded-lg shadow-md my-4 border-2 border-gray-200" style="max-height: 600px; object-fit: contain;">`;
+      }
+      return match;
+    });
+
+    htmlContent = htmlContent.replace(/<a[^>]*href="([^"]*\.pdf)"[^>]*>([^<]*)<\/a>/gi,
+      '<div class="my-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg"><a href="$1" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-[#0E2F56] hover:text-[#1a4275] font-semibold"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"/></svg><span>📄 $2</span></a></div>'
+    );
 
     return (
       <div
