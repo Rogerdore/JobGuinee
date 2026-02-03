@@ -81,6 +81,10 @@ export default function JobApplicationModal({
 
   const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showQuickCoverLetterModal, setShowQuickCoverLetterModal] = useState(false);
+  const [quickCoverLetterFile, setQuickCoverLetterFile] = useState<File | null>(null);
+  const [uploadingQuickCoverLetter, setUploadingQuickCoverLetter] = useState(false);
+  const [pendingQuickSubmit, setPendingQuickSubmit] = useState(false);
 
   const [customData, setCustomData] = useState({
     firstName: '',
@@ -182,23 +186,13 @@ export default function JobApplicationModal({
     setMode('quick');
   };
 
-  const handleQuickApply = async () => {
-    if (!candidateProfile?.cv_url) {
-      alert('Veuillez d\'abord ajouter un CV à votre profil ou utiliser une autre méthode de candidature.');
-      return;
-    }
-
-    if (jobDetails?.cover_letter_required && !candidateProfile?.bio?.trim()) {
-      alert('Une lettre de motivation est requise. Veuillez utiliser la candidature classique.');
-      return;
-    }
-
+  const submitQuickApplication = async (coverLetterText: string = '') => {
     setSubmitting(true);
     try {
       const result = await applicationSubmissionService.submitApplication({
         jobId,
         candidateId,
-        coverLetter: sanitizeText(candidateProfile?.bio),
+        coverLetter: coverLetterText || sanitizeText(candidateProfile?.bio),
         cvUrl: candidateProfile?.cv_url
       });
 
@@ -213,6 +207,54 @@ export default function JobApplicationModal({
       alert(`Erreur: ${errorMessage}`);
     }
     setSubmitting(false);
+  };
+
+  const handleQuickApply = async () => {
+    if (!candidateProfile?.cv_url) {
+      alert('Veuillez d\'abord ajouter un CV à votre profil ou utiliser une autre méthode de candidature.');
+      return;
+    }
+
+    if (jobDetails?.cover_letter_required && !candidateProfile?.bio?.trim()) {
+      setShowQuickCoverLetterModal(true);
+      setPendingQuickSubmit(true);
+      return;
+    }
+
+    await submitQuickApplication();
+  };
+
+  const handleQuickCoverLetterUpload = async () => {
+    if (!quickCoverLetterFile) {
+      alert('Veuillez sélectionner un fichier.');
+      return;
+    }
+
+    setUploadingQuickCoverLetter(true);
+    try {
+      const fileExt = quickCoverLetterFile.name.split('.').pop();
+      const fileName = `${candidateId}/quick-cover-letter-${jobId}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('candidate-cover-letters')
+        .upload(fileName, quickCoverLetterFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('candidate-cover-letters')
+        .getPublicUrl(fileName);
+
+      setShowQuickCoverLetterModal(false);
+      setQuickCoverLetterFile(null);
+
+      await submitQuickApplication(quickCoverLetterFile.name);
+    } catch (error: any) {
+      console.error('Error uploading cover letter:', error);
+      alert('Erreur lors du téléchargement de la lettre de motivation.');
+    } finally {
+      setUploadingQuickCoverLetter(false);
+    }
   };
 
   const handleCompleteProfile = () => {
@@ -516,29 +558,18 @@ export default function JobApplicationModal({
                 {/* OPTION 1 - CANDIDATURE RAPIDE */}
                 <button
                   onClick={handleQuickApplyClick}
-                  disabled={coverLetterRequired}
-                  className={`group relative p-6 rounded-xl border-2 transition-all ${
-                    coverLetterRequired
-                      ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 cursor-not-allowed opacity-60'
-                      : 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl'
-                  }`}
+                  className="group relative p-6 rounded-xl border-2 border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all"
                 >
                   <div className="flex flex-col h-full">
                     <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <Zap className="w-7 h-7 text-white" />
                     </div>
 
-                    <h4 className={`text-lg font-bold mb-2 text-left ${
-                      coverLetterRequired ? 'text-gray-500' : 'text-gray-900'
-                    }`}>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2 text-left">
                       Candidature Rapide
                     </h4>
-                    <p className={`text-sm mb-4 text-left flex-1 ${
-                      coverLetterRequired ? 'text-gray-500' : 'text-gray-700'
-                    }`}>
-                      {coverLetterRequired
-                        ? 'Non disponible: lettre de motivation requise'
-                        : 'Utilisez votre profil JobGuinée existant'}
+                    <p className="text-sm text-gray-700 mb-4 text-left flex-1">
+                      Utilisez votre profil JobGuinée existant
                     </p>
 
                     <div className="space-y-2 text-left">
@@ -1019,6 +1050,107 @@ export default function JobApplicationModal({
         onImport={handleImportCoverLetter}
         candidateId={candidateId}
       />
+
+      {showQuickCoverLetterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">Ajouter une lettre de motivation</h3>
+              <button
+                onClick={() => {
+                  setShowQuickCoverLetterModal(false);
+                  setPendingQuickSubmit(false);
+                  setQuickCoverLetterFile(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-6">
+                Le recruteur exige une lettre de motivation. Téléchargez-la pour continuer avec votre candidature rapide.
+              </p>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Fichier de lettre de motivation
+                </label>
+
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        const file = e.target.files[0];
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert('Le fichier ne doit pas dépasser 5 MB');
+                          return;
+                        }
+                        if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+                          alert('Format accepté: PDF, DOC, DOCX');
+                          return;
+                        }
+                        setQuickCoverLetterFile(file);
+                      }
+                    }}
+                    disabled={uploadingQuickCoverLetter}
+                    className="hidden"
+                    id="quick-cover-letter-input"
+                  />
+                  <label
+                    htmlFor="quick-cover-letter-input"
+                    className="flex items-center justify-center gap-3 w-full px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition"
+                  >
+                    <Upload className="w-5 h-5 text-blue-600" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-gray-900">
+                        {quickCoverLetterFile ? quickCoverLetterFile.name : 'Cliquez pour télécharger'}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        PDF, DOC ou DOCX (max 5 MB)
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowQuickCoverLetterModal(false);
+                    setPendingQuickSubmit(false);
+                    setQuickCoverLetterFile(null);
+                  }}
+                  disabled={uploadingQuickCoverLetter}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleQuickCoverLetterUpload}
+                  disabled={!quickCoverLetterFile || uploadingQuickCoverLetter}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {uploadingQuickCoverLetter ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Téléchargement...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Envoyer et continuer
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
