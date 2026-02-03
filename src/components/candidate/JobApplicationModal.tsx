@@ -183,6 +183,16 @@ export default function JobApplicationModal({
       return;
     }
 
+    if (!candidateProfile?.cv_url) {
+      alert('Veuillez d\'abord ajouter un CV à votre profil ou utiliser une autre méthode de candidature.');
+      return;
+    }
+
+    if (jobDetails?.cover_letter_required && !candidateProfile?.bio?.trim()) {
+      setShowQuickCoverLetterModal(true);
+      return;
+    }
+
     setMode('quick');
   };
 
@@ -217,11 +227,14 @@ export default function JobApplicationModal({
 
     if (jobDetails?.cover_letter_required && !candidateProfile?.bio?.trim()) {
       setShowQuickCoverLetterModal(true);
-      setPendingQuickSubmit(true);
       return;
     }
 
     await submitQuickApplication();
+  };
+
+  const handleContinueQuickApply = () => {
+    setMode('quick');
   };
 
   const handleQuickCoverLetterUpload = async () => {
@@ -247,8 +260,7 @@ export default function JobApplicationModal({
 
       setShowQuickCoverLetterModal(false);
       setQuickCoverLetterFile(null);
-
-      await submitQuickApplication(quickCoverLetterFile.name);
+      setMode('quick');
     } catch (error: any) {
       console.error('Error uploading cover letter:', error);
       alert('Erreur lors du téléchargement de la lettre de motivation.');
@@ -1059,7 +1071,6 @@ export default function JobApplicationModal({
               <button
                 onClick={() => {
                   setShowQuickCoverLetterModal(false);
-                  setPendingQuickSubmit(false);
                   setQuickCoverLetterFile(null);
                 }}
                 className="text-gray-500 hover:text-gray-700"
@@ -1121,7 +1132,6 @@ export default function JobApplicationModal({
                 <button
                   onClick={() => {
                     setShowQuickCoverLetterModal(false);
-                    setPendingQuickSubmit(false);
                     setQuickCoverLetterFile(null);
                   }}
                   disabled={uploadingQuickCoverLetter}
@@ -1142,7 +1152,7 @@ export default function JobApplicationModal({
                   ) : (
                     <>
                       <Upload className="w-4 h-4" />
-                      Envoyer et continuer
+                      Continuer
                     </>
                   )}
                 </button>
