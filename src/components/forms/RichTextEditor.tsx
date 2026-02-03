@@ -22,7 +22,7 @@ import mammoth from 'mammoth';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface RichTextEditorProps {
   value: string;
@@ -311,11 +311,25 @@ const RichTextEditor = memo(function RichTextEditor({
         blockType = 'text';
       }
 
-      const separator = value.trim() ? '<p><br></p><hr><p><br></p>' : '';
-      const header = `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4"><p class="text-sm text-blue-700"><strong>📄 Importé depuis :</strong> ${file.name}</p></div>`;
+      const separator = value.trim() ? '<p><br></p><hr class="my-4 border-t-2 border-gray-200"><p><br></p>' : '';
+      const header = blockType === 'image'
+        ? `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded"><p class="text-sm text-blue-700 font-medium">📷 Image importée : ${file.name}</p></div>`
+        : `<div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded"><p class="text-sm text-blue-700 font-medium">📄 Contenu importé depuis : ${file.name}</p></div>`;
+
       const newContent = value + separator + header + extractedContent;
 
       onChange(newContent);
+
+      const successNotification = document.createElement('div');
+      successNotification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 animate-fade-in';
+      successNotification.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-medium">✅ ${blockType === 'pdf' ? 'PDF' : blockType === 'docx' ? 'DOCX' : blockType === 'image' ? 'Image' : 'Fichier'} importé avec succès !</span>
+      `;
+      document.body.appendChild(successNotification);
+      setTimeout(() => successNotification.remove(), 3000);
 
       console.log('[Import] Contenu inséré dans l\'éditeur:', {
         fileName: file.name,
@@ -324,10 +338,32 @@ const RichTextEditor = memo(function RichTextEditor({
       });
     } catch (error) {
       console.error('Error importing file:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue lors de l\'import du fichier';
 
-      const formattedError = `❌ Erreur d'import\n\n${errorMessage}`;
-      alert(formattedError);
+      const errorNotification = document.createElement('div');
+      errorNotification.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl z-50 max-w-lg w-full p-6 border-2 border-red-200';
+      errorNotification.innerHTML = `
+        <div class="flex items-start gap-3 mb-4">
+          <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-lg font-bold text-red-600 mb-2">Erreur d'import</h3>
+            <div class="text-sm text-gray-700 whitespace-pre-wrap">${errorMessage}</div>
+          </div>
+        </div>
+        <button onclick="this.parentElement.remove()" class="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition">
+          Fermer
+        </button>
+      `;
+      document.body.appendChild(errorNotification);
+      setTimeout(() => {
+        if (errorNotification.parentElement) {
+          errorNotification.remove();
+        }
+      }, 10000);
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -345,14 +381,35 @@ const RichTextEditor = memo(function RichTextEditor({
       throw new Error('Le fichier PDF est trop volumineux (max 15 MB)');
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-
     try {
-      console.log('[PDF] Tentative chargement du document...');
-      const pdf = await pdfjsLib.getDocument({
+      console.log('[PDF] Lecture du fichier...');
+      const arrayBuffer = await file.arrayBuffer();
+
+      console.log('[PDF] Vérification du format...');
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const header = String.fromCharCode(...uint8Array.slice(0, 5));
+
+      if (!header.startsWith('%PDF-')) {
+        throw new Error(
+          `Ce fichier n'est pas un PDF valide.\n\n` +
+          `Le fichier commence par "${header.substring(0, 10)}" au lieu de "%PDF-"\n\n` +
+          `Solutions :\n` +
+          `• Vérifiez que le fichier est bien un PDF\n` +
+          `• Ouvrez-le dans Adobe Reader et réenregistrez-le\n` +
+          `• Essayez un autre fichier PDF`
+        );
+      }
+
+      console.log('[PDF] Chargement du document...');
+      const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
-        verbosity: 0
-      }).promise;
+        verbosity: 0,
+        isEvalSupported: false,
+        disableFontFace: false,
+        standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
+      });
+
+      const pdf = await loadingTask.promise;
 
       if (pdf.numPages === 0) {
         throw new Error('Le PDF ne contient aucune page');
@@ -367,43 +424,95 @@ const RichTextEditor = memo(function RichTextEditor({
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
           const pageText = textContent.items
-            .map((item: any) => item.str || '')
+            .map((item: any) => {
+              if ('str' in item) {
+                return item.str;
+              }
+              return '';
+            })
+            .filter((text: string) => text.trim().length > 0)
             .join(' ')
             .trim();
 
           if (pageText.length > 0) {
-            fullText += `<h3 class="font-bold text-lg mt-4 mb-2">Page ${i}</h3><p>${pageText}</p>\n\n`;
+            const cleanText = pageText
+              .replace(/\s+/g, ' ')
+              .trim();
+            fullText += `<div class="mb-4"><h3 class="font-bold text-lg text-blue-800 mb-2">📄 Page ${i}</h3><p class="text-gray-800 leading-relaxed">${cleanText}</p></div>\n`;
             hasContent = true;
+          } else {
+            fullText += `<div class="mb-2"><p class="text-gray-400 italic text-sm">Page ${i} : Aucun texte détecté</p></div>\n`;
           }
         } catch (pageError) {
           console.warn(`[PDF] Erreur page ${i}:`, pageError);
-          fullText += `<p class="text-gray-400 italic">Page ${i} : Impossible d'extraire le contenu</p>\n`;
+          fullText += `<div class="mb-2"><p class="text-red-500 italic text-sm">Page ${i} : Erreur d'extraction</p></div>\n`;
         }
       }
 
       if (!hasContent) {
-        return `<div class="bg-yellow-50 border border-yellow-300 p-4 rounded">
-          <p class="font-semibold text-yellow-800">⚠️ PDF sans texte extractible</p>
-          <p class="text-sm text-yellow-700 mt-2">Ce PDF semble être composé uniquement d'images.</p>
-          <p class="text-sm text-yellow-700 mt-1">Pour extraire le texte, utilisez un logiciel OCR ou copiez-collez manuellement le contenu.</p>
+        return `<div class="bg-yellow-50 border-2 border-yellow-300 p-4 rounded-lg">
+          <p class="font-semibold text-yellow-800 mb-2">⚠️ PDF sans texte extractible</p>
+          <p class="text-sm text-yellow-700 mb-1">Ce PDF semble être composé uniquement d'images ou de graphiques.</p>
+          <p class="text-sm text-yellow-700 font-medium">Solutions :</p>
+          <ul class="text-sm text-yellow-700 list-disc list-inside ml-2 mt-1">
+            <li>Utilisez un logiciel OCR (reconnaissance optique de caractères)</li>
+            <li>Copiez-collez manuellement le contenu depuis le PDF</li>
+            <li>Réenregistrez le PDF avec du texte sélectionnable</li>
+          </ul>
         </div>`;
       }
 
       console.log('[PDF] Extraction réussie!');
-      return fullText;
+      return `<div class="bg-white border-2 border-blue-200 p-4 rounded-lg">${fullText}</div>`;
     } catch (error) {
-      console.error('[PDF] Erreur extraction:', error);
+      console.error('[PDF] Erreur complète:', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
 
-      if (errorMsg.includes('password') || errorMsg.includes('encrypted')) {
-        throw new Error('Ce PDF est protégé par un mot de passe. Déverrouillez-le d\'abord avec Adobe Reader ou un autre logiciel PDF.');
+      if (errorMsg.includes('password') || errorMsg.includes('encrypted') || errorMsg.includes('PasswordException')) {
+        throw new Error(
+          `🔒 PDF protégé par mot de passe\n\n` +
+          `Ce fichier est verrouillé et ne peut pas être lu.\n\n` +
+          `Solutions :\n` +
+          `• Ouvrez-le dans Adobe Reader et déverrouillez-le\n` +
+          `• Demandez le mot de passe au propriétaire\n` +
+          `• Utilisez un outil de déverrouillage PDF en ligne`
+        );
       }
 
-      if (errorMsg.includes('Invalid PDF')) {
-        throw new Error('Fichier PDF invalide ou corrompu. Essayez de l\'ouvrir et de le réenregistrer avec Adobe Reader.');
+      if (errorMsg.includes('Invalid PDF') || errorMsg.includes('PDF header')) {
+        throw new Error(
+          `❌ Fichier PDF invalide\n\n` +
+          `Le fichier semble corrompu ou n'est pas un vrai PDF.\n\n` +
+          `Solutions :\n` +
+          `• Ouvrez le fichier dans Adobe Reader\n` +
+          `• Vérifiez que le téléchargement est complet\n` +
+          `• Essayez de l'ouvrir et le réenregistrer\n` +
+          `• Utilisez un autre fichier PDF`
+        );
       }
 
-      throw new Error('Impossible de lire ce PDF. Le fichier est peut-être corrompu ou utilise un format non standard.');
+      if (errorMsg.includes('Worker')) {
+        throw new Error(
+          `⚙️ Erreur de traitement PDF\n\n` +
+          `Le système n'arrive pas à charger le moteur PDF.\n\n` +
+          `Solutions :\n` +
+          `• Rechargez la page (Ctrl+R ou Cmd+R)\n` +
+          `• Vérifiez votre connexion internet\n` +
+          `• Essayez avec un autre navigateur\n` +
+          `• Contactez l'assistance si le problème persiste`
+        );
+      }
+
+      throw new Error(
+        `❌ Impossible de lire ce PDF\n\n` +
+        `Le fichier utilise peut-être un format non standard ou est corrompu.\n\n` +
+        `Erreur technique : ${errorMsg}\n\n` +
+        `Solutions :\n` +
+        `• Ouvrez le PDF dans Adobe Reader et réenregistrez-le\n` +
+        `• Convertissez-le en un nouveau PDF\n` +
+        `• Copiez-collez le contenu manuellement\n` +
+        `• Essayez un autre fichier PDF`
+      );
     }
   };
 
@@ -494,24 +603,82 @@ const RichTextEditor = memo(function RichTextEditor({
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        reject(new Error('L\'image est trop volumineuse (max 5 MB)'));
+        reject(new Error(
+          `📏 Image trop volumineuse\n\n` +
+          `Taille actuelle : ${(file.size / (1024 * 1024)).toFixed(2)} MB\n` +
+          `Taille maximum : 5 MB\n\n` +
+          `Solutions :\n` +
+          `• Compressez l'image avec un outil en ligne (TinyPNG, Compressor.io)\n` +
+          `• Réduisez les dimensions de l'image\n` +
+          `• Utilisez un format plus léger (WebP ou JPG)`
+        ));
         return;
       }
 
-      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
       if (!validImageTypes.includes(file.type)) {
-        reject(new Error(`Format d'image non supporté: ${file.type}. Utilisez JPG, PNG, GIF ou WebP`));
+        reject(new Error(
+          `❌ Format d'image non supporté\n\n` +
+          `Format détecté : ${file.type}\n\n` +
+          `Formats acceptés :\n` +
+          `• JPG/JPEG\n` +
+          `• PNG\n` +
+          `• GIF\n` +
+          `• WebP\n` +
+          `• SVG\n\n` +
+          `Solution : Convertissez votre image en l'un de ces formats`
+        ));
         return;
       }
 
+      console.log('[Image] Lecture du fichier image:', file.name);
       const reader = new FileReader();
+
       reader.onload = () => {
-        const base64 = reader.result as string;
-        resolve(`<img src="${base64}" alt="${file.name}" style="max-width: 100%; height: auto;" />`);
+        try {
+          const base64 = reader.result as string;
+          if (!base64 || !base64.startsWith('data:image')) {
+            reject(new Error('Erreur lors de la conversion de l\'image en base64'));
+            return;
+          }
+
+          const imageHtml = `
+            <div class="my-4 border-2 border-blue-200 rounded-lg overflow-hidden bg-white">
+              <img
+                src="${base64}"
+                alt="${file.name}"
+                class="w-full h-auto object-contain"
+                style="max-width: 100%; height: auto; display: block;"
+                title="${file.name}"
+              />
+              <div class="px-3 py-2 bg-gray-50 border-t border-gray-200">
+                <p class="text-xs text-gray-600 font-medium truncate" title="${file.name}">
+                  📷 ${file.name}
+                </p>
+              </div>
+            </div>
+          `;
+
+          console.log('[Image] Image convertie avec succès');
+          resolve(imageHtml);
+        } catch (error) {
+          console.error('[Image] Erreur conversion:', error);
+          reject(new Error('Erreur lors du traitement de l\'image'));
+        }
       };
-      reader.onerror = () => {
-        reject(new Error('Erreur lors de la lecture de l\'image'));
+
+      reader.onerror = (error) => {
+        console.error('[Image] Erreur lecture:', error);
+        reject(new Error(
+          `❌ Erreur de lecture de l'image\n\n` +
+          `Impossible de lire le fichier.\n\n` +
+          `Solutions :\n` +
+          `• Vérifiez que le fichier n'est pas corrompu\n` +
+          `• Ouvrez l'image et réenregistrez-la\n` +
+          `• Essayez avec une autre image`
+        ));
       };
+
       reader.readAsDataURL(file);
     });
   };
@@ -668,28 +835,46 @@ const RichTextEditor = memo(function RichTextEditor({
         </div>
       </div>
 
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition">
+      <div className="border-2 border-dashed border-blue-300 rounded-xl p-5 bg-gradient-to-br from-blue-50 to-gray-50 hover:border-blue-400 hover:bg-blue-100 transition-all">
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,image/*,.txt"
+          accept=".pdf,.docx,image/jpeg,image/jpg,image/png,image/gif,image/webp,.txt"
           onChange={handleFileImport}
           className="hidden"
           id="file-import-rich"
+          disabled={isImporting}
         />
         <label
           htmlFor="file-import-rich"
-          className="flex items-center justify-center gap-3 cursor-pointer"
+          className="flex items-center justify-center gap-4 cursor-pointer"
         >
-          <Upload className="w-6 h-6 text-blue-600" />
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-700">
-              {isImporting ? 'Import en cours...' : 'Importer depuis PDF/DOCX/Image'}
-            </p>
-            <p className="text-xs text-gray-500">
-              Formats acceptés: PDF, DOCX (pas .doc), JPG, PNG, TXT
-            </p>
-          </div>
+          {isImporting ? (
+            <>
+              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600"></div>
+              <div className="text-center">
+                <p className="text-sm font-bold text-blue-700">Import en cours...</p>
+                <p className="text-xs text-blue-600 mt-1">Veuillez patienter</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex-shrink-0 p-2 bg-blue-600 rounded-lg">
+                <Upload className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-gray-800 mb-1">
+                  Cliquez pour importer un fichier
+                </p>
+                <p className="text-xs text-gray-600">
+                  📄 PDF • 📝 DOCX (pas .doc) • 🖼️ Images (JPG, PNG, GIF, WebP) • 📋 TXT
+                </p>
+                <p className="text-xs text-blue-600 mt-1 font-medium">
+                  Max: 15 MB (PDF/DOCX) • 5 MB (Images)
+                </p>
+              </div>
+            </>
+          )}
         </label>
       </div>
 
