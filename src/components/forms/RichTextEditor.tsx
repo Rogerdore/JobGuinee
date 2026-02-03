@@ -404,62 +404,95 @@ const RichTextEditor = memo(function RichTextEditor({
     }
 
     try {
-      console.log('[PDF Block] Création du bloc visuel PDF...');
+      console.log('[PDF Block] Rendu visuel du PDF...');
 
-      const reader = new FileReader();
-      return new Promise((resolve, reject) => {
-        reader.onload = () => {
-          try {
-            const base64 = reader.result as string;
-            const blockId = `pdf-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-            const pdfBlock = `
-              <div class="pdf-visual-block" data-block-type="pdf" data-block-id="${blockId}" data-file-name="${file.name}" data-file-size="${file.size}">
-                <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 12px; display: flex; align-items: center; justify-content: space-between;">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                      <span style="font-size: 24px;">📄</span>
-                    </div>
-                    <div>
-                      <p style="color: white; font-weight: bold; margin: 0; font-size: 14px;">${file.name}</p>
-                      <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">${(file.size / 1024).toFixed(2)} KB • PDF</p>
-                    </div>
-                  </div>
-                </div>
-                <div style="padding: 24px; background: #f9fafb; text-align: center;">
-                  <div style="background: white; border: 2px dashed #d1d5db; border-radius: 8px; padding: 32px;">
-                    <div style="font-size: 48px; margin-bottom: 12px;">📑</div>
-                    <p style="color: #374151; font-weight: 600; margin: 8px 0;">Document PDF intégré</p>
-                    <p style="color: #6b7280; font-size: 14px; margin: 8px 0;">Ce fichier PDF est attaché à votre offre</p>
-                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
-                      <span>📄 Bloc visuel</span>
-                      <span>•</span>
-                      <span>♻️ Exploitable par IA</span>
-                    </div>
-                  </div>
-                </div>
-                <div style="background: #eff6ff; padding: 8px 12px; border-top: 1px solid #bfdbfe;">
-                  <p style="color: #1e40af; font-size: 12px; margin: 0;">💡 Vous pouvez ajouter du texte avant et après ce bloc PDF</p>
-                </div>
-              </div>
-              <p><br></p>
-            `;
-
-            console.log('[PDF Block] Bloc visuel créé avec succès');
-            resolve(pdfBlock);
-          } catch (error) {
-            console.error('[PDF Block] Erreur création:', error);
-            reject(new Error('Erreur lors de la création du bloc PDF'));
-          }
-        };
-
-        reader.onerror = () => {
-          console.error('[PDF Block] Erreur lecture fichier');
-          reject(new Error('Erreur lors de la lecture du fichier PDF'));
-        };
-
-        reader.readAsDataURL(file);
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        verbosity: 0,
+        isEvalSupported: false,
+        disableFontFace: false,
+        standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
       });
+
+      const pdf = await loadingTask.promise;
+      const numPages = Math.min(pdf.numPages, 10);
+      console.log(`[PDF Block] Rendu de ${numPages} page(s) sur ${pdf.numPages}`);
+
+      const pageImages: string[] = [];
+
+      for (let i = 1; i <= numPages; i++) {
+        try {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+
+          if (!context) {
+            throw new Error('Impossible de créer le contexte canvas');
+          }
+
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport,
+          }).promise;
+
+          const imageDataUrl = canvas.toDataURL('image/png', 0.92);
+          pageImages.push(imageDataUrl);
+        } catch (pageError) {
+          console.error(`[PDF Block] Erreur rendu page ${i}:`, pageError);
+        }
+      }
+
+      if (pageImages.length === 0) {
+        throw new Error('Aucune page du PDF n\'a pu être rendue');
+      }
+
+      const blockId = `pdf-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      const pagesHtml = pageImages.map((imageData, index) => `
+        <div style="margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="background: #f3f4f6; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
+            <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">Page ${index + 1}/${numPages}</p>
+          </div>
+          <img src="${imageData}" alt="PDF Page ${index + 1}" style="width: 100%; height: auto; display: block;" />
+        </div>
+      `).join('');
+
+      const warningText = pdf.numPages > 10
+        ? `<p style="color: #f59e0b; font-size: 12px; margin: 8px 0; text-align: center;">⚠️ Seules les 10 premières pages sont affichées (${pdf.numPages} pages au total)</p>`
+        : '';
+
+      const pdfBlock = `
+        <div class="pdf-visual-block" data-block-type="pdf" data-block-id="${blockId}" data-file-name="${file.name}" data-file-size="${file.size}" data-num-pages="${pdf.numPages}">
+          <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 24px;">📄</span>
+              </div>
+              <div>
+                <p style="color: white; font-weight: bold; margin: 0; font-size: 14px;">${file.name}</p>
+                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">${(file.size / 1024).toFixed(2)} KB • ${pdf.numPages} page(s)</p>
+              </div>
+            </div>
+          </div>
+          <div style="padding: 16px; background: #fafafa;">
+            ${warningText}
+            ${pagesHtml}
+          </div>
+          <div style="background: #eff6ff; padding: 8px 12px; border-top: 1px solid #bfdbfe; text-align: center;">
+            <p style="color: #1e40af; font-size: 12px; margin: 0;">📄 Document PDF intégré • ♻️ Exploitable par IA</p>
+          </div>
+        </div>
+        <p><br></p>
+      `;
+
+      console.log('[PDF Block] Bloc visuel créé avec succès');
+      return pdfBlock;
     } catch (error) {
       console.error('[PDF Block] Erreur:', error);
       throw new Error(
