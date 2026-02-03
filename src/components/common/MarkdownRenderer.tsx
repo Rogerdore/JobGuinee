@@ -40,22 +40,27 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
       .replace(/<strong>/gi, '<strong class="font-bold text-gray-900">')
       .replace(/<em>/gi, '<em class="italic text-gray-800">')
       .replace(/<blockquote>/gi, '<blockquote class="border-l-4 border-[#0E2F56] pl-4 italic text-gray-700 my-4 bg-gray-50 py-2">')
+      .replace(/<table>/gi, '<table class="min-w-full border-collapse border border-gray-300 my-4">')
+      .replace(/<thead>/gi, '<thead class="bg-gray-100">')
+      .replace(/<th>/gi, '<th class="border border-gray-300 px-4 py-2 font-bold text-left">')
+      .replace(/<td>/gi, '<td class="border border-gray-300 px-4 py-2">')
       .replace(/<a /gi, '<a class="text-[#0E2F56] hover:text-[#1a4275] underline font-medium" target="_blank" rel="noopener noreferrer" ');
 
     htmlContent = htmlContent.replace(/<img ([^>]*)>/gi, (match, attrs) => {
-      if (!attrs.includes('class=')) {
-        return `<img ${attrs} class="max-w-full h-auto rounded-lg shadow-md my-4 border-2 border-gray-200" style="max-height: 600px; object-fit: contain;">`;
+      if (!attrs.includes('style="') && !attrs.includes("style='")) {
+        return match.replace('<img ', '<img style="max-width: 100%; height: auto; max-height: 600px; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin: 16px 0; border: 2px solid #e5e7eb;" ');
       }
       return match;
     });
 
     htmlContent = htmlContent.replace(/<a[^>]*href="([^"]*\.pdf)"[^>]*>([^<]*)<\/a>/gi,
-      '<div class="my-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg"><a href="$1" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-[#0E2F56] hover:text-[#1a4275] font-semibold"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"/></svg><span>📄 $2</span></a></div>'
+      '<div style="margin: 16px 0; padding: 16px; background-color: #eff6ff; border: 2px solid #bfdbfe; border-radius: 8px;"><a href="$1" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; gap: 8px; color: #0E2F56; font-weight: 600; text-decoration: none;"><svg style="width: 24px; height: 24px;" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"/></svg><span>📄 $2</span></a></div>'
     );
 
     return (
       <div
         className={`prose prose-blue max-w-none ${className}`}
+        style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
         dangerouslySetInnerHTML={{ __html: htmlContent }}
       />
     );
