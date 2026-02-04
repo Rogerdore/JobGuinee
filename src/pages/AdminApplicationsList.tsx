@@ -533,13 +533,25 @@ export default function AdminApplicationsList() {
                     </p>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => setSelectedApplication(app)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Voir détails
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setSelectedApplication(app)}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Détails
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedApplicationForProfile(app.id);
+                          setShowCandidateProfile(true);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm"
+                      >
+                        <User className="w-4 h-4" />
+                        Profil
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
