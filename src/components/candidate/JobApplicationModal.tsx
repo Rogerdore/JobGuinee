@@ -83,6 +83,7 @@ export default function JobApplicationModal({
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showQuickCoverLetterModal, setShowQuickCoverLetterModal] = useState(false);
   const [quickCoverLetterFile, setQuickCoverLetterFile] = useState<File | null>(null);
+  const [quickCertificateFiles, setQuickCertificateFiles] = useState<File[]>([]);
   const [uploadingQuickCoverLetter, setUploadingQuickCoverLetter] = useState(false);
   const [pendingQuickSubmit, setPendingQuickSubmit] = useState(false);
 
@@ -225,7 +226,8 @@ export default function JobApplicationModal({
       return;
     }
 
-    if (jobDetails?.cover_letter_required && !candidateProfile?.bio?.trim()) {
+    const missingDocs = getMissingDocuments();
+    if (missingDocs.length > 0) {
       setShowQuickCoverLetterModal(true);
       return;
     }
@@ -233,37 +235,87 @@ export default function JobApplicationModal({
     await submitQuickApplication();
   };
 
+  const getMissingDocuments = () => {
+    const missing: string[] = [];
+
+    if (jobDetails?.cover_letter_required && !candidateProfile?.cover_letter_url && !quickCoverLetterFile) {
+      missing.push('cover_letter');
+    }
+
+    if (jobDetails?.required_documents && Array.isArray(jobDetails.required_documents)) {
+      jobDetails.required_documents.forEach(doc => {
+        if (doc === 'certificates' && quickCertificateFiles.length === 0) {
+          missing.push('certificates');
+        }
+      });
+    }
+
+    return missing;
+  };
+
   const handleContinueQuickApply = () => {
     setMode('quick');
   };
 
   const handleQuickCoverLetterUpload = async () => {
-    if (!quickCoverLetterFile) {
-      alert('Veuillez sélectionner un fichier.');
+    const missingDocs = getMissingDocuments();
+
+    if (missingDocs.includes('cover_letter') && !quickCoverLetterFile) {
+      alert('Veuillez sélectionner une lettre de motivation.');
+      return;
+    }
+
+    if (missingDocs.includes('certificates') && quickCertificateFiles.length === 0) {
+      alert('Veuillez sélectionner au moins un certificat.');
       return;
     }
 
     setUploadingQuickCoverLetter(true);
     try {
-      const fileExt = quickCoverLetterFile.name.split('.').pop();
-      const fileName = `${candidateId}/quick-cover-letter-${jobId}-${Date.now()}.${fileExt}`;
+      // Upload cover letter
+      if (quickCoverLetterFile) {
+        const fileExt = quickCoverLetterFile.name.split('.').pop();
+        const fileName = `${candidateId}/quick-cover-letter-${jobId}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('candidate-cover-letters')
-        .upload(fileName, quickCoverLetterFile);
+        const { error: uploadError } = await supabase.storage
+          .from('candidate-cover-letters')
+          .upload(fileName, quickCoverLetterFile);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('candidate-cover-letters')
-        .getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage
+          .from('candidate-cover-letters')
+          .getPublicUrl(fileName);
+
+        await supabase
+          .from('candidate_profiles')
+          .update({ cover_letter_url: urlData.publicUrl })
+          .eq('profile_id', candidateId);
+      }
+
+      // Upload certificates
+      if (quickCertificateFiles.length > 0) {
+        for (const certFile of quickCertificateFiles) {
+          const fileExt = certFile.name.split('.').pop();
+          const fileName = `${candidateId}/certificate-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('candidate-certificates')
+            .upload(fileName, certFile);
+
+          if (uploadError) {
+            console.error('Error uploading certificate:', uploadError);
+          }
+        }
+      }
 
       setShowQuickCoverLetterModal(false);
       setQuickCoverLetterFile(null);
-      setMode('quick');
+      setQuickCertificateFiles([]);
+      await submitQuickApplication();
     } catch (error: any) {
-      console.error('Error uploading cover letter:', error);
-      alert('Erreur lors du téléchargement de la lettre de motivation.');
+      console.error('Error uploading documents:', error);
+      alert('Erreur lors du téléchargement des documents.');
     } finally {
       setUploadingQuickCoverLetter(false);
     }
@@ -1090,7 +1142,7 @@ export default function JobApplicationModal({
                 </div>
               </div>
 
-              {jobDetails?.cover_letter_required && !quickCoverLetterFile && (
+              {jobDetails?.cover_letter_required && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-blue-600" />
@@ -1123,9 +1175,17 @@ export default function JobApplicationModal({
                     />
                     <label
                       htmlFor="quick-cover-letter-input"
-                      className="flex items-center justify-center gap-3 w-full px-6 py-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition"
+                      className={`flex items-center justify-center gap-3 w-full px-6 py-4 border-2 border-dashed rounded-lg cursor-pointer transition ${
+                        quickCoverLetterFile
+                          ? 'border-green-300 bg-green-50'
+                          : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
+                      }`}
                     >
-                      <Upload className="w-5 h-5 text-blue-600" />
+                      {quickCoverLetterFile ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Upload className="w-5 h-5 text-blue-600" />
+                      )}
                       <div className="text-left">
                         <div className="text-sm font-medium text-gray-900">
                           {quickCoverLetterFile ? quickCoverLetterFile.name : 'Cliquez ou glissez un fichier'}
@@ -1134,31 +1194,114 @@ export default function JobApplicationModal({
                           PDF, DOC, DOCX ou TXT (max 5 MB)
                         </div>
                       </div>
+                      {quickCoverLetterFile && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setQuickCoverLetterFile(null);
+                          }}
+                          className="ml-auto text-gray-500 hover:text-gray-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {jobDetails?.required_documents?.includes('certificates') && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-purple-600" />
+                    <label className="font-semibold text-gray-900">
+                      Certificats / Diplômes <span className="text-red-600">*</span>
                     </label>
                   </div>
 
-                  {quickCoverLetterFile && (
-                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-green-900">{quickCoverLetterFile.name}</p>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          const files = Array.from(e.target.files);
+                          const validFiles = files.filter(file => {
+                            if (file.size > 5 * 1024 * 1024) {
+                              alert(`${file.name}: Le fichier ne doit pas dépasser 5 MB`);
+                              return false;
+                            }
+                            if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                              alert(`${file.name}: Formats acceptés: PDF, JPG, PNG`);
+                              return false;
+                            }
+                            return true;
+                          });
+                          setQuickCertificateFiles(prev => [...prev, ...validFiles]);
+                        }
+                      }}
+                      disabled={uploadingQuickCoverLetter}
+                      className="hidden"
+                      id="quick-certificates-input"
+                    />
+                    <label
+                      htmlFor="quick-certificates-input"
+                      className={`flex items-center justify-center gap-3 w-full px-6 py-4 border-2 border-dashed rounded-lg cursor-pointer transition ${
+                        quickCertificateFiles.length > 0
+                          ? 'border-green-300 bg-green-50'
+                          : 'border-purple-300 bg-purple-50 hover:bg-purple-100'
+                      }`}
+                    >
+                      {quickCertificateFiles.length > 0 ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Upload className="w-5 h-5 text-purple-600" />
+                      )}
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-gray-900">
+                          {quickCertificateFiles.length > 0
+                            ? `${quickCertificateFiles.length} fichier(s) sélectionné(s)`
+                            : 'Cliquez ou glissez vos fichiers'}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          PDF, JPG, PNG (max 5 MB par fichier)
+                        </div>
                       </div>
-                      <button
-                        onClick={() => setQuickCoverLetterFile(null)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                    </label>
+                  </div>
+
+                  {quickCertificateFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {quickCertificateFiles.map((file, index) => (
+                        <div key={index} className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg">
+                          <Award className="w-4 h-4 text-purple-600" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(0)} KB</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setQuickCertificateFiles(prev => prev.filter((_, i) => i !== index));
+                            }}
+                            className="text-gray-500 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
-              {quickCoverLetterFile && (
+              {(quickCoverLetterFile || quickCertificateFiles.length > 0) && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
                   <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-green-900">
-                    Tous les documents requis sont maintenant prêts. Vous pouvez continuer avec votre candidature.
+                    {getMissingDocuments().length === 0
+                      ? 'Tous les documents requis sont maintenant prêts. Vous pouvez continuer avec votre candidature.'
+                      : 'Documents en cours de préparation...'}
                   </p>
                 </div>
               )}
@@ -1168,6 +1311,7 @@ export default function JobApplicationModal({
                   onClick={() => {
                     setShowQuickCoverLetterModal(false);
                     setQuickCoverLetterFile(null);
+                    setQuickCertificateFiles([]);
                   }}
                   disabled={uploadingQuickCoverLetter}
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
@@ -1176,7 +1320,7 @@ export default function JobApplicationModal({
                 </button>
                 <button
                   onClick={handleQuickCoverLetterUpload}
-                  disabled={!quickCoverLetterFile || uploadingQuickCoverLetter}
+                  disabled={getMissingDocuments().length > 0 || uploadingQuickCoverLetter}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {uploadingQuickCoverLetter ? (
@@ -1186,8 +1330,8 @@ export default function JobApplicationModal({
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4" />
-                      Continuer la candidature
+                      <Send className="w-4 h-4" />
+                      Soumettre ma candidature
                     </>
                   )}
                 </button>
