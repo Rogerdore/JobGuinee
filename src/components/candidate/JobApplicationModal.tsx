@@ -235,19 +235,34 @@ export default function JobApplicationModal({
     await submitQuickApplication();
   };
 
+  const requiresCoverLetter = () => {
+    return jobDetails?.cover_letter_required ||
+      (jobDetails?.required_documents && Array.isArray(jobDetails.required_documents) &&
+       jobDetails.required_documents.some(doc =>
+         doc.toLowerCase().includes('lettre') || doc.toLowerCase().includes('cover')
+       ));
+  };
+
+  const requiresCertificates = () => {
+    return jobDetails?.required_documents && Array.isArray(jobDetails.required_documents) &&
+      jobDetails.required_documents.some(doc =>
+        doc.toLowerCase().includes('certificat') ||
+        doc.toLowerCase().includes('diplôme') ||
+        doc.toLowerCase().includes('certificate')
+      );
+  };
+
   const getMissingDocuments = () => {
     const missing: string[] = [];
 
-    if (jobDetails?.cover_letter_required && !candidateProfile?.cover_letter_url && !quickCoverLetterFile) {
+    const hasCoverLetter = candidateProfile?.cover_letter_url || quickCoverLetterFile;
+
+    if (requiresCoverLetter() && !hasCoverLetter) {
       missing.push('cover_letter');
     }
 
-    if (jobDetails?.required_documents && Array.isArray(jobDetails.required_documents)) {
-      jobDetails.required_documents.forEach(doc => {
-        if (doc === 'certificates' && quickCertificateFiles.length === 0) {
-          missing.push('certificates');
-        }
-      });
+    if (requiresCertificates() && quickCertificateFiles.length === 0) {
+      missing.push('certificates');
     }
 
     return missing;
@@ -1142,7 +1157,7 @@ export default function JobApplicationModal({
                 </div>
               </div>
 
-              {jobDetails?.cover_letter_required && (
+              {requiresCoverLetter() && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-blue-600" />
@@ -1210,7 +1225,7 @@ export default function JobApplicationModal({
                 </div>
               )}
 
-              {jobDetails?.required_documents?.includes('certificates') && (
+              {requiresCertificates() && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Award className="w-5 h-5 text-purple-600" />
