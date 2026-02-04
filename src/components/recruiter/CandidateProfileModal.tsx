@@ -43,6 +43,7 @@ interface CandidateData {
     cv_parsed_at?: string;
     cover_letter_url?: string;
     certificates_url?: string;
+    profile_completion_percentage?: number;
   };
   job: {
     title: string;
@@ -149,6 +150,7 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
           cv_parsed_at: candidateProfile?.cv_parsed_at,
           cover_letter_url: candidateProfile?.cover_letter_url,
           certificates_url: candidateProfile?.certificates_url,
+          profile_completion_percentage: candidateProfile?.profile_completion_percentage,
         },
         job: applicationData.job,
         ai_score: applicationData.ai_score || 0,
@@ -243,7 +245,7 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-5xl w-full my-8 shadow-2xl">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-900 to-blue-700 text-white p-6 rounded-t-2xl flex items-center justify-between z-10 shadow-lg">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-700 to-blue-600 text-white p-6 rounded-t-2xl flex items-center justify-between z-10 shadow-md">
           <h2 className="text-2xl font-bold">Profil Complet du Candidat</h2>
           <button
             onClick={onClose}
@@ -253,7 +255,7 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
           </button>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 bg-gradient-to-br from-white to-gray-50">
           {/* En-tête du profil */}
           <div className="flex items-start gap-6 mb-8 pb-6 border-b-2 border-gray-200">
             <div className="flex-shrink-0">
@@ -273,11 +275,11 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
             </div>
 
             <div className="flex-1">
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+              <h3 className="text-3xl font-bold text-gray-900 mb-1">
                 {candidate.candidate.full_name}
               </h3>
               {candidate.candidate_profile.title && (
-                <p className="text-xl text-gray-600 mb-3 font-medium">{candidate.candidate_profile.title}</p>
+                <p className="text-lg text-gray-600 mb-3">{candidate.candidate_profile.title}</p>
               )}
 
               <div className="flex flex-wrap items-center gap-4 mb-4">
@@ -300,11 +302,13 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
-                  <span className="text-3xl font-bold text-blue-900">{candidate.ai_score}%</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-300 rounded-lg shadow-sm">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                  <span className="text-2xl font-bold text-blue-900">
+                    {candidate.candidate_profile.profile_completion_percentage ?? 0}%
+                  </span>
                 </div>
-                <span className={`px-4 py-2 rounded-lg font-semibold text-lg ${badge.bg} ${badge.text}`}>
+                <span className={`px-4 py-2 rounded-lg font-semibold ${badge.bg} ${badge.text}`}>
                   {badge.label}
                 </span>
               </div>
@@ -312,29 +316,27 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
           </div>
 
           {/* Documents à télécharger */}
-          {documents.length > 0 && (
-            <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
-              <h4 className="font-bold text-gray-900 mb-4 text-lg flex items-center gap-2">
-                <Download className="w-6 h-6 text-blue-600" />
-                Documents disponibles
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {documents.map((doc, idx) => (
-                  <a
-                    key={idx}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-400 rounded-lg font-semibold text-gray-700 hover:text-blue-700 transition shadow-sm hover:shadow-md"
-                  >
-                    <doc.icon className="w-5 h-5 text-blue-600" />
-                    <span>{doc.label}</span>
-                    <Download className="w-4 h-4 ml-auto" />
-                  </a>
-                ))}
-              </div>
+          <div className="mb-8 bg-gray-50 border border-gray-200 rounded-xl p-6">
+            <h4 className="font-bold text-gray-900 mb-4 text-lg flex items-center gap-2">
+              <Download className="w-6 h-6 text-blue-600" />
+              Documents disponibles
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {documents.map((doc, idx) => (
+                <a
+                  key={idx}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-300 hover:border-blue-500 rounded-lg font-medium text-gray-700 hover:text-blue-600 transition"
+                >
+                  <doc.icon className="w-5 h-5 text-blue-600" />
+                  <span className="flex-1">{doc.label}</span>
+                  <Download className="w-4 h-4" />
+                </a>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* Candidature info */}
           <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5 mb-8">
@@ -557,7 +559,7 @@ export default function CandidateProfileModal({ applicationId, onClose }: Candid
           {candidate.cover_letter && (
             <div className="mb-8">
               <h4 className="font-bold text-gray-900 mb-4 text-lg">Lettre de Motivation</h4>
-              <div className="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-gray-200 rounded-xl p-6">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                   {candidate.cover_letter}
                 </p>
