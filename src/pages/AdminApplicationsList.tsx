@@ -6,6 +6,7 @@ import {
   RefreshCw, ArrowUpDown, Star, Zap, BarChart3, User
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import CandidateProfileModal from '../components/recruiter/CandidateProfileModal';
 
 interface Application {
   id: string;
@@ -74,6 +75,8 @@ export default function AdminApplicationsList() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [showCandidateProfile, setShowCandidateProfile] = useState(false);
+  const [selectedApplicationForProfile, setSelectedApplicationForProfile] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -691,7 +694,13 @@ export default function AdminApplicationsList() {
               )}
 
               <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button
+                  onClick={() => {
+                    setSelectedApplicationForProfile(selectedApplication.id);
+                    setShowCandidateProfile(true);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   <Eye className="w-5 h-5" />
                   Voir le profil complet
                 </button>
@@ -711,6 +720,16 @@ export default function AdminApplicationsList() {
             </div>
           </div>
         </div>
+      )}
+
+      {showCandidateProfile && selectedApplicationForProfile && (
+        <CandidateProfileModal
+          applicationId={selectedApplicationForProfile}
+          onClose={() => {
+            setShowCandidateProfile(false);
+            setSelectedApplicationForProfile(null);
+          }}
+        />
       )}
     </div>
   );
