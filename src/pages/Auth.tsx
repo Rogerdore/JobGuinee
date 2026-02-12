@@ -8,16 +8,17 @@ import { SignupHelpModal } from '../components/auth/SignupHelpModal';
 
 interface AuthProps {
   mode: 'login' | 'signup';
+  initialRole?: UserRole;
   onNavigate: (page: string, state?: any) => void;
 }
 
-export default function Auth({ mode, onNavigate }: AuthProps) {
+export default function Auth({ mode, initialRole = 'candidate', onNavigate }: AuthProps) {
   const { signIn, signUp, signInWithGoogle, getAndClearRedirectIntent, resetPassword, cleanupIncompleteAccount } = useAuth();
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<UserRole>('candidate');
+  const [role, setRole] = useState<UserRole>(initialRole);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
