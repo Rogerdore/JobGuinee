@@ -17,8 +17,8 @@ export interface SocialShareLinks {
 }
 
 const BASE_URL = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
-const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.svg`;
-const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.svg`;
+const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.png`;
+const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.png`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
@@ -26,7 +26,6 @@ export const socialShareService = {
     // This route is handled by the server-side Edge Function
     const jobUrl = `${BASE_URL}/share/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
-    const company = job.company_name || job.company || 'Entreprise';
     const location = job.location || 'Guinée';
 
     const title = `${jobTitle} – ${location} | JobGuinée`;
@@ -45,11 +44,12 @@ export const socialShareService = {
     };
   },
 
-  generateDescription(job: Partial<Job>): string {
+  generateDescription(job: Partial<Job> & { companies?: any }): string {
     const parts: string[] = [];
 
-    if (job.company_name || job.company) {
-      parts.push(`Recrutement chez ${job.company_name || job.company}`);
+    const companyName = job.companies?.name || (job as any).company_name || (job as any).company;
+    if (companyName) {
+      parts.push(`Recrutement chez ${companyName}`);
     }
 
     if (job.contract_type) {
@@ -122,13 +122,12 @@ export const socialShareService = {
     return JOBGUINEE_LOGO;
   },
 
-  generateShareLinks(job: Partial<Job>): SocialShareLinks {
+  generateShareLinks(job: Partial<Job> & { companies?: any }): SocialShareLinks {
     // Use /share/{job_id} route with server-side OG tag serving
     // Crawlers will receive HTML with proper OG tags from Edge Function
     const baseShareUrl = `${BASE_URL}/share/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
-    const encodedTitle = encodeURIComponent(jobTitle);
-    const company = job.company_name || job.company || '';
+    const company = job.companies?.name || (job as any).company_name || (job as any).company || '';
 
     // Add src={network} parameter for tracking which platform shared the job
     const facebookUrl = `${baseShareUrl}?src=facebook`;

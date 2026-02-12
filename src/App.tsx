@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 import Auth from './pages/Auth';
 import AuthCallback from './pages/AuthCallback';
 import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
@@ -96,7 +97,7 @@ const Resources = lazy(() => import('./pages/Resources'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
-type Page = 'home' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'privacy-policy' | 'terms-of-service' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'admin-email-config' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list';
+type Page = 'home' | 'landing' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'privacy-policy' | 'terms-of-service' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-branding' | 'admin-test-email' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'admin-email-config' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -108,6 +109,7 @@ function AppContent() {
   const [formationSearchParams, setFormationSearchParams] = useState<string>('');
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const [publicProfileToken, setPublicProfileToken] = useState<string>('');
+  const [authInitialRole, setAuthInitialRole] = useState<any>('candidate');
   const { loading } = useAuth();
   useSiteSettings();
 
@@ -146,6 +148,9 @@ function AppContent() {
 
   const handleNavigate = (page: string, paramOrState?: string | any) => {
     setCurrentPage(page as Page);
+    if (page === 'signup') {
+      setAuthInitialRole(paramOrState || 'candidate');
+    }
     if (page === 'job-detail') {
       if (typeof paramOrState === 'string') {
         setSelectedJobId(paramOrState);
@@ -207,7 +212,7 @@ function AppContent() {
   const isAdminPage = adminPages.includes(currentPage);
 
   if (currentPage === 'login' || currentPage === 'signup') {
-    return <Auth mode={currentPage} onNavigate={handleNavigate} />;
+    return <Auth mode={currentPage} initialRole={authInitialRole} onNavigate={handleNavigate} />;
   }
 
   if (currentPage === 'auth-callback') {
@@ -325,6 +330,7 @@ function AppContent() {
   return (
     <Layout currentPage={currentPage} onNavigate={handleNavigate}>
       <Suspense fallback={loadingFallback}>
+        {currentPage === 'landing' && <LandingPage onNavigate={handleNavigate} />}
         {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
         {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
         {currentPage === 'job-detail' && (

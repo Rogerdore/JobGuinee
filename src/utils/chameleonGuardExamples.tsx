@@ -24,7 +24,7 @@ export function loadThirdPartyWidget() {
  * EXEMPLE 2 : Composant React qui s'adapte selon la route
  */
 export function ExampleComponent() {
-  const { isCritical, canLoadThirdPartyWidgets } = useChameleonGuard();
+  const { isCritical } = useChameleonGuard();
 
   if (isCritical) {
     // Sur les routes critiques : HTML pur
@@ -112,7 +112,7 @@ export function initializeAnalyticsService() {
 export function ComponentWithEffect() {
   const isCritical = useIsCriticalRoute();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isCritical) {
       // Charger les widgets seulement sur routes normales
       safeChmln('boot');
@@ -177,4 +177,4 @@ function InteractiveWidget() { return <div>Interactive</div>; }
 function ChatSupport() { return <div>Chat</div>; }
 function StaticSEOContent() { return <div>Static SEO</div>; }
 function DynamicInteractiveContent() { return <div>Dynamic</div>; }
-const React = { useEffect: () => {} };
+function useEffect(_callback: () => void, _deps: any[]) {}

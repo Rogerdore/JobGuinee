@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Image, Save, AlertCircle } from 'lucide-react';
+import { Upload, Image, Save, AlertCircle, Facebook, Linkedin, Twitter, MessageCircle, Globe, Instagram } from 'lucide-react';
 import { siteSettingsService } from '../services/siteSettingsService';
+import { useCMS } from '../contexts/CMSContext';
 
 export default function AdminBrandingSettings() {
+  const { updateSetting } = useCMS();
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -19,9 +21,16 @@ export default function AdminBrandingSettings() {
     try {
       setLoading(true);
       const brandingData = await siteSettingsService.getBrandingSettings();
-      setSettings(brandingData);
-      setFaviconPreview(brandingData.favicon_url || '/favicon.png');
-      setLogoPreview(brandingData.site_logo_url || '/logo_jobguinee.png');
+      const socialSettings = await siteSettingsService.getSettingsByCategory('social');
+
+      const combinedSettings = { ...brandingData };
+      socialSettings.forEach(s => {
+        combinedSettings[s.key] = s.value;
+      });
+
+      setSettings(combinedSettings);
+      setFaviconPreview(combinedSettings.favicon_url || '/favicon.png');
+      setLogoPreview(combinedSettings.site_logo_url || '/logo_jobguinee.png');
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres:', error);
       setMessage({ type: 'error', text: 'Erreur lors du chargement des paramètres' });
@@ -99,6 +108,28 @@ export default function AdminBrandingSettings() {
     } catch (error) {
       console.error('Erreur lors de la mise à jour du logo:', error);
       setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du logo' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSocialChange = (key: string, value: string) => {
+    setSettings({ ...settings, [key]: value });
+  };
+
+  const saveSocialSettings = async () => {
+    setSaving(true);
+    try {
+      const socialKeys = ['social_facebook', 'social_linkedin', 'social_twitter', 'social_instagram', 'social_whatsapp'];
+      for (const key of socialKeys) {
+        if (settings[key] !== undefined) {
+          await updateSetting(key, settings[key]);
+        }
+      }
+      setMessage({ type: 'success', text: 'Réseaux sociaux mis à jour avec succès' });
+    } catch (error) {
+      console.error('Error saving social settings:', error);
+      setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde des réseaux sociaux' });
     } finally {
       setSaving(false);
     }
@@ -247,6 +278,100 @@ export default function AdminBrandingSettings() {
               <li>Les utilisateurs devront peut-être vider leur cache pour voir le nouveau favicon</li>
               <li>La page se rechargera automatiquement après la mise à jour</li>
             </ul>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-6">
+            <Globe className="h-6 w-6 text-blue-600" />
+            Réseaux Sociaux de la Plateforme
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Facebook className="w-4 h-4 text-blue-600" />
+                  Facebook
+                </label>
+                <input
+                  type="url"
+                  value={settings.social_facebook || ''}
+                  onChange={(e) => handleSocialChange('social_facebook', e.target.value)}
+                  placeholder="https://facebook.com/jobguinee"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Linkedin className="w-4 h-4 text-blue-700" />
+                  LinkedIn
+                </label>
+                <input
+                  type="url"
+                  value={settings.social_linkedin || ''}
+                  onChange={(e) => handleSocialChange('social_linkedin', e.target.value)}
+                  placeholder="https://linkedin.com/company/jobguinee"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Twitter className="w-4 h-4 text-black" />
+                  Twitter
+                </label>
+                <input
+                  type="url"
+                  value={settings.social_twitter || ''}
+                  onChange={(e) => handleSocialChange('social_twitter', e.target.value)}
+                  placeholder="https://twitter.com/JobGuinee"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Instagram className="w-4 h-4 text-pink-600" />
+                  Instagram
+                </label>
+                <input
+                  type="url"
+                  value={settings.social_instagram || ''}
+                  onChange={(e) => handleSocialChange('social_instagram', e.target.value)}
+                  placeholder="https://instagram.com/jobguinee"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-green-600" />
+                  WhatsApp (Lien wa.me)
+                </label>
+                <input
+                  type="url"
+                  value={settings.social_whatsapp || ''}
+                  onChange={(e) => handleSocialChange('social_whatsapp', e.target.value)}
+                  placeholder="https://wa.me/224620000000"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="pt-4">
+                <button
+                  onClick={saveSocialSettings}
+                  disabled={saving}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <Save className="h-5 w-5" />
+                  {saving ? 'Enregistrement...' : 'Enregistrer les réseaux sociaux'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

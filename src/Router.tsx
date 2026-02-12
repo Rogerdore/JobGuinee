@@ -126,6 +126,20 @@ function ExternalApplicationRedirect() {
   );
 }
 
+function LandingRedirect() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate('/?page=landing', { replace: true });
+  }, [navigate]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center">
+      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-900"></div>
+    </div>
+  );
+}
+
 export default function Router() {
   return (
     <BrowserRouter>
@@ -146,6 +160,9 @@ export default function Router() {
           <Route path="/public/:token" element={<PublicProfileRedirect />} />
           <Route path="/candidatures/:applicationId" element={<ExternalApplicationRedirect />} />
           <Route path="/external/:applicationId" element={<ExternalApplicationRedirect />} />
+          <Route path="/welcome" element={<LandingRedirect />} />
+          <Route path="/bienvenue" element={<LandingRedirect />} />
+          <Route path="/decouvrir" element={<LandingRedirect />} />
           <Route path="/solutions/entreprises-pme" element={<SolutionEntreprises />} />
           <Route path="/solutions/mines-grands-projets" element={<SolutionMines />} />
           <Route path="/solutions/ong-institutions" element={<SolutionONG />} />

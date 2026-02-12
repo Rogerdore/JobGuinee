@@ -1,6 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package, Facebook, Linkedin, Twitter, MessageCircle, Instagram } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCMS } from '../contexts/CMSContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatbotWidget from './chatbot/ChatbotWidget';
 
@@ -10,8 +11,43 @@ interface LayoutProps {
   onNavigate: (page: string) => void;
 }
 
+function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: { getSetting: any, className?: string }) {
+  const socialConfig = [
+    { key: 'social_facebook', icon: Facebook, color: 'hover:text-blue-600', label: 'Facebook' },
+    { key: 'social_linkedin', icon: Linkedin, color: 'hover:text-blue-700', label: 'LinkedIn' },
+    { key: 'social_twitter', icon: Twitter, color: 'hover:text-black', label: 'Twitter' },
+    { key: 'social_instagram', icon: Instagram, color: 'hover:text-pink-600', label: 'Instagram' },
+    { key: 'social_whatsapp', icon: MessageCircle, color: 'hover:text-green-600', label: 'WhatsApp' },
+  ];
+
+  const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
+
+  if (activeLinks.length === 0) return null;
+
+  return (
+    <div className={className}>
+      {activeLinks.map(link => {
+        const Icon = link.icon;
+        return (
+          <a
+            key={link.key}
+            href={getSetting(link.key)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-gray-500 transition-colors ${link.color}`}
+            title={link.label}
+          >
+            <Icon className="w-5 h-5" />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, profile, signOut, isAdmin } = useAuth();
+  const { getSetting } = useCMS();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -96,6 +132,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
                 );
               })}
+            </div>
+
+            <div className="hidden lg:flex items-center mr-2 border-r border-gray-200 pr-4">
+              <SocialLinks getSetting={getSetting} className="flex items-center space-x-2" />
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
@@ -191,6 +231,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
+
+                  {(getSetting('social_facebook') || getSetting('social_linkedin') || getSetting('social_twitter') || getSetting('social_instagram') || getSetting('social_whatsapp')) && (
+                    <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                      <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -293,6 +340,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     <LogOut className="w-5 h-5" />
                     <span className="font-medium">Déconnexion</span>
                   </button>
+
+                  {(getSetting('social_facebook') || getSetting('social_linkedin') || getSetting('social_twitter') || getSetting('social_instagram') || getSetting('social_whatsapp')) && (
+                    <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                      <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -314,6 +368,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
+
+                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
+                  </div>
                 </>
               )}
             </div>
@@ -333,9 +392,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <Briefcase className="w-8 h-8" />
                 <span className="text-xl font-bold">JobGuinée</span>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-400 mb-6">
                 La plateforme de recrutement moderne pour digitaliser le marché de l'emploi en Guinée.
               </p>
+              <div className="flex items-center space-x-4">
+                <SocialLinks getSetting={getSetting} className="flex items-center space-x-4" />
+              </div>
             </div>
 
             <div>

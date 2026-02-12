@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, FileText, Image, Menu, Globe, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File, ArrowLeft, Home, ChevronRight } from 'lucide-react';
+import { Settings, FileText, Image, Menu, Save, Plus, Trash2, Edit2, Eye, AlertTriangle, Users, Upload, X, Download, BookOpen, File, ArrowLeft, Home, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,7 +14,7 @@ interface CMSAdminProps {
 }
 
 export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
-  const { settings, sections, refreshSettings } = useCMS();
+  const { refreshSettings } = useCMS();
   const { isAdmin, profile, user } = useAuth();
   const { showSuccess, showError, showConfirm } = useModalContext();
   const [activeTab, setActiveTab] = useState<'general' | 'sections' | 'pages' | 'navigation' | 'blog' | 'resources'>('general');
@@ -68,13 +68,15 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
     const { data } = await supabase
       .from('site_settings')
       .select('*')
-      .order('category, setting_key');
+      .order('category, key');
 
     if (data) {
       setAllSettings(data);
       const initialSettings: Record<string, any> = {};
       data.forEach(setting => {
-        initialSettings[setting.setting_key] = setting.setting_value.value || setting.setting_value;
+        initialSettings[setting.key] = typeof setting.value === 'object' && setting.value !== null
+          ? setting.value.value !== undefined ? setting.value.value : setting.value
+          : setting.value;
       });
       setEditingSettings(initialSettings);
     }
@@ -448,17 +450,14 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      const updates = Object.entries(editingSettings).map(([key, value]) => ({
-        setting_key: key,
-        setting_value: { value },
-        updated_at: new Date().toISOString(),
-      }));
-
-      for (const update of updates) {
+      for (const [key, value] of Object.entries(editingSettings)) {
         const { error } = await supabase
           .from('site_settings')
-          .update({ setting_value: update.setting_value })
-          .eq('setting_key', update.setting_key);
+          .update({
+            value: typeof value === 'string' ? value : value,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', key);
 
         if (error) throw error;
       }
@@ -611,16 +610,16 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {categorySettings.map((setting) => (
-                        <div key={setting.setting_key} className="neo-clay-pressed rounded-xl p-4">
+                        <div key={setting.key} className="neo-clay-pressed rounded-xl p-4">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {setting.description || setting.setting_key}
+                            {setting.description || setting.key}
                           </label>
-                          {typeof editingSettings[setting.setting_key] === 'boolean' ? (
+                          {typeof editingSettings[setting.key] === 'boolean' ? (
                             <label className="flex items-center space-x-2 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={editingSettings[setting.setting_key] || false}
-                                onChange={(e) => handleUpdateSetting(setting.setting_key, e.target.checked)}
+                                checked={editingSettings[setting.key] || false}
+                                onChange={(e) => handleUpdateSetting(setting.key, e.target.checked)}
                                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                               />
                               <span className="text-sm text-gray-600">Activé</span>
@@ -628,8 +627,8 @@ export default function CMSAdmin({ onNavigate }: CMSAdminProps) {
                           ) : (
                             <input
                               type="text"
-                              value={editingSettings[setting.setting_key] || ''}
-                              onChange={(e) => handleUpdateSetting(setting.setting_key, e.target.value)}
+                              value={editingSettings[setting.key] || ''}
+                              onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
                               className="w-full px-4 py-2 rounded-xl neo-clay-input focus:outline-none"
                             />
                           )}
