@@ -11,6 +11,7 @@ import B2BLeadForm from '../components/b2b/B2BLeadForm';
 import { useSEO } from '../hooks/useSEO';
 import { schemaService } from '../services/schemaService';
 import { useAuth } from '../contexts/AuthContext';
+import { useCMS } from '../contexts/CMSContext';
 
 interface B2BSolutionsProps {
   onNavigate?: (page: string) => void;
@@ -18,6 +19,7 @@ interface B2BSolutionsProps {
 
 export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProps) {
   const { profile } = useAuth();
+  const { getSetting } = useCMS();
   const [pageConfig, setPageConfig] = useState<B2BPageConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -113,9 +115,11 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
           'availableLanguage': ['fr', 'en']
         },
         'sameAs': [
-          'https://linkedin.com/company/jobguinee',
-          'https://facebook.com/jobguinee'
-        ]
+          getSetting('social_linkedin', 'https://linkedin.com/company/jobguinee'),
+          getSetting('social_facebook', 'https://facebook.com/jobguinee'),
+          getSetting('social_twitter', 'https://twitter.com/JobGuinee'),
+          getSetting('social_instagram', 'https://instagram.com/jobguinee')
+        ].filter(url => !!url)
       },
       {
         '@context': 'https://schema.org',

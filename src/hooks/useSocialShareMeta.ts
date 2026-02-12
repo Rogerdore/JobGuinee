@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { SocialShareMetadata } from '../services/socialShareService';
+import { useCMS } from '../contexts/CMSContext';
 
 export function useSocialShareMeta(metadata: SocialShareMetadata | null) {
+  const { getSetting } = useCMS();
+
   useEffect(() => {
     if (!metadata) {
       return;
@@ -21,7 +24,7 @@ export function useSocialShareMeta(metadata: SocialShareMetadata | null) {
       { name: 'twitter:title', content: metadata.title },
       { name: 'twitter:description', content: metadata.description },
       { name: 'twitter:image', content: metadata.image },
-      { name: 'twitter:site', content: '@JobGuinee' },
+      { name: 'twitter:site', content: getSetting('twitter_handle', '@JobGuinee') },
       { name: 'description', content: metadata.description }
     ];
 

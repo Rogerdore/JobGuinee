@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '../lib/supabase';
 
 interface SiteSetting {
-  setting_key: string;
-  setting_value: any;
+  key: string;
+  value: any;
   category: string;
 }
 
@@ -48,10 +48,10 @@ export function CMSProvider({ children }: { children: ReactNode }) {
       if (settingsData) {
         const settingsMap: Record<string, any> = {};
         settingsData.forEach((setting: SiteSetting) => {
-          if (setting.setting_value) {
-            settingsMap[setting.setting_key] = typeof setting.setting_value === 'object'
-              ? setting.setting_value.value || setting.setting_value
-              : setting.setting_value;
+          if (setting.value !== undefined) {
+            settingsMap[setting.key] = typeof setting.value === 'object' && setting.value !== null
+              ? setting.value.value !== undefined ? setting.value.value : setting.value
+              : setting.value;
           }
         });
         setSettings(settingsMap);
@@ -106,8 +106,8 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase
         .from('site_settings')
-        .update({ setting_value: { value } })
-        .eq('setting_key', key);
+        .update({ value })
+        .eq('key', key);
 
       if (error) throw error;
       await loadSettings();

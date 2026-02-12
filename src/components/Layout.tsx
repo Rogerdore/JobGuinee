@@ -1,6 +1,7 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package, Facebook, Linkedin, Twitter, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCMS } from '../contexts/CMSContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatbotWidget from './chatbot/ChatbotWidget';
 
@@ -10,8 +11,42 @@ interface LayoutProps {
   onNavigate: (page: string) => void;
 }
 
+function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: { getSetting: any, className?: string }) {
+  const socialConfig = [
+    { key: 'social_facebook', icon: Facebook, color: 'hover:text-blue-600', label: 'Facebook' },
+    { key: 'social_linkedin', icon: Linkedin, color: 'hover:text-blue-700', label: 'LinkedIn' },
+    { key: 'social_twitter', icon: Twitter, color: 'hover:text-black', label: 'Twitter' },
+    { key: 'social_whatsapp', icon: MessageCircle, color: 'hover:text-green-600', label: 'WhatsApp' },
+  ];
+
+  const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
+
+  if (activeLinks.length === 0) return null;
+
+  return (
+    <div className={className}>
+      {activeLinks.map(link => {
+        const Icon = link.icon;
+        return (
+          <a
+            key={link.key}
+            href={getSetting(link.key)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-gray-500 transition-colors ${link.color}`}
+            title={link.label}
+          >
+            <Icon className="w-5 h-5" />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, profile, signOut, isAdmin } = useAuth();
+  const { getSetting } = useCMS();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -98,43 +133,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               })}
             </div>
 
-            <div className="hidden lg:flex items-center space-x-2 mr-2 border-r border-gray-200 pr-4">
-              <a
-                href="https://facebook.com/jobguinee"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
-                title="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="https://linkedin.com/company/jobguinee"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-gray-500 hover:text-blue-700 transition-colors"
-                title="LinkedIn"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
-              <a
-                href="https://twitter.com/JobGuinee"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-gray-500 hover:text-black transition-colors"
-                title="Twitter"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="https://wa.me/224620000000"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 text-gray-500 hover:text-green-600 transition-colors"
-                title="WhatsApp"
-              >
-                <MessageCircle className="w-5 h-5" />
-              </a>
+            <div className="hidden lg:flex items-center mr-2 border-r border-gray-200 pr-4">
+              <SocialLinks getSetting={getSetting} className="flex items-center space-x-2" />
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
@@ -230,6 +230,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
+
+                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
+                  </div>
                 </>
               )}
             </div>
@@ -333,23 +338,33 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     <span className="font-medium">Déconnexion</span>
                   </button>
 
-                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                    <div className="flex items-center space-x-6">
-                      <a href="https://facebook.com/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600 transition-colors">
-                        <Facebook className="w-6 h-6" />
-                      </a>
-                      <a href="https://linkedin.com/company/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700 transition-colors">
-                        <Linkedin className="w-6 h-6" />
-                      </a>
-                      <a href="https://twitter.com/JobGuinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
-                        <Twitter className="w-6 h-6" />
-                      </a>
-                      <a href="https://wa.me/224620000000" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors">
-                        <MessageCircle className="w-6 h-6" />
-                      </a>
+                  {(getSetting('social_facebook') || getSetting('social_linkedin') || getSetting('social_twitter') || getSetting('social_whatsapp')) && (
+                    <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                      <div className="flex items-center space-x-6">
+                        {getSetting('social_facebook') && (
+                          <a href={getSetting('social_facebook')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600 transition-colors">
+                            <Facebook className="w-6 h-6" />
+                          </a>
+                        )}
+                        {getSetting('social_linkedin') && (
+                          <a href={getSetting('social_linkedin')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700 transition-colors">
+                            <Linkedin className="w-6 h-6" />
+                          </a>
+                        )}
+                        {getSetting('social_twitter') && (
+                          <a href={getSetting('social_twitter')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
+                            <Twitter className="w-6 h-6" />
+                          </a>
+                        )}
+                        {getSetting('social_whatsapp') && (
+                          <a href={getSetting('social_whatsapp')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors">
+                            <MessageCircle className="w-6 h-6" />
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -374,20 +389,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
                   <div className="border-t border-gray-200 my-4 pt-4 px-4">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                    <div className="flex items-center space-x-6">
-                      <a href="https://facebook.com/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600 transition-colors">
-                        <Facebook className="w-6 h-6" />
-                      </a>
-                      <a href="https://linkedin.com/company/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700 transition-colors">
-                        <Linkedin className="w-6 h-6" />
-                      </a>
-                      <a href="https://twitter.com/JobGuinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
-                        <Twitter className="w-6 h-6" />
-                      </a>
-                      <a href="https://wa.me/224620000000" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors">
-                        <MessageCircle className="w-6 h-6" />
-                      </a>
-                    </div>
+                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
                   </div>
                 </>
               )}
@@ -412,42 +414,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 La plateforme de recrutement moderne pour digitaliser le marché de l'emploi en Guinée.
               </p>
               <div className="flex items-center space-x-4">
-                <a
-                  href="https://facebook.com/jobguinee"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-blue-600 transition-colors"
-                  title="Suivez-nous sur Facebook"
-                >
-                  <Facebook className="w-5 h-5 text-white" />
-                </a>
-                <a
-                  href="https://linkedin.com/company/jobguinee"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-blue-700 transition-colors"
-                  title="Suivez-nous sur LinkedIn"
-                >
-                  <Linkedin className="w-5 h-5 text-white" />
-                </a>
-                <a
-                  href="https://twitter.com/JobGuinee"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-black transition-colors"
-                  title="Suivez-nous sur Twitter"
-                >
-                  <Twitter className="w-5 h-5 text-white" />
-                </a>
-                <a
-                  href="https://wa.me/224620000000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-green-600 transition-colors"
-                  title="Contactez-nous sur WhatsApp"
-                >
-                  <MessageCircle className="w-5 h-5 text-white" />
-                </a>
+                <SocialLinks getSetting={getSetting} className="flex items-center space-x-4" />
               </div>
             </div>
 
