@@ -1,5 +1,5 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package, Facebook, Linkedin, Twitter } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package, Facebook, Linkedin, Twitter, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
 import ChatbotWidget from './chatbot/ChatbotWidget';
@@ -126,6 +126,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               >
                 <Twitter className="w-5 h-5" />
               </a>
+              <a
+                href="https://wa.me/224620000000"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 text-gray-500 hover:text-green-600 transition-colors"
+                title="WhatsApp"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </a>
             </div>
 
             <div className="hidden md:flex items-center space-x-4">
@@ -221,21 +230,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
-
-                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                    <div className="flex items-center space-x-6">
-                      <a href="https://facebook.com/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600 transition-colors">
-                        <Facebook className="w-6 h-6" />
-                      </a>
-                      <a href="https://linkedin.com/company/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700 transition-colors">
-                        <Linkedin className="w-6 h-6" />
-                      </a>
-                      <a href="https://twitter.com/JobGuinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
-                        <Twitter className="w-6 h-6" />
-                      </a>
-                    </div>
-                  </div>
                 </>
               )}
             </div>
@@ -351,6 +345,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       <a href="https://twitter.com/JobGuinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
                         <Twitter className="w-6 h-6" />
                       </a>
+                      <a href="https://wa.me/224620000000" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors">
+                        <MessageCircle className="w-6 h-6" />
+                      </a>
                     </div>
                   </div>
                 </>
@@ -374,6 +371,24 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
+
+                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                    <div className="flex items-center space-x-6">
+                      <a href="https://facebook.com/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600 transition-colors">
+                        <Facebook className="w-6 h-6" />
+                      </a>
+                      <a href="https://linkedin.com/company/jobguinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700 transition-colors">
+                        <Linkedin className="w-6 h-6" />
+                      </a>
+                      <a href="https://twitter.com/JobGuinee" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
+                        <Twitter className="w-6 h-6" />
+                      </a>
+                      <a href="https://wa.me/224620000000" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors">
+                        <MessageCircle className="w-6 h-6" />
+                      </a>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
@@ -423,6 +438,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   title="Suivez-nous sur Twitter"
                 >
                   <Twitter className="w-5 h-5 text-white" />
+                </a>
+                <a
+                  href="https://wa.me/224620000000"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center hover:bg-green-600 transition-colors"
+                  title="Contactez-nous sur WhatsApp"
+                >
+                  <MessageCircle className="w-5 h-5 text-white" />
                 </a>
               </div>
             </div>
