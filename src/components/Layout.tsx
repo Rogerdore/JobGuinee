@@ -20,7 +20,7 @@ const socialConfig = [
   { key: 'social_whatsapp',  icon: MessageCircle, bg: '#25D366', label: 'WhatsApp' },
 ];
 
-function FloatingSocialBar({ getSetting }: { getSetting: any }) {
+function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: boolean }) {
   const links = socialConfig.map(link => ({
     ...link,
     href: getSetting(link.key) || null,
@@ -28,7 +28,9 @@ function FloatingSocialBar({ getSetting }: { getSetting: any }) {
 
   return (
     <div
-      className="fixed left-0 z-40 flex flex-col items-start"
+      className={`fixed left-0 z-40 flex flex-col items-start transition-all duration-300 ease-in-out ${
+        visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full pointer-events-none'
+      }`}
       style={{ top: '72px' }}
     >
       {links.map((link, index) => {
@@ -422,7 +424,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         )}
       </nav>
 
-      <FloatingSocialBar getSetting={getSetting} />
+      <FloatingSocialBar getSetting={getSetting} visible={!scrolled} />
 
       <main className="w-full pt-16">
         {children}
