@@ -20,7 +20,7 @@ const socialConfig = [
   { key: 'social_whatsapp',  icon: MessageCircle, bg: '#25D366', label: 'WhatsApp' },
 ];
 
-function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: boolean }) {
+function FloatingSocialBar({ getSetting }: { getSetting: any }) {
   const links = socialConfig.map(link => ({
     ...link,
     href: getSetting(link.key) || null,
@@ -28,9 +28,7 @@ function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: 
 
   return (
     <div
-      className={`fixed left-0 z-40 flex flex-col items-start transition-all duration-500 ease-in-out ${
-        visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full pointer-events-none'
-      }`}
+      className="fixed left-0 z-40 flex flex-col items-start"
       style={{ top: '72px' }}
     >
       {links.map((link, index) => {
@@ -50,18 +48,17 @@ function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: 
             onClick={link.href ? undefined : (e) => e.preventDefault()}
             style={{
               ...bgStyle,
-              transitionDelay: visible ? `${index * 50}ms` : '0ms',
+              transitionDelay: `${index * 50}ms`,
               opacity: link.href ? 1 : 0.45,
             }}
-            className={`
+            className="
               group relative flex items-center justify-center
               w-10 h-10 text-white
               transition-all duration-300 ease-out
               rounded-r-xl
               shadow-md hover:shadow-xl
               hover:w-12 hover:pl-1
-              ${visible ? 'translate-x-0' : '-translate-x-full'}
-            `}
+            "
           >
             <Icon className="w-4 h-4 flex-shrink-0" />
             <span
@@ -425,7 +422,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         )}
       </nav>
 
-      <FloatingSocialBar getSetting={getSetting} visible={!scrolled} />
+      <FloatingSocialBar getSetting={getSetting} />
 
       <main className="w-full pt-16">
         {children}
