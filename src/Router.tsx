@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase';
 import { socialShareService } from './services/socialShareService';
 import { jobClickTrackingService } from './services/jobClickTrackingService';
 import App from './App';
+import AdminInviteAccept from './pages/AdminInviteAccept';
 import SolutionEntreprises from './pages/SolutionEntreprises';
 import SolutionMines from './pages/SolutionMines';
 import SolutionONG from './pages/SolutionONG';
@@ -146,6 +147,7 @@ export default function Router() {
           <Route path="/public/:token" element={<PublicProfileRedirect />} />
           <Route path="/candidatures/:applicationId" element={<ExternalApplicationRedirect />} />
           <Route path="/external/:applicationId" element={<ExternalApplicationRedirect />} />
+          <Route path="/admin-invite/:token" element={<AdminInviteAccept />} />
           <Route path="/solutions/entreprises-pme" element={<SolutionEntreprises />} />
           <Route path="/solutions/mines-grands-projets" element={<SolutionMines />} />
           <Route path="/solutions/ong-institutions" element={<SolutionONG />} />

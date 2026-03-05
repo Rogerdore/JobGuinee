@@ -97,7 +97,8 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         { id: 'all-users', label: 'Tous les utilisateurs', icon: Users, route: 'user-management' },
         { id: 'candidates', label: 'Candidats', icon: FileCheck, route: 'user-management' },
         { id: 'recruiters', label: 'Recruteurs', icon: Building2, route: 'user-management' },
-        { id: 'admins', label: 'Administrateurs', icon: Shield, route: 'user-management' }
+        { id: 'admins', label: 'Administrateurs', icon: Shield, route: 'user-management' },
+        { id: 'admin-invitations', label: 'Invitations admin', icon: Mail, route: 'admin-invitations' }
       ]
     },
     {
