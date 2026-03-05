@@ -11,18 +11,66 @@ interface LayoutProps {
   onNavigate: (page: string) => void;
 }
 
-function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: { getSetting: any, className?: string }) {
-  const socialConfig = [
-    { key: 'social_facebook', icon: Facebook, color: 'hover:text-blue-600', label: 'Facebook' },
-    { key: 'social_instagram', icon: Instagram, color: 'hover:text-pink-500', label: 'Instagram' },
-    { key: 'social_linkedin', icon: Linkedin, color: 'hover:text-blue-700', label: 'LinkedIn' },
-    { key: 'social_youtube', icon: Youtube, color: 'hover:text-red-600', label: 'YouTube' },
-    { key: 'social_twitter', icon: Twitter, color: 'hover:text-sky-500', label: 'Twitter / X' },
-    { key: 'social_whatsapp', icon: MessageCircle, color: 'hover:text-green-500', label: 'WhatsApp' },
-  ];
+const socialConfig = [
+  { key: 'social_facebook',  icon: Facebook,      bgColor: 'bg-[#1877F2]', label: 'Facebook' },
+  { key: 'social_instagram', icon: Instagram,     bgColor: 'bg-gradient-to-br from-[#f09433] via-[#e6683c] via-[#dc2743] via-[#cc2366] to-[#bc1888]', label: 'Instagram' },
+  { key: 'social_linkedin',  icon: Linkedin,      bgColor: 'bg-[#0A66C2]', label: 'LinkedIn' },
+  { key: 'social_youtube',   icon: Youtube,       bgColor: 'bg-[#FF0000]', label: 'YouTube' },
+  { key: 'social_twitter',   icon: Twitter,       bgColor: 'bg-[#000000]', label: 'X / Twitter' },
+  { key: 'social_whatsapp',  icon: MessageCircle, bgColor: 'bg-[#25D366]', label: 'WhatsApp' },
+];
 
+function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: boolean }) {
   const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
+  if (activeLinks.length === 0) return null;
 
+  return (
+    <div
+      className={`fixed left-4 z-40 flex flex-col items-center gap-2 transition-all duration-500 ease-in-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      }`}
+      style={{ top: '72px' }}
+    >
+      <div className="flex flex-col items-center gap-1.5">
+        {activeLinks.map((link, index) => {
+          const Icon = link.icon;
+          return (
+            <a
+              key={link.key}
+              href={getSetting(link.key)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={link.label}
+              style={{ transitionDelay: visible ? `${index * 40}ms` : '0ms' }}
+              className={`
+                group relative flex items-center justify-center w-9 h-9 rounded-xl text-white shadow-lg
+                ${link.bgColor}
+                transition-all duration-300 ease-out
+                hover:scale-110 hover:shadow-xl hover:rounded-2xl
+                ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}
+              `}
+            >
+              <Icon className="w-4 h-4" />
+              <span className="
+                absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded-lg
+                opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap
+                transition-all duration-200 translate-x-1 group-hover:translate-x-0
+                shadow-lg
+              ">
+                {link.label}
+                <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+              </span>
+            </a>
+          );
+        })}
+      </div>
+      <div className="w-px h-8 bg-gradient-to-b from-gray-300 to-transparent mt-1" />
+    </div>
+  );
+}
+
+function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: { getSetting: any, className?: string }) {
+  const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
   if (activeLinks.length === 0) return null;
 
   return (
@@ -35,7 +83,7 @@ function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: 
             href={getSetting(link.key)}
             target="_blank"
             rel="noopener noreferrer"
-            className={`text-gray-500 transition-colors ${link.color}`}
+            className="text-gray-400 hover:text-white transition-colors"
             title={link.label}
           >
             <Icon className="w-5 h-5" />
@@ -135,10 +183,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               })}
             </div>
 
-            <div className="hidden lg:flex items-center mr-2 border-r border-gray-200 pr-4">
-              <SocialLinks getSetting={getSetting} className="flex items-center space-x-2" />
-            </div>
-
             <div className="hidden md:flex items-center space-x-4">
               {user && <NotificationCenter />}
               {user ? (
@@ -232,11 +276,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
-
-                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
-                  </div>
                 </>
               )}
             </div>
@@ -339,11 +378,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     <LogOut className="w-5 h-5" />
                     <span className="font-medium">Déconnexion</span>
                   </button>
-
-                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
-                  </div>
                 </>
               ) : (
                 <>
@@ -365,17 +399,14 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     Inscription
                   </button>
-
-                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
-                  </div>
                 </>
               )}
             </div>
           </div>
         )}
       </nav>
+
+      <FloatingSocialBar getSetting={getSetting} visible={!scrolled} />
 
       <main className="w-full pt-16">
         {children}
