@@ -1,5 +1,6 @@
-import { TrendingUp, Users, Heart, MessageCircle, Clock } from 'lucide-react';
+import { Eye, Users, Heart, MessageCircle, Clock, Share2 } from 'lucide-react';
 import { Job, Company } from '../../lib/supabase';
+import { useJobCounters } from '../../hooks/useJobCounters';
 
 interface JobCardStatsProps {
   job: Job & { companies?: Company };
@@ -7,94 +8,132 @@ interface JobCardStatsProps {
   showDate?: boolean;
 }
 
-/**
- * COMPOSANT UNIFIÉ - INDICATEURS DE CARTE D'OFFRE
- *
- * Ce composant affiche de manière cohérente les statistiques d'une offre d'emploi.
- * Il doit être utilisé dans TOUTES les pages affichant des cartes d'offres.
- *
- * @param job - L'offre d'emploi avec ses statistiques
- * @param variant - 'compact' (vues + candidats) ou 'full' (+ favoris + commentaires)
- * @param showDate - Afficher la date de publication
- *
- * AUDIT 31/01/2026:
- * - Créé pour uniformiser l'affichage entre Home.tsx et Jobs.tsx
- * - Corrige l'incohérence visuelle identifiée dans l'audit
- * - Tous les compteurs proviennent directement de la base de données
- */
-export default function JobCardStats({ job, variant = 'compact', showDate = true }: JobCardStatsProps) {
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+function getTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-    if (diffInDays === 0) return "Aujourd'hui";
-    if (diffInDays === 1) return 'Hier';
-    if (diffInDays < 7) return `Il y a ${diffInDays} jours`;
-    if (diffInDays < 30) return `Il y a ${Math.floor(diffInDays / 7)} semaines`;
-    if (diffInDays < 365) return `Il y a ${Math.floor(diffInDays / 30)} mois`;
-    return `Il y a ${Math.floor(diffInDays / 365)} ans`;
-  };
+  if (diffInDays === 0) return "Aujourd'hui";
+  if (diffInDays === 1) return 'Hier';
+  if (diffInDays < 7) return `Il y a ${diffInDays}j`;
+  if (diffInDays < 30) return `Il y a ${Math.floor(diffInDays / 7)}sem`;
+  if (diffInDays < 365) return `Il y a ${Math.floor(diffInDays / 30)}mois`;
+  return `Il y a ${Math.floor(diffInDays / 365)}ans`;
+}
+
+interface StatPillProps {
+  icon: React.ElementType;
+  value: number;
+  label: string;
+  iconColor: string;
+  animating: boolean;
+}
+
+function StatPill({ icon: Icon, value, label, iconColor, animating }: StatPillProps) {
+  if (value === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-      {/* Date de publication */}
+    <div
+      className={`
+        inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+        bg-white border border-slate-200 text-slate-700 shadow-sm select-none
+        transition-all duration-300
+        ${animating ? 'ring-2 ring-blue-400 ring-offset-1 border-blue-300 bg-blue-50' : ''}
+      `}
+      aria-label={`${value} ${label}`}
+    >
+      <Icon
+        className={`w-3.5 h-3.5 flex-shrink-0 transition-colors duration-300 ${animating ? 'text-blue-500' : iconColor}`}
+      />
+      <span
+        className={`tabular-nums leading-none transition-all duration-300 ${animating ? 'font-bold text-blue-700 counter-pop' : ''}`}
+      >
+        {value.toLocaleString('fr-FR')}
+      </span>
+      <span className="text-slate-500 hidden sm:inline leading-none">{label}</span>
+    </div>
+  );
+}
+
+export default function JobCardStats({ job, variant = 'compact', showDate = true }: JobCardStatsProps) {
+  const { animated } = useJobCounters(job.id, {
+    views_count: job.views_count,
+    applications_count: job.applications_count,
+    saves_count: job.saves_count,
+    comments_count: job.comments_count,
+    shares_count: job.shares_count,
+  });
+
+  const hasStats =
+    animated.views.value > 0 ||
+    animated.applications.value > 0 ||
+    (variant === 'full' && (
+      animated.saves.value > 0 ||
+      animated.comments.value > 0 ||
+      animated.shares.value > 0
+    ));
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
       {showDate && job.created_at && (
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-4 h-4 text-gray-400" />
+        <div className="inline-flex items-center gap-1 text-xs text-slate-500">
+          <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
           <span>{getTimeAgo(job.created_at)}</span>
         </div>
       )}
 
-      {/* Nombre de vues */}
-      {(job.views_count || 0) > 0 && (
-        <div className="flex items-center gap-1.5">
-          <TrendingUp className="w-4 h-4 text-blue-500" />
-          <span>{job.views_count} vue{job.views_count > 1 ? 's' : ''}</span>
-        </div>
+      {showDate && job.created_at && hasStats && (
+        <span className="text-slate-300 text-xs select-none">·</span>
       )}
 
-      {/* Nombre de candidats */}
-      {(job.applications_count || 0) > 0 && (
-        <div className="flex items-center gap-1.5">
-          <Users className="w-4 h-4 text-green-500" />
-          <span>
-            {job.applications_count} candidat{job.applications_count > 1 ? 's' : ''}
-          </span>
-        </div>
-      )}
+      <StatPill
+        icon={Eye}
+        value={animated.views.value}
+        label="vues"
+        iconColor="text-blue-500"
+        animating={animated.views.animating}
+      />
 
-      {/* Indicateurs étendus (variant full) */}
+      <StatPill
+        icon={Users}
+        value={animated.applications.value}
+        label="candidatures"
+        iconColor="text-emerald-500"
+        animating={animated.applications.animating}
+      />
+
       {variant === 'full' && (
         <>
-          {/* Nombre de favoris */}
-          {(job.saves_count || 0) > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Heart className="w-4 h-4 text-red-500" />
-              <span>{job.saves_count}</span>
-            </div>
-          )}
+          <StatPill
+            icon={Heart}
+            value={animated.saves.value}
+            label="favoris"
+            iconColor="text-rose-500"
+            animating={animated.saves.animating}
+          />
 
-          {/* Nombre de commentaires */}
-          {(job.comments_count || 0) > 0 && (
-            <div className="flex items-center gap-1.5">
-              <MessageCircle className="w-4 h-4 text-purple-500" />
-              <span>{job.comments_count}</span>
-            </div>
-          )}
+          <StatPill
+            icon={MessageCircle}
+            value={animated.comments.value}
+            label="commentaires"
+            iconColor="text-amber-500"
+            animating={animated.comments.animating}
+          />
+
+          <StatPill
+            icon={Share2}
+            value={animated.shares.value}
+            label="partages"
+            iconColor="text-sky-500"
+            animating={animated.shares.animating}
+          />
         </>
       )}
 
-      {/* Message si aucune statistique */}
-      {!showDate &&
-        (job.views_count || 0) === 0 &&
-        (job.applications_count || 0) === 0 &&
-        (variant === 'compact' || ((job.saves_count || 0) === 0 && (job.comments_count || 0) === 0)) && (
-          <div className="flex items-center gap-1.5 text-gray-400">
-            <span className="text-xs italic">Nouvelle offre</span>
-          </div>
-        )}
+      {!showDate && !hasStats && (
+        <span className="text-xs text-slate-400 italic">Nouvelle offre</span>
+      )}
     </div>
   );
 }

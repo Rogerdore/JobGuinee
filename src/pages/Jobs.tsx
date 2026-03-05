@@ -13,6 +13,8 @@ import { testimonials, companies as recruitingCompanies, jobCategories, guineaRe
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
+import JobCardStats from '../components/jobs/JobCardStats';
+import JobCardActions from '../components/jobs/JobCardActions';
 import { useRealtimeJobUpdates } from '../hooks/useRealtimeJobUpdates';
 
 interface JobsProps {
@@ -615,20 +617,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                               <span>{job.location}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-[#FF8C00]" />
-                            <span>{getTimeAgo(job.created_at)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <TrendingUp className="w-4 h-4 text-blue-500" />
-                            <span>{job.views_count} vues</span>
-                          </div>
-                          {job.applications_count > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <Users className="w-4 h-4 text-green-500" />
-                              <span>{job.applications_count} candidat{job.applications_count > 1 ? 's' : ''}</span>
-                            </div>
-                          )}
+                          <JobCardStats job={job} variant="compact" showDate={true} />
                         </div>
                       </div>
                     </div>
@@ -681,47 +670,17 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                     </div>
 
                     <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => toggleSaveJob(job.id, e)}
-                          className={`relative p-2.5 rounded-lg border-2 transition-all ${
-                            savedJobs.includes(job.id)
-                              ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
-                              : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
-                          }`}
-                          title={savedJobs.includes(job.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                        >
-                          <Heart className={`w-5 h-5 ${savedJobs.includes(job.id) ? 'fill-current' : ''}`} />
-                          {job.saves_count > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                              {job.saves_count}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setCommentsJobModal(job);
-                          }}
-                          className="relative p-2.5 rounded-lg border-2 border-gray-300 text-gray-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all"
-                          title="Voir les commentaires"
-                        >
-                          <MessageCircle className="w-5 h-5" />
-                          {job.comments_count > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                              {job.comments_count}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={(e) => shareJob(job, e)}
-                          className="p-2.5 rounded-lg border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-all"
-                          title="Partager"
-                        >
-                          <Share2 className="w-5 h-5" />
-                        </button>
-                      </div>
+                      <JobCardActions
+                        job={job}
+                        isSaved={savedJobs.includes(job.id)}
+                        onToggleSave={(e) => toggleSaveJob(job.id, e)}
+                        onOpenComments={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCommentsJobModal(job);
+                        }}
+                        onShare={(e) => shareJob(job, e)}
+                      />
                       <button
                         onClick={(e) => {
                           e.preventDefault();
