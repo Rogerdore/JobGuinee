@@ -83,24 +83,29 @@ function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: 
   );
 }
 
-function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: { getSetting: any, className?: string }) {
-  const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
-  if (activeLinks.length === 0) return null;
-
+function SocialLinks({ getSetting }: { getSetting: any }) {
   return (
-    <div className={className}>
-      {activeLinks.map(link => {
+    <div className="flex items-center flex-wrap gap-2 mt-2">
+      {socialConfig.map(link => {
         const Icon = link.icon;
+        const href = getSetting(link.key) || null;
+        const isInstagram = link.bg === 'instagram';
+        const bgStyle = isInstagram
+          ? { background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }
+          : { backgroundColor: link.bg };
+
         return (
           <a
             key={link.key}
-            href={getSetting(link.key)}
-            target="_blank"
+            href={href || '#'}
+            target={href ? '_blank' : undefined}
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-white transition-colors"
             title={link.label}
+            onClick={href ? undefined : (e) => e.preventDefault()}
+            style={{ ...bgStyle, opacity: href ? 1 : 0.4 }}
+            className="flex items-center justify-center w-9 h-9 rounded-xl text-white shadow-md hover:scale-110 hover:shadow-lg transition-all duration-200"
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4" />
           </a>
         );
       })}
@@ -437,9 +442,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               <p className="text-gray-400 mb-6">
                 La plateforme de recrutement moderne pour digitaliser le marché de l'emploi en Guinée.
               </p>
-              <div className="flex items-center space-x-4">
-                <SocialLinks getSetting={getSetting} className="flex items-center space-x-4" />
-              </div>
+              <SocialLinks getSetting={getSetting} />
             </div>
 
             <div>
