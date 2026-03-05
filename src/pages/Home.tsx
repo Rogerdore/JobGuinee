@@ -44,6 +44,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [savingJob, setSavingJob] = useState<string | null>(null);
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
   const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
+  const [sectorCounts, setSectorCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadData();
@@ -137,7 +138,7 @@ export default function Home({ onNavigate }: HomeProps) {
   };
 
   const loadData = async () => {
-    const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount] = await Promise.all([
+    const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount, sectorData] = await Promise.all([
       supabase
         .from('jobs')
         .select('*, companies(*)')
@@ -153,7 +154,17 @@ export default function Home({ onNavigate }: HomeProps) {
       supabase.from('companies').select('id', { count: 'exact', head: true }),
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'candidate'),
       supabase.from('formations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('jobs').select('sector').eq('status', 'published'),
     ]);
+
+    if (sectorData.data) {
+      const counts: Record<string, number> = {};
+      sectorData.data.forEach((row: { sector: string | null }) => {
+        const s = row.sector || '';
+        if (s) counts[s] = (counts[s] || 0) + 1;
+      });
+      setSectorCounts(counts);
+    }
 
     // Use sample data if database is empty
     if (jobsData.data && jobsData.data.length > 0) {
@@ -258,13 +269,27 @@ export default function Home({ onNavigate }: HomeProps) {
     }
   };
 
+  const SECTOR_KEYS: Record<string, string[]> = {
+    'Mines & Extraction': ['Mines & Extraction', 'Mines', 'Extraction', 'Minier', 'Mining'],
+    'Finance & Comptabilité': ['Finance & Comptabilité', 'Finance', 'Comptabilité', 'Banque', 'Assurance'],
+    'Informatique & Tech': ['Informatique & Tech', 'Informatique', 'Technologie', 'Tech', 'IT', 'Numérique'],
+    'Logistique & Transport': ['Logistique & Transport', 'Logistique', 'Transport', 'Supply Chain'],
+    'RH & Administration': ['RH & Administration', 'Ressources Humaines', 'Administration', 'RH'],
+    'Formation & Éducation': ['Formation & Éducation', 'Education', 'Éducation', 'Formation', 'Enseignement'],
+  };
+
+  const getSectorCount = (sectorName: string): number => {
+    const keys = SECTOR_KEYS[sectorName] || [sectorName];
+    return keys.reduce((total, key) => total + (sectorCounts[key] || 0), 0);
+  };
+
   const categories = [
-    { name: 'Mines & Extraction', icon: Shield, color: 'from-orange-500 to-orange-600', count: 45 },
-    { name: 'Finance & Comptabilité', icon: DollarSign, color: 'from-green-500 to-green-600', count: 32 },
-    { name: 'Informatique & Tech', icon: Code, color: 'from-blue-500 to-blue-600', count: 28 },
-    { name: 'Logistique & Transport', icon: Truck, color: 'from-purple-500 to-purple-600', count: 38 },
-    { name: 'RH & Administration', icon: UserCheck, color: 'from-pink-500 to-pink-600', count: 25 },
-    { name: 'Formation & Éducation', icon: GraduationCap, color: 'from-indigo-500 to-indigo-600', count: 18 },
+    { name: 'Mines & Extraction', icon: Shield, color: 'from-orange-500 to-orange-600' },
+    { name: 'Finance & Comptabilité', icon: DollarSign, color: 'from-green-500 to-green-600' },
+    { name: 'Informatique & Tech', icon: Code, color: 'from-blue-500 to-blue-600' },
+    { name: 'Logistique & Transport', icon: Truck, color: 'from-sky-500 to-sky-600' },
+    { name: 'RH & Administration', icon: UserCheck, color: 'from-pink-500 to-pink-600' },
+    { name: 'Formation & Éducation', icon: GraduationCap, color: 'from-teal-500 to-teal-600' },
   ];
 
   const testimonials = [
@@ -494,7 +519,7 @@ export default function Home({ onNavigate }: HomeProps) {
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="font-semibold text-gray-900 text-xs mb-1 text-center">{category.name}</h3>
-                  <div className="text-xs text-gray-500 text-center">{category.count} offres</div>
+                  <div className="text-xs text-gray-500 text-center">{getSectorCount(category.name).toLocaleString('fr-FR')} offres</div>
                 </button>
               );
             })}
