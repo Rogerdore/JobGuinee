@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useModalContext } from '../contexts/ModalContext';
-import {
-  Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock,
-  ChevronDown, Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign,
-  Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight,
-  Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle
-} from 'lucide-react';
+import { Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock, ChevronDown, Grid2x2 as Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign, Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight, Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
