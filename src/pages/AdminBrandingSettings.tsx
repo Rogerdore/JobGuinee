@@ -1,13 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Image, Save, AlertCircle, Facebook, Linkedin, Twitter, MessageCircle, Globe } from 'lucide-react';
+import { Upload, Image, Save, AlertCircle, Facebook, Linkedin, Twitter, MessageCircle, Globe, Instagram, Youtube, CheckCircle, ExternalLink } from 'lucide-react';
 import { siteSettingsService } from '../services/siteSettingsService';
 import { useCMS } from '../contexts/CMSContext';
+
+const SOCIAL_NETWORKS = [
+  {
+    key: 'social_facebook',
+    label: 'Facebook',
+    icon: Facebook,
+    placeholder: 'https://facebook.com/jobguinee',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    hoverBorder: 'focus:border-blue-500 focus:ring-blue-500',
+  },
+  {
+    key: 'social_instagram',
+    label: 'Instagram',
+    icon: Instagram,
+    placeholder: 'https://instagram.com/jobguinee',
+    color: 'text-pink-500',
+    bg: 'bg-pink-50',
+    border: 'border-pink-200',
+    hoverBorder: 'focus:border-pink-500 focus:ring-pink-500',
+  },
+  {
+    key: 'social_linkedin',
+    label: 'LinkedIn',
+    icon: Linkedin,
+    placeholder: 'https://linkedin.com/company/jobguinee',
+    color: 'text-blue-700',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    hoverBorder: 'focus:border-blue-700 focus:ring-blue-700',
+  },
+  {
+    key: 'social_youtube',
+    label: 'YouTube',
+    icon: Youtube,
+    placeholder: 'https://youtube.com/@jobguinee',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    hoverBorder: 'focus:border-red-500 focus:ring-red-500',
+  },
+  {
+    key: 'social_twitter',
+    label: 'Twitter / X',
+    icon: Twitter,
+    placeholder: 'https://twitter.com/JobGuinee',
+    color: 'text-sky-500',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+    hoverBorder: 'focus:border-sky-500 focus:ring-sky-500',
+  },
+  {
+    key: 'social_whatsapp',
+    label: 'WhatsApp',
+    icon: MessageCircle,
+    placeholder: 'https://wa.me/224620000000',
+    color: 'text-green-500',
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    hoverBorder: 'focus:border-green-500 focus:ring-green-500',
+  },
+];
 
 export default function AdminBrandingSettings() {
   const { updateSetting } = useCMS();
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedKeys, setSavedKeys] = useState<string[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [faviconPreview, setFaviconPreview] = useState<string>('');
@@ -17,6 +81,13 @@ export default function AdminBrandingSettings() {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const loadSettings = async () => {
     try {
       setLoading(true);
@@ -24,7 +95,7 @@ export default function AdminBrandingSettings() {
       const socialSettings = await siteSettingsService.getSettingsByCategory('social');
 
       const combinedSettings = { ...brandingData };
-      socialSettings.forEach(s => {
+      socialSettings.forEach((s: any) => {
         combinedSettings[s.key] = s.value;
       });
 
@@ -49,14 +120,12 @@ export default function AdminBrandingSettings() {
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'L\'image ne doit pas dépasser 2 Mo' });
+      setMessage({ type: 'error', text: "L'image ne doit pas dépasser 2 Mo" });
       return;
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setFaviconPreview(reader.result as string);
-    };
+    reader.onloadend = () => setFaviconPreview(reader.result as string);
     reader.readAsDataURL(file);
 
     try {
@@ -64,12 +133,8 @@ export default function AdminBrandingSettings() {
       const url = await siteSettingsService.updateFavicon(file);
       setSettings({ ...settings, favicon_url: url });
       setMessage({ type: 'success', text: 'Favicon mis à jour avec succès' });
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du favicon:', error);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du favicon' });
     } finally {
       setSaving(false);
@@ -86,14 +151,12 @@ export default function AdminBrandingSettings() {
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'L\'image ne doit pas dépasser 5 Mo' });
+      setMessage({ type: 'error', text: "L'image ne doit pas dépasser 5 Mo" });
       return;
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setLogoPreview(reader.result as string);
-    };
+    reader.onloadend = () => setLogoPreview(reader.result as string);
     reader.readAsDataURL(file);
 
     try {
@@ -101,12 +164,8 @@ export default function AdminBrandingSettings() {
       const url = await siteSettingsService.updateLogo(file);
       setSettings({ ...settings, site_logo_url: url });
       setMessage({ type: 'success', text: 'Logo mis à jour avec succès' });
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du logo:', error);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du logo' });
     } finally {
       setSaving(false);
@@ -115,25 +174,28 @@ export default function AdminBrandingSettings() {
 
   const handleSocialChange = (key: string, value: string) => {
     setSettings({ ...settings, [key]: value });
+    setSavedKeys(prev => prev.filter(k => k !== key));
   };
 
   const saveSocialSettings = async () => {
     setSaving(true);
     try {
-      const socialKeys = ['social_facebook', 'social_linkedin', 'social_twitter', 'social_instagram', 'social_whatsapp'];
+      const socialKeys = SOCIAL_NETWORKS.map(n => n.key);
       for (const key of socialKeys) {
         if (settings[key] !== undefined) {
           await updateSetting(key, settings[key]);
         }
       }
+      setSavedKeys(SOCIAL_NETWORKS.map(n => n.key));
       setMessage({ type: 'success', text: 'Réseaux sociaux mis à jour avec succès' });
-    } catch (error) {
-      console.error('Error saving social settings:', error);
+    } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde des réseaux sociaux' });
     } finally {
       setSaving(false);
     }
   };
+
+  const activeCount = SOCIAL_NETWORKS.filter(n => !!settings[n.key]).length;
 
   if (loading) {
     return (
@@ -144,245 +206,203 @@ export default function AdminBrandingSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Image className="h-6 w-6 text-blue-600" />
-            Paramètres de Branding
+    <div className="max-w-4xl mx-auto p-6 space-y-8">
+
+      {message && (
+        <div className={`p-4 rounded-xl flex items-start gap-3 ${
+          message.type === 'success'
+            ? 'bg-green-50 text-green-800 border border-green-200'
+            : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {message.type === 'success'
+            ? <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            : <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />}
+          <p className="font-medium">{message.text}</p>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100 bg-gray-50">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Image className="h-5 w-5 text-blue-600" />
+            Identité visuelle
           </h2>
-          <p className="text-gray-600 mt-2">
-            Gérer le favicon et le logo de JobGuinée
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Favicon et logo de la plateforme</p>
         </div>
 
-        {message && (
-          <div className={`mx-6 mt-6 p-4 rounded-lg flex items-start gap-2 ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
-            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-            <p>{message.text}</p>
-          </div>
-        )}
-
-        <div className="p-6 space-y-8">
+        <div className="p-6">
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Favicon</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  L'icône qui apparaît dans l'onglet du navigateur
-                </p>
-              </div>
+              <h3 className="text-base font-semibold text-gray-900">Favicon</h3>
+              <p className="text-sm text-gray-500">L'icône dans l'onglet du navigateur</p>
 
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-gray-50">
                 {faviconPreview ? (
-                  <div className="space-y-4">
-                    <img
-                      src={faviconPreview}
-                      alt="Aperçu du favicon"
-                      className="h-16 w-16 mx-auto object-contain"
-                    />
-                    <p className="text-sm text-gray-600">Aperçu actuel</p>
+                  <div className="space-y-3">
+                    <img src={faviconPreview} alt="Favicon" className="h-14 w-14 mx-auto object-contain rounded-lg" />
+                    <p className="text-xs text-gray-400">Favicon actuel</p>
                   </div>
                 ) : (
-                  <div className="text-gray-400">
-                    <Upload className="h-12 w-12 mx-auto mb-2" />
-                    <p>Aucun favicon</p>
+                  <div className="text-gray-300">
+                    <Upload className="h-10 w-10 mx-auto mb-2" />
+                    <p className="text-sm">Aucun favicon</p>
                   </div>
                 )}
               </div>
 
-              <div>
-                <label className="block">
-                  <span className="sr-only">Choisir un nouveau favicon</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFaviconChange}
-                    disabled={saving}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-lg file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                </label>
-                <p className="mt-2 text-xs text-gray-500">
-                  PNG, JPG ou SVG. Taille maximale: 2 Mo. Recommandé: 32x32px ou 64x64px
-                </p>
-              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFaviconChange}
+                disabled={saving}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+              />
+              <p className="text-xs text-gray-400">PNG, JPG ou SVG · max 2 Mo · recommandé 32×32 px</p>
             </div>
 
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Logo Principal</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Le logo utilisé sur le site
-                </p>
-              </div>
+              <h3 className="text-base font-semibold text-gray-900">Logo principal</h3>
+              <p className="text-sm text-gray-500">Le logo affiché dans la navigation</p>
 
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-gray-50">
                 {logoPreview ? (
-                  <div className="space-y-4">
-                    <img
-                      src={logoPreview}
-                      alt="Aperçu du logo"
-                      className="h-16 mx-auto object-contain"
-                    />
-                    <p className="text-sm text-gray-600">Aperçu actuel</p>
+                  <div className="space-y-3">
+                    <img src={logoPreview} alt="Logo" className="h-14 mx-auto object-contain" />
+                    <p className="text-xs text-gray-400">Logo actuel</p>
                   </div>
                 ) : (
-                  <div className="text-gray-400">
-                    <Upload className="h-12 w-12 mx-auto mb-2" />
-                    <p>Aucun logo</p>
+                  <div className="text-gray-300">
+                    <Upload className="h-10 w-10 mx-auto mb-2" />
+                    <p className="text-sm">Aucun logo</p>
                   </div>
                 )}
               </div>
 
-              <div>
-                <label className="block">
-                  <span className="sr-only">Choisir un nouveau logo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    disabled={saving}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-lg file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                </label>
-                <p className="mt-2 text-xs text-gray-500">
-                  PNG, JPG ou SVG. Taille maximale: 5 Mo. Format recommandé: transparent
-                </p>
-              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                disabled={saving}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+              />
+              <p className="text-xs text-gray-400">PNG, JPG ou SVG · max 5 Mo · fond transparent recommandé</p>
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Informations importantes
-            </h4>
-            <ul className="text-sm text-blue-800 space-y-1 ml-7">
-              <li>Le changement du favicon peut prendre quelques minutes pour apparaître dans tous les navigateurs</li>
-              <li>Les utilisateurs devront peut-être vider leur cache pour voir le nouveau favicon</li>
-              <li>La page se rechargera automatiquement après la mise à jour</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="p-6 border-t border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-6">
-            <Globe className="h-6 w-6 text-blue-600" />
-            Réseaux Sociaux de la Plateforme
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Facebook className="w-4 h-4 text-blue-600" />
-                  Facebook
-                </label>
-                <input
-                  type="url"
-                  value={settings.social_facebook || ''}
-                  onChange={(e) => handleSocialChange('social_facebook', e.target.value)}
-                  placeholder="https://facebook.com/jobguinee"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Linkedin className="w-4 h-4 text-blue-700" />
-                  LinkedIn
-                </label>
-                <input
-                  type="url"
-                  value={settings.social_linkedin || ''}
-                  onChange={(e) => handleSocialChange('social_linkedin', e.target.value)}
-                  placeholder="https://linkedin.com/company/jobguinee"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Twitter className="w-4 h-4 text-black" />
-                  Twitter
-                </label>
-                <input
-                  type="url"
-                  value={settings.social_twitter || ''}
-                  onChange={(e) => handleSocialChange('social_twitter', e.target.value)}
-                  placeholder="https://twitter.com/JobGuinee"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Image className="w-4 h-4 text-pink-600" />
-                  Instagram
-                </label>
-                <input
-                  type="url"
-                  value={settings.social_instagram || ''}
-                  onChange={(e) => handleSocialChange('social_instagram', e.target.value)}
-                  placeholder="https://instagram.com/jobguinee"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-green-600" />
-                  WhatsApp (Lien wa.me)
-                </label>
-                <input
-                  type="url"
-                  value={settings.social_whatsapp || ''}
-                  onChange={(e) => handleSocialChange('social_whatsapp', e.target.value)}
-                  placeholder="https://wa.me/224620000000"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div className="pt-4">
-                <button
-                  onClick={saveSocialSettings}
-                  disabled={saving}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  <Save className="h-5 w-5" />
-                  {saving ? 'Enregistrement...' : 'Enregistrer les réseaux sociaux'}
-                </button>
-              </div>
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <ul className="text-sm text-amber-800 space-y-1">
+                <li>Le changement de favicon peut prendre quelques minutes pour apparaître dans tous les navigateurs.</li>
+                <li>Les utilisateurs devront peut-être vider leur cache pour voir les modifications.</li>
+              </ul>
             </div>
           </div>
         </div>
+      </div>
 
-        {saving && (
-          <div className="border-t border-gray-200 p-6 bg-gray-50">
-            <div className="flex items-center justify-center gap-2 text-blue-600">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-              <span className="font-medium">Mise à jour en cours...</span>
-            </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Globe className="h-5 w-5 text-blue-600" />
+              Réseaux sociaux
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {activeCount === 0
+                ? 'Aucun réseau configuré — les icônes seront masquées sur le site'
+                : `${activeCount} réseau${activeCount > 1 ? 'x' : ''} configuré${activeCount > 1 ? 's' : ''} — visible${activeCount > 1 ? 's' : ''} dans l'en-tête et le pied de page`}
+            </p>
           </div>
-        )}
+          {activeCount > 0 && (
+            <div className="flex items-center gap-1">
+              {SOCIAL_NETWORKS.filter(n => !!settings[n.key]).map(n => {
+                const Icon = n.icon;
+                return <Icon key={n.key} className={`w-5 h-5 ${n.color}`} />;
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6">
+          <div className="grid md:grid-cols-2 gap-5">
+            {SOCIAL_NETWORKS.map(network => {
+              const Icon = network.icon;
+              const value = settings[network.key] || '';
+              const isSaved = savedKeys.includes(network.key);
+              const isActive = !!value;
+
+              return (
+                <div key={network.key} className={`rounded-xl border-2 p-4 transition-all ${isActive ? `${network.bg} ${network.border}` : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isActive ? network.bg : 'bg-gray-100'}`}>
+                      <Icon className={`w-5 h-5 ${isActive ? network.color : 'text-gray-400'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm font-semibold text-gray-800">{network.label}</span>
+                      {isActive && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                          Actif
+                        </span>
+                      )}
+                    </div>
+                    {isActive && (
+                      <a
+                        href={value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`p-1.5 rounded-lg ${network.bg} ${network.color} hover:opacity-70 transition`}
+                        title="Voir le profil"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="url"
+                      value={value}
+                      onChange={(e) => handleSocialChange(network.key, e.target.value)}
+                      placeholder={network.placeholder}
+                      className={`w-full px-3 py-2 text-sm border rounded-lg transition-all outline-none ${
+                        isActive
+                          ? `border-transparent bg-white/70 ${network.hoverBorder} focus:ring-2`
+                          : 'border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                      }`}
+                    />
+                    {isSaved && (
+                      <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              Les champs vides ne seront pas affichés sur le site.
+            </p>
+            <button
+              onClick={saveSocialSettings}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Enregistrer
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

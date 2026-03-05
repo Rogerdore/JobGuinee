@@ -1,5 +1,5 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
-import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package, Facebook, Linkedin, Twitter, MessageCircle } from 'lucide-react';
+import { Menu, X, Briefcase, User, LogOut, Home, BookOpen, Users, FileText, ChevronDown, LayoutDashboard, Settings, Building2, Package, Facebook, Linkedin, Twitter, MessageCircle, Instagram, Youtube } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCMS } from '../contexts/CMSContext';
 import { NotificationCenter } from './notifications/NotificationCenter';
@@ -14,9 +14,11 @@ interface LayoutProps {
 function SocialLinks({ getSetting, className = "flex items-center space-x-4" }: { getSetting: any, className?: string }) {
   const socialConfig = [
     { key: 'social_facebook', icon: Facebook, color: 'hover:text-blue-600', label: 'Facebook' },
+    { key: 'social_instagram', icon: Instagram, color: 'hover:text-pink-500', label: 'Instagram' },
     { key: 'social_linkedin', icon: Linkedin, color: 'hover:text-blue-700', label: 'LinkedIn' },
-    { key: 'social_twitter', icon: Twitter, color: 'hover:text-black', label: 'Twitter' },
-    { key: 'social_whatsapp', icon: MessageCircle, color: 'hover:text-green-600', label: 'WhatsApp' },
+    { key: 'social_youtube', icon: Youtube, color: 'hover:text-red-600', label: 'YouTube' },
+    { key: 'social_twitter', icon: Twitter, color: 'hover:text-sky-500', label: 'Twitter / X' },
+    { key: 'social_whatsapp', icon: MessageCircle, color: 'hover:text-green-500', label: 'WhatsApp' },
   ];
 
   const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
@@ -338,33 +340,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     <span className="font-medium">Déconnexion</span>
                   </button>
 
-                  {(getSetting('social_facebook') || getSetting('social_linkedin') || getSetting('social_twitter') || getSetting('social_whatsapp')) && (
-                    <div className="border-t border-gray-200 my-4 pt-4 px-4">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
-                      <div className="flex items-center space-x-6">
-                        {getSetting('social_facebook') && (
-                          <a href={getSetting('social_facebook')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-600 transition-colors">
-                            <Facebook className="w-6 h-6" />
-                          </a>
-                        )}
-                        {getSetting('social_linkedin') && (
-                          <a href={getSetting('social_linkedin')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700 transition-colors">
-                            <Linkedin className="w-6 h-6" />
-                          </a>
-                        )}
-                        {getSetting('social_twitter') && (
-                          <a href={getSetting('social_twitter')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black transition-colors">
-                            <Twitter className="w-6 h-6" />
-                          </a>
-                        )}
-                        {getSetting('social_whatsapp') && (
-                          <a href={getSetting('social_whatsapp')} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-600 transition-colors">
-                            <MessageCircle className="w-6 h-6" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <div className="border-t border-gray-200 my-4 pt-4 px-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Suivez-nous</p>
+                    <SocialLinks getSetting={getSetting} className="flex items-center space-x-6" />
+                  </div>
                 </>
               ) : (
                 <>
