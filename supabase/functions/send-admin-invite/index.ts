@@ -171,11 +171,10 @@ Deno.serve(async (req: Request) => {
         "Authorization": `Bearer ${supabaseAnonKey}`,
       },
       body: JSON.stringify({
-        to_email: emailLower,
-        to_name: invitee_name,
+        to: emailLower,
+        toName: invitee_name,
         subject: `Invitation administrateur JobGuinée - ${inviterName} vous invite`,
-        html_body: htmlBody,
-        priority: 1,
+        htmlBody: htmlBody,
       }),
     });
 
