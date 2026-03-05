@@ -256,7 +256,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
-    // Vérifier si l'utilisateur existe déjà avant de tenter l'inscription
     const { data: existingUsers } = await supabase
       .from('profiles')
       .select('id, email, user_type')
@@ -264,7 +263,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (existingUsers) {
-      // Le compte existe déjà avec un profil complet
       throw new Error('EMAIL_EXISTS');
     }
 
@@ -282,7 +280,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-        // L'email existe dans auth.users mais pas dans profiles (compte incomplet)
         throw new Error('ACCOUNT_INCOMPLETE');
       }
       if (error.message.includes('Password')) {
@@ -295,9 +292,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('GENERAL_ERROR');
     }
 
-    // Email confirmation désactivée - l'utilisateur peut se connecter immédiatement
-    // Un email de bienvenue sera envoyé automatiquement via le service SMTP custom
+    // Si l'utilisateur a une session, la confirmation email est désactivée dans Supabase
+    // Si pas de session, la confirmation email est activée - attendre la confirmation
+    if (!data.session) {
+      // Email confirmation activée : l'utilisateur doit confirmer son email
+      throw new Error('EMAIL_CONFIRMATION_REQUIRED');
+    }
 
+    // Email confirmation désactivée : connexion directe, attendre le profil
     let profileData = null;
     let attempts = 0;
     const maxAttempts = 30;
@@ -320,7 +322,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!profileData) {
-      // Le compte a été créé mais le profil prend du temps
       throw new Error('PROFILE_TIMEOUT');
     }
 
