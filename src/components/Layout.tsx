@@ -12,59 +12,73 @@ interface LayoutProps {
 }
 
 const socialConfig = [
-  { key: 'social_facebook',  icon: Facebook,      bgColor: 'bg-[#1877F2]', label: 'Facebook' },
-  { key: 'social_instagram', icon: Instagram,     bgColor: 'bg-gradient-to-br from-[#f09433] via-[#e6683c] via-[#dc2743] via-[#cc2366] to-[#bc1888]', label: 'Instagram' },
-  { key: 'social_linkedin',  icon: Linkedin,      bgColor: 'bg-[#0A66C2]', label: 'LinkedIn' },
-  { key: 'social_youtube',   icon: Youtube,       bgColor: 'bg-[#FF0000]', label: 'YouTube' },
-  { key: 'social_twitter',   icon: Twitter,       bgColor: 'bg-[#000000]', label: 'X / Twitter' },
-  { key: 'social_whatsapp',  icon: MessageCircle, bgColor: 'bg-[#25D366]', label: 'WhatsApp' },
+  { key: 'social_facebook',  icon: Facebook,      bg: '#1877F2', label: 'Facebook' },
+  { key: 'social_instagram', icon: Instagram,     bg: 'instagram', label: 'Instagram' },
+  { key: 'social_linkedin',  icon: Linkedin,      bg: '#0A66C2', label: 'LinkedIn' },
+  { key: 'social_youtube',   icon: Youtube,       bg: '#FF0000', label: 'YouTube' },
+  { key: 'social_twitter',   icon: Twitter,       bg: '#000000', label: 'X / Twitter' },
+  { key: 'social_whatsapp',  icon: MessageCircle, bg: '#25D366', label: 'WhatsApp' },
 ];
 
 function FloatingSocialBar({ getSetting, visible }: { getSetting: any; visible: boolean }) {
-  const activeLinks = socialConfig.filter(link => !!getSetting(link.key));
-  if (activeLinks.length === 0) return null;
+  const links = socialConfig.map(link => ({
+    ...link,
+    href: getSetting(link.key) || null,
+  }));
 
   return (
     <div
-      className={`fixed left-4 z-40 flex flex-col items-center gap-2 transition-all duration-500 ease-in-out ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      className={`fixed left-0 z-40 flex flex-col items-start transition-all duration-500 ease-in-out ${
+        visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full pointer-events-none'
       }`}
       style={{ top: '72px' }}
     >
-      <div className="flex flex-col items-center gap-1.5">
-        {activeLinks.map((link, index) => {
-          const Icon = link.icon;
-          return (
-            <a
-              key={link.key}
-              href={getSetting(link.key)}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={link.label}
-              style={{ transitionDelay: visible ? `${index * 40}ms` : '0ms' }}
-              className={`
-                group relative flex items-center justify-center w-9 h-9 rounded-xl text-white shadow-lg
-                ${link.bgColor}
-                transition-all duration-300 ease-out
-                hover:scale-110 hover:shadow-xl hover:rounded-2xl
-                ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}
-              `}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="
-                absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded-lg
+      {links.map((link, index) => {
+        const Icon = link.icon;
+        const isInstagram = link.bg === 'instagram';
+        const bgStyle = isInstagram
+          ? { background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }
+          : { backgroundColor: link.bg };
+
+        return (
+          <a
+            key={link.key}
+            href={link.href || '#'}
+            target={link.href ? '_blank' : undefined}
+            rel="noopener noreferrer"
+            title={link.label}
+            onClick={link.href ? undefined : (e) => e.preventDefault()}
+            style={{
+              ...bgStyle,
+              transitionDelay: visible ? `${index * 50}ms` : '0ms',
+              opacity: link.href ? 1 : 0.45,
+            }}
+            className={`
+              group relative flex items-center justify-center
+              w-10 h-10 text-white
+              transition-all duration-300 ease-out
+              rounded-r-xl
+              shadow-md hover:shadow-xl
+              hover:w-12 hover:pl-1
+              ${visible ? 'translate-x-0' : '-translate-x-full'}
+            `}
+          >
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            <span
+              className="
+                absolute left-full ml-0 px-2.5 py-1.5 text-xs font-semibold text-white rounded-r-xl
                 opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap
-                transition-all duration-200 translate-x-1 group-hover:translate-x-0
-                shadow-lg
-              ">
-                {link.label}
-                <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
-              </span>
-            </a>
-          );
-        })}
-      </div>
-      <div className="w-px h-8 bg-gradient-to-b from-gray-300 to-transparent mt-1" />
+                transition-all duration-200 translate-x-0
+                shadow-md
+              "
+              style={bgStyle}
+            >
+              {link.label}
+            </span>
+          </a>
+        );
+      })}
+      <div className="w-0.5 h-6 bg-gradient-to-b from-gray-300/60 to-transparent ml-4 mt-1" />
     </div>
   );
 }
