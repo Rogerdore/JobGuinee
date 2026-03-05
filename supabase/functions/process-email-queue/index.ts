@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
@@ -14,160 +14,167 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    console.log("🔄 Processing email queue...");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
-    // Récupérer les emails en attente
-    const { data: queuedEmails, error: fetchError } = await supabase
+    console.log("Fetching pending emails...");
+
+    const { data: pendingEmails, error: fetchError } = await supabase
       .from("email_queue")
-      .select(`
-        *,
-        email_templates (
-          template_key,
-          subject,
-          html_body,
-          text_body
-        )
-      `)
+      .select("*")
       .eq("status", "pending")
       .lte("scheduled_for", new Date().toISOString())
       .order("priority", { ascending: false })
-      .order("scheduled_for", { ascending: true })
+      .order("created_at", { ascending: true })
       .limit(10);
 
+    console.log("Fetch result:", { count: pendingEmails?.length, error: fetchError });
+
     if (fetchError) {
-      console.error("Error fetching queue:", fetchError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch queue", details: fetchError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error("Fetch error:", fetchError);
+      throw fetchError;
     }
 
-    if (!queuedEmails || queuedEmails.length === 0) {
-      console.log("✅ No emails in queue");
+    if (!pendingEmails || pendingEmails.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No emails to process", processed: 0 }),
+        JSON.stringify({ message: "No pending emails to process", count: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`📧 Found ${queuedEmails.length} emails to process`);
+    const results = [];
 
-    let successCount = 0;
-    let failCount = 0;
-
-    // Traiter chaque email
-    for (const email of queuedEmails) {
+    for (const email of pendingEmails) {
       try {
-        // Marquer comme en traitement
+        console.log(`Processing email ${email.id} to ${email.to_email}`);
+
         await supabase
           .from("email_queue")
           .update({ status: "processing" })
           .eq("id", email.id);
 
-        // Préparer les variables pour le template
-        const variables = email.template_variables || {};
+        const { data: template } = await supabase
+          .from("email_templates")
+          .select("*")
+          .eq("id", email.template_id)
+          .single();
 
-        // Appeler la fonction send-email
+        if (!template) {
+          throw new Error("Template not found");
+        }
+
+        let htmlBody = template.html_body;
+        let textBody = template.text_body;
+        let subject = template.subject;
+
+        if (email.template_variables) {
+          Object.entries(email.template_variables).forEach(([key, value]) => {
+            const placeholder = `{{${key}}}`;
+            htmlBody = htmlBody.replace(new RegExp(placeholder, "g"), String(value));
+            textBody = textBody.replace(new RegExp(placeholder, "g"), String(value));
+            subject = subject.replace(new RegExp(placeholder, "g"), String(value));
+          });
+        }
+
+        console.log(`Calling send-email for ${email.to_email}`);
+
         const sendResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseKey}`,
+            "Authorization": `Bearer ${supabaseServiceKey}`,
           },
           body: JSON.stringify({
-            template_key: email.email_templates?.template_key,
-            to_email: email.to_email,
-            to_name: email.to_name,
-            variables: variables,
-            user_id: email.user_id,
-            job_id: email.job_id,
+            to: email.to_email,
+            toName: email.to_name,
+            subject,
+            htmlBody,
+            textBody,
           }),
         });
 
         const sendResult = await sendResponse.json();
+        console.log(`Send result for ${email.to_email}:`, sendResult);
 
-        if (sendResponse.ok && sendResult.success) {
-          // Marquer comme envoyé
-          await supabase
-            .from("email_queue")
-            .update({
-              status: "sent",
-              processed_at: new Date().toISOString(),
-            })
-            .eq("id", email.id);
-
-          successCount++;
-          console.log(`✅ Email sent to ${email.to_email}`);
-        } else {
-          // Incrémenter retry_count et marquer comme échec si max_retries atteint
-          const newRetryCount = (email.retry_count || 0) + 1;
-          const maxRetries = email.max_retries || 3;
-
-          if (newRetryCount >= maxRetries) {
-            await supabase
-              .from("email_queue")
-              .update({
-                status: "failed",
-                retry_count: newRetryCount,
-                error_message: sendResult.error || "Unknown error",
-                processed_at: new Date().toISOString(),
-              })
-              .eq("id", email.id);
-            failCount++;
-            console.error(`❌ Email failed permanently for ${email.to_email}: ${sendResult.error}`);
-          } else {
-            // Réessayer plus tard
-            const nextRetry = new Date();
-            nextRetry.setMinutes(nextRetry.getMinutes() + (newRetryCount * 5));
-
-            await supabase
-              .from("email_queue")
-              .update({
-                status: "pending",
-                retry_count: newRetryCount,
-                error_message: sendResult.error || "Unknown error",
-                scheduled_for: nextRetry.toISOString(),
-              })
-              .eq("id", email.id);
-            console.warn(`⚠️ Email failed, will retry for ${email.to_email} (attempt ${newRetryCount}/${maxRetries})`);
-          }
+        if (!sendResponse.ok) {
+          throw new Error(sendResult.error || "Failed to send email");
         }
-      } catch (emailError) {
-        console.error(`Error processing email ${email.id}:`, emailError);
 
-        // Marquer comme échec
         await supabase
           .from("email_queue")
           .update({
-            status: "failed",
-            error_message: emailError.message,
+            status: "sent",
             processed_at: new Date().toISOString(),
           })
           .eq("id", email.id);
 
-        failCount++;
+        await supabase.from("email_logs").insert({
+          recipient_email: email.to_email,
+          recipient_id: email.user_id,
+          email_type: "welcome",
+          template_code: template.template_key,
+          subject,
+          body_text: textBody,
+          body_html: htmlBody,
+          provider: "hostinger",
+          status: "delivered",
+          sent_at: new Date().toISOString(),
+          provider_message_id: sendResult.messageId,
+          metadata: { queueId: email.id },
+        });
+
+        console.log(`Successfully sent email to ${email.to_email}`);
+        results.push({ id: email.id, status: "sent", email: email.to_email });
+      } catch (error) {
+        console.error(`Error processing email ${email.id}:`, error);
+
+        await supabase
+          .from("email_queue")
+          .update({
+            status: "failed",
+            retry_count: (email.retry_count || 0) + 1,
+            error_message: error.message,
+            processed_at: new Date().toISOString(),
+          })
+          .eq("id", email.id);
+
+        await supabase.from("email_logs").insert({
+          recipient_email: email.to_email,
+          recipient_id: email.user_id,
+          email_type: "welcome",
+          template_code: "unknown",
+          subject: "Error",
+          body_text: "",
+          body_html: "",
+          provider: "hostinger",
+          status: "failed",
+          error_message: error.message,
+          sent_at: new Date().toISOString(),
+          metadata: { queueId: email.id },
+        });
+
+        results.push({ id: email.id, status: "failed", email: email.to_email, error: error.message });
       }
     }
 
-    console.log(`✅ Processed ${successCount + failCount} emails (${successCount} success, ${failCount} failed)`);
-
     return new Response(
       JSON.stringify({
-        success: true,
-        message: "Email queue processed",
-        processed: successCount + failCount,
-        successful: successCount,
-        failed: failCount,
+        message: "Email processing completed",
+        processed: results.length,
+        results,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error processing email queue:", error);
     return new Response(
-      JSON.stringify({ success: false, error: "Internal server error", details: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
