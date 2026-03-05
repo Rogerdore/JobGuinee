@@ -21,6 +21,7 @@ import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
 import { socialShareService } from '../services/socialShareService';
 import { candidateStatsService } from '../services/candidateStatsService';
 import MarkdownRenderer from '../components/common/MarkdownRenderer';
+import JobDetailStatsPanel from '../components/jobs/JobDetailStatsPanel';
 
 interface JobDetailCompleteProps {
   jobId: string;
@@ -491,39 +492,14 @@ export default function JobDetailComplete({ jobId, onNavigate, autoOpenApply, me
             </div>
 
             {/* STATISTIQUES D'ENGAGEMENT */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-full mx-auto mb-2">
-                  <Eye className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{job.views_count || 0}</div>
-                <div className="text-xs text-gray-600">Vues</div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-500 rounded-full mx-auto mb-2">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{job.applications_count || 0}</div>
-                <div className="text-xs text-gray-600">Candidatures</div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-red-500 rounded-full mx-auto mb-2">
-                  <Heart className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{(job as any).saves_count || 0}</div>
-                <div className="text-xs text-gray-600">Favoris</div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-purple-500 rounded-full mx-auto mb-2">
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{(job as any).comments_count || 0}</div>
-                <div className="text-xs text-gray-600">Commentaires</div>
-              </div>
-            </div>
+            <JobDetailStatsPanel
+              jobId={job.id}
+              initialViews={job.views_count || 0}
+              initialApplications={job.applications_count || 0}
+              initialSaves={(job as any).saves_count || 0}
+              initialComments={(job as any).comments_count || 0}
+              initialShares={(job as any).shares_count || 0}
+            />
 
             {/* ===================== */}
             {/* COMPÉTENCES REQUISES */}

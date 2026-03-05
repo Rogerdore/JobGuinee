@@ -16,6 +16,7 @@ import VideoGuidesSection from '../components/home/VideoGuidesSection';
 import { savedJobsService } from '../services/savedJobsService';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
+import JobCardActions from '../components/jobs/JobCardActions';
 import heroGif from '../assets/hero/image_hero.gif';
 
 interface HomeProps {
@@ -591,46 +592,13 @@ export default function Home({ onNavigate }: HomeProps) {
                       <Clock className="w-4 h-4" />
                       <span className="text-sm">{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => handleToggleSave(job.id, e)}
-                        disabled={savingJob === job.id}
-                        className={`p-2.5 rounded-lg border-2 transition-all ${
-                          savedJobs[job.id]
-                            ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
-                            : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                        } ${savingJob === job.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={savedJobs[job.id] ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                      >
-                        <Heart
-                          className={`w-5 h-5 ${savedJobs[job.id] ? 'fill-current' : ''}`}
-                        />
-                      </button>
-                      {(job as any).saves_count > 0 && (
-                        <span className="text-sm font-medium text-gray-600">
-                          {(job as any).saves_count}
-                        </span>
-                      )}
-                      <button
-                        onClick={(e) => openComments(job, e)}
-                        className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all relative"
-                        title="Voir les commentaires"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        {job.comments_count > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {job.comments_count}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={(e) => shareJob(job, e)}
-                        className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all"
-                        title="Partager cette offre"
-                      >
-                        <Share2 className="w-5 h-5" />
-                      </button>
-                    </div>
+                    <JobCardActions
+                      job={job as any}
+                      isSaved={!!savedJobs[job.id]}
+                      onToggleSave={(e) => handleToggleSave(job.id, e)}
+                      onOpenComments={(e) => openComments(job, e)}
+                      onShare={(e) => shareJob(job, e)}
+                    />
                   </div>
                 </div>
               ))}

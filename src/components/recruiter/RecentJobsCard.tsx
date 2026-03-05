@@ -1,12 +1,48 @@
-import { Briefcase, MapPin, Users, Eye, Calendar } from 'lucide-react';
+import { Briefcase, MapPin, Eye, Users, Calendar } from 'lucide-react';
 import { RecentJob } from '../../services/recruiterDashboardService';
 import TargetedDiffusionBadge from '../campaign/TargetedDiffusionBadge';
+import { useJobCounters } from '../../hooks/useJobCounters';
 
 interface RecentJobsCardProps {
   jobs: RecentJob[];
   onJobClick: (jobId: string) => void;
   onNavigate: (path: string) => void;
   loading?: boolean;
+}
+
+interface JobStatsRowProps {
+  jobId: string;
+  initialViews: number;
+  initialApplications: number;
+  createdAt: string;
+}
+
+function JobStatsRow({ jobId, initialViews, initialApplications, createdAt }: JobStatsRowProps) {
+  const { animated } = useJobCounters(jobId, {
+    views_count: initialViews,
+    applications_count: initialApplications,
+  });
+
+  return (
+    <div className="flex items-center gap-4 text-sm text-gray-600 mt-3">
+      <div className={`flex items-center gap-1 transition-all duration-300 ${animated.views.animating ? 'text-blue-600 font-semibold' : ''}`}>
+        <Eye className={`w-4 h-4 transition-colors duration-300 ${animated.views.animating ? 'text-blue-500' : ''}`} />
+        <span className={`tabular-nums ${animated.views.animating ? 'counter-pop' : ''}`}>
+          {animated.views.value.toLocaleString('fr-FR')} vues
+        </span>
+      </div>
+      <div className={`flex items-center gap-1 transition-all duration-300 ${animated.applications.animating ? 'text-emerald-600 font-semibold' : ''}`}>
+        <Users className={`w-4 h-4 transition-colors duration-300 ${animated.applications.animating ? 'text-emerald-500' : ''}`} />
+        <span className={`tabular-nums ${animated.applications.animating ? 'counter-pop' : ''}`}>
+          {animated.applications.value.toLocaleString('fr-FR')} candidatures
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <Calendar className="w-4 h-4" />
+        <span>{new Date(createdAt).toLocaleDateString('fr-FR')}</span>
+      </div>
+    </div>
+  );
 }
 
 export default function RecentJobsCard({ jobs, onJobClick, onNavigate, loading }: RecentJobsCardProps) {
@@ -88,20 +124,12 @@ export default function RecentJobsCard({ jobs, onJobClick, onNavigate, loading }
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-sm text-gray-600 mt-3">
-              <div className="flex items-center gap-1">
-                <Eye className="w-4 h-4" />
-                <span>{job.views_count || 0} vues</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                <span>{job.applications_count} candidatures</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                <span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
-              </div>
-            </div>
+            <JobStatsRow
+              jobId={job.id}
+              initialViews={job.views_count || 0}
+              initialApplications={job.applications_count || 0}
+              createdAt={job.created_at}
+            />
 
             <div className="mt-3" onClick={(e) => e.stopPropagation()}>
               <TargetedDiffusionBadge
