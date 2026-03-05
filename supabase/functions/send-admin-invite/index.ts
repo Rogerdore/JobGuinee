@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,7 +66,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existingProfile } = await serviceClient
       .from("profiles")
-      .select("id, email, user_type")
+      .select("id")
       .eq("email", emailLower)
       .maybeSingle();
 
@@ -78,7 +79,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existingPending } = await serviceClient
       .from("admin_invitations")
-      .select("id, status, expires_at")
+      .select("id, expires_at")
       .eq("invitee_email", emailLower)
       .eq("status", "pending")
       .maybeSingle();
@@ -107,12 +108,18 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = invitation.invitation_token;
+    const inviterName = inviterProfile.full_name || inviterProfile.email || "L'administrateur principal";
+
     const siteUrl = supabaseUrl.includes("supabase.co")
       ? "https://jobguinee.com"
       : "http://localhost:5173";
-
     const acceptUrl = `${siteUrl}/admin-invite/${token}`;
-    const inviterName = inviterProfile.full_name || inviterProfile.email || "L'administrateur principal";
+
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
+    const expiresFormatted = expiresAt.toLocaleDateString("fr-FR", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
 
     const htmlBody = `
 <!DOCTYPE html>
@@ -137,7 +144,7 @@ Deno.serve(async (req: Request) => {
         <p style="color: #64748b; font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Détails de l'invitation</p>
         <p style="color: #1e293b; margin: 4px 0;"><strong>Email :</strong> ${emailLower}</p>
         <p style="color: #1e293b; margin: 4px 0;"><strong>Invité par :</strong> ${inviterName}</p>
-        <p style="color: #1e293b; margin: 4px 0;"><strong>Expire le :</strong> ${new Date(Date.now() + 72 * 60 * 60 * 1000).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        <p style="color: #1e293b; margin: 4px 0;"><strong>Expire le :</strong> ${expiresFormatted}</p>
       </div>
       <div style="text-align: center; margin: 0 0 32px;">
         <a href="${acceptUrl}"
@@ -164,29 +171,56 @@ Deno.serve(async (req: Request) => {
 </body>
 </html>`;
 
-    const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseAnonKey}`,
+    const { data: smtpConfig, error: smtpErr } = await serviceClient
+      .from("email_provider_config")
+      .select("smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password, from_email, from_name")
+      .eq("provider_type", "smtp")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (smtpErr || !smtpConfig) {
+      throw new Error("SMTP configuration not found: " + smtpErr?.message);
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpConfig.smtp_host,
+      port: smtpConfig.smtp_port,
+      secure: smtpConfig.smtp_secure,
+      auth: {
+        user: smtpConfig.smtp_user,
+        pass: smtpConfig.smtp_password,
       },
-      body: JSON.stringify({
-        to: emailLower,
-        toName: invitee_name,
-        subject: `Invitation administrateur JobGuinée - ${inviterName} vous invite`,
-        htmlBody: htmlBody,
-      }),
     });
 
-    const emailResult = await emailResponse.json().catch(() => ({}));
+    const info = await transporter.sendMail({
+      from: `${smtpConfig.from_name} <${smtpConfig.from_email}>`,
+      to: `${invitee_name} <${emailLower}>`,
+      subject: `Invitation administrateur JobGuinée - ${inviterName} vous invite`,
+      html: htmlBody,
+      text: `Bonjour ${invitee_name},\n\n${inviterName} vous invite à rejoindre l'équipe d'administration de JobGuinée.\n\nCliquez sur ce lien pour accepter : ${acceptUrl}\n\nCe lien expire dans 72 heures.`,
+    });
+
+    await serviceClient.from("email_logs").insert({
+      recipient_email: emailLower,
+      email_type: "admin_invitation",
+      template_code: "admin_invitation",
+      subject: `Invitation administrateur JobGuinée`,
+      body_html: htmlBody,
+      body_text: `Invitation admin pour ${emailLower}`,
+      provider: "hostinger",
+      status: "delivered",
+      sent_at: new Date().toISOString(),
+      provider_message_id: info.messageId,
+      metadata: { invitee_name, inviter: inviterName, token },
+    });
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Invitation envoyée à ${emailLower}`,
         token,
-        email_sent: emailResponse.ok,
-        email_result: emailResult,
+        email_sent: true,
+        messageId: info.messageId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
