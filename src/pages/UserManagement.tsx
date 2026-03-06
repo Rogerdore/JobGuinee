@@ -18,6 +18,7 @@ interface Profile {
   user_type: 'candidate' | 'recruiter' | 'admin' | 'trainer';
   created_at: string;
   phone?: string;
+  has_profile?: boolean;
 }
 
 const USER_TYPES = [
@@ -49,12 +50,9 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, user_type, created_at, phone')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('admin_list_all_users');
       if (error) throw error;
-      setUsers(data || []);
+      setUsers((data || []) as Profile[]);
     } catch {
       showMessage('error', 'Erreur lors du chargement des utilisateurs');
     } finally {
@@ -349,15 +347,20 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                         <tr key={user.id} className={`hover:bg-gray-50/50 transition ${isSelf ? 'bg-blue-50/30' : ''}`}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${user.has_profile === false ? 'bg-gradient-to-br from-gray-300 to-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
                                 {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || '?'}
                               </div>
                               <div>
                                 <p className="font-semibold text-gray-900 text-sm">
-                                  {user.full_name || 'Sans nom'}
+                                  {user.full_name || <span className="text-gray-400 font-normal italic">Sans nom</span>}
                                   {isSelf && <span className="ml-2 text-xs text-blue-600 font-normal">(vous)</span>}
                                 </p>
-                                {user.phone && <p className="text-xs text-gray-400">{user.phone}</p>}
+                                {user.has_profile === false && (
+                                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                                    <AlertCircle className="w-3 h-3" />Profil incomplet
+                                  </span>
+                                )}
+                                {user.phone && user.has_profile !== false && <p className="text-xs text-gray-400">{user.phone}</p>}
                               </div>
                             </div>
                           </td>
