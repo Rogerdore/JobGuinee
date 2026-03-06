@@ -343,10 +343,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+      if (
+        error.message.includes('already registered') ||
+        error.message.includes('User already registered') ||
+        error.message.includes('Database error finding user') ||
+        error.message.includes('Database error')
+      ) {
         throw new Error('ACCOUNT_INCOMPLETE');
       }
-      if (error.message.includes('Password')) {
+      if (error.message.includes('Password') || error.message.includes('password')) {
         throw new Error('WEAK_PASSWORD');
       }
       throw error;
