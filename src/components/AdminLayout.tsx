@@ -159,21 +159,13 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       ]
     },
     {
-      id: 'email-engine',
-      label: 'Moteur Email',
-      icon: Mail,
-      badge: 'SendGrid',
-      children: [
-        { id: 'email-config', label: 'Configuration & Providers', icon: Settings, route: 'admin-email-config' },
-        { id: 'email-templates', label: 'Templates Emails', icon: FileText, route: 'admin-email-templates' },
-        { id: 'email-test', label: 'Tester l\'envoi', icon: Send, route: 'admin-test-email' }
-      ]
-    },
-    {
       id: 'notifications',
-      label: 'Notifications',
+      label: 'Notifications & Emails',
       icon: Bell,
       children: [
+        { id: 'email-config', label: 'Moteur Email', icon: Mail, route: 'admin-email-config' },
+        { id: 'email-templates', label: 'Templates Emails', icon: FileText, route: 'admin-email-templates' },
+        { id: 'email-test', label: 'Tester l\'envoi', icon: Send, route: 'admin-test-email' },
         { id: 'recruiter-notifs', label: 'Notifications Recruteurs', icon: Bell, route: 'admin-recruiter-notifications' },
         { id: 'communications', label: 'Communications', icon: MessageCircle, route: 'admin-communications' },
         { id: 'comm-create', label: 'Créer Communication', icon: Send, route: 'admin-communication-create' },
