@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Users, Shield, UserCog, Search, AlertCircle, CheckCircle, X,
   ArrowLeft, Home, ChevronRight, Trash2, UserPlus, RefreshCw,
-  Crown, Send, Mail, ExternalLink
+  Crown, Send, Mail, ExternalLink, UserCheck, UserX
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,6 +19,8 @@ interface Profile {
   created_at: string;
   phone?: string;
   has_profile?: boolean;
+  profile_completion_percentage?: number;
+  profile_completed?: boolean;
 }
 
 const USER_TYPES = [
@@ -27,6 +29,31 @@ const USER_TYPES = [
   { value: 'trainer',   label: 'Formateur',       color: 'bg-orange-100 text-orange-700 border-orange-200' },
   { value: 'admin',     label: 'Administrateur',  color: 'bg-red-100 text-red-700 border-red-200' },
 ];
+
+function CompletionBar({ pct, completed }: { pct: number; completed: boolean }) {
+  const color =
+    completed ? 'bg-green-500' :
+    pct >= 75  ? 'bg-blue-500' :
+    pct >= 40  ? 'bg-amber-500' :
+                 'bg-red-400';
+  const label =
+    completed ? 'text-green-700' :
+    pct >= 75  ? 'text-blue-700' :
+    pct >= 40  ? 'text-amber-700' :
+                 'text-red-600';
+
+  return (
+    <div className="flex items-center gap-2 min-w-[110px]">
+      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${color}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+      </div>
+      <span className={`text-xs font-semibold tabular-nums ${label}`}>{pct}%</span>
+    </div>
+  );
+}
 
 export default function UserManagement({ onNavigate }: UserManagementProps) {
   const { isAdmin, user: currentUser } = useAuth();
@@ -190,6 +217,9 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
     return acc;
   }, {} as Record<string, number>);
 
+  const withProfileCount = users.filter(u => u.has_profile).length;
+  const withoutProfileCount = users.filter(u => !u.has_profile).length;
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center py-12">
@@ -268,21 +298,40 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {/* Stats cards */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
             {USER_TYPES.map(type => (
-              <div key={type.value} className="neo-clay-card rounded-xl p-4 flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${type.color.split(' ').slice(0, 2).join(' ')}`}>
-                  {type.value === 'admin'     && <Crown className="w-5 h-5" />}
-                  {type.value === 'recruiter' && <UserCog className="w-5 h-5" />}
-                  {type.value === 'trainer'   && <Shield className="w-5 h-5" />}
-                  {type.value === 'candidate' && <Users className="w-5 h-5" />}
+              <div key={type.value} className="neo-clay-card rounded-xl p-4 flex items-center gap-3 col-span-1">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${type.color.split(' ').slice(0, 2).join(' ')}`}>
+                  {type.value === 'admin'     && <Crown className="w-4 h-4" />}
+                  {type.value === 'recruiter' && <UserCog className="w-4 h-4" />}
+                  {type.value === 'trainer'   && <Shield className="w-4 h-4" />}
+                  {type.value === 'candidate' && <Users className="w-4 h-4" />}
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{userCounts[type.value] || 0}</p>
-                  <p className="text-xs text-gray-500">{type.label}{(userCounts[type.value] || 0) > 1 ? 's' : ''}</p>
+                  <p className="text-xs text-gray-500 leading-tight">{type.label}{(userCounts[type.value] || 0) > 1 ? 's' : ''}</p>
                 </div>
               </div>
             ))}
+            <div className="neo-clay-card rounded-xl p-4 flex items-center gap-3 col-span-1">
+              <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                <UserCheck className="w-4 h-4 text-green-700" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{withProfileCount}</p>
+                <p className="text-xs text-gray-500 leading-tight">Avec profil</p>
+              </div>
+            </div>
+            <div className="neo-clay-card rounded-xl p-4 flex items-center gap-3 col-span-1">
+              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                <UserX className="w-4 h-4 text-amber-700" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{withoutProfileCount}</p>
+                <p className="text-xs text-gray-500 leading-tight">Sans profil</p>
+              </div>
+            </div>
           </div>
 
           <div className="neo-clay-card rounded-2xl p-6 mb-6">
@@ -332,6 +381,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Utilisateur</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Rôle actuel</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Profil</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Complétion</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Inscription</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Changer le rôle</th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Supprimer</th>
@@ -343,11 +394,15 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                       const isSelf = user.id === currentUser?.id;
                       const isUpdating = updatingUserId === user.id;
                       const isDeleting = deletingUserId === user.id;
+                      const hasProfile = user.has_profile !== false;
+                      const pct = user.profile_completion_percentage ?? 0;
+                      const completed = user.profile_completed ?? false;
+
                       return (
-                        <tr key={user.id} className={`hover:bg-gray-50/50 transition ${isSelf ? 'bg-blue-50/30' : ''}`}>
+                        <tr key={user.id} className={`hover:bg-gray-50/50 transition ${isSelf ? 'bg-blue-50/30' : ''} ${!hasProfile ? 'bg-amber-50/20' : ''}`}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${user.has_profile === false ? 'bg-gradient-to-br from-gray-300 to-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${!hasProfile ? 'bg-gradient-to-br from-gray-300 to-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
                                 {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || '?'}
                               </div>
                               <div>
@@ -355,12 +410,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                                   {user.full_name || <span className="text-gray-400 font-normal italic">Sans nom</span>}
                                   {isSelf && <span className="ml-2 text-xs text-blue-600 font-normal">(vous)</span>}
                                 </p>
-                                {user.has_profile === false && (
-                                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
-                                    <AlertCircle className="w-3 h-3" />Profil incomplet
-                                  </span>
-                                )}
-                                {user.phone && user.has_profile !== false && <p className="text-xs text-gray-400">{user.phone}</p>}
+                                {user.phone && hasProfile && <p className="text-xs text-gray-400">{user.phone}</p>}
                               </div>
                             </div>
                           </td>
@@ -371,6 +421,36 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                               {typeInfo.label}
                             </span>
                           </td>
+
+                          {/* Colonne Profil */}
+                          <td className="px-6 py-4">
+                            {hasProfile ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                <UserCheck className="w-3 h-3" />
+                                Oui
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                                <UserX className="w-3 h-3" />
+                                Non
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Colonne Complétion */}
+                          <td className="px-6 py-4">
+                            {hasProfile ? (
+                              <div className="flex flex-col gap-1">
+                                <CompletionBar pct={pct} completed={completed} />
+                                {completed && (
+                                  <span className="text-xs text-green-600 font-medium">Complet</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400 italic">—</span>
+                            )}
+                          </td>
+
                           <td className="px-6 py-4 text-sm text-gray-500">
                             {new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </td>
