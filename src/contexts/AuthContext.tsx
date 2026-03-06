@@ -255,15 +255,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // L'email de bienvenue est envoyé via le service SMTP custom
   };
 
-  const sendConfirmationEmail = async (userId: string, confirmationLink: string) => {
-    try {
-      await supabase.rpc('send_signup_confirmation_email', {
-        p_user_id: userId,
-        p_confirmation_link: confirmationLink,
-      });
-    } catch {
-      // Non-bloquant
-    }
+  // Confirmation email is sent natively by Supabase Auth via emailRedirectTo.
+  // This function is kept as a no-op to avoid breaking call sites.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const sendConfirmationEmail = async (_userId: string, _confirmationLink: string) => {
+    // Supabase sends the confirmation email automatically with the correct token.
+    // Do NOT send a duplicate via our custom system — the link would be invalid.
   };
 
   const sendWelcomeConfirmedEmail = async (userId: string, fullName: string, userType: string) => {
