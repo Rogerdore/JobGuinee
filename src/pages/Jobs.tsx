@@ -179,11 +179,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   };
 
   const filteredJobs = jobs.filter((job) => {
+    const companyDisplayName = job.companies?.name || (job as any).company_name || '';
     const matchesSearch =
       !searchQuery ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.companies?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      companyDisplayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.keywords?.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesLocation = !location || job.location?.toLowerCase().includes(location.toLowerCase());
@@ -192,7 +193,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     const matchesExperience = !experienceLevel || job.experience_level === experienceLevel;
     const matchesEducation = !educationLevel || job.education_level === educationLevel;
     const matchesNationality = !nationalityRequired || job.nationality_required === nationalityRequired || job.nationality_required === 'Tous';
-    const matchesSalary = !salaryMin || (job.salary_min && job.salary_min >= Number(salaryMin));
+    const matchesSalary = !salaryMin;
 
     let matchesDate = true;
     if (datePosted) {
@@ -216,7 +217,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     } else if (sortBy === 'views') {
       return b.views_count - a.views_count;
     } else if (sortBy === 'salary') {
-      return (b.salary_max || 0) - (a.salary_max || 0);
+      const aRange = (a as any).salary_range || '';
+      const bRange = (b as any).salary_range || '';
+      return bRange.localeCompare(aRange);
     } else if (sortBy === 'relevance') {
       return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
     }
@@ -249,17 +252,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   };
 
-  const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return 'À négocier';
-    const format = (val: number) => {
-      if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
-      if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
-      return val.toString();
-    };
-
-    if (min && max) return `${format(min)} - ${format(max)} GNF`;
-    if (min) return `À partir de ${format(min)} GNF`;
-    return `Jusqu'à ${format(max!)} GNF`;
+  const formatSalary = (salaryRange?: string) => {
+    if (!salaryRange) return 'À négocier';
+    return salaryRange;
   };
 
   const nextTestimonial = () => {
@@ -598,11 +593,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
                         <div className="flex items-center gap-2 mb-2">
                           <CompanyLogoWithIcon
-                            logoUrl={job.companies?.logo_url}
-                            companyName={job.companies?.name || 'Entreprise'}
+                            logoUrl={job.companies?.logo_url || job.company_logo_url}
+                            companyName={job.companies?.name || (job as any).company_name || 'Entreprise'}
                             size="sm"
                           />
-                          <span className="font-semibold text-gray-800">{job.companies?.name}</span>
+                          <span className="font-semibold text-gray-800">{job.companies?.name || (job as any).company_name}</span>
                         </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
@@ -641,9 +636,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                           {job.education_level}
                         </span>
                       )}
-                      {job.diploma_required && (
+                      {(job as any).primary_qualification && (
                         <span className="px-3 py-1.5 bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 text-xs font-semibold rounded-lg border border-teal-200 flex items-center gap-1">
-                          📜 {job.diploma_required}
+                          {(job as any).primary_qualification}
                         </span>
                       )}
                     </div>
@@ -652,7 +647,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1.5 text-[#FF8C00] font-bold">
                           <DollarSign className="w-5 h-5" />
-                          <span className="text-base">{formatSalary(job.salary_min, job.salary_max)}</span>
+                          <span className="text-base">{formatSalary((job as any).salary_range)}</span>
                         </div>
                       </div>
 
