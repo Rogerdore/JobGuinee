@@ -173,7 +173,7 @@ export default function SolutionCabinets({ onNavigate = () => {} }: SolutionCabi
               </p>
               <p className="text-lg text-gray-700 leading-relaxed">
                 <strong>Problématiques courantes :</strong> Gestion manuelle fastidieuse, base candidats limitée,
-                difficulté à scaler l'activité, manque d'outils modernes, image pas assez professionnelle,
+                difficulté à scaler l'activité, manque d\'outils modernes, image pas assez professionnelle,
                 concurrence d'autres cabinets mieux équipés.
               </p>
             </div>

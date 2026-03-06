@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Mail, Plus, Edit2, Trash2, Check, X, Save, Eye, EyeOff, Copy } from 'lucide-react';
+import { Mail, Plus, CreditCard as Edit2, Trash2, Check, X, Save, Eye, EyeOff, Copy } from 'lucide-react';
 import { useModalContext } from '../contexts/ModalContext';
 
 interface EmailTemplate {

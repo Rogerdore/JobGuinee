@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Users, CheckCircle, XCircle, Clock, TrendingUp, Mail, Phone,
-  Building2, MessageSquare, User, Calendar, Eye, Edit, Save, X,
-  ToggleLeft, ToggleRight, Globe, FileText, HelpCircle, Bell
-} from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, TrendingUp, Mail, Phone, Building2, MessageSquare, User, Calendar, Eye, CreditCard as Edit, Save, X, ToggleLeft, ToggleRight, Globe, FileText, HelpCircle, Bell } from 'lucide-react';
 import { b2bLeadsService, B2BLead, B2BPageConfig } from '../services/b2bLeadsService';
 import { supabase } from '../lib/supabase';
 
