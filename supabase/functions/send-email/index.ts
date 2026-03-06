@@ -11,6 +11,7 @@ const corsHeaders = {
 const SITE_URL = "https://www.jobguinee.com";
 const UNSUBSCRIBE_URL = `${SITE_URL}/unsubscribe`;
 const FROM_DOMAIN = "jobguinee-pro.com";
+const NOREPLY_EMAIL = `noreply@${FROM_DOMAIN}`;
 
 interface EmailRequest {
   to: string;
