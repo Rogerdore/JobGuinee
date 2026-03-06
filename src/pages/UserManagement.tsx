@@ -96,15 +96,15 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
     }
     setUpdatingUserId(userId);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ user_type: newType })
-        .eq('id', userId);
+      const { error } = await supabase.rpc('admin_update_user_type', {
+        target_user_id: userId,
+        new_type: newType,
+      });
       if (error) throw error;
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, user_type: newType } : u));
       showMessage('success', 'Rôle mis à jour avec succès');
-    } catch {
-      showMessage('error', 'Erreur lors de la modification du rôle');
+    } catch (err: any) {
+      showMessage('error', err.message?.includes('admin required') ? 'Droits administrateur requis' : 'Erreur lors de la modification du rôle');
     } finally {
       setUpdatingUserId(null);
     }
