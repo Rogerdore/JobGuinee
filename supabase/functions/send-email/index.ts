@@ -8,12 +8,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+const SITE_URL = "https://www.jobguinee.com";
+const UNSUBSCRIBE_URL = `${SITE_URL}/unsubscribe`;
+const FROM_DOMAIN = "jobguinee-pro.com";
+
 interface EmailRequest {
   to: string;
   toName?: string;
   subject: string;
   htmlBody: string;
   textBody?: string;
+  category?: string;
+}
+
+function buildUnsubscribeFooter(recipientEmail: string): string {
+  const encodedEmail = encodeURIComponent(recipientEmail);
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;border-top:1px solid #e2e8f0;">
+  <tr>
+    <td style="padding:20px 0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;color:#94a3b8;line-height:1.6;">
+      <p style="margin:0 0 8px 0;">Vous recevez cet email car vous avez un compte sur JobGuinée.</p>
+      <p style="margin:0;">
+        JobGuinée — Conakry, Guinée &nbsp;|&nbsp;
+        <a href="${UNSUBSCRIBE_URL}?email=${encodedEmail}" style="color:#64748b;text-decoration:underline;">Se désabonner</a>
+        &nbsp;|&nbsp;
+        <a href="${SITE_URL}/privacy" style="color:#64748b;text-decoration:underline;">Politique de confidentialité</a>
+      </p>
+    </td>
+  </tr>
+</table>`;
+}
+
+function injectFooterIntoHtml(html: string, recipientEmail: string): string {
+  const footer = buildUnsubscribeFooter(recipientEmail);
+  const bodyCloseIndex = html.lastIndexOf("</body>");
+  if (bodyCloseIndex !== -1) {
+    return html.slice(0, bodyCloseIndex) + footer + html.slice(bodyCloseIndex);
+  }
+  return html + footer;
 }
 
 async function sendViaSendGrid(
@@ -23,7 +55,11 @@ async function sendViaSendGrid(
   const apiKey = config.api_key as string;
   if (!apiKey) throw new Error("SendGrid API key not configured");
 
-  const payload = {
+  const htmlWithFooter = injectFooterIntoHtml(emailRequest.htmlBody, emailRequest.to);
+  const textBody = emailRequest.textBody ||
+    emailRequest.htmlBody.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  const payload: Record<string, unknown> = {
     personalizations: [
       {
         to: emailRequest.toName
@@ -36,19 +72,27 @@ async function sendViaSendGrid(
       email: config.from_email as string,
       name: config.from_name as string,
     },
+    reply_to: {
+      email: `contact@${FROM_DOMAIN}`,
+      name: config.from_name as string,
+    },
     content: [
-      {
-        type: "text/html",
-        value: emailRequest.htmlBody,
-      },
+      { type: "text/plain", value: textBody },
+      { type: "text/html", value: htmlWithFooter },
     ],
+    headers: {
+      "List-Unsubscribe": `<${UNSUBSCRIBE_URL}?email=${encodeURIComponent(emailRequest.to)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "X-Entity-Ref-ID": `jobguinee-${Date.now()}`,
+    },
+    tracking_settings: {
+      click_tracking: { enable: false },
+      open_tracking: { enable: false },
+    },
   };
 
-  if (emailRequest.textBody) {
-    (payload.content as Array<{ type: string; value: string }>).unshift({
-      type: "text/plain",
-      value: emailRequest.textBody,
-    });
+  if (emailRequest.category) {
+    (payload as Record<string, unknown>).categories = [emailRequest.category, "jobguinee"];
   }
 
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -83,16 +127,23 @@ async function sendViaSmtp(
     },
   });
 
+  const htmlWithFooter = injectFooterIntoHtml(emailRequest.htmlBody, emailRequest.to);
+  const textBody = emailRequest.textBody ||
+    emailRequest.htmlBody.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
   const info = await transporter.sendMail({
     from: `${config.from_name} <${config.from_email}>`,
+    replyTo: `contact@${FROM_DOMAIN}`,
     to: emailRequest.toName
       ? `${emailRequest.toName} <${emailRequest.to}>`
       : emailRequest.to,
     subject: emailRequest.subject,
-    text:
-      emailRequest.textBody ||
-      emailRequest.htmlBody.replace(/<[^>]*>/g, ""),
-    html: emailRequest.htmlBody,
+    text: textBody,
+    html: htmlWithFooter,
+    headers: {
+      "List-Unsubscribe": `<${UNSUBSCRIBE_URL}?email=${encodeURIComponent(emailRequest.to)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   });
 
   return { messageId: info.messageId };
@@ -106,8 +157,13 @@ async function sendViaMailgun(
   const domain = config.mailgun_domain as string;
   if (!apiKey || !domain) throw new Error("Mailgun API key or domain not configured");
 
+  const htmlWithFooter = injectFooterIntoHtml(emailRequest.htmlBody, emailRequest.to);
+  const textBody = emailRequest.textBody ||
+    emailRequest.htmlBody.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
   const formData = new FormData();
   formData.append("from", `${config.from_name} <${config.from_email}>`);
+  formData.append("h:Reply-To", `contact@${FROM_DOMAIN}`);
   formData.append(
     "to",
     emailRequest.toName
@@ -115,8 +171,10 @@ async function sendViaMailgun(
       : emailRequest.to
   );
   formData.append("subject", emailRequest.subject);
-  formData.append("html", emailRequest.htmlBody);
-  if (emailRequest.textBody) formData.append("text", emailRequest.textBody);
+  formData.append("html", htmlWithFooter);
+  formData.append("text", textBody);
+  formData.append("h:List-Unsubscribe", `<${UNSUBSCRIBE_URL}?email=${encodeURIComponent(emailRequest.to)}>`);
+  formData.append("h:List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
 
   const response = await fetch(
     `https://api.mailgun.net/v3/${domain}/messages`,
