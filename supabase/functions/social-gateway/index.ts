@@ -174,7 +174,9 @@ Deno.serve(async (req: Request) => {
 
   try {
     const url = new URL(req.url);
-    const jobId = url.searchParams.get("job_id");
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const lastPathSegment = pathParts[pathParts.length - 1];
+    const jobId = url.searchParams.get("job_id") || (lastPathSegment !== "social-gateway" ? lastPathSegment : null);
     const userAgent = req.headers.get("user-agent") || "";
 
     if (!jobId) {
@@ -189,7 +191,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: job } = await supabase
       .from("jobs")
-      .select("id, title, location, contract_type, sector, description, company_id, company_name, og_image_url, featured_image_url, company_logo_url, is_urgent, is_featured")
+      .select("id, title, location, contract_type, sector, description, experience_level, keywords, company_id, company_name, og_image_url, featured_image_url, company_logo_url, is_urgent, is_featured")
       .eq("id", jobId)
       .maybeSingle();
 
