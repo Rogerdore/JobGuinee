@@ -289,7 +289,7 @@ const AdminJobCreate: React.FC<Props> = ({ onNavigate }) => {
         publication_source: formData.publication_source,
         application_mode: formData.application_mode,
         admin_notes: formData.admin_notes,
-        status: 'active',
+        status: 'published',
         is_visible: true
       };
 
