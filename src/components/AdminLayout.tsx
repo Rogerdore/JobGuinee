@@ -166,6 +166,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         { id: 'email-config', label: 'Moteur Email', icon: Mail, route: 'admin-email-config' },
         { id: 'email-templates', label: 'Templates Emails', icon: FileText, route: 'admin-email-templates' },
         { id: 'email-test', label: 'Tester l\'envoi', icon: Send, route: 'admin-test-email' },
+        { id: 'email-events', label: 'Événements Email', icon: Zap, route: 'admin-email-events' },
         { id: 'recruiter-notifs', label: 'Notifications Recruteurs', icon: Bell, route: 'admin-recruiter-notifications' },
         { id: 'communications', label: 'Communications', icon: MessageCircle, route: 'admin-communications' },
         { id: 'comm-create', label: 'Créer Communication', icon: Send, route: 'admin-communication-create' },
