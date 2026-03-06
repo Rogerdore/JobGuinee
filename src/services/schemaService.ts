@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 export interface SchemaData {
   id: string;
@@ -80,7 +81,9 @@ class SchemaService {
       '@context': 'https://schema.org',
       '@type': 'JobPosting',
       'title': job.title,
-      'description': job.description || job.title,
+      'description': job.description
+        ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        : generateJobCardDescription(job),
       'datePosted': job.created_at,
       'validThrough': job.deadline || job.application_deadline,
       'employmentType': this.mapContractType(job.contract_type),

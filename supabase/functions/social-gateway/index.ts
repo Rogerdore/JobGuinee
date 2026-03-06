@@ -61,6 +61,36 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function generateJobCardDescription(job: Record<string, any>, companyName: string): string {
+  const title = job.title || "Offre d'emploi";
+  const location = job.location || "";
+  const domain = job.sector || "le domaine concerné";
+
+  const expLevel: string = job.experience_level || "";
+  const experienceMatch = expLevel ? expLevel.match(/(\d+)/) : null;
+  const experienceYears = experienceMatch ? experienceMatch[1] : null;
+
+  const allSkills: string[] = Array.isArray(job.keywords) ? job.keywords : [];
+  const topSkills = allSkills.slice(0, 5);
+
+  const parts: string[] = [];
+  if (location) {
+    parts.push(`Nous recrutons un(e) ${title} à ${location}.`);
+  } else {
+    parts.push(`Nous recrutons un(e) ${title}.`);
+  }
+  if (experienceYears) {
+    parts.push(`Profil recherché : minimum ${experienceYears} ans d'expérience en ${domain}.`);
+  }
+  if (topSkills.length > 0) {
+    parts.push(`Compétences clés : ${topSkills.join(", ")}.`);
+  }
+  parts.push("Consultez l'offre sur JobGuinee.");
+
+  const full = parts.join(" ");
+  return full.length > 200 ? full.substring(0, 197) + "..." : full;
+}
+
 async function ensureOgImage(
   supabase: ReturnType<typeof createClient>,
   jobId: string,
@@ -199,26 +229,7 @@ Deno.serve(async (req: Request) => {
     const jobTitle = job.title || "Offre d'emploi";
     const titleWithCompany = companyName ? `${jobTitle} – ${companyName}` : jobTitle;
 
-    const rawDesc = job.description ? stripHtml(job.description) : "";
-    const contextParts: string[] = [];
-    if (companyName) contextParts.push(companyName);
-    if (job.location) contextParts.push(job.location);
-    if (job.contract_type) contextParts.push(job.contract_type);
-
-    let description = "";
-    if (rawDesc) {
-      const truncated = rawDesc.length > 160 ? rawDesc.substring(0, 157) + "..." : rawDesc;
-      description = contextParts.length > 0
-        ? `${contextParts.join(" • ")} — ${truncated}`
-        : truncated;
-    } else {
-      description = contextParts.length > 0
-        ? `${contextParts.join(" • ")} — Postulez maintenant sur ${siteName}`
-        : `Découvrez cette opportunité d'emploi sur ${siteName}`;
-    }
-    if (description.length > 200) {
-      description = description.substring(0, 197) + "...";
-    }
+    const description = generateJobCardDescription(job, companyName);
 
     if (!isCrawler(userAgent)) {
       return new Response(

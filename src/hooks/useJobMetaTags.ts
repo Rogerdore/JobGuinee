@@ -12,9 +12,11 @@ export const useJobMetaTags = (job: (Job & { companies?: Company }) | null) => {
       const meta = generateJobShareMeta({
         id: job.id,
         title: job.title,
-        description: job.description || undefined,
         location: job.location || undefined,
         contract_type: job.contract_type || undefined,
+        sector: job.sector || undefined,
+        experience_level: job.experience_level || undefined,
+        keywords: Array.isArray(job.keywords) ? job.keywords : undefined,
         og_image_url: (job as any).og_image_url || undefined,
         featured_image_url: job.featured_image_url || undefined,
         company_logo_url: job.company_logo_url || undefined,

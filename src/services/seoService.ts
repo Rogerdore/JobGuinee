@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 export interface SEOConfig {
   id: string;
@@ -366,7 +367,7 @@ class SEOService {
         'guinée'
       ],
       og_title: `${jobTitle} - ${companyName}`,
-      og_description: job.description?.substring(0, 200) || '',
+      og_description: generateJobCardDescription(job),
       og_type: 'article',
       canonical_url: `/job-detail/${job.id}`,
       robots: 'index, follow',

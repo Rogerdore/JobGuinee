@@ -66,7 +66,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const metadata = generateJobMetadata(job as JobData);
+    const jobCompany = (job as any).company_name || (job as any).companies?.name || "";
+    const metadata = generateJobMetadata(job as JobData, jobCompany);
     // Cascade de préférence pour l'image OG
     let ogImage = "https://jobguinee-pro.com/assets/share/default-job.png";
 
@@ -102,34 +103,43 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-function generateJobMetadata(job: JobData) {
+function generateJobCardDescription(job: JobData, companyName: string): string {
+  const title = job.title || "Offre d'emploi";
+  const location = (job as any).location || "";
+  const domain = (job as any).sector || "le domaine concerné";
+
+  const expLevel: string = (job as any).experience_level || "";
+  const experienceMatch = expLevel ? expLevel.match(/(\d+)/) : null;
+  const experienceYears = experienceMatch ? experienceMatch[1] : null;
+
+  const rawKeywords = (job as any).keywords;
+  const allSkills: string[] = Array.isArray(rawKeywords) ? rawKeywords : [];
+  const topSkills = allSkills.slice(0, 5);
+
+  const parts: string[] = [];
+  if (location) {
+    parts.push(`Nous recrutons un(e) ${title} à ${location}.`);
+  } else {
+    parts.push(`Nous recrutons un(e) ${title}.`);
+  }
+  if (experienceYears) {
+    parts.push(`Profil recherché : minimum ${experienceYears} ans d'expérience en ${domain}.`);
+  }
+  if (topSkills.length > 0) {
+    parts.push(`Compétences clés : ${topSkills.join(", ")}.`);
+  }
+  parts.push("Consultez l'offre sur JobGuinee.");
+
+  const full = parts.join(" ");
+  return full.length > 200 ? full.substring(0, 197) + "..." : full;
+}
+
+function generateJobMetadata(job: JobData, companyName: string) {
   const baseUrl = "https://jobguinee-pro.com";
   const jobTitle = job.title || "Offre d'emploi";
-  const company = job.company_name || job.company || "Entreprise";
-  const location = job.location || "Guinée";
-  const contractType = job.contract_type || "CDI";
+  const company = companyName || job.company_name || job.company || "Entreprise";
 
-  // Nettoyer la description: enlever HTML et résumer
-  let description = "Découvrez cette opportunité professionnelle sur JobGuinée";
-
-  if (job.description) {
-    // Enlever les balises HTML
-    const cleanedDesc = job.description
-      .replace(/<[^>]*>/g, "")
-      .replace(/&nbsp;/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // Couper à 220 caractères et ajouter l'appel à action
-    if (cleanedDesc.length > 220) {
-      description = cleanedDesc.substring(0, 217) + "... – Postulez via JobGuinée";
-    } else if (cleanedDesc.length > 0) {
-      description = cleanedDesc + " – Postulez via JobGuinée";
-    }
-  } else {
-    // Fallback si pas de description
-    description = `${contractType} à ${location} • Rejoins ${company} – Postulez via JobGuinée`;
-  }
+  const description = generateJobCardDescription(job, company);
 
   return {
     title: `${jobTitle} – ${company}`,
