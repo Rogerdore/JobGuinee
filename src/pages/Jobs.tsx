@@ -11,6 +11,7 @@ import JobCommentsModal from '../components/jobs/JobCommentsModal';
 import JobCardStats from '../components/jobs/JobCardStats';
 import JobCardActions from '../components/jobs/JobCardActions';
 import { useRealtimeJobUpdates } from '../hooks/useRealtimeJobUpdates';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -612,11 +613,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                       </div>
                     </div>
 
-                    {job.description && (
-                      <p className="text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed">
-                        {job.description}
-                      </p>
-                    )}
+                    <p className="text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed">
+                      {generateJobCardDescription(job)}
+                    </p>
 
                     <div className="flex flex-wrap gap-2 mb-4">
                       {job.contract_type && (

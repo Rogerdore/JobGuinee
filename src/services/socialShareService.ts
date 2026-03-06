@@ -1,4 +1,5 @@
 import { Job } from '../lib/supabase';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 export interface SocialShareMetadata {
   title: string;
@@ -41,35 +42,15 @@ export const socialShareService = {
   },
 
   generateDescription(job: Partial<Job> & { companies?: any }): string {
-    const contextParts: string[] = [];
-    const company = (job as any).company_name || job.companies?.name || '';
-
-    if (company) contextParts.push(company);
-    if (job.location) contextParts.push(job.location);
-    if (job.contract_type) contextParts.push(job.contract_type);
-    if ((job as any).salary_range) contextParts.push(`Salaire: ${(job as any).salary_range}`);
-
-    const rawDesc = job.description
-      ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-      : '';
-
-    let description = '';
-    if (rawDesc) {
-      const truncated = rawDesc.length > 160 ? rawDesc.substring(0, 157) + '...' : rawDesc;
-      description = contextParts.length > 0
-        ? `${contextParts.join(' • ')} — ${truncated}`
-        : truncated;
-    } else {
-      description = contextParts.length > 0
-        ? `${contextParts.join(' • ')} — Postulez maintenant sur JobGuinée`
-        : 'Découvrez cette opportunité d\'emploi en Guinée sur JobGuinée, la première plateforme de recrutement professionnelle du pays.';
-    }
-
-    if (description.length > 200) {
-      description = description.substring(0, 197) + '...';
-    }
-
-    return description;
+    return generateJobCardDescription({
+      title: job.title || 'Offre d\'emploi',
+      location: job.location,
+      experience_level: job.experience_level,
+      sector: job.sector,
+      keywords: job.keywords,
+      company_name: (job as any).company_name || job.companies?.name,
+      companies: job.companies,
+    });
   },
 
   getJobShareImage(job: Partial<Job> & { companies?: any }): string {

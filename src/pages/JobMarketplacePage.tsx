@@ -4,6 +4,7 @@ import { seoMarketplaceService, MarketplacePage } from '../services/seoMarketpla
 import { seoService } from '../services/seoService';
 import { schemaService } from '../services/schemaService';
 import { supabase } from '../lib/supabase';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 interface Job {
   id: string;
@@ -15,6 +16,8 @@ interface Job {
   salary_min?: number;
   salary_max?: number;
   description?: string;
+  experience_level?: string;
+  keywords?: string[];
   created_at: string;
   companies?: {
     name: string;
@@ -289,11 +292,9 @@ export default function JobMarketplacePage({ slug, onNavigate }: JobMarketplaceP
                         )}
                       </div>
 
-                      {job.description && (
-                        <p className="text-gray-600 mt-3 line-clamp-2">
-                          {job.description.replace(/<[^>]*>/g, '').substring(0, 200)}...
-                        </p>
-                      )}
+                      <p className="text-gray-600 mt-3 line-clamp-2 text-sm">
+                        {generateJobCardDescription(job)}
+                      </p>
                     </div>
                   </div>
                 </button>

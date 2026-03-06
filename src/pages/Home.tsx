@@ -12,6 +12,7 @@ import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 import VideoGuidesSection from '../components/home/VideoGuidesSection';
 import { savedJobsService } from '../services/savedJobsService';
 import ShareJobModal from '../components/common/ShareJobModal';
@@ -588,6 +589,10 @@ export default function Home({ onNavigate }: HomeProps) {
                       </span>
                     )}
                   </div>
+
+                  <p className="text-gray-600 mb-3 text-xs leading-relaxed line-clamp-2">
+                    {generateJobCardDescription(job)}
+                  </p>
 
                   <div className="space-y-2 mb-4 text-xs text-gray-600">
                     {job.education_level && (

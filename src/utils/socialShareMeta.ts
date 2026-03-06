@@ -2,6 +2,7 @@
  * Utility for generating Open Graph and Social Media meta tags
  * Used for Facebook, LinkedIn, Twitter previews
  */
+import { generateJobCardDescription } from './jobNormalization';
 
 export interface ShareMetaData {
   title: string;
@@ -90,6 +91,9 @@ export const generateJobShareMeta = (job: {
   description?: string;
   location?: string;
   contract_type?: string;
+  sector?: string;
+  experience_level?: string;
+  keywords?: string[];
   companies?: { name: string; logo_url?: string };
   og_image_url?: string;
   featured_image_url?: string;
@@ -98,13 +102,15 @@ export const generateJobShareMeta = (job: {
 }): ShareMetaData => {
   const baseUrl = window.location.origin;
   const company = job.company_name || job.companies?.name || '';
-  const rawDesc = job.description
-    ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-    : '';
-  const contextDesc = [company, job.location, job.contract_type].filter(Boolean).join(' • ');
-  const description = rawDesc
-    ? (rawDesc.length > 160 ? rawDesc.substring(0, 157) + '...' : rawDesc)
-    : (contextDesc || `Opportunité d'emploi en Guinée sur JobGuinée`);
+
+  const description = generateJobCardDescription({
+    title: job.title,
+    location: job.location,
+    experience_level: job.experience_level,
+    sector: job.sector,
+    keywords: job.keywords,
+    company_name: company,
+  });
 
   const image = job.og_image_url
     || job.featured_image_url
