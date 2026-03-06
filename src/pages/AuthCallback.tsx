@@ -13,10 +13,17 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Check both hash params and query params for the callback type
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const type = hashParams.get('type');
+        const searchParams = new URLSearchParams(window.location.search);
 
-        if (type === 'signup') {
+        const type = hashParams.get('type') || searchParams.get('type');
+
+        // Email confirmation link clicked
+        if (type === 'signup' || type === 'email_change') {
+          // Supabase has already updated email_confirmed_at via its own flow.
+          // The handle_user_email_confirmed trigger has created the profile.
+          // Show success screen, then redirect to login.
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('auth');
@@ -24,6 +31,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           return;
         }
 
+        // OAuth callback (Google, etc.)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -36,11 +44,15 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
         const userId = session.user.id;
         const userEmail = session.user.email;
-        const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || userEmail?.split('@')[0] || 'Utilisateur';
+        const fullName = session.user.user_metadata?.full_name
+          || session.user.user_metadata?.name
+          || userEmail?.split('@')[0]
+          || 'Utilisateur';
 
         const pendingRole = localStorage.getItem('pending_oauth_role') as UserRole || 'candidate';
         localStorage.removeItem('pending_oauth_role');
 
+        // Wait for the trigger (handle_new_user) to create the profile for OAuth
         let profileData = null;
         let attempts = 0;
         const maxAttempts = 20;
@@ -62,6 +74,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           attempts++;
         }
 
+        // Fallback: manually create profile if trigger didn't fire
         if (!profileData) {
           const { error: insertError } = await supabase
             .from('profiles')
@@ -70,7 +83,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
               email: userEmail,
               full_name: fullName,
               user_type: pendingRole,
-              credits_balance: 10,
+              credits_balance: 0,
             });
 
           if (insertError && !insertError.message.includes('duplicate')) {
@@ -88,6 +101,16 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           profileData = newProfile;
         }
 
+        // Update user_type to the requested OAuth role if it differs
+        if (profileData && profileData.user_type !== pendingRole) {
+          await supabase
+            .from('profiles')
+            .update({ user_type: pendingRole })
+            .eq('id', userId);
+          profileData = { ...profileData, user_type: pendingRole };
+        }
+
+        // Create default company for recruiter
         if (pendingRole === 'recruiter' && profileData) {
           const { data: existingCompany } = await supabase
             .from('companies')
@@ -102,10 +125,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
             const { data: newCompany, error: companyError } = await supabase
               .from('companies')
-              .insert({
-                name: companyName,
-                created_by: userId,
-              })
+              .insert({ name: companyName, created_by: userId })
               .select()
               .single();
 
@@ -118,6 +138,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           }
         }
 
+        // Create trainer sub-profile
         if (pendingRole === 'trainer' && profileData) {
           const { data: existingTrainerProfile } = await supabase
             .from('trainer_profiles')
@@ -126,25 +147,23 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
             .maybeSingle();
 
           if (!existingTrainerProfile) {
-            await supabase
-              .from('trainer_profiles')
-              .insert({
-                profile_id: userId,
-                user_id: userId,
-                organization_type: 'individual',
-                experience_years: 0,
-                is_verified: false,
-                rating: 0,
-                total_students: 0
-              });
+            await supabase.from('trainer_profiles').insert({
+              profile_id: userId,
+              user_id: userId,
+              organization_type: 'individual',
+              experience_years: 0,
+              is_verified: false,
+              rating: 0,
+              total_students: 0,
+            });
           }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
         onNavigate('home');
 
       } catch (err: any) {
-        console.error('Error handling OAuth callback:', err);
+        console.error('Error handling auth callback:', err);
         setError(err.message || 'Erreur lors de la connexion');
         setTimeout(() => onNavigate('auth'), 3000);
       }
@@ -162,11 +181,9 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Email confirmé !</h2>
           <p className="text-gray-600 mb-4">
-            Votre compte a été activé avec succès.
+            Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.
           </p>
-          <p className="text-sm text-gray-500">
-            Redirection vers la page de connexion...
-          </p>
+          <p className="text-sm text-gray-500">Redirection vers la page de connexion...</p>
         </div>
       </div>
     );
