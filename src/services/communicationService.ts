@@ -103,6 +103,8 @@ export const communicationService = {
         return { success: false, error: 'Non authentifié' };
       }
 
+      const channel = params.channel || 'notification';
+
       const { data: commLog, error: logError } = await supabase
         .from('communications_log')
         .insert({
@@ -110,10 +112,10 @@ export const communicationService = {
           sender_id: user.id,
           recipient_id: params.recipientId,
           communication_type: params.templateId || 'custom',
-          channel: params.channel || 'notification',
+          channel,
           subject: params.subject,
           message: params.message,
-          status: 'sent',
+          status: channel === 'email' ? 'queued' : 'sent',
           metadata: params.metadata || {}
         })
         .select()
@@ -124,18 +126,45 @@ export const communicationService = {
         return { success: false, error: logError.message };
       }
 
-      const { error: notifError } = await supabase
+      await supabase
         .from('notifications')
         .insert({
-          user_id: params.recipientId,
-          type: 'message',
+          profile_id: params.recipientId,
+          type: 'message_received',
           title: params.subject,
           message: params.message,
-          link: '/candidate-dashboard'
+          metadata: { application_id: params.applicationId }
         });
 
-      if (notifError) {
-        console.error('Error creating notification:', notifError);
+      if (channel === 'email') {
+        const { data: recipientProfile } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', params.recipientId)
+          .maybeSingle();
+
+        if (recipientProfile?.email) {
+          const htmlBody = `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
+              <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:16px;border-radius:8px;margin-bottom:20px">
+                <h2 style="margin:0;color:#1e40af;font-size:18px">${params.subject}</h2>
+              </div>
+              <div style="white-space:pre-line;line-height:1.6;color:#374151">${params.message}</div>
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+              <p style="font-size:12px;color:#9ca3af">JobGuinée – Plateforme emploi &amp; RH en Guinée</p>
+            </div>
+          `;
+
+          await supabase.rpc('queue_email', {
+            p_recipient_email: recipientProfile.email,
+            p_recipient_name: recipientProfile.full_name || '',
+            p_subject: params.subject,
+            p_html_body: htmlBody,
+            p_text_body: params.message,
+            p_template_key: 'message_received',
+            p_metadata: { application_id: params.applicationId, communication_id: commLog?.id }
+          });
+        }
       }
 
       await supabase
@@ -145,9 +174,9 @@ export const communicationService = {
           actor_id: user.id,
           action_type: 'communication_sent',
           metadata: {
-            communication_id: commLog.id,
+            communication_id: commLog?.id,
             subject: params.subject,
-            channel: params.channel || 'notification'
+            channel
           }
         });
 

@@ -320,21 +320,51 @@ export const notificationService = {
   },
 
   async sendEmailNotification(payload: NotificationPayload): Promise<void> {
-    console.log('[EMAIL] Sending to:', payload.recipientId);
-    console.log('[EMAIL] Subject:', payload.title);
-    console.log('[EMAIL] Body:', payload.message);
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', payload.recipientId)
+        .maybeSingle();
 
-    if (payload.applicationId) {
-      await supabase.from('communications_log').insert({
-        application_id: payload.applicationId,
-        sender_id: (await supabase.auth.getUser()).data.user?.id,
-        recipient_id: payload.recipientId,
-        communication_type: payload.type,
-        channel: 'email',
-        subject: payload.title,
-        message: payload.message,
-        status: 'sent'
+      if (!profile?.email) return;
+
+      const htmlBody = `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
+          <div style="background:#f0f9ff;border-left:4px solid #2563eb;padding:16px;border-radius:8px;margin-bottom:16px">
+            <h2 style="margin:0 0 8px;color:#1e40af;font-size:18px">${payload.title}</h2>
+          </div>
+          <div style="white-space:pre-line;line-height:1.6;color:#374151">${payload.message}</div>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+          <p style="font-size:12px;color:#9ca3af">JobGuinée – Plateforme emploi &amp; RH en Guinée</p>
+        </div>
+      `;
+
+      await supabase.rpc('queue_email', {
+        p_recipient_email: profile.email,
+        p_recipient_name: profile.full_name || '',
+        p_subject: payload.title,
+        p_html_body: htmlBody,
+        p_text_body: payload.message,
+        p_template_key: payload.type,
+        p_metadata: payload.metadata || {}
       });
+
+      if (payload.applicationId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('communications_log').insert({
+          application_id: payload.applicationId,
+          sender_id: user?.id,
+          recipient_id: payload.recipientId,
+          communication_type: payload.type,
+          channel: 'email',
+          subject: payload.title,
+          message: payload.message,
+          status: 'queued'
+        });
+      }
+    } catch (error) {
+      console.error('[EMAIL] Error queuing notification email:', error);
     }
   },
 
