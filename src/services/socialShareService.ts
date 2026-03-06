@@ -16,23 +16,18 @@ export interface SocialShareLinks {
   whatsapp: string;
 }
 
-const BASE_URL = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
-const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.svg`;
-const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.svg`;
+const BASE_URL = (import.meta.env.VITE_APP_URL || 'https://jobguinee.com').replace(/\/$/, '');
+const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.png`;
+const DEFAULT_JOB_IMAGE = `${BASE_URL}/logo_jobguinee.png`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
-    // Use Social Gateway /share/{job_id} for robust OG tag serving
-    // This route is handled by the server-side Edge Function
     const jobUrl = `${BASE_URL}/share/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
-    const company = job.company_name || job.company || 'Entreprise';
-    const location = job.location || 'Guinée';
+    const company = job.company_name || (job.companies?.name) || '';
 
-    const title = `${jobTitle} – ${location} | JobGuinée`;
-
+    const title = company ? `${jobTitle} – ${company}` : jobTitle;
     const description = this.generateDescription(job);
-
     const image = this.getJobShareImage(job);
 
     return {
@@ -45,52 +40,29 @@ export const socialShareService = {
     };
   },
 
-  generateDescription(job: Partial<Job>): string {
-    const parts: string[] = [];
+  generateDescription(job: Partial<Job> & { companies?: any }): string {
+    const contextParts: string[] = [];
+    const company = (job as any).company_name || job.companies?.name || '';
 
-    if (job.company_name || job.company) {
-      parts.push(`Recrutement chez ${job.company_name || job.company}`);
-    }
+    if (company) contextParts.push(company);
+    if (job.location) contextParts.push(job.location);
+    if (job.contract_type) contextParts.push(job.contract_type);
+    if ((job as any).salary_range) contextParts.push(`Salaire: ${(job as any).salary_range}`);
 
-    if (job.contract_type) {
-      const contractTypes: Record<string, string> = {
-        'CDI': 'Contrat CDI',
-        'CDD': 'Contrat CDD',
-        'Stage': 'Stage',
-        'Alternance': 'Alternance',
-        'Freelance': 'Freelance',
-        'Interim': 'Intérim'
-      };
-      parts.push(contractTypes[job.contract_type] || job.contract_type);
-    }
+    const rawDesc = job.description
+      ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      : '';
 
-    if (job.location) {
-      parts.push(`à ${job.location}`);
-    }
-
-    if (job.salary_min && job.salary_max) {
-      parts.push(`Salaire: ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()} GNF`);
-    } else if (job.salary_range) {
-      parts.push(`Salaire: ${job.salary_range}`);
-    }
-
-    let description = parts.join(' • ');
-
-    if (job.description) {
-      const cleanDesc = job.description
-        .replace(/<[^>]*>/g, '')
-        .trim()
-        .substring(0, 150);
-
-      if (description) {
-        description += ` | ${cleanDesc}`;
-      } else {
-        description = cleanDesc;
-      }
-    }
-
-    if (!description) {
-      description = 'Découvrez cette opportunité d\'emploi en Guinée sur JobGuinée, la première plateforme de recrutement professionnelle du pays.';
+    let description = '';
+    if (rawDesc) {
+      const truncated = rawDesc.length > 160 ? rawDesc.substring(0, 157) + '...' : rawDesc;
+      description = contextParts.length > 0
+        ? `${contextParts.join(' • ')} — ${truncated}`
+        : truncated;
+    } else {
+      description = contextParts.length > 0
+        ? `${contextParts.join(' • ')} — Postulez maintenant sur JobGuinée`
+        : 'Découvrez cette opportunité d\'emploi en Guinée sur JobGuinée, la première plateforme de recrutement professionnelle du pays.';
     }
 
     if (description.length > 200) {
@@ -103,22 +75,28 @@ export const socialShareService = {
   getJobShareImage(job: Partial<Job> & { companies?: any }): string {
     if (!job || !job.id) return DEFAULT_JOB_IMAGE;
 
-    // Cascade intelligente d'images
-    // 1. Image de mise en avant uploadée par le recruteur
+    // Same cascade as the social-gateway edge function
+    // 1. Pre-generated OG image (best quality, exact 1200x630)
+    if ((job as any).og_image_url) {
+      return (job as any).og_image_url;
+    }
+
+    // 2. Featured image uploaded by the recruiter
     if (job.featured_image_url) {
       return job.featured_image_url;
     }
 
-    // 2. Logo de l'entreprise (prioritaire si disponible)
+    // 3. Company logo URL on the job record
     if (job.company_logo_url) {
       return job.company_logo_url;
     }
 
+    // 4. Logo from linked company
     if (job.companies?.logo_url) {
       return job.companies.logo_url;
     }
 
-    // 3. Logo JobGuinée par défaut
+    // 5. JobGuinée default logo
     return JOBGUINEE_LOGO;
   },
 
@@ -233,30 +211,30 @@ export const socialShareService = {
   async getJobImageWithFallback(job: Partial<Job> & { companies?: any }): Promise<string> {
     if (!job || !job.id) return JOBGUINEE_LOGO;
 
-    // 1. Vérifier l'image de mise en avant
+    // 1. Pre-generated OG image
+    if ((job as any).og_image_url) {
+      const exists = await this.checkImageExists((job as any).og_image_url);
+      if (exists) return (job as any).og_image_url;
+    }
+
+    // 2. Featured image
     if (job.featured_image_url) {
-      const featuredExists = await this.checkImageExists(job.featured_image_url);
-      if (featuredExists) {
-        return job.featured_image_url;
-      }
+      const exists = await this.checkImageExists(job.featured_image_url);
+      if (exists) return job.featured_image_url;
     }
 
-    // 2. Vérifier le logo de l'entreprise (prioritaire)
+    // 3. Company logo on job record
     if (job.company_logo_url) {
-      const companyLogoExists = await this.checkImageExists(job.company_logo_url);
-      if (companyLogoExists) {
-        return job.company_logo_url;
-      }
+      const exists = await this.checkImageExists(job.company_logo_url);
+      if (exists) return job.company_logo_url;
     }
 
+    // 4. Logo from linked company
     if (job.companies?.logo_url) {
-      const companiesLogoExists = await this.checkImageExists(job.companies.logo_url);
-      if (companiesLogoExists) {
-        return job.companies.logo_url;
-      }
+      const exists = await this.checkImageExists(job.companies.logo_url);
+      if (exists) return job.companies.logo_url;
     }
 
-    // 3. Fallback universel : logo JobGuinée
     return JOBGUINEE_LOGO;
   }
 };

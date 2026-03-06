@@ -156,7 +156,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, title, location, contract_type, sector, is_urgent, is_featured, company_logo_url, partner_logo_url, use_profile_logo, company_id")
+      .select("id, title, location, contract_type, sector, is_urgent, is_featured, company_logo_url, partner_logo_url, use_profile_logo, company_id, company_name")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -167,10 +167,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    let companyName = "";
+    let companyName = (job as any).company_name || "";
     let logoUrl: string | null = null;
 
-    if (job.company_id) {
+    if (!companyName && job.company_id) {
       const { data: company } = await supabase
         .from("companies")
         .select("name, logo_url")

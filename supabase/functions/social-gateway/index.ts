@@ -9,6 +9,7 @@ const corsHeaders = {
 
 const CRAWLER_AGENTS = [
   "facebookexternalhit",
+  "facebot",
   "linkedinbot",
   "twitterbot",
   "whatsapp",
@@ -22,6 +23,14 @@ const CRAWLER_AGENTS = [
   "vkshare",
   "w3c_validator",
   "redditbot",
+  "ia_archiver",
+  "embedly",
+  "quora link preview",
+  "showyoubot",
+  "outbrain",
+  "rogerbot",
+  "bufferbot",
+  "bitlybot",
 ];
 
 function isCrawler(userAgent: string): boolean {
@@ -30,17 +39,36 @@ function isCrawler(userAgent: string): boolean {
 }
 
 function escapeHtml(str: string): string {
+  if (!str) return "";
   return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-async function ensureOgImage(supabase: ReturnType<typeof createClient>, jobId: string, supabaseUrl: string): Promise<string | null> {
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function ensureOgImage(
+  supabase: ReturnType<typeof createClient>,
+  jobId: string,
+  supabaseUrl: string
+): Promise<string | null> {
   const { data: job } = await supabase
     .from("jobs")
-    .select("og_image_url")
+    .select("og_image_url, featured_image_url, company_logo_url")
     .eq("id", jobId)
     .maybeSingle();
 
@@ -49,7 +77,25 @@ async function ensureOgImage(supabase: ReturnType<typeof createClient>, jobId: s
       const check = await fetch(job.og_image_url, { method: "HEAD" });
       if (check.ok) return job.og_image_url;
     } catch {
-      // fall through to regenerate
+      // fall through
+    }
+  }
+
+  if (job?.featured_image_url) {
+    try {
+      const check = await fetch(job.featured_image_url, { method: "HEAD" });
+      if (check.ok) return job.featured_image_url;
+    } catch {
+      // fall through
+    }
+  }
+
+  if (job?.company_logo_url) {
+    try {
+      const check = await fetch(job.company_logo_url, { method: "HEAD" });
+      if (check.ok) return job.company_logo_url;
+    } catch {
+      // fall through
     }
   }
 
@@ -83,7 +129,10 @@ async function ensureOgImage(supabase: ReturnType<typeof createClient>, jobId: s
     .from("og-images")
     .getPublicUrl(`jobs/${jobId}.png`);
 
-  await supabase.from("jobs").update({ og_image_url: publicUrl.publicUrl }).eq("id", jobId);
+  await supabase
+    .from("jobs")
+    .update({ og_image_url: publicUrl.publicUrl })
+    .eq("id", jobId);
 
   return publicUrl.publicUrl;
 }
@@ -110,7 +159,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: job } = await supabase
       .from("jobs")
-      .select("id, title, location, contract_type, sector, description, company_id, og_image_url")
+      .select("id, title, location, contract_type, sector, description, company_id, company_name, og_image_url, featured_image_url, company_logo_url, is_urgent, is_featured")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -121,8 +170,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    let companyName = "";
-    if (job.company_id) {
+    let companyName = (job as any).company_name || "";
+    if (!companyName && job.company_id) {
       const { data: company } = await supabase
         .from("companies")
         .select("name")
@@ -145,11 +194,31 @@ Deno.serve(async (req: Request) => {
     const rawSiteUrl = settingsMap["site_url"] || "https://jobguinee.com";
     const siteUrl = rawSiteUrl.startsWith("http") ? rawSiteUrl : `https://${rawSiteUrl}`;
     const jobUrl = `${siteUrl}/jobs/${jobId}`;
+    const shareUrl = `${siteUrl}/share/${jobId}`;
 
-    const titleEscaped = escapeHtml(job.title || "Offre d'emploi");
-    const descRaw = `${companyName ? companyName + " • " : ""}${job.location || ""} • ${job.contract_type || ""} — ${(job.description || "").substring(0, 120)}...`;
-    const descEscaped = escapeHtml(descRaw);
-    const siteNameEscaped = escapeHtml(siteName);
+    const jobTitle = job.title || "Offre d'emploi";
+    const titleWithCompany = companyName ? `${jobTitle} – ${companyName}` : jobTitle;
+
+    const rawDesc = job.description ? stripHtml(job.description) : "";
+    const contextParts: string[] = [];
+    if (companyName) contextParts.push(companyName);
+    if (job.location) contextParts.push(job.location);
+    if (job.contract_type) contextParts.push(job.contract_type);
+
+    let description = "";
+    if (rawDesc) {
+      const truncated = rawDesc.length > 160 ? rawDesc.substring(0, 157) + "..." : rawDesc;
+      description = contextParts.length > 0
+        ? `${contextParts.join(" • ")} — ${truncated}`
+        : truncated;
+    } else {
+      description = contextParts.length > 0
+        ? `${contextParts.join(" • ")} — Postulez maintenant sur ${siteName}`
+        : `Découvrez cette opportunité d'emploi sur ${siteName}`;
+    }
+    if (description.length > 200) {
+      description = description.substring(0, 197) + "...";
+    }
 
     if (!isCrawler(userAgent)) {
       return new Response(
@@ -159,37 +228,47 @@ Deno.serve(async (req: Request) => {
     }
 
     const ogImageUrl = await ensureOgImage(supabase, jobId, supabaseUrl);
+    const fallbackImage = `${siteUrl}/logo_jobguinee.png`;
+    const finalImage = ogImageUrl || fallbackImage;
 
-    const ogImageTag = ogImageUrl
-      ? `<meta property="og:image" content="${escapeHtml(ogImageUrl)}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:type" content="image/png" />
-    <meta name="twitter:image" content="${escapeHtml(ogImageUrl)}" />`
-      : "";
+    const titleEscaped = escapeHtml(titleWithCompany);
+    const descEscaped = escapeHtml(description);
+    const siteNameEscaped = escapeHtml(siteName);
+    const imageEscaped = escapeHtml(finalImage);
+    const jobUrlEscaped = escapeHtml(jobUrl);
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(jobUrl)}" />
+  <meta http-equiv="refresh" content="0;url=${jobUrlEscaped}" />
   <title>${titleEscaped} — ${siteNameEscaped}</title>
 
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="${escapeHtml(jobUrl)}" />
+  <meta property="og:url" content="${jobUrlEscaped}" />
   <meta property="og:title" content="${titleEscaped}" />
   <meta property="og:description" content="${descEscaped}" />
   <meta property="og:site_name" content="${siteNameEscaped}" />
-  ${ogImageTag}
+  <meta property="og:locale" content="fr_GN" />
+  <meta property="og:image" content="${imageEscaped}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="${titleEscaped}" />
 
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${titleEscaped}" />
   <meta name="twitter:description" content="${descEscaped}" />
+  <meta name="twitter:image" content="${imageEscaped}" />
+  <meta name="twitter:image:alt" content="${titleEscaped}" />
 
-  <link rel="canonical" href="${escapeHtml(jobUrl)}" />
+  <meta name="description" content="${descEscaped}" />
+  <link rel="canonical" href="${jobUrlEscaped}" />
 </head>
 <body>
-  <p>Redirection en cours vers <a href="${escapeHtml(jobUrl)}">${titleEscaped}</a>...</p>
+  <p>Redirection en cours vers <a href="${jobUrlEscaped}">${titleEscaped}</a>...</p>
 </body>
 </html>`;
 
@@ -197,7 +276,8 @@ Deno.serve(async (req: Request) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-cache, no-store",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        "Vary": "User-Agent",
       },
     });
   } catch (err) {
