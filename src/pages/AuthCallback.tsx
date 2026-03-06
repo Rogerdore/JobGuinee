@@ -71,7 +71,6 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
               full_name: fullName,
               user_type: pendingRole,
               credits_balance: 10,
-              ai_credits_balance: 5,
             });
 
           if (insertError && !insertError.message.includes('duplicate')) {
