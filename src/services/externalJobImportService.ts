@@ -262,7 +262,7 @@ class ExternalJobImportService {
       'linkedin': ['linkedin.com'],
       'indeed': ['indeed.com'],
       'glassdoor': ['glassdoor.com'],
-      'jobguinee': ['jobguinee.com'],
+      'jobguinee': ['jobguinee-pro.com'],
       'monster': ['monster.com'],
       'careerjet': ['careerjet.com']
     };

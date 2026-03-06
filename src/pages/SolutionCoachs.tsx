@@ -10,7 +10,7 @@ export default function SolutionCoachs({ onNavigate = () => {} }: SolutionCoachs
     title: 'Solutions pour Coachs et Consultants RH en Guinée | JobGuinée',
     description: 'Plateforme pour coachs professionnels et consultants RH : visibilité, gestion clients, services premium, génération leads qualifiés.',
     keywords: 'coach professionnel guinée, consultant rh conakry, coaching carrière guinée, consultant indépendant',
-    canonical: 'https://jobguinee.com/solutions/coachs-consultants'
+    canonical: 'https://jobguinee-pro.com/solutions/coachs-consultants'
   });
 
   const problems = [

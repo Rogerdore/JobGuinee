@@ -38,7 +38,7 @@ export const calendarExportService = {
       'CALSCALE:GREGORIAN',
       'METHOD:REQUEST',
       'BEGIN:VEVENT',
-      `UID:${Date.now()}@jobguinee.com`,
+      `UID:${Date.now()}@jobguinee-pro.com`,
       `DTSTAMP:${this.formatDate(new Date())}`,
       `DTSTART:${this.formatDate(event.startDate)}`,
       `DTEND:${this.formatDate(event.endDate)}`,

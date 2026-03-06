@@ -555,7 +555,7 @@ export default function AdminB2BManagement() {
 
                       <div className="bg-white p-4 border border-gray-200 rounded-lg">
                         <div className="text-sm text-green-700 mb-1">
-                          https://jobguinee.com › solutions-b2b
+                          https://jobguinee-pro.com › solutions-b2b
                         </div>
                         <div className="text-xl text-blue-600 hover:underline cursor-pointer mb-1 font-medium">
                           {seoSettings.title}

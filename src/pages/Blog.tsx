@@ -145,7 +145,7 @@ export default function Blog({ onNavigate }: BlogProps) {
   };
 
   const handleShare = (platform: string, post: BlogPost) => {
-    const url = `https://jobguinee.com/blog/${post.slug}`;
+    const url = `${import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com'}/blog/${post.slug}`;
     const text = post.title;
 
     if (platform === 'whatsapp') {

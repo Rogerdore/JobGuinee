@@ -10,7 +10,7 @@ export default function SolutionONG({ onNavigate = () => {} }: SolutionONGProps)
     title: 'Solutions RH pour ONG et Institutions en Guinée | JobGuinée',
     description: 'Solutions RH adaptées aux ONG et institutions internationales en Guinée : recrutement transparent, conformité bailleurs, gestion projets.',
     keywords: 'recrutement ong guinée, rh institutions conakry, recrutement transparent guinée, conformité bailleurs fonds',
-    canonical: 'https://jobguinee.com/solutions/ong-institutions'
+    canonical: 'https://jobguinee-pro.com/solutions/ong-institutions'
   });
 
   const problems = [

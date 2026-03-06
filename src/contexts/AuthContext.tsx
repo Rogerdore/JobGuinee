@@ -268,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const sendWelcomeConfirmedEmail = async (userId: string, fullName: string, userType: string) => {
     try {
-      const appUrl = 'https://jobguinee-pro.com';
+      const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
       const dashboardUrl = userType === 'recruiter'
         ? `${appUrl}/recruiter/dashboard`
         : userType === 'trainer'

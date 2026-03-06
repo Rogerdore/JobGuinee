@@ -74,7 +74,7 @@ class SchemaService {
   generateJobPostingSchema(job: any) {
     const companyName = job.companies?.name || job.company_name || 'Entreprise';
     const location = job.location || 'Guinée';
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -118,7 +118,7 @@ class SchemaService {
   }
 
   generatePersonSchema(profile: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -145,7 +145,7 @@ class SchemaService {
   }
 
   generateCourseSchema(formation: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',

@@ -220,7 +220,7 @@ export default function AccessRestrictionModal({
 
           <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
             <p className="text-xs text-center text-gray-500">
-              Besoin d'aide ? <a href="mailto:support@jobguinee.com" className="text-green-600 hover:text-green-700 font-medium">Contactez notre support</a>
+              Besoin d'aide ? <a href="mailto:support@jobguinee-pro.com" className="text-green-600 hover:text-green-700 font-medium">Contactez notre support</a>
             </p>
           </div>
         </div>

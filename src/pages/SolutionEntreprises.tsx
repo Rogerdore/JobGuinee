@@ -10,7 +10,7 @@ export default function SolutionEntreprises({ onNavigate = () => {} }: SolutionE
     title: 'Solutions RH pour Entreprises et PME en Guinée | JobGuinée',
     description: 'Solutions RH complètes pour entreprises et PME guinéennes : recrutement digitalisé, ATS moderne, gestion des candidatures, CVthèque premium. Optimisez vos processus RH.',
     keywords: 'solutions rh pme guinée, recrutement entreprise conakry, ats logiciel guinée, gestion candidatures pme, digitalisation rh guinée',
-    canonical: 'https://jobguinee.com/solutions/entreprises-pme'
+    canonical: 'https://jobguinee-pro.com/solutions/entreprises-pme'
   });
 
   const problems = [

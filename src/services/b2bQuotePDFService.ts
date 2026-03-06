@@ -329,7 +329,7 @@ class B2BQuotePDFService {
     const footerY = 280;
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text('JobGuinée - Solutions RH Professionnelles | www.jobguinee.com | contact@jobguinee.com', 105, footerY, { align: 'center' });
+    doc.text('JobGuinée - Solutions RH Professionnelles | www.jobguinee-pro.com | contact@jobguinee-pro.com', 105, footerY, { align: 'center' });
 
     return doc.output('blob');
   }

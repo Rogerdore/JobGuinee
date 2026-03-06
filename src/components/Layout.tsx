@@ -478,7 +478,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div>
               <h3 className="font-semibold mb-4">Contact</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>Email: contact@jobguinee.com</li>
+                <li>Email: contact@jobguinee-pro.com</li>
                 <li>Tel: +224 XXX XX XX XX</li>
                 <li>Conakry, Guinée</li>
               </ul>

@@ -303,7 +303,7 @@ export class ImageSitemapService {
     if (typeof window !== 'undefined') {
       return window.location.origin;
     }
-    return 'https://jobguinee.com'; // Fallback
+    return import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
   }
 
   /**

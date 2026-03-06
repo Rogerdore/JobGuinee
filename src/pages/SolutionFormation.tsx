@@ -10,7 +10,7 @@ export default function SolutionFormation({ onNavigate = () => {} }: SolutionFor
     title: 'Solutions pour Centres de Formation et Formateurs en Guinée | JobGuinée',
     description: 'Plateforme dédiée aux centres de formation et formateurs : publication formations, visibilité, gestion inscriptions, matching candidats-formations.',
     keywords: 'centre formation guinée, formateur indépendant conakry, plateforme formation professionnelle, vendre formations guinée',
-    canonical: 'https://jobguinee.com/solutions/centres-formation'
+    canonical: 'https://jobguinee-pro.com/solutions/centres-formation'
   });
 
   const problems = [

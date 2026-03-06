@@ -2035,7 +2035,7 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
 
                 <button
                   onClick={() => {
-                    alert(`Service: ${selectedService.title}\nPrix: ${selectedService.price}\n\nPour activer ce service, veuillez nous contacter:\n\n📧 Email: premium@jobguinee.com\n📱 WhatsApp: +224 XXX XX XX XX\n\nPaiement accepté via:\n• Orange Money\n• LengoPay\n• DigitalPay SA`);
+                    alert(`Service: ${selectedService.title}\nPrix: ${selectedService.price}\n\nPour activer ce service, veuillez nous contacter:\n\n📧 Email: premium@jobguinee-pro.com\n📱 WhatsApp: +224 XXX XX XX XX\n\nPaiement accepté via:\n• Orange Money\n• LengoPay\n• DigitalPay SA`);
                     setSelectedService(null);
                   }}
                   className="w-full px-6 py-4 bg-gradient-to-r from-[#0E2F56] to-blue-800 text-white rounded-xl font-bold text-lg hover:from-blue-900 hover:to-blue-900 transition-all shadow-lg"

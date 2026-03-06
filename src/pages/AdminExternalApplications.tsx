@@ -154,7 +154,7 @@ Cordialement,
 
 ---
 Envoyé via JobGuinée – Plateforme emploi & RH en Guinée
-https://jobguinee.com`;
+https://jobguinee-pro.com`;
 
   const defaultRelanceTemplate = `Bonjour {{recruiter_name}},
 
@@ -174,7 +174,7 @@ Cordialement,
 
 ---
 Envoyé via JobGuinée – Plateforme emploi & RH en Guinée
-https://jobguinee.com`;
+https://jobguinee-pro.com`;
 
   if (loading) {
     return (

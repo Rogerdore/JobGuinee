@@ -10,7 +10,7 @@ export default function SolutionCabinets({ onNavigate = () => {} }: SolutionCabi
     title: 'Solutions pour Cabinets RH et Agences de Placement en Guinée | JobGuinée',
     description: 'Outils professionnels pour cabinets RH et agences de placement : ATS multi-clients, CVthèque premium, white-label, partenariat commercial.',
     keywords: 'cabinet rh guinée, agence placement conakry, outils recrutement professionnel, partenariat rh guinée',
-    canonical: 'https://jobguinee.com/solutions/cabinets-rh-agences'
+    canonical: 'https://jobguinee-pro.com/solutions/cabinets-rh-agences'
   });
 
   const problems = [
