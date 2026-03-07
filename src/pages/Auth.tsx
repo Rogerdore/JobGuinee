@@ -29,7 +29,7 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
   const [showSignupHelp, setShowSignupHelp] = useState(false);
-  const [signupHelpScenario, setSignupHelpScenario] = useState<'email_exists' | 'profile_timeout' | 'account_incomplete' | 'weak_password' | 'general_error'>('general_error');
+  const [signupHelpScenario, setSignupHelpScenario] = useState<'email_exists' | 'email_exists_google' | 'profile_timeout' | 'account_incomplete' | 'weak_password' | 'general_error'>('general_error');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +96,10 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
         setError('Ce compte est associé à Google. Utilisez le bouton "Google" ci-dessous pour vous connecter.');
       } else if (errorMessage === 'INVALID_CREDENTIALS') {
         setError('Email ou mot de passe incorrect');
+      } else if (errorMessage === 'EMAIL_EXISTS_GOOGLE') {
+        setSignupHelpScenario('email_exists_google');
+        setShowSignupHelp(true);
+        setError('');
       } else if (errorMessage === 'EMAIL_EXISTS') {
         setSignupHelpScenario('email_exists');
         setShowSignupHelp(true);
@@ -504,8 +508,13 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
           scenario={signupHelpScenario}
           email={email}
           onSwitchToLogin={() => {
+            setEmail(email);
             setIsLogin(true);
             setShowSignupHelp(false);
+          }}
+          onGoogleSignIn={() => {
+            setShowSignupHelp(false);
+            handleGoogleSignIn();
           }}
           onRetry={async () => {
             setShowSignupHelp(false);
