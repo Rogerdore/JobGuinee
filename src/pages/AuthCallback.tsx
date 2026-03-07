@@ -43,6 +43,19 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.error('❌ Erreur échange code PKCE:', exchangeError);
+
+            // PKCE code verifier manquant — l'utilisateur a ouvert le lien dans un autre navigateur/appareil
+            // L'email est quand même confirmé côté Supabase, on redirige vers login
+            if (exchangeError.message?.includes('code verifier') ||
+                exchangeError.message?.includes('PKCE') ||
+                exchangeError.message?.includes('not found in storage')) {
+              console.log('ℹ️ PKCE code verifier absent — email confirmé, redirection login');
+              setConfirmationSuccess(true);
+              setError(null);
+              setTimeout(() => onNavigate('auth'), 3000);
+              return;
+            }
+
             // Si le code a déjà été utilisé, vérifier si on a une session existante
             if (exchangeError.message?.includes('already used') ||
                 exchangeError.message?.includes('invalid') ||
@@ -321,9 +334,15 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Email confirmé !</h2>
           <p className="text-gray-600 mb-4">
-            Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.
+            Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter avec votre email et mot de passe.
           </p>
-          <p className="text-sm text-gray-500">Redirection vers la page de connexion...</p>
+          <p className="text-sm text-gray-500">Redirection en cours...</p>
+          <button
+            onClick={() => onNavigate('auth')}
+            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            Se connecter maintenant
+          </button>
         </div>
       </div>
     );
