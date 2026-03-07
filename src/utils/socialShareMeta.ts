@@ -2,7 +2,8 @@
  * Utility for generating Open Graph and Social Media meta tags
  * Used for Facebook, LinkedIn, Twitter previews
  */
-import { generateJobCardDescription } from './jobNormalization';
+
+const SUPABASE_FUNCTIONS_URL = 'https://hhhjzgeidjqctuveopso.supabase.co/functions/v1';
 
 export interface ShareMetaData {
   title: string;
@@ -91,38 +92,21 @@ export const generateJobShareMeta = (job: {
   description?: string;
   location?: string;
   contract_type?: string;
-  sector?: string;
-  experience_level?: string;
-  keywords?: string[];
   companies?: { name: string; logo_url?: string };
-  og_image_url?: string;
-  featured_image_url?: string;
-  company_logo_url?: string;
-  company_name?: string;
 }): ShareMetaData => {
-  const baseUrl = window.location.origin;
-  const company = job.company_name || job.companies?.name || '';
+  const description = job.description
+    ? job.description.substring(0, 160) + '...'
+    : `${job.contract_type || 'Emploi'} à ${job.location || 'Guinée'} - ${job.companies?.name || 'Entreprise'}`;
 
-  const description = generateJobCardDescription({
-    title: job.title,
-    location: job.location,
-    experience_level: job.experience_level,
-    sector: job.sector,
-    keywords: job.keywords,
-    company_name: company,
-  });
-
-  const image = job.og_image_url
-    || job.featured_image_url
-    || job.company_logo_url
-    || job.companies?.logo_url
-    || `${baseUrl}/logo_jobguinee.png`;
+  // Use absolute URL for og:image (Facebook requires absolute URLs, not relative paths)
+  // Use PNG (not SVG) — Facebook does not support SVG for og:image
+  const imageUrl = job.companies?.logo_url || `${window.location.origin}/assets/share/default-job.png`;
 
   return {
-    title: company ? `${job.title} – ${company}` : job.title,
+    title: job.title,
     description,
-    image: image.startsWith('http') ? image : `${baseUrl}${image}`,
-    url: `${baseUrl}/share/${job.id}`,
+    image: imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl}`,
+    url: `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`,
     type: 'article',
   };
 };
@@ -135,7 +119,9 @@ export const shareFacebookJob = (job: {
   contract_type?: string;
   companies?: { name: string };
 }) => {
-  const url = `${window.location.origin}/job/${job.id}`;
+  // Use Supabase Edge Function URL directly so Facebook crawler gets server-rendered OG tags
+  // This bypasses Apache which returns 418 and blocks crawlers
+  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
   const text = `${job.title} - ${job.companies?.name}\n📍 ${job.location}\n💼 ${job.contract_type}`;
 
   // Facebook share dialog
@@ -148,7 +134,8 @@ export const shareLinkedInJob = (job: {
   title: string;
   description?: string;
 }) => {
-  const url = `${window.location.origin}/job/${job.id}`;
+  // Use Supabase Edge Function URL directly so LinkedIn crawler gets server-rendered OG tags
+  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
   const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   window.open(linkedInUrl, '_blank', 'width=600,height=400');
 };
@@ -160,7 +147,8 @@ export const shareTwitterJob = (job: {
   contract_type?: string;
   companies?: { name: string };
 }) => {
-  const url = `${window.location.origin}/job/${job.id}`;
+  // Use Supabase Edge Function URL directly so Twitter crawler gets server-rendered OG tags
+  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
   const text = `${job.title} - ${job.companies?.name} 📍 ${job.location} 💼 ${job.contract_type}`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank', 'width=600,height=400');
@@ -173,7 +161,8 @@ export const shareWhatsAppJob = (job: {
   contract_type?: string;
   companies?: { name: string };
 }) => {
-  const url = `${window.location.origin}/job/${job.id}`;
+  // Use Supabase Edge Function URL for consistency and OG tag support
+  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
   const text = `*${job.title}*\n\n🏢 ${job.companies?.name}\n📍 ${job.location}\n💼 ${job.contract_type}\n\nPostulez maintenant sur JobGuinée:\n${url}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(whatsappUrl, '_blank');

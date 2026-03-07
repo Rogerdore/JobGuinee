@@ -1,302 +1,312 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const CRAWLER_AGENTS = [
-  "facebookexternalhit",
-  "facebot",
-  "linkedinbot",
-  "twitterbot",
-  "whatsapp",
-  "telegrambot",
-  "slackbot",
-  "discordbot",
-  "googlebot",
-  "bingbot",
-  "applebot",
-  "pinterest",
-  "vkshare",
-  "w3c_validator",
-  "redditbot",
-  "ia_archiver",
-  "embedly",
-  "quora link preview",
-  "showyoubot",
-  "outbrain",
-  "rogerbot",
-  "bufferbot",
-  "bitlybot",
-];
-
-function isCrawler(userAgent: string): boolean {
-  const ua = userAgent.toLowerCase();
-  return CRAWLER_AGENTS.some((bot) => ua.includes(bot));
+interface JobData {
+  id: string;
+  title: string;
+  company_name?: string;
+  company?: string;
+  location?: string;
+  contract_type?: string;
+  description?: string;
+  salary_min?: number;
+  salary_max?: number;
+  featured_image_url?: string;
+  company_logo_url?: string;
+  slug?: string;
+  companies?: {
+    name?: string;
+    logo_url?: string;
+  };
 }
 
-function escapeHtml(str: string): string {
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const pathname = url.pathname;
+    
+    // Detect if request comes from a social media crawler
+    const userAgent = req.headers.get('user-agent') || '';
+    const isCrawler = /facebookexternalhit|Facebot|LinkedInBot|Twitterbot|WhatsApp|TelegramBot|Discordbot|Slackbot|Pinterest|SkypeUriPreview|vkShare|tumblr|flipboard|nuzzel|redditbot|Embedly|quora|outbrain|ia_archiver/i.test(userAgent);
+    
+    // Extract job_id from path: /social-gateway/{job_id}
+    const jobIdMatch = pathname.match(/\/social-gateway\/([^/?]+)/);
+    const jobId = jobIdMatch ? jobIdMatch[1] : null;
+
+    if (!jobId) {
+      return new Response(
+        JSON.stringify({ error: "job_id is required in path" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch job with company details (join companies table for logo)
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("*, companies(name, logo_url)")
+      .eq("id", jobId)
+      .maybeSingle();
+
+    if (jobError || !job) {
+      return new Response(generateErrorHTML("404 - Offre introuvable"), {
+        status: 404,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
+
+    const html = generateShareHTML(job as JobData, isCrawler);
+
+    const responseHeaders = new Headers();
+    responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+    responseHeaders.set("Cache-Control", "public, max-age=3600");
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+
+    return new Response(html, {
+      status: 200,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(generateErrorHTML("500 - Erreur serveur"), {
+      status: 500,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    });
+  }
+});
+
+function cleanDescription(desc: string | null | undefined): string {
+  if (!desc) return "";
+  
+  return desc
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    // Remove PDF/file content artifacts
+    .replace(/📎[^📎]*\.(pdf|doc|docx|xls|xlsx)[^•]*(•[^•]*page\(s\))?/gi, "")
+    .replace(/Page\s+\d+\/\d+/g, "")
+    .replace(/\d+(\.\d+)?\s*KB\s*•/g, "")
+    .replace(/📄[^•]*•/g, "")
+    .replace(/♻️[^.]*\./g, "")
+    .replace(/Document PDF intégré/g, "")
+    .replace(/Exploitable par IA/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
+  const baseUrl = "https://jobguinee-pro.com";
+
+  const title = `${job.title || "Offre d'emploi"} – ${job.company_name || job.company || "JobGuinée"}`;
+
+  const rawDescription = cleanDescription(job.description);
+  // If cleaned description is too short or just gibberish, use a good fallback
+  const fallbackDesc = `Découvrez l'offre ${job.title || "d'emploi"} chez ${job.company_name || job.company || "une entreprise en Guinée"} sur JobGuinée. Postulez maintenant !`;
+  const description = (rawDescription.length > 30 && rawDescription.length <= 220)
+    ? rawDescription
+    : (rawDescription.length > 220)
+      ? rawDescription.substring(0, 217) + "..."
+      : fallbackDesc;
+
+  // OG Image Cascade (PNG/JPG only, NO SVG)
+  // Priority: featured_image_url → default PNG (1200x630)
+  // Company logos are excluded: they are typically small icons (<200x200) 
+  // and Facebook requires at least 200x200px for og:image
+  let ogImage = `${baseUrl}/assets/share/default-job.png`; // Final fallback (1200x630)
+  
+  const isValidImageUrl = (url: string | undefined | null): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    if (!url.startsWith('http')) return false;
+    if (url.toLowerCase().endsWith('.svg')) return false;
+    return true;
+  };
+
+  // Only use featured_image_url (full-size image uploaded by recruiter)
+  if (isValidImageUrl(job.featured_image_url)) {
+    ogImage = job.featured_image_url!;
+  }
+
+  // Detect image type for og:image:type
+  const imageType = ogImage.toLowerCase().endsWith('.jpg') || ogImage.toLowerCase().endsWith('.jpeg')
+    ? 'image/jpeg' : 'image/png';
+
+  // Check if job-specific image exists (would need server-side validation in production)
+  // For now, we use the featured_image_url if available, otherwise fallback
+
+  // og:url must be the canonical jobguinee-pro.com URL (this controls the domain shown on Facebook)
+  const shareUrl = `${baseUrl}/offres/${job.slug || job.id}`;
+  const redirectUrl = `${baseUrl}/offres/${job.slug || job.id}`;
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHTML(title)}</title>
+  
+  <!-- Core Meta Tags -->
+  <meta name="description" content="${escapeHTML(description)}" />
+  <meta name="robots" content="index, follow" />
+  <meta name="language" content="fr" />
+  <meta name="author" content="JobGuinée" />
+  
+  <!-- Open Graph Tags (Facebook, LinkedIn, Pinterest) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="JobGuinée" />
+  <meta property="og:title" content="${escapeHTML(title)}" />
+  <meta property="og:description" content="${escapeHTML(description)}" />
+  <meta property="og:image" content="${ogImage}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="${imageType}" />
+  <meta property="og:image:alt" content="${escapeHTML(title)}" />
+  <meta property="og:url" content="${shareUrl}" />
+  
+  <!-- Twitter Card Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHTML(title)}" />
+  <meta name="twitter:description" content="${escapeHTML(description)}" />
+  <meta name="twitter:image" content="${ogImage}" />
+  <meta name="twitter:url" content="${shareUrl}" />
+  <meta name="twitter:site" content="@JobGuinee" />
+  
+  <!-- LinkedIn Tags -->
+  <meta property="linkedin:title" content="${escapeHTML(title)}" />
+  <meta property="linkedin:description" content="${escapeHTML(description)}" />
+  <meta property="linkedin:image" content="${ogImage}" />
+  
+  <!-- Redirect for human users only (crawlers stay to read OG tags) -->
+  ${isCrawler ? '' : `<meta http-equiv="refresh" content="2;url=${redirectUrl}" />`}
+  <link rel="canonical" href="${redirectUrl}" />
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+    h1 { font-size: 24px; margin-bottom: 10px; }
+    p { font-size: 16px; margin: 5px 0; opacity: 0.9; }
+    a {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: white;
+      color: #667eea;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    a:hover { transform: scale(1.05); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Redirection en cours...</h1>
+    <p>${escapeHTML(title)}</p>
+    <p>Vous allez être redirigé dans quelques secondes.</p>
+    <a href="${redirectUrl}">Cliquez ici si la redirection n'a pas fonctionné</a>
+  </div>
+  
+  <script>
+    // Redirect human users to the actual job page (crawlers don't execute JS)
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.location.href = '${redirectUrl}';
+      }, 2000);
+    }
+  </script>
+</body>
+</html>`;
+}
+
+function generateErrorHTML(message: string): string {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Erreur - JobGuinée</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="JobGuinée" />
+  <meta property="og:title" content="Erreur - JobGuinée" />
+  <meta property="og:url" content="https://jobguinee-pro.com" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    .container {
+      text-align: center;
+      padding: 40px 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 { color: #d32f2f; margin-bottom: 10px; }
+    p { color: #666; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${message}</h1>
+    <p><a href="https://jobguinee-pro.com">Retour à l'accueil</a></p>
+  </div>
+</body>
+</html>`;
+}
+
+function escapeHTML(str: string): string {
   if (!str) return "";
   return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&#x27;");
 }
-
-function stripHtml(html: string): string {
-  if (!html) return "";
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function generateJobCardDescription(job: Record<string, any>, companyName: string): string {
-  const title = job.title || "Offre d'emploi";
-  const location = job.location || "";
-  const domain = job.sector || "le domaine concerné";
-
-  const expLevel: string = job.experience_level || "";
-  const experienceMatch = expLevel ? expLevel.match(/(\d+)/) : null;
-  const experienceYears = experienceMatch ? experienceMatch[1] : null;
-
-  const allSkills: string[] = Array.isArray(job.keywords) ? job.keywords : [];
-  const topSkills = allSkills.slice(0, 5);
-
-  const parts: string[] = [];
-  if (location) {
-    parts.push(`Nous recrutons un(e) ${title} à ${location}.`);
-  } else {
-    parts.push(`Nous recrutons un(e) ${title}.`);
-  }
-  if (experienceYears) {
-    parts.push(`Profil recherché : minimum ${experienceYears} ans d'expérience en ${domain}.`);
-  }
-  if (topSkills.length > 0) {
-    parts.push(`Compétences clés : ${topSkills.join(", ")}.`);
-  }
-  parts.push("Consultez l'offre sur JobGuinee.");
-
-  const full = parts.join(" ");
-  return full.length > 200 ? full.substring(0, 197) + "..." : full;
-}
-
-async function ensureOgImage(
-  supabase: ReturnType<typeof createClient>,
-  jobId: string,
-  supabaseUrl: string
-): Promise<string | null> {
-  const { data: job } = await supabase
-    .from("jobs")
-    .select("og_image_url, featured_image_url, company_logo_url")
-    .eq("id", jobId)
-    .maybeSingle();
-
-  if (job?.og_image_url) {
-    try {
-      const check = await fetch(job.og_image_url, { method: "HEAD" });
-      if (check.ok) return job.og_image_url;
-    } catch {
-      // fall through
-    }
-  }
-
-  if (job?.featured_image_url) {
-    try {
-      const check = await fetch(job.featured_image_url, { method: "HEAD" });
-      if (check.ok) return job.featured_image_url;
-    } catch {
-      // fall through
-    }
-  }
-
-  if (job?.company_logo_url) {
-    try {
-      const check = await fetch(job.company_logo_url, { method: "HEAD" });
-      if (check.ok) return job.company_logo_url;
-    } catch {
-      // fall through
-    }
-  }
-
-  const { data: files } = await supabase.storage
-    .from("og-images")
-    .list("jobs", { search: `${jobId}.png` });
-
-  const exists = files && files.some((f: { name: string }) => f.name === `${jobId}.png`);
-
-  if (!exists) {
-    try {
-      const genUrl = `${supabaseUrl}/functions/v1/generate-job-og-image?job_id=${jobId}`;
-      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const res = await fetch(genUrl, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (res.ok) {
-        const body = await res.json();
-        return body.url || null;
-      }
-    } catch {
-      return null;
-    }
-  }
-
-  const { data: publicUrl } = supabase.storage
-    .from("og-images")
-    .getPublicUrl(`jobs/${jobId}.png`);
-
-  await supabase
-    .from("jobs")
-    .update({ og_image_url: publicUrl.publicUrl })
-    .eq("id", jobId);
-
-  return publicUrl.publicUrl;
-}
-
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
-  }
-
-  try {
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split("/").filter(Boolean);
-    const lastPathSegment = pathParts[pathParts.length - 1];
-    const jobId = url.searchParams.get("job_id") || (lastPathSegment !== "social-gateway" ? lastPathSegment : null);
-    const userAgent = req.headers.get("user-agent") || "";
-
-    if (!jobId) {
-      return new Response(JSON.stringify({ error: "job_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-    const { data: job } = await supabase
-      .from("jobs")
-      .select("id, title, location, contract_type, sector, description, experience_level, keywords, company_id, company_name, og_image_url, featured_image_url, company_logo_url, is_urgent, is_featured")
-      .eq("id", jobId)
-      .maybeSingle();
-
-    if (!job) {
-      return new Response(JSON.stringify({ error: "Job not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    let companyName = (job as any).company_name || "";
-    if (!companyName && job.company_id) {
-      const { data: company } = await supabase
-        .from("companies")
-        .select("name")
-        .eq("id", job.company_id)
-        .maybeSingle();
-      companyName = company?.name || "";
-    }
-
-    const { data: settings } = await supabase
-      .from("site_settings")
-      .select("key, value")
-      .in("key", ["site_name", "site_url", "site_description"]);
-
-    const settingsMap: Record<string, string> = {};
-    (settings || []).forEach((s: { key: string; value: string }) => {
-      settingsMap[s.key] = typeof s.value === "string" ? s.value : JSON.stringify(s.value);
-    });
-
-    const siteName = settingsMap["site_name"] || "JobGuinée";
-    const rawSiteUrl = settingsMap["site_url"] || "https://jobguinee.com";
-    const siteUrl = rawSiteUrl.startsWith("http") ? rawSiteUrl : `https://${rawSiteUrl}`;
-    const jobUrl = `${siteUrl}/jobs/${jobId}`;
-    const shareUrl = `${siteUrl}/share/${jobId}`;
-
-    const jobTitle = job.title || "Offre d'emploi";
-    const titleWithCompany = companyName ? `${jobTitle} – ${companyName}` : jobTitle;
-
-    const description = generateJobCardDescription(job, companyName);
-
-    if (!isCrawler(userAgent)) {
-      return new Response(
-        JSON.stringify({ redirect: jobUrl }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const ogImageUrl = await ensureOgImage(supabase, jobId, supabaseUrl);
-    const fallbackImage = `${siteUrl}/logo_jobguinee.png`;
-    const finalImage = ogImageUrl || fallbackImage;
-
-    const titleEscaped = escapeHtml(titleWithCompany);
-    const descEscaped = escapeHtml(description);
-    const siteNameEscaped = escapeHtml(siteName);
-    const imageEscaped = escapeHtml(finalImage);
-    const jobUrlEscaped = escapeHtml(jobUrl);
-
-    const html = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0;url=${jobUrlEscaped}" />
-  <title>${titleEscaped} — ${siteNameEscaped}</title>
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="${jobUrlEscaped}" />
-  <meta property="og:title" content="${titleEscaped}" />
-  <meta property="og:description" content="${descEscaped}" />
-  <meta property="og:site_name" content="${siteNameEscaped}" />
-  <meta property="og:locale" content="fr_GN" />
-  <meta property="og:image" content="${imageEscaped}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:alt" content="${titleEscaped}" />
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${titleEscaped}" />
-  <meta name="twitter:description" content="${descEscaped}" />
-  <meta name="twitter:image" content="${imageEscaped}" />
-  <meta name="twitter:image:alt" content="${titleEscaped}" />
-
-  <meta name="description" content="${descEscaped}" />
-  <link rel="canonical" href="${jobUrlEscaped}" />
-</head>
-<body>
-  <p>Redirection en cours vers <a href="${jobUrlEscaped}">${titleEscaped}</a>...</p>
-</body>
-</html>`;
-
-    return new Response(html, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
-        "Vary": "User-Agent",
-      },
-    });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Internal error", details: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});

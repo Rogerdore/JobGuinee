@@ -12,15 +12,9 @@ export const useJobMetaTags = (job: (Job & { companies?: Company }) | null) => {
       const meta = generateJobShareMeta({
         id: job.id,
         title: job.title,
+        description: job.description || undefined,
         location: job.location || undefined,
         contract_type: job.contract_type || undefined,
-        sector: job.sector || undefined,
-        experience_level: job.experience_level || undefined,
-        keywords: Array.isArray(job.keywords) ? job.keywords : undefined,
-        og_image_url: (job as any).og_image_url || undefined,
-        featured_image_url: job.featured_image_url || undefined,
-        company_logo_url: job.company_logo_url || undefined,
-        company_name: (job as any).company_name || undefined,
         companies: job.companies ? {
           name: job.companies.name,
           logo_url: job.companies.logo_url || undefined
@@ -30,11 +24,12 @@ export const useJobMetaTags = (job: (Job & { companies?: Company }) | null) => {
       updateSocialMetaTags(meta);
     }
 
+    // Cleanup function to restore default meta tags when leaving the page
     return () => {
       updateSocialMetaTags({
         title: 'JobGuinée - Plateforme N°1 de l\'emploi en Guinée',
         description: 'La première plateforme guinéenne de recrutement digital connectant talents et opportunités. Trouvez votre emploi idéal ou recrutez les meilleurs profils.',
-        image: `${window.location.origin}/logo_jobguinee.png`,
+        image: '/assets/hero/image_hero.gif',
         url: window.location.origin,
         type: 'website',
       });
@@ -50,7 +45,7 @@ export const useHomeMetaTags = () => {
     updateSocialMetaTags({
       title: 'JobGuinée - Simplifiez votre recrutement, trouvez votre emploi',
       description: 'La première plateforme guinéenne de recrutement digital. Plus de 1250 candidats inscrits, 15+ entreprises partenaires. Matching IA, CVthèque, formations professionnelles.',
-      image: `${window.location.origin}/logo_jobguinee.png`,
+      image: '/assets/hero/image_hero.gif',
       url: window.location.origin,
       type: 'website',
     });

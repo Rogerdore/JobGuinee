@@ -66,19 +66,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const jobCompany = (job as any).company_name || (job as any).companies?.name || "";
-    const metadata = generateJobMetadata(job as JobData, jobCompany);
+    const metadata = generateJobMetadata(job as JobData);
     // Cascade de préférence pour l'image OG
+    // Fallback par défaut: image PNG statique garantie d'exister
     let ogImage = "https://jobguinee-pro.com/assets/share/default-job.png";
 
-    // 1. Image OG générée (si elle existe)
-    const generatedOGImage = `https://jobguinee-pro.com/og-images/jobs/${job.id}/facebook.png`;
-    // Note: On l'utilise si elle existe (vérification côté client/Facebook)
-    ogImage = generatedOGImage;
-
-    // 2. Fallback: Image mise en avant du recruteur
+    // 1. Priorité: Image mise en avant du recruteur (si disponible et valide)
     if (job.featured_image_url && typeof job.featured_image_url === 'string' && job.featured_image_url.startsWith('http')) {
-      ogImage = job.featured_image_url;
+      // Exclure les SVG (non supportés par Facebook)
+      if (!job.featured_image_url.toLowerCase().endsWith('.svg')) {
+        ogImage = job.featured_image_url;
+      }
     }
 
     const html = generateHTMLWithOGTags(metadata, ogImage, job as JobData);
@@ -103,43 +101,34 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-function generateJobCardDescription(job: JobData, companyName: string): string {
-  const title = job.title || "Offre d'emploi";
-  const location = (job as any).location || "";
-  const domain = (job as any).sector || "le domaine concerné";
-
-  const expLevel: string = (job as any).experience_level || "";
-  const experienceMatch = expLevel ? expLevel.match(/(\d+)/) : null;
-  const experienceYears = experienceMatch ? experienceMatch[1] : null;
-
-  const rawKeywords = (job as any).keywords;
-  const allSkills: string[] = Array.isArray(rawKeywords) ? rawKeywords : [];
-  const topSkills = allSkills.slice(0, 5);
-
-  const parts: string[] = [];
-  if (location) {
-    parts.push(`Nous recrutons un(e) ${title} à ${location}.`);
-  } else {
-    parts.push(`Nous recrutons un(e) ${title}.`);
-  }
-  if (experienceYears) {
-    parts.push(`Profil recherché : minimum ${experienceYears} ans d'expérience en ${domain}.`);
-  }
-  if (topSkills.length > 0) {
-    parts.push(`Compétences clés : ${topSkills.join(", ")}.`);
-  }
-  parts.push("Consultez l'offre sur JobGuinee.");
-
-  const full = parts.join(" ");
-  return full.length > 200 ? full.substring(0, 197) + "..." : full;
-}
-
-function generateJobMetadata(job: JobData, companyName: string) {
+function generateJobMetadata(job: JobData) {
   const baseUrl = "https://jobguinee-pro.com";
   const jobTitle = job.title || "Offre d'emploi";
-  const company = companyName || job.company_name || job.company || "Entreprise";
+  const company = job.company_name || job.company || "Entreprise";
+  const location = job.location || "Guinée";
+  const contractType = job.contract_type || "CDI";
 
-  const description = generateJobCardDescription(job, company);
+  // Nettoyer la description: enlever HTML et résumer
+  let description = "Découvrez cette opportunité professionnelle sur JobGuinée";
+
+  if (job.description) {
+    // Enlever les balises HTML
+    const cleanedDesc = job.description
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Couper à 220 caractères et ajouter l'appel à action
+    if (cleanedDesc.length > 220) {
+      description = cleanedDesc.substring(0, 217) + "... – Postulez via JobGuinée";
+    } else if (cleanedDesc.length > 0) {
+      description = cleanedDesc + " – Postulez via JobGuinée";
+    }
+  } else {
+    // Fallback si pas de description
+    description = `${contractType} à ${location} • Rejoins ${company} – Postulez via JobGuinée`;
+  }
 
   return {
     title: `${jobTitle} – ${company}`,
