@@ -242,6 +242,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('EMAIL_NOT_CONFIRMED');
       }
       if (error.message.includes('Invalid login credentials')) {
+        // Check if this email exists as a Google-only account
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', email.toLowerCase())
+          .maybeSingle();
+
+        if (profileData) {
+          throw new Error('GOOGLE_ACCOUNT_NO_PASSWORD');
+        }
         throw new Error('INVALID_CREDENTIALS');
       }
       throw error;
@@ -250,9 +260,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data.user) {
       throw new Error('Connexion échouée');
     }
-
-    // Email confirmation désactivée - connexion immédiate
-    // L'email de bienvenue est envoyé via le service SMTP custom
   };
 
   // Confirmation email is sent natively by Supabase Auth via emailRedirectTo.

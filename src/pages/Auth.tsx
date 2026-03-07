@@ -92,6 +92,8 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
         setPendingConfirmationEmail(email);
         setShowEmailConfirmation(true);
         setError('Compte non activé. Vérifiez votre boîte mail.');
+      } else if (errorMessage === 'GOOGLE_ACCOUNT_NO_PASSWORD') {
+        setError('Ce compte est associé à Google. Utilisez le bouton "Google" ci-dessous pour vous connecter.');
       } else if (errorMessage === 'INVALID_CREDENTIALS') {
         setError('Email ou mot de passe incorrect');
       } else if (errorMessage === 'EMAIL_EXISTS') {
