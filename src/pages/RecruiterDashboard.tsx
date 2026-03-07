@@ -51,6 +51,51 @@ import { calculateRecruiterCompletion } from '../utils/profileCompletion';
 import { generateJobDescription } from '../services/jobDescriptionService';
 import { validateJobData } from '../services/jobValidationService';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useJobCounters } from '../hooks/useJobCounters';
+
+function JobMiniStats({ jobId, initialViews, initialApplications }: { jobId: string; initialViews: number; initialApplications: number }) {
+  const { animated } = useJobCounters(jobId, { views_count: initialViews, applications_count: initialApplications });
+  return (
+    <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
+      <div className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/30 rounded-full -mr-8 -mt-8" />
+        <div className="relative">
+          <div className={`text-3xl font-bold tabular-nums bg-gradient-to-r from-[#0E2F56] to-blue-600 bg-clip-text text-transparent transition-all duration-300 ${animated.views.animating ? 'counter-pop' : ''}`}>
+            {animated.views.value.toLocaleString('fr-FR')}
+          </div>
+          <div className="text-sm text-blue-700 font-medium flex items-center mt-1">
+            <TrendingUp className="w-3.5 h-3.5 mr-1" />
+            Vues
+          </div>
+        </div>
+      </div>
+      <div className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8" />
+        <div className="relative">
+          <div className={`text-3xl font-bold tabular-nums bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent transition-all duration-300 ${animated.applications.animating ? 'counter-pop' : ''}`}>
+            {animated.applications.value.toLocaleString('fr-FR')}
+          </div>
+          <div className="text-sm text-green-700 font-medium flex items-center mt-1">
+            <Users className="w-3.5 h-3.5 mr-1" />
+            Candidatures
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobViewsCounter({ jobId, initialViews }: { jobId: string; initialViews: number }) {
+  const { animated } = useJobCounters(jobId, { views_count: initialViews });
+  return (
+    <div className="text-center px-4">
+      <div className={`text-3xl font-bold tabular-nums transition-all duration-300 ${animated.views.animating ? 'counter-pop' : ''}`}>
+        {animated.views.value.toLocaleString('fr-FR')}
+      </div>
+      <div className="text-sm text-blue-200">Vues</div>
+    </div>
+  );
+}
 
 interface RecruiterDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -1014,32 +1059,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
-                        <div className="p-4 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 rounded-xl border border-blue-200 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-200/30 rounded-full -mr-8 -mt-8"></div>
-                          <div className="relative">
-                            <div className="text-3xl font-bold bg-gradient-to-r from-[#0E2F56] to-blue-600 bg-clip-text text-transparent">
-                              {job.views_count || 0}
-                            </div>
-                            <div className="text-sm text-blue-700 font-medium flex items-center mt-1">
-                              <TrendingUp className="w-3.5 h-3.5 mr-1" />
-                              Vues
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-gradient-to-br from-green-50 via-green-100 to-green-50 rounded-xl border border-green-200 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-green-200/30 rounded-full -mr-8 -mt-8"></div>
-                          <div className="relative">
-                            <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-                              {job.applications_count || 0}
-                            </div>
-                            <div className="text-sm text-green-700 font-medium flex items-center mt-1">
-                              <Users className="w-3.5 h-3.5 mr-1" />
-                              Candidatures
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <JobMiniStats jobId={job.id} initialViews={job.views_count || 0} initialApplications={job.applications_count || 0} />
 
                       <div className="space-y-3 mb-4 relative z-10">
                         <div className="grid grid-cols-2 gap-3">
@@ -1353,10 +1373,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                         <div className="text-3xl font-bold">{jobApplications.length}</div>
                         <div className="text-sm text-blue-200">Candidatures</div>
                       </div>
-                      <div className="text-center px-4">
-                        <div className="text-3xl font-bold">{selectedJob.views_count || 0}</div>
-                        <div className="text-sm text-blue-200">Vues</div>
-                      </div>
+                      <JobViewsCounter jobId={selectedJob.id} initialViews={selectedJob.views_count || 0} />
                     </div>
                   </div>
                 </div>

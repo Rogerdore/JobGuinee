@@ -95,9 +95,9 @@ class SEOAutoGeneratorService {
           const success = await seoService.setPageMeta(pageMeta);
 
           const breadcrumbs = [
-            { name: 'Accueil', url: 'https://jobguinee.com/' },
-            { name: 'Emplois', url: 'https://jobguinee.com/jobs' },
-            { name: `Emplois ${sector}`, url: `https://jobguinee.com/jobs?sector=${encodeURIComponent(sector)}` }
+            { name: 'Accueil', url: 'https://jobguinee-pro.com/' },
+            { name: 'Emplois', url: 'https://jobguinee-pro.com/jobs' },
+            { name: `Emplois ${sector}`, url: `https://jobguinee-pro.com/jobs?sector=${encodeURIComponent(sector)}` }
           ];
 
           const breadcrumbSchema = schemaService.generateBreadcrumbSchema(breadcrumbs);
@@ -163,9 +163,9 @@ class SEOAutoGeneratorService {
           const success = await seoService.setPageMeta(pageMeta);
 
           const breadcrumbs = [
-            { name: 'Accueil', url: 'https://jobguinee.com/' },
-            { name: 'Emplois', url: 'https://jobguinee.com/jobs' },
-            { name: `Emplois ${city}`, url: `https://jobguinee.com/jobs?location=${encodeURIComponent(city)}` }
+            { name: 'Accueil', url: 'https://jobguinee-pro.com/' },
+            { name: 'Emplois', url: 'https://jobguinee-pro.com/jobs' },
+            { name: `Emplois ${city}`, url: `https://jobguinee-pro.com/jobs?location=${encodeURIComponent(city)}` }
           ];
 
           const breadcrumbSchema = schemaService.generateBreadcrumbSchema(breadcrumbs);

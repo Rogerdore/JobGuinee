@@ -21,6 +21,7 @@ import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
 import { socialShareService } from '../services/socialShareService';
 import { candidateStatsService } from '../services/candidateStatsService';
+import JobDetailStatsPanel from '../components/jobs/JobDetailStatsPanel';
 
 interface JobDetailProps {
   jobId: string;
@@ -468,39 +469,14 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
-                  <Eye className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{job.views_count || 0}</div>
-                <div className="text-xs text-gray-600">Vues</div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{job.applications_count || 0}</div>
-                <div className="text-xs text-gray-600">Candidatures</div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
-                  <Heart className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{(job as any).saves_count || 0}</div>
-                <div className="text-xs text-gray-600">Favoris</div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-[#0E2F56] rounded-full mx-auto mb-2">
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{(job as any).comments_count || 0}</div>
-                <div className="text-xs text-gray-600">Commentaires</div>
-              </div>
-            </div>
+            <JobDetailStatsPanel
+              jobId={job.id}
+              initialViews={job.views_count || 0}
+              initialApplications={job.applications_count || 0}
+              initialSaves={(job as any).saves_count || 0}
+              initialComments={(job as any).comments_count || 0}
+              initialShares={(job as any).shares_count || 0}
+            />
 
             {job.keywords && job.keywords.length > 0 && (
               <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">

@@ -93,15 +93,15 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
     title: seoConfig.title || 'Solutions B2B RH en Guinée | Externalisation Recrutement, ATS, CVthèque | JobGuinée',
     description: seoConfig.description || 'Solutions RH B2B professionnelles en Guinée : externalisation complète du recrutement, logiciel ATS nouvelle génération, CVthèque premium, matching IA, formation RH et conseil stratégique. Accompagnement PME, mines, ONG, institutions.',
     keywords: seoConfig.keywords || 'solutions b2b rh guinée, externalisation recrutement guinée, cabinet recrutement guinée, ATS logiciel guinée, CVthèque premium guinée, recrutement clé en main, mission rh externalisée, recrutement minier guinée, recrutement industriel, conseil rh guinée, formation rh entreprise, matching ia recrutement',
-    canonical: 'https://jobguinee.com/b2b-solutions',
+    canonical: 'https://jobguinee-pro.com/b2b-solutions',
     ogType: 'website',
     schemas: [
       {
         '@context': 'https://schema.org',
         '@type': 'Organization',
         'name': 'JobGuinée',
-        'url': 'https://jobguinee.com',
-        'logo': 'https://jobguinee.com/logo.png',
+        'url': 'https://jobguinee-pro.com',
+        'logo': 'https://jobguinee-pro.com/logo.png',
         'description': 'Leader des solutions RH B2B en Guinée. Externalisation de recrutement, ATS, CVthèque, formation et conseil RH pour entreprises, ONG et institutions.',
         'address': {
           '@type': 'PostalAddress',
@@ -134,7 +134,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
           '@type': 'AggregateOffer',
           'priceCurrency': 'GNF',
           'availability': 'https://schema.org/InStock',
-          'url': 'https://jobguinee.com/b2b-solutions'
+          'url': 'https://jobguinee-pro.com/b2b-solutions'
         },
         'category': 'Solutions RH Entreprise',
         'audience': {
@@ -156,7 +156,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
           'name': 'Guinée'
         },
         'description': 'Service complet d\'externalisation de recrutement : sourcing, présélection, évaluation, entretiens et recommandations. Expertise marché guinéen.',
-        'termsOfService': 'https://jobguinee.com/terms'
+        'termsOfService': 'https://jobguinee-pro.com/terms'
       },
       {
         '@context': 'https://schema.org',
@@ -191,13 +191,13 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
             '@type': 'ListItem',
             'position': 1,
             'name': 'Accueil',
-            'item': 'https://jobguinee.com'
+            'item': 'https://jobguinee-pro.com'
           },
           {
             '@type': 'ListItem',
             'position': 2,
             'name': 'Solutions B2B',
-            'item': 'https://jobguinee.com/b2b-solutions'
+            'item': 'https://jobguinee-pro.com/b2b-solutions'
           }
         ]
       },
@@ -205,7 +205,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
         '@context': 'https://schema.org',
         '@type': 'LocalBusiness',
         'name': 'JobGuinée',
-        'image': 'https://jobguinee.com/logo.png',
+        'image': 'https://jobguinee-pro.com/logo.png',
         'priceRange': 'Sur devis',
         'address': {
           '@type': 'PostalAddress',
@@ -217,7 +217,7 @@ export default function B2BSolutions({ onNavigate = () => {} }: B2BSolutionsProp
           'latitude': '9.6412',
           'longitude': '-13.5784'
         },
-        'url': 'https://jobguinee.com',
+        'url': 'https://jobguinee-pro.com',
         'telephone': '+224XXXXXXXXX',
         'openingHoursSpecification': {
           '@type': 'OpeningHoursSpecification',

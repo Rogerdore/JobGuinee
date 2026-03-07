@@ -31,6 +31,7 @@ export function useRealtimeJobUpdates({ onJobUpdate, enabled = true }: UseRealti
               comments_count: updatedJob.comments_count,
               views_count: updatedJob.views_count,
               applications_count: updatedJob.applications_count,
+              shares_count: updatedJob.shares_count,
             });
           }
         )

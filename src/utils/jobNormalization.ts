@@ -121,6 +121,51 @@ export function resolveField<T = any>(
   return undefined;
 }
 
+export interface JobCardDescriptionInput {
+  title: string;
+  location?: string;
+  experience_level?: string;
+  sector?: string;
+  keywords?: string[];
+  companies?: { name?: string };
+  company_name?: string;
+}
+
+export function generateJobCardDescription(job: JobCardDescriptionInput): string {
+  const title = job.title || '';
+  const location = job.location || '';
+  const domain = job.sector || 'le domaine concerné';
+
+  const experienceMatch = job.experience_level
+    ? job.experience_level.match(/(\d+)/)
+    : null;
+  const experienceYears = experienceMatch ? experienceMatch[1] : null;
+
+  const allSkills: string[] = Array.isArray(job.keywords) ? job.keywords : [];
+  const topSkills = allSkills.slice(0, 5);
+
+  const parts: string[] = [];
+
+  if (location) {
+    parts.push(`Nous recrutons un(e) ${title} à ${location}.`);
+  } else {
+    parts.push(`Nous recrutons un(e) ${title}.`);
+  }
+
+  if (experienceYears) {
+    parts.push(`Profil recherché : minimum ${experienceYears} ans d'expérience en ${domain}.`);
+  }
+
+  if (topSkills.length > 0) {
+    parts.push(`Compétences clés : ${topSkills.join(', ')}.`);
+  }
+
+  parts.push('Consultez l\'offre sur JobGuinee.');
+
+  const full = parts.join(' ');
+  return full.length > 200 ? full.substring(0, 197) + '...' : full;
+}
+
 export function normalizeJobQuery(query: any): any {
   if (!query) return query;
 

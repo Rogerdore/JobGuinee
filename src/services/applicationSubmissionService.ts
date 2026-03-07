@@ -352,30 +352,15 @@ export const applicationSubmissionService = {
     await notificationService.sendNotification({
       recipientId: data.candidateId,
       type: 'application_status_update',
-      title: 'Candidature envoyée avec succès',
-      message: `Votre candidature pour ${data.jobTitle} a été envoyée. Référence : ${data.applicationReference}`,
-      channels: ['notification'],
+      title: subject,
+      message: body,
+      channels: ['notification', 'email'],
       metadata: {
         application_id: data.applicationId,
         application_reference: data.applicationReference
       },
       applicationId: data.applicationId
     });
-
-    await supabase.from('email_logs').insert({
-      recipient_id: data.candidateId,
-      recipient_email: data.candidateEmail,
-      email_type: 'application_confirmation',
-      template_code: 'candidate_confirmation',
-      subject,
-      body_text: body,
-      application_id: data.applicationId,
-      status: 'sent',
-      sent_at: new Date().toISOString()
-    });
-
-    console.log('[EMAIL] Confirmation candidat envoyé à:', data.candidateEmail);
-    console.log('[EMAIL] Sujet:', subject);
   },
 
   async sendRecruiterAlert(data: {
@@ -420,12 +405,17 @@ export const applicationSubmissionService = {
       pipelineLink
     });
 
+    const channels: ('notification' | 'email')[] = ['notification'];
+    if (prefs.instant_email_enabled) {
+      channels.push('email');
+    }
+
     await notificationService.sendNotification({
       recipientId: data.recruiterId,
       type: 'application_status_update',
-      title: `Nouvelle candidature : ${data.jobTitle}`,
-      message: `${data.candidateName} a postulé pour ${data.jobTitle}`,
-      channels: ['notification'],
+      title: subject,
+      message: body,
+      channels,
       metadata: {
         application_id: data.applicationId,
         job_id: data.jobId,
@@ -433,31 +423,5 @@ export const applicationSubmissionService = {
       },
       applicationId: data.applicationId
     });
-
-    if (prefs.instant_email_enabled) {
-      await supabase.from('email_logs').insert({
-        recipient_id: data.recruiterId,
-        recipient_email: recruiter.email,
-        email_type: 'recruiter_new_application',
-        template_code: 'recruiter_alert',
-        subject,
-        body_text: body,
-        application_id: data.applicationId,
-        job_id: data.jobId,
-        status: 'sent',
-        sent_at: new Date().toISOString()
-      });
-
-      console.log('[EMAIL] Alerte recruteur envoyée à:', recruiter.email);
-      console.log('[EMAIL] Sujet:', subject);
-    }
-
-    if (prefs.instant_sms_enabled) {
-      console.log('[SMS] Alerte recruteur envoyée');
-    }
-
-    if (prefs.instant_whatsapp_enabled) {
-      console.log('[WhatsApp] Alerte recruteur envoyée');
-    }
   }
 };

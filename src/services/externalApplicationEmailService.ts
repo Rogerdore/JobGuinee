@@ -212,9 +212,6 @@ ${window.location.origin}
     return { subject, body };
   }
 
-  /**
-   * Simule l'envoi d'un email (dans un environnement réel, utiliser un service SMTP ou API d'email)
-   */
   async sendEmail(params: {
     to: string;
     subject: string;
@@ -222,33 +219,42 @@ ${window.location.origin}
     attachments?: { name: string; url: string }[];
   }): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('📧 Email simulation');
-      console.log('To:', params.to);
-      console.log('Subject:', params.subject);
-      console.log('Body:', params.body);
-      console.log('Attachments:', params.attachments?.length || 0);
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const emailPayload = {
-        to: params.to,
-        subject: params.subject,
-        body: params.body,
-        attachments: params.attachments || [],
-        sent_at: new Date().toISOString()
-      };
+      const htmlBody = `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
+          <div style="white-space:pre-line;line-height:1.6">${params.body.replace(/\n/g, '<br/>')}</div>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+          <p style="font-size:12px;color:#9ca3af">JobGuinée – Plateforme emploi &amp; RH en Guinée</p>
+        </div>
+      `;
 
-      const { error } = await supabase
-        .from('email_log')
-        .insert(emailPayload);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            to: params.to,
+            subject: params.subject,
+            htmlBody,
+            textBody: params.body,
+          }),
+        }
+      );
 
-      if (error) {
-        console.error('Email log error:', error);
+      const result = await response.json();
+
+      if (!result.success) {
+        return { success: false, error: result.error || "Échec de l'envoi" };
       }
 
-      return {
-        success: true
-      };
+      return { success: true };
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error sending external application email:', error);
       return {
         success: false,
         error: (error as Error).message

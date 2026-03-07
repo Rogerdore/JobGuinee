@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Users, CheckCircle, XCircle, Clock, TrendingUp, Mail, Phone,
-  Building2, MessageSquare, User, Calendar, Eye, Edit, Save, X,
-  ToggleLeft, ToggleRight, Globe, FileText, HelpCircle, Bell
-} from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, TrendingUp, Mail, Phone, Building2, MessageSquare, User, Calendar, Eye, CreditCard as Edit, Save, X, ToggleLeft, ToggleRight, Globe, FileText, HelpCircle, Bell } from 'lucide-react';
 import { b2bLeadsService, B2BLead, B2BPageConfig } from '../services/b2bLeadsService';
 import { supabase } from '../lib/supabase';
 
@@ -555,7 +551,7 @@ export default function AdminB2BManagement() {
 
                       <div className="bg-white p-4 border border-gray-200 rounded-lg">
                         <div className="text-sm text-green-700 mb-1">
-                          https://jobguinee.com › solutions-b2b
+                          https://jobguinee-pro.com › solutions-b2b
                         </div>
                         <div className="text-xl text-blue-600 hover:underline cursor-pointer mb-1 font-medium">
                           {seoSettings.title}

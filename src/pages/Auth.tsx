@@ -39,6 +39,30 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
     try {
       if (isLogin) {
         await signIn(email, password);
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const intent = getAndClearRedirectIntent();
+
+        if (intent) {
+          if (intent.type === 'apply_job' && intent.jobId) {
+            onNavigate('job-detail', {
+              jobId: intent.jobId,
+              autoOpenApply: true,
+              metadata: intent.metadata
+            });
+          } else if (intent.type === 'save_job' && intent.jobId) {
+            onNavigate('job-detail', { jobId: intent.jobId });
+          } else if (intent.returnPath) {
+            onNavigate(intent.returnPath);
+          } else if (intent.returnPage) {
+            onNavigate(intent.returnPage);
+          } else {
+            onNavigate('home');
+          }
+        } else {
+          onNavigate('home');
+        }
       } else {
         if (!fullName.trim()) {
           setError('Veuillez entrer votre nom complet');
@@ -46,30 +70,16 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
           return;
         }
         await signUp(email, password, fullName, role);
-      }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const intent = getAndClearRedirectIntent();
-
-      if (intent) {
-        if (intent.type === 'apply_job' && intent.jobId) {
-          onNavigate('job-detail', {
-            jobId: intent.jobId,
-            autoOpenApply: true,
-            metadata: intent.metadata
-          });
-        } else if (intent.type === 'save_job' && intent.jobId) {
-          onNavigate('job-detail', { jobId: intent.jobId });
-        } else if (intent.returnPath) {
-          onNavigate(intent.returnPath);
-        } else if (intent.returnPage) {
+        // Si on arrive ici sans erreur, la confirmation email est désactivée
+        // => connexion directe possible
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const intent = getAndClearRedirectIntent();
+        if (intent?.returnPage) {
           onNavigate(intent.returnPage);
         } else {
           onNavigate('home');
         }
-      } else {
-        onNavigate('home');
       }
     } catch (err: any) {
       const errorMessage = err.message || '';
@@ -476,6 +486,11 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
           onClose={() => {
             setShowEmailConfirmation(false);
             setPendingConfirmationEmail('');
+          }}
+          onGoToLogin={() => {
+            setShowEmailConfirmation(false);
+            setPendingConfirmationEmail('');
+            setIsLogin(true);
           }}
         />
       )}

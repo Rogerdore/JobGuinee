@@ -10,7 +10,7 @@ export default function SolutionMines({ onNavigate = () => {} }: SolutionMinesPr
     title: 'Solutions RH Mines et Grands Projets en Guinée | JobGuinée',
     description: 'Solutions RH spécialisées pour secteur minier et grands projets en Guinée : recrutement masse, conformité, gestion multi-sites, CVthèque technique.',
     keywords: 'recrutement mines guinée, rh secteur minier, recrutement grands projets conakry, conformité rh guinée, recrutement technique',
-    canonical: 'https://jobguinee.com/solutions/mines-grands-projets'
+    canonical: 'https://jobguinee-pro.com/solutions/mines-grands-projets'
   });
 
   const problems = [

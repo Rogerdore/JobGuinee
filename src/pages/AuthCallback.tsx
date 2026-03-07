@@ -13,6 +13,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+<<<<<<< HEAD
         // Détecter le type de callback
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const urlParams = new URLSearchParams(window.location.search);
@@ -72,6 +73,41 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
           // Pas de session — l'utilisateur devra se connecter manuellement
           console.log('ℹ️ Pas de session après confirmation — redirection vers login');
+=======
+        // Check both hash params and query params for the callback type
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const type = hashParams.get('type') || searchParams.get('type');
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+
+        // Email confirmation link clicked
+        if (type === 'signup' || type === 'email_change') {
+          // Must call setSession so Supabase finalizes the confirmation and
+          // sets email_confirmed_at in auth.users — then the DB trigger fires.
+          if (accessToken && refreshToken) {
+            try {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+            } catch {
+              // If setSession fails the tokens may already be consumed — still show success
+            }
+          } else {
+            // Tokens may be in URL via the PKCE flow — just call getSession
+            try {
+              await supabase.auth.getSession();
+            } catch {
+              // Non-blocking
+            }
+          }
+
+          // Sign the user out immediately so they land on the login page cleanly
+          await supabase.auth.signOut();
+
+>>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('auth');
@@ -79,7 +115,11 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           return;
         }
 
+<<<<<<< HEAD
         // OAuth callback ou autre — récupérer la session
+=======
+        // OAuth callback (Google, etc.)
+>>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -92,7 +132,14 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
         const userId = session.user.id;
         const userEmail = session.user.email;
+<<<<<<< HEAD
         const userMeta = session.user.user_metadata;
+=======
+        const fullName = session.user.user_metadata?.full_name
+          || session.user.user_metadata?.name
+          || userEmail?.split('@')[0]
+          || 'Utilisateur';
+>>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
 
         await ensureProfileExists(userId, userEmail || '', userMeta);
 
@@ -100,19 +147,131 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         const pendingRole = localStorage.getItem('pending_oauth_role') as UserRole || 'candidate';
         localStorage.removeItem('pending_oauth_role');
 
+<<<<<<< HEAD
         if (pendingRole === 'recruiter') {
           await ensureCompanyExists(userId, userMeta?.full_name || userMeta?.name || 'Utilisateur');
         }
 
         if (pendingRole === 'trainer') {
           await ensureTrainerProfileExists(userId);
+=======
+        // Wait for the trigger (handle_new_user) to create the profile for OAuth
+        let profileData = null;
+        let attempts = 0;
+        const maxAttempts = 20;
+
+        while (!profileData && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (profile) {
+            profileData = profile;
+            break;
+          }
+
+          attempts++;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Fallback: manually create profile if trigger didn't fire
+        if (!profileData) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: userEmail,
+              full_name: fullName,
+              user_type: pendingRole,
+              credits_balance: 0,
+            });
+
+          if (insertError && !insertError.message.includes('duplicate')) {
+            throw insertError;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          profileData = newProfile;
+        }
+
+        // Update user_type to the requested OAuth role if it differs
+        if (profileData && profileData.user_type !== pendingRole) {
+          await supabase
+            .from('profiles')
+            .update({ user_type: pendingRole })
+            .eq('id', userId);
+          profileData = { ...profileData, user_type: pendingRole };
+        }
+
+        // Create default company for recruiter
+        if (pendingRole === 'recruiter' && profileData) {
+          const { data: existingCompany } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('created_by', userId)
+            .maybeSingle();
+
+          if (!existingCompany) {
+            const companyName = fullName.includes(' ')
+              ? `Entreprise de ${fullName.split(' ')[0]}`
+              : `Entreprise de ${fullName}`;
+
+            const { data: newCompany, error: companyError } = await supabase
+              .from('companies')
+              .insert({ name: companyName, created_by: userId })
+              .select()
+              .single();
+
+            if (newCompany && !companyError) {
+              await supabase
+                .from('profiles')
+                .update({ company_id: newCompany.id })
+                .eq('id', userId);
+            }
+          }
+        }
+
+        // Create trainer sub-profile
+        if (pendingRole === 'trainer' && profileData) {
+          const { data: existingTrainerProfile } = await supabase
+            .from('trainer_profiles')
+            .select('id')
+            .eq('profile_id', userId)
+            .maybeSingle();
+
+          if (!existingTrainerProfile) {
+            await supabase.from('trainer_profiles').insert({
+              profile_id: userId,
+              user_id: userId,
+              organization_type: 'individual',
+              experience_years: 0,
+              is_verified: false,
+              rating: 0,
+              total_students: 0,
+            });
+          }
+>>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 300));
         onNavigate('home');
 
       } catch (err: any) {
+<<<<<<< HEAD
         console.error('❌ Error handling auth callback:', err);
+=======
+        console.error('Error handling auth callback:', err);
+>>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
         setError(err.message || 'Erreur lors de la connexion');
         setTimeout(() => onNavigate('auth'), 4000);
       }
@@ -231,11 +390,9 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Email confirmé !</h2>
           <p className="text-gray-600 mb-4">
-            Votre compte a été activé avec succès.
+            Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.
           </p>
-          <p className="text-sm text-gray-500">
-            Redirection vers la page de connexion...
-          </p>
+          <p className="text-sm text-gray-500">Redirection vers la page de connexion...</p>
         </div>
       </div>
     );

@@ -186,7 +186,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
       prenom: 'Mamadou',
       nom: 'Diallo',
       role: 'Candidat',
-      lien: 'https://jobguinee.com',
+      lien: 'https://jobguinee-pro.com',
       message: 'Message test',
       date: '01/01/2025',
     };

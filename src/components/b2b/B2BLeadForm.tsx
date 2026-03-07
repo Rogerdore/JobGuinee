@@ -299,9 +299,9 @@ export default function B2BLeadForm({ onSuccess, onCancel, sourcePage, landingPa
               <Phone className="w-4 h-4" />
               +224 621 00 00 00
             </a>
-            <a href="mailto:b2b@jobguinee.com" className="flex items-center gap-2 hover:underline">
+            <a href="mailto:b2b@jobguinee-pro.com" className="flex items-center gap-2 hover:underline">
               <Mail className="w-4 h-4" />
-              b2b@jobguinee.com
+              b2b@jobguinee-pro.com
             </a>
           </div>
         </div>

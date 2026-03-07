@@ -32,7 +32,7 @@ interface SitemapAlternate {
 }
 
 class SitemapService {
-  private siteUrl = 'https://jobguinee.com';
+  private siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
   async generateSitemap(): Promise<string> {
     const urls: SitemapURL[] = [];

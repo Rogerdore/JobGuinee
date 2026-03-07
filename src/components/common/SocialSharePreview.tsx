@@ -26,18 +26,12 @@ export default function SocialSharePreview({
   }, [metadata.image]);
 
   const tryNextFallback = () => {
-    const baseUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
+    const baseUrl = (import.meta.env.VITE_APP_URL || 'https://jobguinee.com').replace(/\/$/, '');
 
     if (fallbackAttempts === 0) {
-      // Premier fallback : image par défaut d'offre
-      setCurrentImage(`${baseUrl}/assets/share/default-job.svg`);
+      setCurrentImage(`${baseUrl}/logo_jobguinee.png`);
       setFallbackAttempts(1);
-    } else if (fallbackAttempts === 1) {
-      // Deuxième fallback : logo JobGuinée
-      setCurrentImage(`${baseUrl}/logo_jobguinee.svg`);
-      setFallbackAttempts(2);
     } else {
-      // Dernier recours : afficher une erreur
       setImageError(true);
     }
   };
@@ -97,13 +91,7 @@ export default function SocialSharePreview({
               alt={metadata.title}
               className={`w-full h-full object-contain ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
               onLoad={() => setImageLoaded(true)}
-              onError={() => {
-                if (fallbackAttempts < 2) {
-                  tryNextFallback();
-                } else {
-                  setImageError(true);
-                }
-              }}
+              onError={tryNextFallback}
             />
           )}
 

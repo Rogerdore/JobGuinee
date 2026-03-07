@@ -269,7 +269,7 @@ export default function Resources() {
             et aidez les autres à progresser dans leur carrière.
           </p>
           <button
-            onClick={() => window.location.href = 'mailto:contact@jobguinee.com?subject=Proposition de ressource'}
+            onClick={() => window.location.href = 'mailto:contact@jobguinee-pro.com?subject=Proposition de ressource'}
             className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-primary-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-primary-700 transition shadow-lg"
           >
             <Package className="w-5 h-5" />

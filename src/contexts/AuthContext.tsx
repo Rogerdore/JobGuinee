@@ -255,8 +255,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // L'email de bienvenue est envoyé via le service SMTP custom
   };
 
+  // Confirmation email is sent natively by Supabase Auth via emailRedirectTo.
+  // This function is kept as a no-op to avoid breaking call sites.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const sendConfirmationEmail = async (_userId: string, _confirmationLink: string) => {
+    // Supabase sends the confirmation email automatically with the correct token.
+    // Do NOT send a duplicate via our custom system — the link would be invalid.
+  };
+
+  const sendWelcomeConfirmedEmail = async (userId: string, fullName: string, userType: string) => {
+    try {
+      const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
+      const dashboardUrl = userType === 'recruiter'
+        ? `${appUrl}/recruiter/dashboard`
+        : userType === 'trainer'
+          ? `${appUrl}/trainer/dashboard`
+          : `${appUrl}/candidate/dashboard`;
+
+      const { data: templateData } = await supabase
+        .from('email_templates')
+        .select('id')
+        .eq('template_key', 'welcome_confirmed')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!templateData) return;
+
+      const { data: userRow } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!userRow?.email) return;
+
+      await supabase.from('email_queue').insert({
+        template_id: templateData.id,
+        to_email: userRow.email,
+        to_name: fullName,
+        template_variables: {
+          user_name: fullName,
+          user_email: userRow.email,
+          user_type: userType,
+          dashboard_url: dashboardUrl,
+          profile_url: userType === 'recruiter'
+            ? `${appUrl}/recruiter/profile`
+            : `${appUrl}/candidate/profile`,
+          jobs_url: `${appUrl}/jobs`,
+          alerts_url: `${appUrl}/candidate/dashboard`,
+          app_url: appUrl,
+        },
+        priority: 8,
+        scheduled_for: new Date().toISOString(),
+        user_id: userId,
+      });
+    } catch {
+      // Non-bloquant
+    }
+  };
+
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
-    // Vérifier si l'utilisateur existe déjà avant de tenter l'inscription
     const { data: existingUsers } = await supabase
       .from('profiles')
       .select('id, email, user_type')
@@ -264,15 +322,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (existingUsers) {
-      // Le compte existe déjà avec un profil complet
       throw new Error('EMAIL_EXISTS');
     }
+
+    const confirmationRedirectUrl = `${window.location.origin}/auth/callback`;
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: confirmationRedirectUrl,
         data: {
           full_name: fullName,
           user_type: role,
@@ -281,11 +340,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-        // L'email existe dans auth.users mais pas dans profiles (compte incomplet)
+      if (
+        error.message.includes('already registered') ||
+        error.message.includes('User already registered') ||
+        error.message.includes('Database error finding user') ||
+        error.message.includes('Database error')
+      ) {
         throw new Error('ACCOUNT_INCOMPLETE');
       }
-      if (error.message.includes('Password')) {
+      if (error.message.includes('Password') || error.message.includes('password')) {
         throw new Error('WEAK_PASSWORD');
       }
       throw error;
@@ -295,37 +358,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('GENERAL_ERROR');
     }
 
-    // Email confirmation désactivée - l'utilisateur peut se connecter immédiatement
-    // Un email de bienvenue sera envoyé automatiquement via le service SMTP custom
-
-    let profileData = null;
-    let attempts = 0;
-    const maxAttempts = 30;
-
-    while (!profileData && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .maybeSingle();
-
-      if (profile) {
-        profileData = profile;
-        break;
-      }
-
-      attempts++;
+    // Email confirmation is required — profile will be created by the database
+    // trigger (handle_user_email_confirmed) once the user clicks the link.
+    if (!data.session) {
+      await sendConfirmationEmail(data.user.id, confirmationRedirectUrl);
+      throw new Error('EMAIL_CONFIRMATION_REQUIRED');
     }
 
-    if (!profileData) {
-      // Le compte a été créé mais le profil prend du temps
-      throw new Error('PROFILE_TIMEOUT');
-    }
+    // Session exists (email confirmation disabled in Supabase settings).
+    // Profile was created by the handle_new_user trigger. Wait briefly then continue.
+    await sendConfirmationEmail(data.user.id, confirmationRedirectUrl);
 
     if (role === 'trainer') {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const { error: trainerError } = await supabase
         .from('trainer_profiles')
@@ -341,6 +386,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (trainerError) console.error('Error creating trainer profile:', trainerError);
     }
+
+    await sendWelcomeConfirmedEmail(data.user.id, fullName, role);
   };
 
   const signInWithGoogle = async (role: UserRole = 'candidate') => {

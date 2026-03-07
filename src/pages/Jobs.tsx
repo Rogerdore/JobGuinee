@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useModalContext } from '../contexts/ModalContext';
-import {
-  Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock,
-  ChevronDown, Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign,
-  Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight,
-  Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle
-} from 'lucide-react';
+import { Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock, ChevronDown, Grid2x2 as Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign, Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight, Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
@@ -13,7 +8,10 @@ import { testimonials, companies as recruitingCompanies, jobCategories, guineaRe
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
+import JobCardStats from '../components/jobs/JobCardStats';
+import JobCardActions from '../components/jobs/JobCardActions';
 import { useRealtimeJobUpdates } from '../hooks/useRealtimeJobUpdates';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 interface JobsProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -182,11 +180,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   };
 
   const filteredJobs = jobs.filter((job) => {
+    const companyDisplayName = job.companies?.name || (job as any).company_name || '';
     const matchesSearch =
       !searchQuery ||
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.companies?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      companyDisplayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.keywords?.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesLocation = !location || job.location?.toLowerCase().includes(location.toLowerCase());
@@ -195,7 +194,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     const matchesExperience = !experienceLevel || job.experience_level === experienceLevel;
     const matchesEducation = !educationLevel || job.education_level === educationLevel;
     const matchesNationality = !nationalityRequired || job.nationality_required === nationalityRequired || job.nationality_required === 'Tous';
-    const matchesSalary = !salaryMin || (job.salary_min && job.salary_min >= Number(salaryMin));
+    const matchesSalary = !salaryMin;
 
     let matchesDate = true;
     if (datePosted) {
@@ -219,7 +218,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     } else if (sortBy === 'views') {
       return b.views_count - a.views_count;
     } else if (sortBy === 'salary') {
-      return (b.salary_max || 0) - (a.salary_max || 0);
+      const aRange = (a as any).salary_range || '';
+      const bRange = (b as any).salary_range || '';
+      return bRange.localeCompare(aRange);
     } else if (sortBy === 'relevance') {
       return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
     }
@@ -252,17 +253,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   };
 
-  const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return 'À négocier';
-    const format = (val: number) => {
-      if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
-      if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
-      return val.toString();
-    };
-
-    if (min && max) return `${format(min)} - ${format(max)} GNF`;
-    if (min) return `À partir de ${format(min)} GNF`;
-    return `Jusqu'à ${format(max!)} GNF`;
+  const formatSalary = (salaryRange?: string) => {
+    if (!salaryRange) return 'À négocier';
+    return salaryRange;
   };
 
   const nextTestimonial = () => {
@@ -601,11 +594,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
                         <div className="flex items-center gap-2 mb-2">
                           <CompanyLogoWithIcon
-                            logoUrl={job.companies?.logo_url}
-                            companyName={job.companies?.name || 'Entreprise'}
+                            logoUrl={job.companies?.logo_url || job.company_logo_url}
+                            companyName={job.companies?.name || (job as any).company_name || 'Entreprise'}
                             size="sm"
                           />
-                          <span className="font-semibold text-gray-800">{job.companies?.name}</span>
+                          <span className="font-semibold text-gray-800">{job.companies?.name || (job as any).company_name}</span>
                         </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
@@ -615,29 +608,14 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                               <span>{job.location}</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-[#FF8C00]" />
-                            <span>{getTimeAgo(job.created_at)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <TrendingUp className="w-4 h-4 text-blue-500" />
-                            <span>{job.views_count} vues</span>
-                          </div>
-                          {job.applications_count > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <Users className="w-4 h-4 text-green-500" />
-                              <span>{job.applications_count} candidat{job.applications_count > 1 ? 's' : ''}</span>
-                            </div>
-                          )}
+                          <JobCardStats job={job} variant="compact" showDate={true} />
                         </div>
                       </div>
                     </div>
 
-                    {job.description && (
-                      <p className="text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed">
-                        {job.description}
-                      </p>
-                    )}
+                    <p className="text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed">
+                      {generateJobCardDescription(job)}
+                    </p>
 
                     <div className="flex flex-wrap gap-2 mb-4">
                       {job.contract_type && (
@@ -657,9 +635,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                           {job.education_level}
                         </span>
                       )}
-                      {job.diploma_required && (
+                      {(job as any).primary_qualification && (
                         <span className="px-3 py-1.5 bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 text-xs font-semibold rounded-lg border border-teal-200 flex items-center gap-1">
-                          📜 {job.diploma_required}
+                          {(job as any).primary_qualification}
                         </span>
                       )}
                     </div>
@@ -668,7 +646,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1.5 text-[#FF8C00] font-bold">
                           <DollarSign className="w-5 h-5" />
-                          <span className="text-base">{formatSalary(job.salary_min, job.salary_max)}</span>
+                          <span className="text-base">{formatSalary((job as any).salary_range)}</span>
                         </div>
                       </div>
 
@@ -681,47 +659,17 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                     </div>
 
                     <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => toggleSaveJob(job.id, e)}
-                          className={`relative p-2.5 rounded-lg border-2 transition-all ${
-                            savedJobs.includes(job.id)
-                              ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
-                              : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
-                          }`}
-                          title={savedJobs.includes(job.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                        >
-                          <Heart className={`w-5 h-5 ${savedJobs.includes(job.id) ? 'fill-current' : ''}`} />
-                          {job.saves_count > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                              {job.saves_count}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setCommentsJobModal(job);
-                          }}
-                          className="relative p-2.5 rounded-lg border-2 border-gray-300 text-gray-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all"
-                          title="Voir les commentaires"
-                        >
-                          <MessageCircle className="w-5 h-5" />
-                          {job.comments_count > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                              {job.comments_count}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={(e) => shareJob(job, e)}
-                          className="p-2.5 rounded-lg border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-all"
-                          title="Partager"
-                        >
-                          <Share2 className="w-5 h-5" />
-                        </button>
-                      </div>
+                      <JobCardActions
+                        job={job}
+                        isSaved={savedJobs.includes(job.id)}
+                        onToggleSave={(e) => toggleSaveJob(job.id, e)}
+                        onOpenComments={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCommentsJobModal(job);
+                        }}
+                        onShare={(e) => shareJob(job, e)}
+                      />
                       <button
                         onClick={(e) => {
                           e.preventDefault();

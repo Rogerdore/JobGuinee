@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
   Briefcase, X, Loader, DollarSign, Calendar, MapPin, Building2,
   GraduationCap, FileText, Users, Mail, Sparkles, Eye, Globe, Share2,
-  CheckCircle2, Upload as UploadIcon, Download, Wand2, Save, Clock, AlertCircle, CheckCircle,
-  Image as ImageIcon, Percent, Upload
+  CheckCircle2, Upload as UploadIcon, Wand2, Save, Clock, AlertCircle, CheckCircle,
+  Image as ImageIcon, ChevronRight, ChevronLeft, Zap, Settings, Send,
+  ArrowRight, Award, BookOpen
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import RichTextEditor from '../forms/RichTextEditor';
@@ -14,7 +15,6 @@ import { supabase } from '../../lib/supabase';
 import AccessRestrictionModal from '../common/AccessRestrictionModal';
 import JobPreviewModal from './JobPreviewModal';
 import { validateJobData } from '../../services/jobValidationService';
-import LanguageLevelSelector from '../forms/LanguageLevelSelector';
 import LanguageRequirementsManager from '../forms/LanguageRequirementsManager';
 import {
   jobTitleSuggestions,
@@ -41,23 +41,75 @@ interface JobPublishFormProps {
   existingJob?: any;
 }
 
-const FormSection = memo(({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-  <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-2xl p-6 border-2 border-blue-100 shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-center gap-3 mb-5 pb-3 border-b-2 border-blue-100">
-      <div className="p-2 bg-gradient-to-br from-[#0E2F56] to-blue-600 rounded-lg">
-        <Icon className="w-5 h-5 text-white" />
-      </div>
-      <h3 className="text-xl font-bold text-gray-800">
-        {title}
-      </h3>
+const STEPS = [
+  { id: 1, label: 'Poste', shortLabel: '1', icon: Briefcase, description: 'Titre, contrat, niveau' },
+  { id: 2, label: 'Description', shortLabel: '2', icon: FileText, description: 'Missions, profil, compétences' },
+  { id: 3, label: 'Entreprise', shortLabel: '3', icon: Building2, description: 'Société, localisation, salaire' },
+  { id: 4, label: 'Candidature', shortLabel: '4', icon: Mail, description: 'Email, documents, visibilité' },
+  { id: 5, label: 'Publication', shortLabel: '5', icon: Send, description: 'Durée, validation, lancement' },
+];
+
+const inputCls = 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition-all duration-200 bg-white text-gray-800 placeholder-gray-400 outline-none';
+const labelCls = 'block text-sm font-semibold text-gray-700 mb-2';
+const selectCls = inputCls;
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+      {message}
+    </p>
+  );
+}
+
+const StepIndicator = memo(({
+  currentStep,
+  completionByStep,
+}: {
+  currentStep: number;
+  completionByStep: Record<number, number>;
+}) => (
+  <div className="flex items-center justify-between relative px-2">
+    <div className="absolute top-5 left-8 right-8 h-0.5 bg-gray-200 z-0">
+      <div
+        className="h-full bg-gradient-to-r from-[#0E2F56] to-blue-500 transition-all duration-500"
+        style={{ width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%` }}
+      />
     </div>
-    <div className="space-y-5">
-      {children}
-    </div>
+    {STEPS.map((step) => {
+      const pct = completionByStep[step.id] ?? 0;
+      const isDone = currentStep > step.id;
+      const isActive = currentStep === step.id;
+      const Icon = step.icon;
+      return (
+        <div key={step.id} className="relative z-10 flex flex-col items-center gap-1.5 min-w-0">
+          <div
+            className={`
+              w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 font-bold text-sm
+              ${isDone
+                ? 'bg-[#0E2F56] border-[#0E2F56] text-white shadow-md'
+                : isActive
+                  ? 'bg-white border-[#0E2F56] text-[#0E2F56] shadow-lg ring-4 ring-blue-100 scale-110'
+                  : 'bg-white border-gray-300 text-gray-400'}
+            `}
+          >
+            {isDone ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-4 h-4" />}
+          </div>
+          <span className={`text-xs font-semibold whitespace-nowrap hidden sm:block transition-colors duration-200 ${isActive ? 'text-[#0E2F56]' : isDone ? 'text-gray-600' : 'text-gray-400'}`}>
+            {step.label}
+          </span>
+          {isActive && pct > 0 && (
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${pct}%` }} />
+            </div>
+          )}
+        </div>
+      );
+    })}
   </div>
 ));
-
-FormSection.displayName = 'FormSection';
+StepIndicator.displayName = 'StepIndicator';
 
 export default function JobPublishForm({ onPublish, onClose, existingJob }: JobPublishFormProps) {
   const { profile } = useAuth();
@@ -73,7 +125,8 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const [uploadingFeaturedImage, setUploadingFeaturedImage] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
+  const [stepErrors, setStepErrors] = useState<Record<number, boolean>>({});
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';
 
@@ -120,7 +173,6 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
         legal_compliance: existingJob.legal_compliance || false,
       };
     }
-
     return {
       title: '',
       category: 'Ressources Humaines',
@@ -167,15 +219,12 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   const validationErrorsRef = useRef<Record<string, string>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    formDataRef.current = formData;
-  }, [formData]);
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
 
   const completionPercentage = useMemo(() => calculateJobCompletion(formData), [formData]);
   const completionStatus = useMemo(() => getJobCompletionStatus(completionPercentage), [completionPercentage]);
-  const missingFields = useMemo(() => getMissingJobFields(formData), [formData]);
 
-  const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft, hasDraft } = useAutoSave({
+  const { status: autoSaveStatus, lastSaved, clearDraft, loadDraft } = useAutoSave({
     data: formData,
     key: `job-draft-${profile?.id || 'anonymous'}`,
     delay: 10000,
@@ -183,1253 +232,726 @@ export default function JobPublishForm({ onPublish, onClose, existingJob }: JobP
   });
 
   useEffect(() => {
-    const checkDraft = () => {
-      try {
-        const savedData = localStorage.getItem(`autosave_job-draft-${profile?.id || 'anonymous'}`);
-        if (savedData && !draftLoaded) {
-          setShowDraftRecovery(true);
-        } else {
-          setDraftLoaded(true);
-        }
-      } catch (error) {
-        console.error('Error checking draft:', error);
-        setDraftLoaded(true);
-      }
-    };
-    checkDraft();
+    const savedData = localStorage.getItem(`autosave_job-draft-${profile?.id || 'anonymous'}`);
+    if (savedData && !draftLoaded) setShowDraftRecovery(true);
+    else setDraftLoaded(true);
   }, [profile?.id, draftLoaded]);
 
   const handleRecoverDraft = useCallback(() => {
     const draft = loadDraft();
-    if (draft) {
-      setFormData(draft);
-      setDraftLoaded(true);
-      setShowDraftRecovery(false);
-    }
+    if (draft) { setFormData(draft); setDraftLoaded(true); setShowDraftRecovery(false); }
   }, [loadDraft]);
 
   const handleDiscardDraft = useCallback(() => {
-    clearDraft();
-    setShowDraftRecovery(false);
-    setDraftLoaded(true);
+    clearDraft(); setShowDraftRecovery(false); setDraftLoaded(true);
   }, [clearDraft]);
 
   const updateFormField = useCallback((field: keyof JobFormData, value: any) => {
     setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      formDataRef.current = newData;
-      return newData;
+      const next = { ...prev, [field]: value };
+      formDataRef.current = next;
+      return next;
     });
-
     const error = validateJobField(field, value);
     const currentError = validationErrorsRef.current[field];
-
     if (error !== currentError) {
       validationErrorsRef.current = error
         ? { ...validationErrorsRef.current, [field]: error }
-        : (() => {
-            const newErrors = { ...validationErrorsRef.current };
-            delete newErrors[field];
-            return newErrors;
-          })();
-
+        : (() => { const e = { ...validationErrorsRef.current }; delete e[field]; return e; })();
       setValidationErrors(validationErrorsRef.current);
     }
   }, []);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const field = e.target.name as keyof JobFormData;
-    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked :
-                  e.target.type === 'number' ? Number(e.target.value) :
-                  e.target.value;
+    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked
+      : e.target.type === 'number' ? Number(e.target.value)
+        : e.target.value;
     updateFormField(field, value);
-  }, [updateFormField]);
-
-  const handleAddSkill = useCallback(() => {
-    if (skillInput.trim()) {
-      setFormData(prev => {
-        if (prev.skills.includes(skillInput.trim())) return prev;
-        return { ...prev, skills: [...prev.skills, skillInput.trim()] };
-      });
-      setSkillInput('');
-    }
-  }, [skillInput]);
-
-  const handleRemoveSkill = useCallback((skill: string) => {
-    setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
-  }, []);
-
-  const handleAddBenefit = useCallback(() => {
-    if (benefitInput.trim()) {
-      setFormData(prev => {
-        if (prev.benefits.includes(benefitInput.trim())) return prev;
-        return { ...prev, benefits: [...prev.benefits, benefitInput.trim()] };
-      });
-      setBenefitInput('');
-    }
-  }, [benefitInput]);
-
-  const handleRemoveBenefit = useCallback((benefit: string) => {
-    setFormData(prev => ({ ...prev, benefits: prev.benefits.filter(b => b !== benefit) }));
-  }, []);
-
-  const toggleLanguage = useCallback((lang: string) => {
-    setFormData(prev => ({
-      ...prev,
-      languages: prev.languages.includes(lang)
-        ? prev.languages.filter(l => l !== lang)
-        : [...prev.languages, lang]
-    }));
-  }, []);
-
-  const toggleDocument = useCallback((doc: string) => {
-    setFormData(prev => ({
-      ...prev,
-      required_documents: prev.required_documents.includes(doc)
-        ? prev.required_documents.filter(d => d !== doc)
-        : [...prev.required_documents, doc]
-    }));
-  }, []);
-
-  const handleDescriptionChange = useCallback((value: string) => {
-    updateFormField('description', value);
-  }, [updateFormField]);
-
-  const handleResponsibilitiesChange = useCallback((value: string) => {
-    updateFormField('responsibilities', value);
-  }, [updateFormField]);
-
-  const handleProfileChange = useCallback((value: string) => {
-    updateFormField('profile', value);
   }, [updateFormField]);
 
   const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner un fichier image (PNG, JPG, etc.)');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux (maximum 5 MB)');
-      return;
-    }
-
+    if (!file.type.startsWith('image/')) { alert('Fichier image requis (PNG, JPG)'); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('Maximum 5 MB'); return; }
     setUploadingLogo(true);
-
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
     try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `company-logos/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('company-logos')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('company-logos')
-        .getPublicUrl(filePath);
-
+      const ext = file.name.split('.').pop();
+      const path = `company-logos/${Math.random().toString(36).substring(7)}.${ext}`;
+      const { error } = await supabase.storage.from('company-logos').upload(path, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('company-logos').getPublicUrl(path);
       updateFormField('company_logo_url', publicUrl);
-      setUploadingLogo(false);
-    } catch (error) {
-      console.error('Erreur upload logo:', error);
-      alert('Erreur lors de l\'upload du logo');
-      setUploadingLogo(false);
-    }
+    } catch { alert('Erreur lors de l\'upload du logo'); }
+    setUploadingLogo(false);
   }, [updateFormField]);
 
   const handleFeaturedImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner une image');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux (maximum 5 MB)');
-      return;
-    }
-
+    if (!file.type.startsWith('image/')) { alert('Image requise'); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('Maximum 5 MB'); return; }
     setUploadingFeaturedImage(true);
-
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `job-featured-images/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('company-logos')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('company-logos')
-        .getPublicUrl(filePath);
-
+      const ext = file.name.split('.').pop();
+      const path = `job-featured-images/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('company-logos').upload(path, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('company-logos').getPublicUrl(path);
       updateFormField('featured_image_url', publicUrl);
-      setUploadingFeaturedImage(false);
-    } catch (error) {
-      console.error('Erreur upload image de mise en avant:', error);
-      alert('Erreur lors de l\'upload de l\'image de mise en avant');
-      setUploadingFeaturedImage(false);
-    }
-  }, [updateFormField]);
-
-  const handleLanguageRequirementsChange = useCallback((requirements: any[]) => {
-    updateFormField('language_requirements', requirements);
+    } catch { alert('Erreur lors de l\'upload de l\'image'); }
+    setUploadingFeaturedImage(false);
   }, [updateFormField]);
 
   const handleGenerateWithAI = useCallback(async () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-
+    if (!isPremium) { setShowPremiumModal(true); return; }
     if (!formData.title || !formData.location) {
-      alert('Veuillez d\'abord renseigner le titre du poste et la localisation.');
+      alert('Veuillez renseigner le titre du poste et la localisation d\'abord.');
       return;
     }
-
     setIsGeneratingAI(true);
-
-    await new Promise(resolve => setTimeout(resolve, 2500));
-
-    const aiGeneratedData = {
-      description: `Nous recherchons un(e) ${formData.title} talentueux(se) pour rejoindre notre équipe dynamique basée à ${formData.location}. Ce poste stratégique offre l'opportunité de contribuer activement au développement de nos activités dans un environnement professionnel stimulant.`,
-
-      responsibilities: `• Assurer la gestion quotidienne des activités du département ${formData.category}
-• Piloter et coordonner les projets stratégiques en lien avec le poste
-• Développer et mettre en œuvre des processus d'amélioration continue
-• Collaborer étroitement avec les équipes transverses
-• Garantir le respect des standards de qualité et des procédures internes
-• Participer activement aux réunions de coordination et de reporting
-• Contribuer à l'innovation et à l'optimisation des pratiques`,
-
-      profile: `Nous recherchons un profil dynamique et rigoureux, doté d'excellentes compétences en ${formData.category.toLowerCase()}. Le candidat idéal possède une forte capacité d'adaptation, un excellent sens de l'organisation et une aptitude avérée à travailler en équipe. Autonome et proactif, vous faites preuve d'un engagement sans faille dans l'atteinte des objectifs fixés.`,
-
-      skills: [
-        'Leadership',
-        'Gestion de projet',
-        'Communication efficace',
-        'Analyse et résolution de problèmes',
-        'Maîtrise des outils bureautiques (Excel, Word, PowerPoint)',
-        'Esprit d\'équipe',
-        'Sens de l\'organisation',
-        'Autonomie'
-      ],
-
-      benefits: [
-        'Package salarial compétitif',
-        'Couverture médicale',
-        'Formation continue',
-        'Environnement de travail moderne',
-        'Opportunités d\'évolution'
-      ],
-
-      company_description: `Entreprise leader dans le secteur ${formData.sector}, nous nous distinguons par notre excellence opérationnelle et notre engagement envers nos collaborateurs. Rejoignez une équipe passionnée et dynamique où vos talents seront valorisés.`,
-
-      application_instructions: `Les candidats intéressés sont priés d'envoyer leur dossier de candidature complet (CV détaillé et lettre de motivation) à l'adresse email indiquée avant la date limite. Seuls les candidats présélectionnés seront contactés pour un entretien.`
-    };
-
+    await new Promise(r => setTimeout(r, 2500));
     setFormData(prev => ({
       ...prev,
-      description: aiGeneratedData.description,
-      responsibilities: aiGeneratedData.responsibilities,
-      profile: aiGeneratedData.profile,
-      skills: [...new Set([...prev.skills, ...aiGeneratedData.skills])],
-      benefits: [...new Set([...prev.benefits, ...aiGeneratedData.benefits])],
-      company_description: aiGeneratedData.company_description || prev.company_description,
-      application_instructions: aiGeneratedData.application_instructions || prev.application_instructions,
+      description: `Nous recherchons un(e) ${prev.title} talentueux(se) pour rejoindre notre équipe dynamique basée à ${prev.location}. Ce poste stratégique offre l'opportunité de contribuer activement au développement de nos activités.`,
+      responsibilities: `• Assurer la gestion quotidienne des activités\n• Piloter les projets stratégiques\n• Développer des processus d'amélioration continue\n• Collaborer avec les équipes transverses\n• Garantir les standards de qualité`,
+      profile: `Profil dynamique et rigoureux, doté d'excellentes compétences en ${prev.category.toLowerCase()}. Fort sens de l'organisation, autonomie et capacité à travailler en équipe.`,
+      skills: [...new Set([...prev.skills, 'Leadership', 'Gestion de projet', 'Communication', 'Analyse'])],
+      benefits: [...new Set([...prev.benefits, 'Package compétitif', 'Couverture médicale', 'Formation continue'])],
+      company_description: prev.company_description || `Entreprise leader dans le secteur ${prev.sector}, engagée envers l'excellence opérationnelle.`,
+      application_instructions: prev.application_instructions || 'Envoyez votre dossier complet (CV + lettre de motivation) avant la date limite. Seuls les candidats présélectionnés seront contactés.',
     }));
-
     setIsGeneratingAI(false);
-    alert('✨ Offre générée avec succès par l\'IA ! Vérifiez et ajustez les informations si nécessaire.');
   }, [isPremium, formData.title, formData.location, formData.category, formData.sector]);
 
-  const handlePublish = useCallback(async () => {
-    if (!formData.title || !formData.location || !formData.description || !formData.legal_compliance) {
-      alert('Veuillez remplir tous les champs obligatoires et accepter la conformité légale.');
+  const validateStep = useCallback((step: number): boolean => {
+    switch (step) {
+      case 1: return !!(formData.title && formData.contract_type && formData.deadline);
+      case 2: return !!(formData.description);
+      case 3: return !!(formData.company_name && formData.sector && formData.location);
+      case 4: return !!(formData.application_email || formData.receive_in_platform);
+      case 5: return formData.legal_compliance;
+      default: return true;
+    }
+  }, [formData]);
+
+  const goToStep = useCallback((next: number) => {
+    if (next < currentStep) {
+      setCurrentStep(next);
+      bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    if (!validateStep(currentStep)) {
+      setStepErrors(prev => ({ ...prev, [currentStep]: true }));
+      return;
+    }
+    setStepErrors(prev => ({ ...prev, [currentStep]: false }));
+    setCurrentStep(next);
+    bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep, validateStep]);
 
+  const handlePublish = useCallback(async () => {
+    if (!formData.legal_compliance) return;
     setLoading(true);
     await onPublish(formData);
     setLoading(false);
   }, [formData, onPublish]);
 
+  const completionByStep: Record<number, number> = useMemo(() => {
+    const s1 = [formData.title, formData.contract_type, formData.deadline, formData.position_level].filter(Boolean).length / 4 * 100;
+    const s2 = [formData.description, formData.responsibilities, formData.profile, formData.skills.length > 0, formData.primary_qualification].filter(Boolean).length / 5 * 100;
+    const s3 = [formData.company_name, formData.sector, formData.location, formData.company_description].filter(Boolean).length / 4 * 100;
+    const s4 = [(formData.application_email || formData.receive_in_platform), formData.required_documents.length > 0].filter(Boolean).length / 2 * 100;
+    const s5 = [formData.publication_duration, formData.legal_compliance].filter(Boolean).length / 2 * 100;
+    return { 1: Math.round(s1), 2: Math.round(s2), 3: Math.round(s3), 4: Math.round(s4), 5: Math.round(s5) };
+  }, [formData]);
+
+  const canProceed = validateStep(currentStep);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" style={{ contain: 'layout' }}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8" style={{ contain: 'content' }}>
-        <div className="sticky top-0 bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[95vh] overflow-hidden">
+
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#0E2F56] to-blue-700 text-white px-6 py-4 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-              <Briefcase className="w-6 h-6" />
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Publier une offre d'emploi</h2>
-              <p className="text-sm text-blue-100">Créez votre annonce professionnelle complète</p>
+              <h2 className="text-lg font-bold leading-tight">Publier une offre d'emploi</h2>
+              <p className="text-xs text-blue-200 mt-0.5">{STEPS[currentStep - 1].description}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            type="button"
-            className="p-2 hover:bg-white/20 rounded-lg transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <AutoSaveIndicator status={autoSaveStatus} lastSaved={lastSaved} />
+            <button onClick={onClose} type="button" className="p-1.5 hover:bg-white/20 rounded-lg transition">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[calc(90vh-100px)] overflow-y-auto">
-          {showDraftRecovery && (
-            <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+        {/* Step Indicator */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100 bg-gray-50 flex-shrink-0">
+          <StepIndicator currentStep={currentStep} completionByStep={completionByStep} />
+
+          {/* Global progress */}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${completionStatus.bgColor}`}
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+            <span className={`text-xs font-bold ${completionStatus.color} whitespace-nowrap`}>
+              {completionPercentage}% complet
+            </span>
+          </div>
+        </div>
+
+        {/* Draft recovery banner */}
+        {showDraftRecovery && (
+          <div className="mx-6 mt-4 bg-blue-50 border border-blue-300 rounded-xl p-3 flex items-center justify-between gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 text-sm text-blue-800">
+              <Save className="w-4 h-4 flex-shrink-0" />
+              <span>Brouillon non publié détecté. Voulez-vous le récupérer ?</span>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <button type="button" onClick={handleRecoverDraft} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition">Récupérer</button>
+              <button type="button" onClick={handleDiscardDraft} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-300 transition">Ignorer</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step Body */}
+        <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Step error alert */}
+          {stepErrors[currentStep] && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2 text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              Veuillez compléter les champs obligatoires avant de continuer.
+            </div>
+          )}
+
+          {/* ── STEP 1: Informations générales ── */}
+          {currentStep === 1 && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="p-1.5 bg-[#0E2F56] rounded-lg"><Briefcase className="w-4 h-4 text-white" /></div>
+                <h3 className="text-base font-bold text-gray-800">Informations générales</h3>
+              </div>
+
+              {/* AI generate button */}
+              <button
+                type="button"
+                onClick={handleGenerateWithAI}
+                disabled={isGeneratingAI}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm ${
+                  isPremium
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-orange-200'
+                    : 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200'
+                }`}
+              >
+                {isGeneratingAI ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isGeneratingAI ? 'Génération en cours…' : isPremium ? 'Générer l\'offre avec l\'IA' : 'Générer avec l\'IA (Premium)'}
+              </button>
+
+              <div>
+                <AutoCompleteInput
+                  value={formData.title}
+                  onChange={(v) => updateFormField('title', v)}
+                  suggestions={jobTitleSuggestions}
+                  placeholder="Ex : Superviseur Ressources Humaines"
+                  label="Titre du poste *"
+                  required
+                  minChars={2}
+                />
+                <FieldError message={validationErrors.title} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <AutoCompleteInput
+                    value={formData.category}
+                    onChange={(v) => updateFormField('category', v)}
+                    suggestions={categorySuggestions}
+                    placeholder="Ex : Ressources Humaines, Finance…"
+                    label="Catégorie / Domaine *"
+                    required
+                    minChars={1}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Type de contrat *</label>
+                  <select name="contract_type" value={formData.contract_type} onChange={handleInputChange} className={selectCls}>
+                    {['CDI', 'CDD', 'Stage', 'Intérim', 'Freelance'].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Niveau de poste</label>
+                  <select name="position_level" value={formData.position_level} onChange={handleInputChange} className={selectCls}>
+                    {['Débutant', 'Intermédiaire', 'Senior', 'Direction'].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Nombre de postes</label>
+                  <input type="number" name="position_count" min="1" value={formData.position_count} onChange={handleInputChange} className={inputCls} />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls + ' flex items-center gap-1.5'}>
+                  <Calendar className="w-4 h-4 text-amber-500" />
+                  Date limite de candidature *
+                </label>
+                <input type="date" name="deadline" value={formData.deadline} onChange={handleInputChange} className={inputCls} required />
+                <FieldError message={validationErrors.deadline} />
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 2: Description ── */}
+          {currentStep === 2 && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="p-1.5 bg-[#0E2F56] rounded-lg"><FileText className="w-4 h-4 text-white" /></div>
+                <h3 className="text-base font-bold text-gray-800">Description du poste</h3>
+              </div>
+
+              <div>
+                <RichTextEditor value={formData.description} onChange={(v) => updateFormField('description', v)} placeholder="Décrivez brièvement le poste…" label="Présentation du poste *" />
+                <FieldError message={validationErrors.description} />
+              </div>
+
+              <div>
+                <label className={labelCls}>Missions principales</label>
+                <textarea name="responsibilities" value={formData.responsibilities} onChange={handleInputChange} rows={4} className={inputCls + ' resize-none'} placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3" />
+              </div>
+
+              <div>
+                <label className={labelCls}>Profil recherché</label>
+                <textarea name="profile" value={formData.profile} onChange={handleInputChange} rows={3} className={inputCls + ' resize-none'} placeholder="Indiquez le type de profil souhaité…" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls + ' flex items-center gap-1.5'}>
+                    <GraduationCap className="w-4 h-4 text-blue-500" />
+                    Niveau d'études requis
+                  </label>
+                  <select name="education_level" value={formData.education_level} onChange={handleInputChange} className={selectCls}>
+                    {['BEP', 'BAC', 'BTS', 'Licence', 'Master', 'Doctorat'].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls + ' flex items-center gap-1.5'}>
+                    <Award className="w-4 h-4 text-emerald-500" />
+                    Expérience requise
+                  </label>
+                  <select name="experience_required" value={formData.experience_required} onChange={handleInputChange} className={selectCls}>
+                    {['Débutant', '1–3 ans', '3–5 ans', '5–10 ans', '+10 ans'].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Qualification principale requise *</label>
+                <input type="text" name="primary_qualification" value={formData.primary_qualification} onChange={handleInputChange} className={inputCls} placeholder="Ex: Ingénieur civil, Expert comptable, Développeur…" />
+                <p className="text-xs text-gray-400 mt-1.5">Titre professionnel ou compétence clé pour ce poste</p>
+              </div>
+
+              <div>
+                <label className={labelCls}>Autres compétences requises</label>
+                <div className="flex gap-2 mb-2">
+                  <div className="flex-1">
+                    <AutoCompleteInput value={skillInput} onChange={setSkillInput} suggestions={skillSuggestions} placeholder="Ex: Excel, Leadership, Gestion de projet…" minChars={2} />
+                  </div>
+                  <button type="button" onClick={() => {
+                    if (skillInput.trim()) {
+                      setFormData(p => p.skills.includes(skillInput.trim()) ? p : { ...p, skills: [...p.skills, skillInput.trim()] });
+                      setSkillInput('');
+                    }
+                  }} className="px-5 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition text-sm">
+                    Ajouter
+                  </button>
+                </div>
+                {formData.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.skills.map((skill, i) => (
+                      <span key={i} className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-1.5">
+                        {skill}
+                        <button type="button" onClick={() => setFormData(p => ({ ...p, skills: p.skills.filter(s => s !== skill) }))} className="hover:text-blue-900 transition">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <LanguageRequirementsManager requirements={formData.language_requirements} onChange={(r) => updateFormField('language_requirements', r)} />
+            </div>
+          )}
+
+          {/* ── STEP 3: Entreprise & Rémunération ── */}
+          {currentStep === 3 && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="p-1.5 bg-[#0E2F56] rounded-lg"><Building2 className="w-4 h-4 text-white" /></div>
+                <h3 className="text-base font-bold text-gray-800">Entreprise & Rémunération</h3>
+              </div>
+
+              {/* Logo */}
+              <div>
+                <label className={labelCls + ' flex items-center gap-1.5'}><ImageIcon className="w-4 h-4 text-blue-500" /> Logo de l'entreprise</label>
+                <div className="flex gap-2 mb-3">
+                  {['Utiliser logo du profil', 'Télécharger un logo'].map((opt, i) => (
+                    <button key={opt} type="button" onClick={() => updateFormField('use_profile_logo', i === 0)}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
+                        formData.use_profile_logo === (i === 0) ? 'bg-[#0E2F56] text-white border-[#0E2F56]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                      }`}>{opt}
+                    </button>
+                  ))}
+                </div>
+                {formData.use_profile_logo ? (
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><Building2 className="w-6 h-6 text-[#0E2F56]" /></div>
+                    <p className="text-sm text-gray-700">Logo de votre profil recruteur utilisé automatiquement</p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    {(logoPreview || formData.company_logo_url) && (
+                      <div className="relative flex-shrink-0">
+                        <img src={logoPreview || formData.company_logo_url} alt="Logo" className="w-16 h-16 object-cover rounded-xl border-2 border-blue-200 shadow" />
+                        {uploadingLogo && <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center"><Loader className="w-4 h-4 text-white animate-spin" /></div>}
+                      </div>
+                    )}
+                    <label htmlFor="logo-upload" className="flex-1 cursor-pointer">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-600 font-medium">
+                        <UploadIcon className="w-4 h-4 text-blue-500" />
+                        {uploadingLogo ? 'Upload…' : 'Choisir un logo (PNG, JPG — max 5 MB)'}
+                      </div>
+                    </label>
+                    <input id="logo-upload" type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" disabled={uploadingLogo} />
+                  </div>
+                )}
+              </div>
+
+              {/* Featured image */}
+              <div>
+                <label className={labelCls + ' flex items-center gap-1.5'}><ImageIcon className="w-4 h-4 text-rose-400" /> Image de mise en avant <span className="text-gray-400 font-normal text-xs">(optionnel)</span></label>
+                {formData.featured_image_url ? (
+                  <div className="space-y-2">
+                    <img src={formData.featured_image_url} alt="Featured" className="w-full max-h-48 object-cover rounded-xl border border-gray-200 shadow-sm" />
+                    <button type="button" onClick={() => updateFormField('featured_image_url', '')} className="text-xs text-red-500 hover:text-red-700 transition flex items-center gap-1">
+                      <X className="w-3 h-3" /> Supprimer l'image
+                    </button>
+                  </div>
+                ) : (
+                  <label htmlFor="featured-upload" className="cursor-pointer block">
+                    <div className="flex items-center justify-center gap-2 px-4 py-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition text-sm text-gray-500 font-medium">
+                      {uploadingFeaturedImage ? <><Loader className="w-4 h-4 animate-spin" /> Upload…</> : <><ImageIcon className="w-4 h-4" /> Cliquez pour ajouter une image principale (16:9 recommandé)</>}
+                    </div>
+                    <input id="featured-upload" type="file" accept="image/*" onChange={handleFeaturedImageUpload} className="hidden" disabled={uploadingFeaturedImage} />
+                  </label>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <AutoCompleteInput value={formData.company_name} onChange={(v) => updateFormField('company_name', v)} suggestions={companySuggestions} placeholder="Ex : Winning Consortium" label="Nom de l'entreprise *" required minChars={2} />
+                  <FieldError message={validationErrors.company_name} />
+                </div>
+                <div>
+                  <AutoCompleteInput value={formData.sector} onChange={(v) => updateFormField('sector', v)} suggestions={sectorSuggestions} placeholder="Ex : Mines, Banque, IT…" label="Secteur d'activité *" required minChars={1} maxSuggestions={150} />
+                </div>
+                <div>
+                  <AutoCompleteInput value={formData.location} onChange={(v) => updateFormField('location', v)} suggestions={locationSuggestions} placeholder="Ex : Conakry, Kankan…" label="Localisation *" required minChars={2} />
+                  <FieldError message={validationErrors.location} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>Présentation de l'entreprise</label>
+                  <textarea name="company_description" value={formData.company_description} onChange={handleInputChange} rows={3} className={inputCls + ' resize-none'} placeholder="Décrivez votre entreprise en quelques lignes…" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>Site web <span className="text-gray-400 font-normal text-xs">(optionnel)</span></label>
+                  <input type="url" name="website" value={formData.website} onChange={handleInputChange} className={inputCls} placeholder="https://www.monentreprise.com" />
+                  <FieldError message={validationErrors.website} />
+                </div>
+              </div>
+
+              {/* Salary */}
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-emerald-500 rounded-lg"><DollarSign className="w-4 h-4 text-white" /></div>
+                  <h3 className="text-base font-bold text-gray-800">Rémunération & Avantages</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <p className="font-bold text-blue-900 text-lg">Brouillon détecté</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Nous avons trouvé un brouillon non publié. Voulez-vous le récupérer pour continuer votre travail ?
-                    </p>
+                    <label className={labelCls}>Fourchette salariale (GNF)</label>
+                    <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className={inputCls} placeholder="Ex : 6.000.000 – 8.000.000 GNF" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Type de salaire</label>
+                    <select name="salary_type" value={formData.salary_type} onChange={handleInputChange} className={selectCls}>
+                      {['Fixe', 'Négociable', 'Non communiqué'].map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
                   </div>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleRecoverDraft}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-medium text-sm shadow-md hover:shadow-lg"
-                  >
-                    Récupérer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDiscardDraft}
-                    className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-all font-medium text-sm"
-                  >
-                    Ignorer
-                  </button>
+                <div className="mt-4">
+                  <label className={labelCls}>Avantages</label>
+                  <div className="flex gap-2 mb-2">
+                    <div className="flex-1">
+                      <AutoCompleteInput value={benefitInput} onChange={setBenefitInput} suggestions={benefitSuggestions} placeholder="Ex: logement, repas, transport…" minChars={2} />
+                    </div>
+                    <button type="button" onClick={() => {
+                      if (benefitInput.trim()) {
+                        setFormData(p => p.benefits.includes(benefitInput.trim()) ? p : { ...p, benefits: [...p.benefits, benefitInput.trim()] });
+                        setBenefitInput('');
+                      }
+                    }} className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition text-sm">
+                      Ajouter
+                    </button>
+                  </div>
+                  {formData.benefits.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.benefits.map((b, i) => (
+                        <span key={i} className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium flex items-center gap-1.5">
+                          {b}
+                          <button type="button" onClick={() => setFormData(p => ({ ...p, benefits: p.benefits.filter(x => x !== b) }))} className="hover:text-emerald-900 transition">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          <AutoSaveIndicator status={autoSaveStatus} lastSaved={lastSaved} />
+          {/* ── STEP 4: Candidature & Visibilité ── */}
+          {currentStep === 4 && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="p-1.5 bg-[#0E2F56] rounded-lg"><Mail className="w-4 h-4 text-white" /></div>
+                <h3 className="text-base font-bold text-gray-800">Modalités de candidature</h3>
+              </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-5 border-2 border-blue-200 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                  <Percent className="w-5 h-5 text-[#0E2F56]" />
-                </div>
+              <div>
+                <label className={labelCls}>Email de réception des candidatures *</label>
+                <input type="email" name="application_email" value={formData.application_email} onChange={handleInputChange} className={inputCls} placeholder="Ex : rh@entreprise.com" />
+                <FieldError message={validationErrors.application_email} />
+              </div>
+
+              <label className="flex items-center gap-3 cursor-pointer p-3 bg-blue-50 rounded-xl border border-blue-200 hover:bg-blue-100 transition">
+                <input type="checkbox" name="receive_in_platform" checked={formData.receive_in_platform} onChange={handleInputChange} className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]" />
                 <div>
-                  <p className="font-bold text-gray-800">Complétion de l'offre</p>
-                  <p className={`text-sm font-medium ${completionStatus.color}`}>
-                    {completionStatus.label}
-                  </p>
+                  <span className="text-sm font-semibold text-gray-800">Recevoir dans mon espace recruteur</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Les candidatures arrivent directement dans votre tableau de bord</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-[#0E2F56]">{completionPercentage}%</p>
-              </div>
-            </div>
-
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
-              <div
-                className={`h-full ${completionStatus.bgColor} transition-all duration-500 ease-out rounded-full`}
-                style={{ width: `${completionPercentage}%` }}
-              />
-            </div>
-
-            {missingFields.length > 0 && completionPercentage < 100 && (
-              <div className="mt-3 pt-3 border-t border-blue-200">
-                <p className="text-xs font-semibold text-gray-700 mb-1">Champs manquants :</p>
-                <div className="flex flex-wrap gap-1">
-                  {missingFields.slice(0, 5).map((field, index) => (
-                    <span key={index} className="text-xs px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200">
-                      {field}
-                    </span>
-                  ))}
-                  {missingFields.length > 5 && (
-                    <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200">
-                      +{missingFields.length - 5} autres
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-orange-50 border-2 border-[#FF8C00]/30 rounded-xl p-4">
-            <p className="text-sm text-gray-800 text-center">
-              <span className="font-semibold text-[#FF8C00]">📋 Formulaire complet :</span> Remplissez toutes les sections pour créer une offre professionnelle et conforme.
-            </p>
-          </div>
-
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
-            <div>
-              <button
-                type="button"
-                onClick={handleGenerateWithAI}
-                disabled={isGeneratingAI || !isPremium}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold rounded-xl transition shadow-md ${
-                  isPremium
-                    ? 'bg-gradient-to-r from-[#FF8C00] to-orange-600 hover:from-orange-600 hover:to-[#FF8C00] text-white'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                title={!isPremium ? 'Fonctionnalité Premium uniquement' : ''}
-              >
-                <Sparkles className="w-5 h-5" />
-                <span>{isGeneratingAI ? 'Génération IA...' : 'Générer avec IA'}</span>
-                {!isPremium && <span className="text-xs">(Premium)</span>}
-              </button>
-              <p className="text-xs text-gray-600 mt-2 text-center">
-                {isPremium ? 'Remplir automatiquement avec l\'IA' : 'Abonnement Premium requis'}
-              </p>
-            </div>
-          </div>
-
-          <FormSection title="1. Informations générales" icon={FileText}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <AutoCompleteInput
-                  value={formData.title}
-                  onChange={(value) => updateFormField('title', value)}
-                  suggestions={jobTitleSuggestions}
-                  placeholder="Ex : Superviseur Ressources Humaines"
-                  label="Titre du poste"
-                  required
-                  minChars={2}
-                />
-                {validationErrors.title && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.title}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <AutoCompleteInput
-                  value={formData.category}
-                  onChange={(value) => updateFormField('category', value)}
-                  suggestions={categorySuggestions}
-                  placeholder="Ex : Ressources Humaines, Finance, IT..."
-                  label={`Catégorie / Domaine * (${categorySuggestions.length} catégories)`}
-                  required
-                  minChars={1}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Type de contrat *
-                </label>
-                <select
-                  name="contract_type"
-                  value={formData.contract_type}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="CDI">CDI</option>
-                  <option value="CDD">CDD</option>
-                  <option value="Stage">Stage</option>
-                  <option value="Intérim">Intérim</option>
-                  <option value="Freelance">Freelance</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nombre de postes
-                </label>
-                <input
-                  type="number"
-                  name="position_count"
-                  min="1"
-                  value={formData.position_count}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Niveau de poste
-                </label>
-                <select
-                  name="position_level"
-                  value={formData.position_level}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="Débutant">Débutant</option>
-                  <option value="Intermédiaire">Intermédiaire</option>
-                  <option value="Senior">Senior</option>
-                  <option value="Direction">Direction</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-[#FF8C00]" />
-                  Date limite de candidature *
-                </label>
-                <input
-                  type="date"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  required
-                />
-                {validationErrors.deadline && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.deadline}
-                  </p>
-                )}
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection title="2. Description du poste" icon={FileText}>
-            <div className="space-y-4">
-              <div>
-                <RichTextEditor
-                  value={formData.description}
-                  onChange={handleDescriptionChange}
-                  placeholder="Décrivez brièvement le poste..."
-                  label="Présentation du poste *"
-                />
-                {validationErrors.description && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.description}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Missions principales
-                </label>
-                <textarea
-                  name="responsibilities"
-                  value={formData.responsibilities}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Profil recherché
-                </label>
-                <textarea
-                  name="profile"
-                  value={formData.profile}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="Indiquez le type de profil souhaité..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Niveau d'études requis
-                  </label>
-                  <select
-                    name="education_level"
-                    value={formData.education_level}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  >
-                    <option value="BEP">BEP</option>
-                    <option value="BAC">BAC</option>
-                    <option value="BTS">BTS</option>
-                    <option value="Licence">Licence (Bac+3)</option>
-                    <option value="Master">Master (Bac+5)</option>
-                    <option value="Doctorat">Doctorat (Bac+8)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Expérience requise
-                  </label>
-                  <select
-                    name="experience_required"
-                    value={formData.experience_required}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  >
-                    <option value="Débutant">Débutant</option>
-                    <option value="1–3 ans">1–3 ans</option>
-                    <option value="3–5 ans">3–5 ans</option>
-                    <option value="5–10 ans">5–10 ans</option>
-                    <option value="+10 ans">+10 ans</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Qualification et compétence principale requise *
-                </label>
-                <input
-                  type="text"
-                  name="primary_qualification"
-                  value={formData.primary_qualification}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  placeholder="Ex: Ingénieur en génie civil, Expert en gestion de projet, Comptable certifié..."
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Indiquez le titre professionnel, la qualification ou la compétence principale requise pour ce poste
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Autres compétences requises
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <div className="flex-1">
-                    <AutoCompleteInput
-                      value={skillInput}
-                      onChange={setSkillInput}
-                      suggestions={skillSuggestions}
-                      placeholder="Ex: Excel, Leadership, Gestion de projet..."
-                      minChars={2}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddSkill}
-                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.skills.map((skill, index) => (
-                    <span
-                      key={`skill-${index}`}
-                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="hover:text-blue-900 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <LanguageRequirementsManager
-                  requirements={formData.language_requirements}
-                  onChange={handleLanguageRequirementsChange}
-                />
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection title="3. Informations sur l'entreprise" icon={Building2}>
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-5 border-2 border-blue-200 mb-5">
-              <label className="block text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-[#0E2F56]" />
-                Logo de l'entreprise (optionnel)
               </label>
 
-              <div className="mb-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => updateFormField('use_profile_logo', true)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition ${
-                    formData.use_profile_logo
-                      ? 'bg-[#0E2F56] text-white border-2 border-[#0E2F56]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#0E2F56]'
-                  }`}
-                >
-                  Utiliser logo du profil
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateFormField('use_profile_logo', false)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition ${
-                    !formData.use_profile_logo
-                      ? 'bg-[#0E2F56] text-white border-2 border-[#0E2F56]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#0E2F56]'
-                  }`}
-                >
-                  Télécharger nouveau logo
-                </button>
+              <div>
+                <label className={labelCls}>Documents requis</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['CV', 'Lettre de motivation', 'Certificat de travail', 'CNSS'].map((doc) => (
+                    <label key={doc} className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border-2 transition text-sm font-medium ${formData.required_documents.includes(doc) ? 'bg-[#0E2F56]/5 border-[#0E2F56] text-[#0E2F56]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                      <input type="checkbox" checked={formData.required_documents.includes(doc)} onChange={() => setFormData(p => ({ ...p, required_documents: p.required_documents.includes(doc) ? p.required_documents.filter(d => d !== doc) : [...p.required_documents, doc] }))} className="w-4 h-4 text-[#0E2F56] rounded focus:ring-[#0E2F56]" />
+                      {doc}
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              {formData.use_profile_logo ? (
-                <div className="flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-blue-200">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center border-2 border-blue-300">
-                    <Building2 className="w-12 h-12 text-[#0E2F56]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900 mb-1">
-                      Logo du profil entreprise
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Le logo enregistré dans votre profil recruteur sera utilisé automatiquement
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-4">
-                  {(logoPreview || formData.company_logo_url) && (
-                    <div className="relative">
-                      <img
-                        src={logoPreview || formData.company_logo_url}
-                        alt="Logo entreprise"
-                        className="w-24 h-24 object-cover rounded-xl border-2 border-blue-300 shadow-md"
-                      />
-                      {uploadingLogo && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
-                          <Loader className="w-6 h-6 text-white animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  )}
+              <div>
+                <label className={labelCls}>Instructions supplémentaires <span className="text-gray-400 font-normal text-xs">(optionnel)</span></label>
+                <textarea name="application_instructions" value={formData.application_instructions} onChange={handleInputChange} rows={3} className={inputCls + ' resize-none'} placeholder="Ex : Envoyez vos dossiers avant le 15 novembre…" />
+              </div>
 
-                  <div className="flex-1">
-                    <label htmlFor="logo-upload" className="cursor-pointer">
-                      <div className="flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border-2 border-dashed border-blue-300 rounded-xl transition-all hover:border-blue-500 group">
-                        <UploadIcon className="w-5 h-5 text-[#0E2F56] group-hover:text-blue-600 transition" />
-                        <span className="text-sm font-semibold text-gray-700 group-hover:text-[#0E2F56] transition">
-                          {uploadingLogo ? 'Upload en cours...' : 'Télécharger un logo'}
-                        </span>
+              {/* Visibility */}
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-amber-500 rounded-lg"><Eye className="w-4 h-4 text-white" /></div>
+                  <h3 className="text-base font-bold text-gray-800">Options de visibilité</h3>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { value: 'Publique', desc: 'Visible par tous les candidats' },
+                    { value: 'Restreinte aux abonnés', desc: 'Visible uniquement par les abonnés premium' },
+                    { value: 'Confidentielle (anonyme)', desc: 'Entreprise masquée dans l\'annonce' },
+                  ].map(({ value, desc }) => (
+                    <label key={value} className={`flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 transition ${formData.visibility === value ? 'bg-[#0E2F56]/5 border-[#0E2F56]' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                      <input type="radio" name="visibility" value={value} checked={formData.visibility === value} onChange={handleInputChange} className="w-4 h-4 text-[#0E2F56] mt-0.5 focus:ring-[#0E2F56]" />
+                      <div>
+                        <span className="text-sm font-semibold text-gray-800">{value}</span>
+                        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
                       </div>
                     </label>
-                    <input
-                      id="logo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                      disabled={uploadingLogo}
-                    />
-                    <p className="text-xs text-gray-600 mt-2">PNG, JPG ou GIF (max 5 MB)</p>
-                  </div>
+                  ))}
                 </div>
-              )}
-            </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200 mb-5">
-              <label className="block text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-[#0E2F56]" />
-                Image de mise en avant (optionnel)
-              </label>
-
-              {formData.featured_image_url ? (
-                <div className="space-y-3">
-                  <div className="w-full bg-gray-100 rounded-lg border-2 border-purple-300 overflow-hidden">
-                    <img
-                      src={formData.featured_image_url}
-                      alt="Image de mise en avant"
-                      className="w-full h-auto object-contain max-h-96"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => updateFormField('featured_image_url', '')}
-                    className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition border-2 border-red-200"
-                  >
-                    Supprimer l'image
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <label htmlFor="featured-image-upload" className="cursor-pointer">
-                    <div className="flex items-center justify-center gap-2 px-4 py-6 bg-white hover:bg-gray-50 border-2 border-dashed border-purple-300 rounded-xl transition-all hover:border-purple-500 group">
-                      {uploadingFeaturedImage ? (
-                        <>
-                          <Loader className="w-5 h-5 text-purple-600 animate-spin" />
-                          <span className="text-sm font-semibold text-gray-700">
-                            Upload en cours...
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="w-5 h-5 text-purple-600 group-hover:text-purple-700 transition" />
-                          <span className="text-sm font-semibold text-gray-700 group-hover:text-purple-700 transition">
-                            Cliquez pour télécharger une image
-                          </span>
-                        </>
-                      )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                  <label className={`flex items-center gap-2 cursor-pointer p-3 rounded-xl border-2 transition ${formData.is_premium ? 'bg-amber-50 border-amber-400 text-amber-800' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    <input type="checkbox" name="is_premium" checked={formData.is_premium} onChange={handleInputChange} className="w-4 h-4 rounded" />
+                    <div>
+                      <span className="text-sm font-semibold">Annonce Premium</span>
+                      <p className="text-xs opacity-70 mt-0.5">Mise en avant sur la plateforme</p>
                     </div>
                   </label>
-                  <input
-                    id="featured-image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFeaturedImageUpload}
-                    className="hidden"
-                    disabled={uploadingFeaturedImage}
-                  />
-                  <p className="text-xs text-gray-600 mt-2">
-                    Image principale affichée avec l'offre • PNG ou JPG (max 5 MB) • Ratio 16:9 recommandé
-                  </p>
+                  <label className={`flex items-center gap-2 cursor-pointer p-3 rounded-xl border-2 transition ${formData.auto_share ? 'bg-sky-50 border-sky-400 text-sky-800' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    <input type="checkbox" name="auto_share" checked={formData.auto_share} onChange={handleInputChange} className="w-4 h-4 rounded" />
+                    <div>
+                      <span className="text-sm font-semibold">Auto-partage réseaux</span>
+                      <p className="text-xs opacity-70 mt-0.5">Facebook, LinkedIn, Telegram RH</p>
+                    </div>
+                  </label>
                 </div>
-              )}
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <AutoCompleteInput
-                  value={formData.company_name}
-                  onChange={(value) => updateFormField('company_name', value)}
-                  suggestions={companySuggestions}
-                  placeholder="Ex : Winning Consortium"
-                  label="Nom de l'entreprise"
-                  required
-                  minChars={2}
-                />
-                {validationErrors.company_name && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.company_name}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <AutoCompleteInput
-                  value={formData.sector}
-                  onChange={(value) => updateFormField('sector', value)}
-                  suggestions={sectorSuggestions}
-                  placeholder="Ex : Mines, Banque, IT..."
-                  label="Secteur d'activité"
-                  required
-                  minChars={1}
-                  maxSuggestions={150}
-                />
-              </div>
-
-              <div>
-                <AutoCompleteInput
-                  value={formData.location}
-                  onChange={(value) => updateFormField('location', value)}
-                  suggestions={locationSuggestions}
-                  placeholder="Ex : Conakry, Kankan, Labé..."
-                  label="Localisation du poste"
-                  required
-                  minChars={2}
-                />
-                {validationErrors.location && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.location}
-                  </p>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Présentation de l'entreprise
-                </label>
-                <textarea
-                  name="company_description"
-                  value={formData.company_description}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="Décrivez votre entreprise en quelques lignes..."
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Site web (optionnel)
-                </label>
-                <input
-                  type="url"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  placeholder="https://www.monentreprise.com"
-                />
-                {validationErrors.website && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.website}
-                  </p>
-                )}
+                <div className="mt-4">
+                  <label className={labelCls}>Langue de l'annonce</label>
+                  <select name="announcement_language" value={formData.announcement_language} onChange={handleInputChange} className={selectCls}>
+                    {['Français', 'Anglais', 'Français + Anglais'].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
-          </FormSection>
+          )}
 
-          <FormSection title="4. Rémunération et avantages" icon={DollarSign}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Fourchette salariale (GNF)
-                </label>
-                <input
-                  type="text"
-                  name="salary_range"
-                  value={formData.salary_range}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  placeholder="Ex : 6.000.000 - 8.000.000 GNF"
-                />
+          {/* ── STEP 5: Publication & Validation ── */}
+          {currentStep === 5 && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="p-1.5 bg-[#0E2F56] rounded-lg"><Send className="w-4 h-4 text-white" /></div>
+                <h3 className="text-base font-bold text-gray-800">Publication & Validation</h3>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Type de salaire
-                </label>
-                <select
-                  name="salary_type"
-                  value={formData.salary_type}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="Fixe">Fixe</option>
-                  <option value="Négociable">Négociable</option>
-                  <option value="Non communiqué">Non communiqué</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Avantages
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <div className="flex-1">
-                    <AutoCompleteInput
-                      value={benefitInput}
-                      onChange={setBenefitInput}
-                      suggestions={benefitSuggestions}
-                      placeholder="Ex: logement, repas, transport, couverture santé..."
-                      minChars={2}
-                    />
+              {/* Récapitulatif */}
+              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-2">
+                <h4 className="text-sm font-bold text-gray-700 mb-3">Récapitulatif de votre offre</h4>
+                {[
+                  { label: 'Titre', value: formData.title || '—' },
+                  { label: 'Contrat', value: formData.contract_type },
+                  { label: 'Localisation', value: formData.location || '—' },
+                  { label: 'Entreprise', value: formData.company_name || '—' },
+                  { label: 'Secteur', value: formData.sector },
+                  { label: 'Visibilité', value: formData.visibility },
+                  { label: 'Date limite', value: formData.deadline ? new Date(formData.deadline).toLocaleDateString('fr-FR') : '—' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex justify-between items-center text-sm py-1 border-b border-gray-100 last:border-0">
+                    <span className="text-gray-500">{label}</span>
+                    <span className="font-semibold text-gray-800 text-right max-w-[60%] truncate">{value}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddBenefit}
-                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-xl transition"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.benefits.map((benefit, index) => (
-                    <span
-                      key={`benefit-${index}`}
-                      className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2"
-                    >
-                      {benefit}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBenefit(benefit)}
-                        className="hover:text-green-900 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
+                ))}
+                <div className="pt-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Complétion</span>
+                  <span className={`text-sm font-bold ${completionStatus.color}`}>{completionPercentage}% — {completionStatus.label}</span>
                 </div>
               </div>
-            </div>
-          </FormSection>
-
-          <FormSection title="5. Modalités de candidature" icon={Mail}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email de réception des candidatures *
-                </label>
-                <input
-                  type="email"
-                  name="application_email"
-                  value={formData.application_email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                  placeholder="Ex : rh@entreprise.com"
-                  required
-                />
-                {validationErrors.application_email && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {validationErrors.application_email}
-                  </p>
-                )}
-              </div>
 
               <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="receive_in_platform"
-                    checked={formData.receive_in_platform}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Recevoir les candidatures directement dans mon espace recruteur</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Documents requis
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {['CV', 'Lettre de motivation', 'Certificat de travail', 'CNSS'].map((doc) => (
-                    <label key={doc} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.required_documents.includes(doc)}
-                        onChange={() => toggleDocument(doc)}
-                        className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                      />
-                      <span className="text-sm font-medium text-gray-700">{doc}</span>
-                    </label>
+                <label className={labelCls}>Durée de publication</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {['15 jours', '30 jours', '60 jours'].map((d) => (
+                    <button key={d} type="button" onClick={() => updateFormField('publication_duration', d)}
+                      className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 ${formData.publication_duration === d ? 'bg-[#0E2F56] border-[#0E2F56] text-white shadow-md' : 'bg-white border-gray-200 text-gray-600 hover:border-[#0E2F56] hover:text-[#0E2F56]'}`}>
+                      {d}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Instructions supplémentaires
-                </label>
-                <textarea
-                  name="application_instructions"
-                  value={formData.application_instructions}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition resize-none"
-                  placeholder="Ex : Envoyez vos dossiers complets avant le 15 novembre..."
-                />
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection title="6. Options de visibilité" icon={Eye}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Visibilité de l'annonce
-                </label>
-                <div className="space-y-2">
-                  {['Publique', 'Restreinte aux abonnés', 'Confidentielle (anonyme)'].map((option) => (
-                    <label key={option} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="visibility"
-                        value={option}
-                        checked={formData.visibility === option}
-                        onChange={handleInputChange}
-                        className="w-5 h-5 text-[#0E2F56] focus:ring-[#0E2F56]"
-                      />
-                      <span className="text-sm font-medium text-gray-700">{option}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="is_premium"
-                    checked={formData.is_premium}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Mettre l'annonce en avant (Premium)</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Langue de l'annonce
-                </label>
-                <select
-                  name="announcement_language"
-                  value={formData.announcement_language}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="Français">Français</option>
-                  <option value="Anglais">Anglais</option>
-                  <option value="Français + Anglais">Français + Anglais</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="auto_share"
-                    checked={formData.auto_share}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Partager automatiquement sur Facebook / LinkedIn / Telegram RH</span>
-                </label>
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection title="7. Publication et validation" icon={CheckCircle2}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Durée de publication
-                </label>
-                <select
-                  name="publication_duration"
-                  value={formData.publication_duration}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0E2F56] focus:border-[#0E2F56] transition"
-                >
-                  <option value="15 jours">15 jours</option>
-                  <option value="30 jours">30 jours</option>
-                  <option value="60 jours">60 jours</option>
-                </select>
-              </div>
-
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-                <label className="flex items-start gap-2 cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    name="auto_renewal"
-                    checked={formData.auto_renewal}
-                    onChange={(e) => {
-                      handleInputChange(e);
-                      if (e.target.checked) {
-                        updateFormField('auto_renewal_pending_admin', true);
-                      }
-                    }}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56] mt-0.5"
-                  />
+              <div className={`rounded-xl border-2 p-4 transition-all ${formData.auto_renewal ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-200'}`}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" name="auto_renewal" checked={formData.auto_renewal} onChange={(e) => { handleInputChange(e); if (e.target.checked) updateFormField('auto_renewal_pending_admin', true); }} className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56] mt-0.5" />
                   <div>
-                    <span className="text-sm font-medium text-gray-900 block">
-                      Renouvellement automatique après expiration
-                    </span>
-                    <span className="text-xs text-gray-600 block mt-1">
-                      L'offre sera automatiquement republiée après expiration
-                    </span>
+                    <span className="text-sm font-semibold text-gray-800">Renouvellement automatique après expiration</span>
+                    <p className="text-xs text-gray-500 mt-0.5">L'offre sera automatiquement republiée après expiration</p>
                   </div>
                 </label>
                 {formData.auto_renewal && (
-                  <div className="mt-3 flex items-start gap-2 p-3 bg-[#FF8C00] bg-opacity-10 rounded-lg border border-[#FF8C00]">
-                    <AlertCircle className="w-5 h-5 text-[#FF8C00] flex-shrink-0 mt-0.5" />
-                    <div className="text-xs text-gray-900">
-                      <strong className="font-bold">Validation admin requise</strong>
-                      <p className="mt-1">
-                        Le renouvellement automatique sera soumis à validation par l'administrateur.
-                        Vous recevrez une notification une fois validé.
-                      </p>
-                    </div>
+                  <div className="mt-3 flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-300 text-xs text-amber-800">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
+                    <span><strong>Validation admin requise</strong> — Le renouvellement sera soumis à validation. Vous serez notifié.</span>
                   </div>
                 )}
               </div>
 
-              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="legal_compliance"
-                    checked={formData.legal_compliance}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56]"
-                    required
-                  />
-                  <span className="text-sm font-semibold text-gray-800">
-                    Je certifie que cette offre respecte le Code du Travail Guinéen (2014) *
-                  </span>
+              <div className={`rounded-xl border-2 p-4 transition-all ${formData.legal_compliance ? 'bg-emerald-50 border-emerald-300' : 'bg-amber-50 border-amber-300'}`}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" name="legal_compliance" checked={formData.legal_compliance} onChange={handleInputChange} className="w-5 h-5 text-[#0E2F56] rounded focus:ring-[#0E2F56] mt-0.5" required />
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800">
+                      Je certifie que cette offre respecte le Code du Travail Guinéen (2014) *
+                    </span>
+                    <p className="text-xs text-gray-500 mt-0.5">Obligatoire pour la publication de l'annonce</p>
+                  </div>
                 </label>
+                {formData.legal_compliance && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Conformité légale validée
+                  </div>
+                )}
               </div>
             </div>
-          </FormSection>
+          )}
+        </div>
 
-          <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition"
-            >
+        {/* Footer Navigation */}
+        <div className="border-t border-gray-100 px-6 py-4 flex items-center gap-3 flex-shrink-0 bg-white rounded-b-2xl">
+          {currentStep > 1 ? (
+            <button type="button" onClick={() => goToStep(currentStep - 1)} className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition text-sm">
+              <ChevronLeft className="w-4 h-4" /> Précédent
+            </button>
+          ) : (
+            <button type="button" onClick={onClose} className="px-4 py-2.5 border-2 border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition text-sm">
               Annuler
             </button>
+          )}
 
-            <button
-              type="button"
-              onClick={() => setShowPreview(true)}
-              disabled={!formData.title || !formData.description}
-              className="flex-1 px-6 py-3 bg-white border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-            >
-              <Eye className="w-5 h-5" />
-              Prévisualiser
-            </button>
+          <div className="flex-1" />
 
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={!formData.title || !formData.location || !formData.description || !formData.legal_compliance || loading}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-[#0E2F56] to-blue-700 hover:from-[#1a4275] hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Publication en cours...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  Publier mon offre
-                </>
-              )}
+          {currentStep < 5 && (
+            <button type="button" onClick={() => setShowPreview(true)} disabled={!formData.title || !formData.description} className="flex items-center gap-2 px-4 py-2.5 border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-xl hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-sm">
+              <Eye className="w-4 h-4" /> Aperçu
             </button>
-          </div>
+          )}
+
+          {currentStep < 5 ? (
+            <button type="button" onClick={() => goToStep(currentStep + 1)}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 shadow-sm ${
+                canProceed
+                  ? 'bg-gradient-to-r from-[#0E2F56] to-blue-600 hover:from-[#1a4275] hover:to-blue-700 text-white shadow-blue-200'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              }`}>
+              Suivant <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setShowPreview(true)} disabled={!formData.title || !formData.description} className="flex items-center gap-2 px-4 py-2.5 border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-xl hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-sm">
+                <Eye className="w-4 h-4" /> Aperçu
+              </button>
+              <button type="button" onClick={handlePublish} disabled={!formData.legal_compliance || loading}
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition shadow-lg text-sm">
+                {loading ? <><Loader className="w-4 h-4 animate-spin" /> Publication…</> : <><Send className="w-4 h-4" /> Publier l'offre</>}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      <AccessRestrictionModal
-        isOpen={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        restrictionType="premium-only"
-        currentUserType={profile?.user_type}
-      />
+      <AccessRestrictionModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} restrictionType="premium-only" currentUserType={profile?.user_type} />
 
       {showPreview && (
-        <JobPreviewModal
-          jobData={formData}
-          onClose={() => setShowPreview(false)}
-          onPublish={() => {
-            setShowPreview(false);
-            handlePublish();
-          }}
-        />
+        <JobPreviewModal jobData={formData} onClose={() => setShowPreview(false)} onPublish={() => { setShowPreview(false); handlePublish(); }} />
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 export interface SchemaData {
   id: string;
@@ -74,13 +75,15 @@ class SchemaService {
   generateJobPostingSchema(job: any) {
     const companyName = job.companies?.name || job.company_name || 'Entreprise';
     const location = job.location || 'Guinée';
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
       '@type': 'JobPosting',
       'title': job.title,
-      'description': job.description || job.title,
+      'description': job.description
+        ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        : generateJobCardDescription(job),
       'datePosted': job.created_at,
       'validThrough': job.deadline || job.application_deadline,
       'employmentType': this.mapContractType(job.contract_type),
@@ -118,7 +121,7 @@ class SchemaService {
   }
 
   generatePersonSchema(profile: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -145,7 +148,7 @@ class SchemaService {
   }
 
   generateCourseSchema(formation: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',

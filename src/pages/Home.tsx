@@ -12,10 +12,12 @@ import { sampleFormations } from '../utils/sampleFormationsData';
 import { useCMS } from '../contexts/CMSContext';
 import { useAuth } from '../contexts/AuthContext';
 import { handleRecruiterNavigation } from '../utils/recruiterNavigationHelper';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 import VideoGuidesSection from '../components/home/VideoGuidesSection';
 import { savedJobsService } from '../services/savedJobsService';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
+import JobCardActions from '../components/jobs/JobCardActions';
 import heroGif from '../assets/hero/image_hero.gif';
 
 interface HomeProps {
@@ -43,6 +45,7 @@ export default function Home({ onNavigate }: HomeProps) {
   const [savingJob, setSavingJob] = useState<string | null>(null);
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
   const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
+  const [sectorCounts, setSectorCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadData();
@@ -136,7 +139,7 @@ export default function Home({ onNavigate }: HomeProps) {
   };
 
   const loadData = async () => {
-    const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount] = await Promise.all([
+    const [jobsData, formationsData, jobsCount, companiesCount, candidatesCount, formationsCount, sectorData] = await Promise.all([
       supabase
         .from('jobs')
         .select('*, companies(*)')
@@ -152,7 +155,17 @@ export default function Home({ onNavigate }: HomeProps) {
       supabase.from('companies').select('id', { count: 'exact', head: true }),
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'candidate'),
       supabase.from('formations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('jobs').select('sector').eq('status', 'published'),
     ]);
+
+    if (sectorData.data) {
+      const counts: Record<string, number> = {};
+      sectorData.data.forEach((row: { sector: string | null }) => {
+        const s = row.sector || '';
+        if (s) counts[s] = (counts[s] || 0) + 1;
+      });
+      setSectorCounts(counts);
+    }
 
     // Use sample data if database is empty
     if (jobsData.data && jobsData.data.length > 0) {
@@ -257,13 +270,27 @@ export default function Home({ onNavigate }: HomeProps) {
     }
   };
 
+  const SECTOR_KEYS: Record<string, string[]> = {
+    'Mines & Extraction': ['Mines & Extraction', 'Mines', 'Extraction', 'Minier', 'Mining'],
+    'Finance & Comptabilité': ['Finance & Comptabilité', 'Finance', 'Comptabilité', 'Banque', 'Assurance'],
+    'Informatique & Tech': ['Informatique & Tech', 'Informatique', 'Technologie', 'Tech', 'IT', 'Numérique'],
+    'Logistique & Transport': ['Logistique & Transport', 'Logistique', 'Transport', 'Supply Chain'],
+    'RH & Administration': ['RH & Administration', 'Ressources Humaines', 'Administration', 'RH'],
+    'Formation & Éducation': ['Formation & Éducation', 'Education', 'Éducation', 'Formation', 'Enseignement'],
+  };
+
+  const getSectorCount = (sectorName: string): number => {
+    const keys = SECTOR_KEYS[sectorName] || [sectorName];
+    return keys.reduce((total, key) => total + (sectorCounts[key] || 0), 0);
+  };
+
   const categories = [
-    { name: 'Mines & Extraction', icon: Shield, color: 'from-orange-500 to-orange-600', count: 45 },
-    { name: 'Finance & Comptabilité', icon: DollarSign, color: 'from-green-500 to-green-600', count: 32 },
-    { name: 'Informatique & Tech', icon: Code, color: 'from-blue-500 to-blue-600', count: 28 },
-    { name: 'Logistique & Transport', icon: Truck, color: 'from-purple-500 to-purple-600', count: 38 },
-    { name: 'RH & Administration', icon: UserCheck, color: 'from-pink-500 to-pink-600', count: 25 },
-    { name: 'Formation & Éducation', icon: GraduationCap, color: 'from-indigo-500 to-indigo-600', count: 18 },
+    { name: 'Mines & Extraction', icon: Shield, color: 'from-orange-500 to-orange-600' },
+    { name: 'Finance & Comptabilité', icon: DollarSign, color: 'from-green-500 to-green-600' },
+    { name: 'Informatique & Tech', icon: Code, color: 'from-blue-500 to-blue-600' },
+    { name: 'Logistique & Transport', icon: Truck, color: 'from-sky-500 to-sky-600' },
+    { name: 'RH & Administration', icon: UserCheck, color: 'from-pink-500 to-pink-600' },
+    { name: 'Formation & Éducation', icon: GraduationCap, color: 'from-teal-500 to-teal-600' },
   ];
 
   const testimonials = [
@@ -493,7 +520,7 @@ export default function Home({ onNavigate }: HomeProps) {
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="font-semibold text-gray-900 text-xs mb-1 text-center">{category.name}</h3>
-                  <div className="text-xs text-gray-500 text-center">{category.count} offres</div>
+                  <div className="text-xs text-gray-500 text-center">{getSectorCount(category.name).toLocaleString('fr-FR')} offres</div>
                 </button>
               );
             })}
@@ -563,6 +590,10 @@ export default function Home({ onNavigate }: HomeProps) {
                     )}
                   </div>
 
+                  <p className="text-gray-600 mb-3 text-xs leading-relaxed line-clamp-2">
+                    {generateJobCardDescription(job)}
+                  </p>
+
                   <div className="space-y-2 mb-4 text-xs text-gray-600">
                     {job.education_level && (
                       <div className="flex items-center space-x-2">
@@ -591,46 +622,13 @@ export default function Home({ onNavigate }: HomeProps) {
                       <Clock className="w-4 h-4" />
                       <span className="text-sm">{new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => handleToggleSave(job.id, e)}
-                        disabled={savingJob === job.id}
-                        className={`p-2.5 rounded-lg border-2 transition-all ${
-                          savedJobs[job.id]
-                            ? 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
-                            : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                        } ${savingJob === job.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={savedJobs[job.id] ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                      >
-                        <Heart
-                          className={`w-5 h-5 ${savedJobs[job.id] ? 'fill-current' : ''}`}
-                        />
-                      </button>
-                      {(job as any).saves_count > 0 && (
-                        <span className="text-sm font-medium text-gray-600">
-                          {(job as any).saves_count}
-                        </span>
-                      )}
-                      <button
-                        onClick={(e) => openComments(job, e)}
-                        className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all relative"
-                        title="Voir les commentaires"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        {job.comments_count > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {job.comments_count}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={(e) => shareJob(job, e)}
-                        className="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all"
-                        title="Partager cette offre"
-                      >
-                        <Share2 className="w-5 h-5" />
-                      </button>
-                    </div>
+                    <JobCardActions
+                      job={job as any}
+                      isSaved={!!savedJobs[job.id]}
+                      onToggleSave={(e) => handleToggleSave(job.id, e)}
+                      onOpenComments={(e) => openComments(job, e)}
+                      onShare={(e) => shareJob(job, e)}
+                    />
                   </div>
                 </div>
               ))}

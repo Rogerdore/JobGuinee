@@ -97,7 +97,8 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
         { id: 'all-users', label: 'Tous les utilisateurs', icon: Users, route: 'user-management' },
         { id: 'candidates', label: 'Candidats', icon: FileCheck, route: 'user-management' },
         { id: 'recruiters', label: 'Recruteurs', icon: Building2, route: 'user-management' },
-        { id: 'admins', label: 'Administrateurs', icon: Shield, route: 'user-management' }
+        { id: 'admins', label: 'Administrateurs', icon: Shield, route: 'user-management' },
+        { id: 'admin-invitations', label: 'Invitations admin', icon: Mail, route: 'admin-invitations' }
       ]
     },
     {
@@ -159,16 +160,18 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
     },
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: 'Notifications & Emails',
       icon: Bell,
       children: [
+        { id: 'email-config', label: 'Moteur Email', icon: Mail, route: 'admin-email-config' },
+        { id: 'email-templates', label: 'Templates Emails', icon: FileText, route: 'admin-email-templates' },
+        { id: 'email-test', label: 'Tester l\'envoi', icon: Send, route: 'admin-test-email' },
+        { id: 'email-events', label: 'Événements Email', icon: Zap, route: 'admin-email-events' },
         { id: 'recruiter-notifs', label: 'Notifications Recruteurs', icon: Bell, route: 'admin-recruiter-notifications' },
         { id: 'communications', label: 'Communications', icon: MessageCircle, route: 'admin-communications' },
         { id: 'comm-create', label: 'Créer Communication', icon: Send, route: 'admin-communication-create' },
         { id: 'comm-logs', label: 'Historique Communications', icon: Database, route: 'admin-communication-logs' },
-        { id: 'comm-templates', label: 'Templates Communications', icon: FileText, route: 'admin-communication-templates' },
-        { id: 'email-config', label: 'Configuration Email', icon: Settings, route: 'admin-email-config' },
-        { id: 'email-templates', label: 'Templates Emails', icon: Mail, route: 'admin-email-templates' }
+        { id: 'comm-templates', label: 'Templates Communications', icon: FileText, route: 'admin-communication-templates' }
       ]
     },
     {

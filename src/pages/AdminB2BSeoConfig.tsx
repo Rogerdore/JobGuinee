@@ -97,7 +97,7 @@ export default function AdminB2BSeoConfig() {
           <div className="mb-2">
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
               <Globe className="w-4 h-4" />
-              <span>jobguinee.com › solutions-b2b</span>
+              <span>jobguinee-pro.com › solutions-b2b</span>
             </div>
             <h4 className="text-xl text-blue-600 hover:underline cursor-pointer mb-1">
               {globalSeo.title}

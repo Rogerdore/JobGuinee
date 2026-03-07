@@ -96,7 +96,7 @@ export default function AdminFormationList() {
         is_verified: true,
         verified_at: new Date().toISOString(),
         location: 'Conakry, Guinée',
-        website_url: 'https://jobguinee.com',
+        website_url: import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com',
         domaines: ['Tous domaines']
       };
 

@@ -2,6 +2,7 @@
  * Utility for generating Open Graph and Social Media meta tags
  * Used for Facebook, LinkedIn, Twitter previews
  */
+import { generateJobCardDescription } from './jobNormalization';
 
 export interface ShareMetaData {
   title: string;
@@ -90,17 +91,38 @@ export const generateJobShareMeta = (job: {
   description?: string;
   location?: string;
   contract_type?: string;
+  sector?: string;
+  experience_level?: string;
+  keywords?: string[];
   companies?: { name: string; logo_url?: string };
+  og_image_url?: string;
+  featured_image_url?: string;
+  company_logo_url?: string;
+  company_name?: string;
 }): ShareMetaData => {
-  const description = job.description
-    ? job.description.substring(0, 160) + '...'
-    : `${job.contract_type || 'Emploi'} à ${job.location || 'Guinée'} - ${job.companies?.name || 'Entreprise'}`;
+  const baseUrl = window.location.origin;
+  const company = job.company_name || job.companies?.name || '';
+
+  const description = generateJobCardDescription({
+    title: job.title,
+    location: job.location,
+    experience_level: job.experience_level,
+    sector: job.sector,
+    keywords: job.keywords,
+    company_name: company,
+  });
+
+  const image = job.og_image_url
+    || job.featured_image_url
+    || job.company_logo_url
+    || job.companies?.logo_url
+    || `${baseUrl}/logo_jobguinee.png`;
 
   return {
-    title: job.title,
+    title: company ? `${job.title} – ${company}` : job.title,
     description,
-    image: job.companies?.logo_url || '/logo_jobguinee.png',
-    url: `${window.location.origin}/job/${job.id}`,
+    image: image.startsWith('http') ? image : `${baseUrl}${image}`,
+    url: `${baseUrl}/share/${job.id}`,
     type: 'article',
   };
 };

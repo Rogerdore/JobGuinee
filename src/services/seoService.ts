@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { generateJobCardDescription } from '../utils/jobNormalization';
 
 export interface SEOConfig {
   id: string;
@@ -366,7 +367,7 @@ class SEOService {
         'guinée'
       ],
       og_title: `${jobTitle} - ${companyName}`,
-      og_description: job.description?.substring(0, 200) || '',
+      og_description: generateJobCardDescription(job),
       og_type: 'article',
       canonical_url: `/job-detail/${job.id}`,
       robots: 'index, follow',
@@ -419,7 +420,7 @@ class SEOService {
     const ogImage = pageMeta?.og_image || config?.og_image || '/logo.png';
     const ogTitle = pageMeta?.og_title || title;
     const ogDescription = pageMeta?.og_description || description;
-    const siteUrl = config?.site_url || 'https://jobguinee.com';
+    const siteUrl = config?.site_url || import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
     const canonicalUrl = pageMeta?.canonical_url ? `${siteUrl}${pageMeta.canonical_url}` : undefined;
 
     return {

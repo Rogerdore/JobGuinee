@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Mail, Plus, Edit2, Trash2, Check, X, Save, Eye, EyeOff, Copy } from 'lucide-react';
+import { Mail, Plus, CreditCard as Edit2, Trash2, Check, X, Save, Eye, EyeOff, Copy } from 'lucide-react';
 import { useModalContext } from '../contexts/ModalContext';
 
 interface EmailTemplate {
@@ -39,8 +39,8 @@ export default function AdminEmailTemplates() {
     { name: 'job_title', label: 'Titre du poste', example: 'Développeur Full Stack' },
     { name: 'company_name', label: 'Nom de l\'entreprise', example: 'TechCorp Guinée' },
     { name: 'recruiter_name', label: 'Nom du recruteur', example: 'Aissatou Barry' },
-    { name: 'profile_url', label: 'Lien profil public', example: 'https://jobguinee.com/profile/...' },
-    { name: 'platform_url', label: 'URL plateforme', example: 'https://jobguinee.com' },
+    { name: 'profile_url', label: 'Lien profil public', example: 'https://jobguinee-pro.com/profile/...' },
+    { name: 'platform_url', label: 'URL plateforme', example: 'https://jobguinee-pro.com' },
     { name: 'custom_message', label: 'Message personnalisé', example: 'Fort de 5 ans d\'expérience...' },
     { name: 'has_cv', label: 'A un CV', example: 'true/false' },
     { name: 'has_cover_letter', label: 'A une lettre', example: 'true/false' },
@@ -184,8 +184,8 @@ export default function AdminEmailTemplates() {
       job_title: 'Développeur Full Stack',
       company_name: 'TechCorp Guinée',
       recruiter_name: 'Aissatou Barry',
-      profile_url: 'https://jobguinee.com/profile/abc123',
-      platform_url: 'https://jobguinee.com',
+      profile_url: 'https://jobguinee-pro.com/profile/abc123',
+      platform_url: 'https://jobguinee-pro.com',
       custom_message: 'Fort de 5 ans d\'expérience en développement web, je souhaite mettre mes compétences au service de votre entreprise.'
     };
 
