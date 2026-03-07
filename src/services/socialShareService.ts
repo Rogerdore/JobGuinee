@@ -23,9 +23,10 @@ const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.png`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
-    // Use Supabase Edge Function URL directly for social sharing
-    // This bypasses Apache and ensures crawlers get server-rendered OG tags
-    const jobUrl = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
+    // Use canonical jobguinee-pro.com URL for social sharing
+    // Cloudflare Worker intercepts crawlers and proxies to Supabase Edge Function
+    const slug = (job as any).slug || job.id;
+    const jobUrl = `${BASE_URL}/offres/${slug}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const company = job.company_name || job.company || 'Entreprise';
     const location = job.location || 'Guinée';
@@ -124,10 +125,11 @@ export const socialShareService = {
   },
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
-    // Use Supabase Edge Function URL directly for sharing
-    // This ensures Facebook/LinkedIn/Twitter crawlers get proper OG tags
-    // without depending on Apache mod_rewrite
-    const baseShareUrl = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
+    // Use jobguinee-pro.com/offres/ URL for sharing
+    // Cloudflare Worker intercepts crawler requests and proxies to Supabase Edge Function
+    // This ensures the canonical URL matches the shared URL
+    const slug = (job as any).slug || job.id;
+    const baseShareUrl = `${BASE_URL}/offres/${slug}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const encodedTitle = encodeURIComponent(jobTitle);
     const company = job.company_name || job.company || '';

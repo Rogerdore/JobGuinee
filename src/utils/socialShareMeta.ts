@@ -3,8 +3,6 @@
  * Used for Facebook, LinkedIn, Twitter previews
  */
 
-const SUPABASE_FUNCTIONS_URL = 'https://hhhjzgeidjqctuveopso.supabase.co/functions/v1';
-
 export interface ShareMetaData {
   title: string;
   description: string;
@@ -106,7 +104,7 @@ export const generateJobShareMeta = (job: {
     title: job.title,
     description,
     image: imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl}`,
-    url: `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`,
+    url: `https://jobguinee-pro.com/offres/${(job as any).slug || job.id}`,
     type: 'article',
   };
 };
@@ -119,9 +117,8 @@ export const shareFacebookJob = (job: {
   contract_type?: string;
   companies?: { name: string };
 }) => {
-  // Use Supabase Edge Function URL directly so Facebook crawler gets server-rendered OG tags
-  // This bypasses Apache which returns 418 and blocks crawlers
-  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
+  // Use canonical URL — Cloudflare Worker intercepts Facebook crawler and proxies to Supabase Edge Function
+  const url = `https://jobguinee-pro.com/offres/${(job as any).slug || job.id}`;
   const text = `${job.title} - ${job.companies?.name}\n📍 ${job.location}\n💼 ${job.contract_type}`;
 
   // Facebook share dialog
@@ -134,8 +131,8 @@ export const shareLinkedInJob = (job: {
   title: string;
   description?: string;
 }) => {
-  // Use Supabase Edge Function URL directly so LinkedIn crawler gets server-rendered OG tags
-  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
+  // Use canonical URL — Cloudflare Worker intercepts LinkedIn crawler and proxies to Supabase Edge Function
+  const url = `https://jobguinee-pro.com/offres/${(job as any).slug || job.id}`;
   const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   window.open(linkedInUrl, '_blank', 'width=600,height=400');
 };
@@ -147,8 +144,8 @@ export const shareTwitterJob = (job: {
   contract_type?: string;
   companies?: { name: string };
 }) => {
-  // Use Supabase Edge Function URL directly so Twitter crawler gets server-rendered OG tags
-  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
+  // Use canonical URL — Cloudflare Worker intercepts Twitter crawler and proxies to Supabase Edge Function
+  const url = `https://jobguinee-pro.com/offres/${(job as any).slug || job.id}`;
   const text = `${job.title} - ${job.companies?.name} 📍 ${job.location} 💼 ${job.contract_type}`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank', 'width=600,height=400');
@@ -161,8 +158,8 @@ export const shareWhatsAppJob = (job: {
   contract_type?: string;
   companies?: { name: string };
 }) => {
-  // Use Supabase Edge Function URL for consistency and OG tag support
-  const url = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
+  // Use canonical URL — Cloudflare Worker intercepts WhatsApp crawler and proxies to Supabase Edge Function
+  const url = `https://jobguinee-pro.com/offres/${(job as any).slug || job.id}`;
   const text = `*${job.title}*\n\n🏢 ${job.companies?.name}\n📍 ${job.location}\n💼 ${job.contract_type}\n\nPostulez maintenant sur JobGuinée:\n${url}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(whatsappUrl, '_blank');
