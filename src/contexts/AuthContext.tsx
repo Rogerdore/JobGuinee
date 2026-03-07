@@ -18,6 +18,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   resendConfirmationEmail: (email: string) => Promise<void>;
   cleanupIncompleteAccount: (email: string) => Promise<void>;
+  checkEmailProvider: (email: string) => Promise<'google' | 'email' | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -242,6 +243,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('EMAIL_NOT_CONFIRMED');
       }
       if (error.message.includes('Invalid login credentials')) {
+        // Check if this email exists as a Google-only account
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', email.toLowerCase())
+          .maybeSingle();
+
+        if (profileData) {
+          throw new Error('GOOGLE_ACCOUNT_NO_PASSWORD');
+        }
         throw new Error('INVALID_CREDENTIALS');
       }
       throw error;
@@ -250,9 +261,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data.user) {
       throw new Error('Connexion échouée');
     }
-
-    // Email confirmation désactivée - connexion immédiate
-    // L'email de bienvenue est envoyé via le service SMTP custom
   };
 
   // Confirmation email is sent natively by Supabase Auth via emailRedirectTo.
@@ -314,6 +322,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const checkEmailProvider = async (email: string): Promise<'google' | 'email' | null> => {
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (!existingProfile) return null;
+
+    const { data: provider } = await supabase.rpc('get_user_provider', { user_email: email.toLowerCase() });
+    if (provider === 'google') return 'google';
+    return 'email';
+  };
+
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
     const { data: existingUsers } = await supabase
       .from('profiles')
@@ -322,6 +344,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (existingUsers) {
+      const { data: provider } = await supabase.rpc('get_user_provider', { user_email: email.toLowerCase() });
+      if (provider === 'google') {
+        throw new Error('EMAIL_EXISTS_GOOGLE');
+      }
       throw new Error('EMAIL_EXISTS');
     }
 
@@ -500,6 +526,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cleanupIncompleteAccount,
     resetPassword,
     resendConfirmationEmail,
+    checkEmailProvider,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

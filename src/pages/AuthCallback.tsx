@@ -81,22 +81,29 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         const type = hashParams.get('type') || searchParams.get('type');
         const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+        const code = searchParams.get('code');
 
-        // Email confirmation link clicked
-        if (type === 'signup' || type === 'email_change') {
-          // Must call setSession so Supabase finalizes the confirmation and
-          // sets email_confirmed_at in auth.users — then the DB trigger fires.
-          if (accessToken && refreshToken) {
+        // Email confirmation link clicked (PKCE flow uses ?code=, legacy uses #access_token=)
+        if (type === 'signup' || type === 'email_change' || (code && !searchParams.get('provider'))) {
+          // PKCE flow: exchange the code for a session — this is what actually marks
+          // email_confirmed_at in auth.users and fires the DB trigger.
+          if (code) {
+            try {
+              await supabase.auth.exchangeCodeForSession(code);
+            } catch {
+              // Code may already be consumed (e.g. double-click) — still show success
+            }
+          } else if (accessToken && refreshToken) {
+            // Legacy implicit flow
             try {
               await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken,
               });
             } catch {
-              // If setSession fails the tokens may already be consumed — still show success
+              // Non-blocking
             }
           } else {
-            // Tokens may be in URL via the PKCE flow — just call getSession
             try {
               await supabase.auth.getSession();
             } catch {
@@ -104,7 +111,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
             }
           }
 
-          // Sign the user out immediately so they land on the login page cleanly
+          // Sign out so the user arrives at the login page with a clean state
           await supabase.auth.signOut();
 
 >>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
