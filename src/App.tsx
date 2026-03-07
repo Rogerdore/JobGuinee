@@ -116,12 +116,19 @@ function AppContent() {
     // seoCoreWebVitalsService.initRUM();
 
     const hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    // Détection callback auth : hash fragment (implicit flow) ou code (PKCE flow)
+    if (
+      (hash && hash.includes('access_token')) ||
+      searchParams.get('code') ||
+      window.location.pathname === '/auth/callback'
+    ) {
       setCurrentPage('auth-callback');
       return;
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = searchParams;
     const page = urlParams.get('page');
     const id = urlParams.get('id');
     const token = urlParams.get('token');

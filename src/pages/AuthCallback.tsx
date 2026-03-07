@@ -13,10 +13,65 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Détecter le type de callback
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const type = hashParams.get('type');
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = hashParams.get('type') || urlParams.get('type');
+        const code = urlParams.get('code'); // PKCE flow
+        const accessToken = hashParams.get('access_token');
+        const errorParam = hashParams.get('error') || urlParams.get('error');
+        const errorDescription = hashParams.get('error_description') || urlParams.get('error_description');
 
+        console.log('🔄 AuthCallback:', { type, hasCode: !!code, hasAccessToken: !!accessToken, error: errorParam });
+
+        // Gestion des erreurs de Supabase Auth
+        if (errorParam) {
+          console.error('❌ Auth error from Supabase:', errorParam, errorDescription);
+          throw new Error(errorDescription || errorParam || 'Erreur d\'authentification');
+        }
+
+        // PKCE flow: échanger le code contre une session
+        if (code) {
+          console.log('🔑 PKCE flow: échange du code...');
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            console.error('❌ Erreur échange code PKCE:', exchangeError);
+            throw exchangeError;
+          }
+          console.log('✅ PKCE session obtenue:', data.session?.user?.email);
+        }
+
+        // Confirmation email (type=signup) — On doit quand même récupérer la session
         if (type === 'signup') {
+          console.log('📧 Confirmation email signup détectée');
+
+          // Si on a un access_token dans le hash, Supabase a déjà créé la session
+          // On doit laisser le client Supabase la récupérer
+          if (accessToken) {
+            // Le hash contient les tokens — Supabase JS les traite automatiquement via detectSessionInUrl
+            // Attendre que Supabase traite le hash
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
+          // Vérifier si on a maintenant une session active
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (session?.user) {
+            console.log('✅ Session active après confirmation:', session.user.email);
+
+            // S'assurer que le profil existe
+            await ensureProfileExists(session.user.id, session.user.email || '', session.user.user_metadata);
+
+            // Afficher succès puis rediriger vers home (déjà connecté !)
+            setConfirmationSuccess(true);
+            setTimeout(() => {
+              onNavigate('home');
+            }, 2000);
+            return;
+          }
+
+          // Pas de session — l'utilisateur devra se connecter manuellement
+          console.log('ℹ️ Pas de session après confirmation — redirection vers login');
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('auth');
@@ -24,6 +79,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           return;
         }
 
+        // OAuth callback ou autre — récupérer la session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -36,123 +92,135 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
         const userId = session.user.id;
         const userEmail = session.user.email;
-        const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || userEmail?.split('@')[0] || 'Utilisateur';
+        const userMeta = session.user.user_metadata;
 
+        await ensureProfileExists(userId, userEmail || '', userMeta);
+
+        // Gestion spécifique recruteur
         const pendingRole = localStorage.getItem('pending_oauth_role') as UserRole || 'candidate';
         localStorage.removeItem('pending_oauth_role');
 
-        let profileData = null;
-        let attempts = 0;
-        const maxAttempts = 20;
-
-        while (!profileData && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-
-          if (profile) {
-            profileData = profile;
-            break;
-          }
-
-          attempts++;
+        if (pendingRole === 'recruiter') {
+          await ensureCompanyExists(userId, userMeta?.full_name || userMeta?.name || 'Utilisateur');
         }
 
-        if (!profileData) {
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: userId,
-              email: userEmail,
-              full_name: fullName,
-              user_type: pendingRole,
-              credits_balance: 10,
-              ai_credits_balance: 5,
-            });
-
-          if (insertError && !insertError.message.includes('duplicate')) {
-            throw insertError;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          const { data: newProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-
-          profileData = newProfile;
-        }
-
-        if (pendingRole === 'recruiter' && profileData) {
-          const { data: existingCompany } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('created_by', userId)
-            .maybeSingle();
-
-          if (!existingCompany) {
-            const companyName = fullName.includes(' ')
-              ? `Entreprise de ${fullName.split(' ')[0]}`
-              : `Entreprise de ${fullName}`;
-
-            const { data: newCompany, error: companyError } = await supabase
-              .from('companies')
-              .insert({
-                name: companyName,
-                created_by: userId,
-              })
-              .select()
-              .single();
-
-            if (newCompany && !companyError) {
-              await supabase
-                .from('profiles')
-                .update({ company_id: newCompany.id })
-                .eq('id', userId);
-            }
-          }
-        }
-
-        if (pendingRole === 'trainer' && profileData) {
-          const { data: existingTrainerProfile } = await supabase
-            .from('trainer_profiles')
-            .select('id')
-            .eq('profile_id', userId)
-            .maybeSingle();
-
-          if (!existingTrainerProfile) {
-            await supabase
-              .from('trainer_profiles')
-              .insert({
-                profile_id: userId,
-                user_id: userId,
-                organization_type: 'individual',
-                experience_years: 0,
-                is_verified: false,
-                rating: 0,
-                total_students: 0
-              });
-          }
+        if (pendingRole === 'trainer') {
+          await ensureTrainerProfileExists(userId);
         }
 
         await new Promise(resolve => setTimeout(resolve, 500));
         onNavigate('home');
 
       } catch (err: any) {
-        console.error('Error handling OAuth callback:', err);
+        console.error('❌ Error handling auth callback:', err);
         setError(err.message || 'Erreur lors de la connexion');
-        setTimeout(() => onNavigate('auth'), 3000);
+        setTimeout(() => onNavigate('auth'), 4000);
       }
     };
 
     handleCallback();
   }, [onNavigate]);
+
+  // ============================================
+  // Helpers
+  // ============================================
+
+  async function ensureProfileExists(userId: string, email: string, userMeta: any) {
+    const fullName = userMeta?.full_name || userMeta?.name || email.split('@')[0] || 'Utilisateur';
+    const role = (userMeta?.user_type || localStorage.getItem('pending_oauth_role') || 'candidate') as UserRole;
+
+    let profileData = null;
+    let attempts = 0;
+    const maxAttempts = 15;
+
+    while (!profileData && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profile) {
+        profileData = profile;
+        break;
+      }
+      attempts++;
+    }
+
+    if (!profileData) {
+      console.log('📝 Création du profil manquant pour', email);
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: email,
+          full_name: fullName,
+          user_type: role,
+          credits_balance: 10,
+          ai_credits_balance: 5,
+        });
+
+      if (insertError && !insertError.message.includes('duplicate')) {
+        console.error('⚠️ Erreur création profil:', insertError);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  async function ensureCompanyExists(userId: string, fullName: string) {
+    const { data: existingCompany } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('created_by', userId)
+      .maybeSingle();
+
+    if (!existingCompany) {
+      const companyName = fullName.includes(' ')
+        ? `Entreprise de ${fullName.split(' ')[0]}`
+        : `Entreprise de ${fullName}`;
+
+      const { data: newCompany, error: companyError } = await supabase
+        .from('companies')
+        .insert({
+          name: companyName,
+          created_by: userId,
+        })
+        .select()
+        .single();
+
+      if (newCompany && !companyError) {
+        await supabase
+          .from('profiles')
+          .update({ company_id: newCompany.id })
+          .eq('id', userId);
+      }
+    }
+  }
+
+  async function ensureTrainerProfileExists(userId: string) {
+    const { data: existingTrainerProfile } = await supabase
+      .from('trainer_profiles')
+      .select('id')
+      .eq('profile_id', userId)
+      .maybeSingle();
+
+    if (!existingTrainerProfile) {
+      await supabase
+        .from('trainer_profiles')
+        .insert({
+          profile_id: userId,
+          user_id: userId,
+          organization_type: 'individual',
+          experience_years: 0,
+          is_verified: false,
+          rating: 0,
+          total_students: 0,
+        });
+    }
+  }
 
   if (confirmationSuccess) {
     return (
