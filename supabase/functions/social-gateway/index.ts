@@ -18,7 +18,12 @@ interface JobData {
   salary_min?: number;
   salary_max?: number;
   featured_image_url?: string;
+  company_logo_url?: string;
   slug?: string;
+  companies?: {
+    name?: string;
+    logo_url?: string;
+  };
 }
 
 Deno.serve(async (req: Request) => {
@@ -32,6 +37,10 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const pathname = url.pathname;
+    
+    // Detect if request comes from a social media crawler
+    const userAgent = req.headers.get('user-agent') || '';
+    const isCrawler = /facebookexternalhit|Facebot|LinkedInBot|Twitterbot|WhatsApp|TelegramBot|Discordbot|Slackbot|Pinterest|SkypeUriPreview|vkShare|tumblr|flipboard|nuzzel|redditbot|Embedly|quora|outbrain|ia_archiver/i.test(userAgent);
     
     // Extract job_id from path: /social-gateway/{job_id}
     const jobIdMatch = pathname.match(/\/social-gateway\/([^/?]+)/);
@@ -51,10 +60,10 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch job with company details
+    // Fetch job with company details (join companies table for logo)
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("*")
+      .select("*, companies(name, logo_url)")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -68,15 +77,17 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const html = generateShareHTML(job as JobData);
+    const html = generateShareHTML(job as JobData, isCrawler);
+
+    const responseHeaders = new Headers();
+    responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+    responseHeaders.set("Cache-Control", "public, max-age=3600");
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
 
     return new Response(html, {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=3600",
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error("Error:", error);
@@ -101,37 +112,65 @@ function cleanDescription(desc: string | null | undefined): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
+    // Remove PDF/file content artifacts
+    .replace(/📎[^📎]*\.(pdf|doc|docx|xls|xlsx)[^•]*(•[^•]*page\(s\))?/gi, "")
+    .replace(/Page\s+\d+\/\d+/g, "")
+    .replace(/\d+(\.\d+)?\s*KB\s*•/g, "")
+    .replace(/📄[^•]*•/g, "")
+    .replace(/♻️[^.]*\./g, "")
+    .replace(/Document PDF intégré/g, "")
+    .replace(/Exploitable par IA/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function generateShareHTML(job: JobData): string {
+function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const baseUrl = "https://jobguinee-pro.com";
 
   const title = `${job.title || "Offre d'emploi"} – ${job.company_name || job.company || "JobGuinée"}`;
 
   const rawDescription = cleanDescription(job.description);
-  const description = rawDescription.length > 220
-    ? rawDescription.substring(0, 217) + "..."
-    : rawDescription || `Découvrez cette opportunité professionnelle sur JobGuinée`;
+  // If cleaned description is too short or just gibberish, use a good fallback
+  const fallbackDesc = `Découvrez l'offre ${job.title || "d'emploi"} chez ${job.company_name || job.company || "une entreprise en Guinée"} sur JobGuinée. Postulez maintenant !`;
+  const description = (rawDescription.length > 30 && rawDescription.length <= 220)
+    ? rawDescription
+    : (rawDescription.length > 220)
+      ? rawDescription.substring(0, 217) + "..."
+      : fallbackDesc;
 
   // OG Image Cascade (PNG/JPG only, NO SVG)
-  // Priority: featured_image_url → job-specific image → default PNG
+  // Priority: featured_image_url → company_logo_url → companies.logo_url → default PNG
   let ogImage = `${baseUrl}/assets/share/default-job.png`; // Final fallback
+  
+  const isValidImageUrl = (url: string | undefined | null): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    if (!url.startsWith('http')) return false;
+    if (url.toLowerCase().endsWith('.svg')) return false;
+    return true;
+  };
 
-  if (job.featured_image_url && typeof job.featured_image_url === 'string') {
-    if (job.featured_image_url.startsWith('http')) {
-      // External URL - validate it's not SVG
-      if (!job.featured_image_url.toLowerCase().endsWith('.svg')) {
-        ogImage = job.featured_image_url;
-      }
-    }
+  // 1. Featured image (best quality, uploaded by recruiter)
+  if (isValidImageUrl(job.featured_image_url)) {
+    ogImage = job.featured_image_url!;
   }
+  // 2. Company logo from job field
+  else if (isValidImageUrl(job.company_logo_url)) {
+    ogImage = job.company_logo_url!;
+  }
+  // 3. Company logo from joined companies table
+  else if (job.companies && isValidImageUrl(job.companies.logo_url)) {
+    ogImage = job.companies.logo_url!;
+  }
+
+  // Detect image type for og:image:type
+  const imageType = ogImage.toLowerCase().endsWith('.jpg') || ogImage.toLowerCase().endsWith('.jpeg')
+    ? 'image/jpeg' : 'image/png';
 
   // Check if job-specific image exists (would need server-side validation in production)
   // For now, we use the featured_image_url if available, otherwise fallback
 
-  const shareUrl = `${baseUrl}/share/${job.id}`;
+  // og:url must be the canonical jobguinee-pro.com URL (this controls the domain shown on Facebook)
+  const shareUrl = `${baseUrl}/offres/${job.slug || job.id}`;
   const redirectUrl = `${baseUrl}/offres/${job.slug || job.id}`;
 
   return `<!DOCTYPE html>
@@ -155,7 +194,7 @@ function generateShareHTML(job: JobData): string {
   <meta property="og:image" content="${ogImage}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:type" content="${imageType}" />
   <meta property="og:image:alt" content="${escapeHTML(title)}" />
   <meta property="og:url" content="${shareUrl}" />
   
@@ -172,8 +211,8 @@ function generateShareHTML(job: JobData): string {
   <meta property="linkedin:description" content="${escapeHTML(description)}" />
   <meta property="linkedin:image" content="${ogImage}" />
   
-  <!-- Redirect after crawlers finish (300ms delay) -->
-  <meta http-equiv="refresh" content="0;url=${redirectUrl}" />
+  <!-- Redirect for human users only (crawlers stay to read OG tags) -->
+  ${isCrawler ? '' : `<meta http-equiv="refresh" content="2;url=${redirectUrl}" />`}
   <link rel="canonical" href="${redirectUrl}" />
   
   <style>
@@ -216,11 +255,11 @@ function generateShareHTML(job: JobData): string {
   </div>
   
   <script>
-    // Fallback redirect in case meta refresh doesn't work
+    // Redirect human users to the actual job page (crawlers don't execute JS)
     if (typeof window !== 'undefined') {
       setTimeout(() => {
         window.location.href = '${redirectUrl}';
-      }, 100);
+      }, 2000);
     }
   </script>
 </body>
@@ -269,12 +308,11 @@ function generateErrorHTML(message: string): string {
 }
 
 function escapeHTML(str: string): string {
-  const div = new DOMParser().parseFromString(str, 'text/html');
+  if (!str) return "";
   return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;")
-    .replace(/\//g, "&#x2F;");
+    .replace(/'/g, "&#x27;");
 }

@@ -68,16 +68,15 @@ Deno.serve(async (req: Request) => {
 
     const metadata = generateJobMetadata(job as JobData);
     // Cascade de préférence pour l'image OG
+    // Fallback par défaut: image PNG statique garantie d'exister
     let ogImage = "https://jobguinee-pro.com/assets/share/default-job.png";
 
-    // 1. Image OG générée (si elle existe)
-    const generatedOGImage = `https://jobguinee-pro.com/og-images/jobs/${job.id}/facebook.png`;
-    // Note: On l'utilise si elle existe (vérification côté client/Facebook)
-    ogImage = generatedOGImage;
-
-    // 2. Fallback: Image mise en avant du recruteur
+    // 1. Priorité: Image mise en avant du recruteur (si disponible et valide)
     if (job.featured_image_url && typeof job.featured_image_url === 'string' && job.featured_image_url.startsWith('http')) {
-      ogImage = job.featured_image_url;
+      // Exclure les SVG (non supportés par Facebook)
+      if (!job.featured_image_url.toLowerCase().endsWith('.svg')) {
+        ogImage = job.featured_image_url;
+      }
     }
 
     const html = generateHTMLWithOGTags(metadata, ogImage, job as JobData);

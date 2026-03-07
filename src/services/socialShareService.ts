@@ -17,14 +17,15 @@ export interface SocialShareLinks {
 }
 
 const BASE_URL = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
-const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.svg`;
-const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.svg`;
+const SUPABASE_FUNCTIONS_URL = 'https://hhhjzgeidjqctuveopso.supabase.co/functions/v1';
+const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.png`;
+const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.png`;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
-    // Use Social Gateway /share/{job_id} for robust OG tag serving
-    // This route is handled by the server-side Edge Function
-    const jobUrl = `${BASE_URL}/share/${job.id}`;
+    // Use Supabase Edge Function URL directly for social sharing
+    // This bypasses Apache and ensures crawlers get server-rendered OG tags
+    const jobUrl = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const company = job.company_name || job.company || 'Entreprise';
     const location = job.location || 'Guinée';
@@ -123,9 +124,10 @@ export const socialShareService = {
   },
 
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
-    // Use /share/{job_id} route with server-side OG tag serving
-    // Crawlers will receive HTML with proper OG tags from Edge Function
-    const baseShareUrl = `${BASE_URL}/share/${job.id}`;
+    // Use Supabase Edge Function URL directly for sharing
+    // This ensures Facebook/LinkedIn/Twitter crawlers get proper OG tags
+    // without depending on Apache mod_rewrite
+    const baseShareUrl = `${SUPABASE_FUNCTIONS_URL}/social-gateway/${job.id}`;
     const jobTitle = job.title || 'Offre d\'emploi';
     const encodedTitle = encodeURIComponent(jobTitle);
     const company = job.company_name || job.company || '';
