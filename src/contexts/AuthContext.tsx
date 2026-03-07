@@ -351,7 +351,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('EMAIL_EXISTS');
     }
 
-    const confirmationRedirectUrl = `${window.location.origin}/auth/callback`;
+    const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
+    const confirmationRedirectUrl = `${appUrl}/auth/callback`;
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -468,11 +469,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resendConfirmationEmail = async (email: string) => {
+    const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+        emailRedirectTo: `${appUrl}/auth/callback`
       }
     });
 

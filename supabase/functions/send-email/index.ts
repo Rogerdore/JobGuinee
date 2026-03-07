@@ -4,43 +4,48 @@ import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const SITE_URL = "https://www.jobguinee.com";
+const SITE_URL = "https://jobguinee-pro.com";
 const UNSUBSCRIBE_URL = `${SITE_URL}/unsubscribe`;
 const FROM_DOMAIN = "jobguinee-pro.com";
 const CONTACT_EMAIL = `contact@${FROM_DOMAIN}`;
 
+// ============================================================
+// TYPES
+// ============================================================
 interface EmailRequest {
   to: string;
-  to_email?: string; // Alias pour compatibilité frontend
+  to_email?: string;
   toName?: string;
-  to_name?: string; // Alias pour compatibilité frontend
+  to_name?: string;
   subject: string;
   htmlBody?: string;
-  html_body?: string; // Alias pour compatibilité frontend
+  html_body?: string;
   textBody?: string;
-<<<<<<< HEAD
-  text_body?: string; // Alias pour compatibilité frontend
+  text_body?: string;
   template_key?: string;
   variables?: Record<string, string>;
-=======
   category?: string;
 }
 
+// ============================================================
+// HTML HELPERS
+// ============================================================
 function buildUnsubscribeFooter(recipientEmail: string): string {
   const encodedEmail = encodeURIComponent(recipientEmail);
   return `
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:32px;border-top:1px solid #e2e8f0;">
   <tr>
     <td style="padding:20px 0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;color:#94a3b8;line-height:1.6;">
-      <p style="margin:0 0 8px 0;">Vous recevez cet email car vous avez un compte sur JobGuinée.</p>
-      <p style="margin:0 0 4px 0;">JobGuinée &mdash; Conakry, Guinée</p>
+      <p style="margin:0 0 8px 0;">Vous recevez cet email car vous avez un compte sur JobGuin&eacute;e.</p>
+      <p style="margin:0 0 4px 0;">JobGuin&eacute;e &mdash; Conakry, Guin&eacute;e</p>
       <p style="margin:0;">
-        <a href="${UNSUBSCRIBE_URL}?email=${encodedEmail}" style="color:#64748b;text-decoration:underline;">Se désabonner</a>
+        <a href="${UNSUBSCRIBE_URL}?email=${encodedEmail}" style="color:#64748b;text-decoration:underline;">Se d&eacute;sabonner</a>
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        <a href="${SITE_URL}/privacy" style="color:#64748b;text-decoration:underline;">Politique de confidentialité</a>
+        <a href="${SITE_URL}/privacy" style="color:#64748b;text-decoration:underline;">Politique de confidentialit&eacute;</a>
       </p>
     </td>
   </tr>
@@ -49,7 +54,8 @@ function buildUnsubscribeFooter(recipientEmail: string): string {
 
 function wrapInFullHtml(content: string, recipientEmail: string): string {
   const footer = buildUnsubscribeFooter(recipientEmail);
-  const isFullHtml = content.trimStart().toLowerCase().startsWith("<!doctype") ||
+  const isFullHtml =
+    content.trimStart().toLowerCase().startsWith("<!doctype") ||
     content.trimStart().toLowerCase().startsWith("<html");
 
   if (isFullHtml) {
@@ -66,7 +72,7 @@ function wrapInFullHtml(content: string, recipientEmail: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>JobGuinée</title>
+  <title>JobGuin&eacute;e</title>
 </head>
 <body style="margin:0;padding:0;background:#f8fafc;">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8fafc;">
@@ -108,42 +114,50 @@ function htmlToText(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&eacute;/g, "\u00e9")
+    .replace(/&mdash;/g, "\u2014")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
+// ============================================================
+// SENDGRID
+// ============================================================
 async function sendViaSendGrid(
-  config: Record<string, unknown>,
-  emailRequest: EmailRequest
+  config: any,
+  to: string,
+  toName: string | undefined,
+  subject: string,
+  htmlBody: string,
+  textBody: string,
+  category?: string
 ): Promise<{ messageId: string }> {
-  const apiKey = config.api_key as string;
+  const apiKey = config.api_key;
   if (!apiKey) throw new Error("SendGrid API key not configured");
 
-  const htmlBody = wrapInFullHtml(emailRequest.htmlBody, emailRequest.to);
-  const textBody = emailRequest.textBody || htmlToText(emailRequest.htmlBody);
-  const unsubscribeLink = `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(emailRequest.to)}`;
+  const wrappedHtml = wrapInFullHtml(htmlBody, to);
+  const finalText = textBody || htmlToText(htmlBody);
+  const unsubscribeLink = `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(to)}`;
   const messageId = `jobguinee-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-  const payload = {
+  const payload: any = {
     personalizations: [
       {
-        to: emailRequest.toName
-          ? [{ email: emailRequest.to, name: emailRequest.toName }]
-          : [{ email: emailRequest.to }],
-        subject: emailRequest.subject,
+        to: toName ? [{ email: to, name: toName }] : [{ email: to }],
+        subject,
       },
     ],
     from: {
-      email: config.from_email as string,
-      name: config.from_name as string,
+      email: config.from_email,
+      name: config.from_name || "JobGuinee",
     },
     reply_to: {
-      email: CONTACT_EMAIL,
-      name: config.from_name as string,
+      email: config.reply_to_email || CONTACT_EMAIL,
+      name: config.from_name || "JobGuinee",
     },
     content: [
-      { type: "text/plain", value: textBody },
-      { type: "text/html", value: htmlBody },
+      { type: "text/plain", value: finalText },
+      { type: "text/html", value: wrappedHtml },
     ],
     headers: {
       "List-Unsubscribe": `<${unsubscribeLink}>`,
@@ -152,18 +166,17 @@ async function sendViaSendGrid(
       "Message-ID": `<${messageId}@${FROM_DOMAIN}>`,
       "X-Entity-Ref-ID": messageId,
     },
-    mail_settings: {
-      sandbox_mode: { enable: false },
-    },
+    mail_settings: { sandbox_mode: { enable: false } },
     tracking_settings: {
       click_tracking: { enable: false, enable_text: false },
       open_tracking: { enable: false },
       subscription_tracking: { enable: false },
     },
-    ...(emailRequest.category
-      ? { categories: [emailRequest.category, "jobguinee"] }
-      : {}),
   };
+
+  if (category) {
+    payload.categories = [category, "jobguinee"];
+  }
 
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
@@ -174,120 +187,18 @@ async function sendViaSendGrid(
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 202) {
     const errorText = await response.text();
     throw new Error(`SendGrid error ${response.status}: ${errorText}`);
   }
 
   const sgMessageId = response.headers.get("X-Message-Id") || messageId;
+  console.log(`[send-email] SendGrid OK to=${to} msgId=${sgMessageId}`);
   return { messageId: sgMessageId };
 }
 
-async function sendViaSmtp(
-  config: Record<string, unknown>,
-  emailRequest: EmailRequest
-): Promise<{ messageId: string }> {
-  const nodemailer = await import("npm:nodemailer@6.9.8");
-
-  const transporter = nodemailer.default.createTransport({
-    host: config.smtp_host as string,
-    port: config.smtp_port as number,
-    secure: config.smtp_secure as boolean,
-    auth: {
-      user: config.smtp_user as string,
-      pass: config.smtp_password as string,
-    },
-    pool: false,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-  });
-
-  const htmlBody = wrapInFullHtml(emailRequest.htmlBody, emailRequest.to);
-  const textBody = emailRequest.textBody || htmlToText(emailRequest.htmlBody);
-  const unsubscribeLink = `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(emailRequest.to)}`;
-  const messageId = `${Date.now()}.${Math.random().toString(36).slice(2)}@${FROM_DOMAIN}`;
-
-  const info = await transporter.sendMail({
-    messageId: `<${messageId}>`,
-    from: `"${config.from_name}" <${config.from_email}>`,
-    replyTo: `"Support JobGuinée" <${CONTACT_EMAIL}>`,
-    to: emailRequest.toName
-      ? `"${emailRequest.toName}" <${emailRequest.to}>`
-      : emailRequest.to,
-    subject: emailRequest.subject,
-    text: textBody,
-    html: htmlBody,
-    headers: {
-      "List-Unsubscribe": `<${unsubscribeLink}>`,
-      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      "X-Mailer": "JobGuinee-Mailer/2.0",
-      "Precedence": "bulk",
-    },
-  });
-
-  return { messageId: info.messageId };
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
-}
-
 // ============================================================
-// SENDGRID API - Envoi via l'API REST SendGrid (v3)
-// ============================================================
-async function sendViaSendGrid(
-  config: any,
-  to: string,
-  toName: string | undefined,
-  subject: string,
-  htmlBody: string,
-  textBody: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const apiKey = config.api_key;
-  if (!apiKey) {
-    throw new Error("SendGrid API key not configured");
-  }
-
-  const payload: any = {
-    personalizations: [
-      {
-        to: [{ email: to, name: toName || undefined }],
-      },
-    ],
-    from: {
-      email: config.from_email,
-      name: config.from_name || "JobGuinée",
-    },
-    subject,
-    content: [
-      { type: "text/plain", value: textBody },
-      { type: "text/html", value: htmlBody },
-    ],
-  };
-
-  if (config.reply_to_email) {
-    payload.reply_to = { email: config.reply_to_email };
-  }
-
-  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (response.status === 202 || response.status === 200) {
-    const messageId = response.headers.get("X-Message-Id") || `sg-${Date.now()}`;
-    console.log(`✅ SendGrid: Email envoyé à ${to} (ID: ${messageId})`);
-    return { success: true, messageId };
-  }
-
-  const errorBody = await response.text();
-  console.error(`❌ SendGrid error (${response.status}):`, errorBody);
-  throw new Error(`SendGrid API error: ${response.status} - ${errorBody}`);
-}
-
-// ============================================================
-// RESEND API - Envoi via l'API Resend
+// RESEND
 // ============================================================
 async function sendViaResend(
   config: any,
@@ -296,11 +207,12 @@ async function sendViaResend(
   subject: string,
   htmlBody: string,
   textBody: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<{ messageId: string }> {
   const apiKey = config.api_key;
-  if (!apiKey) {
-    throw new Error("Resend API key not configured");
-  }
+  if (!apiKey) throw new Error("Resend API key not configured");
+
+  const wrappedHtml = wrapInFullHtml(htmlBody, to);
+  const finalText = textBody || htmlToText(htmlBody);
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -309,28 +221,26 @@ async function sendViaResend(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: `${config.from_name || "JobGuinée"} <${config.from_email}>`,
+      from: `${config.from_name || "JobGuinee"} <${config.from_email}>`,
       to: toName ? [`${toName} <${to}>`] : [to],
       subject,
-      html: htmlBody,
-      text: textBody,
-      reply_to: config.reply_to_email || undefined,
+      html: wrappedHtml,
+      text: finalText,
+      reply_to: config.reply_to_email || CONTACT_EMAIL,
     }),
   });
 
   const result = await response.json();
-
   if (response.ok && result.id) {
-    console.log(`✅ Resend: Email envoyé à ${to} (ID: ${result.id})`);
-    return { success: true, messageId: result.id };
+    console.log(`[send-email] Resend OK to=${to} msgId=${result.id}`);
+    return { messageId: result.id };
   }
 
-  console.error(`❌ Resend error:`, result);
-  throw new Error(`Resend API error: ${result.message || JSON.stringify(result)}`);
+  throw new Error(`Resend error: ${result.message || JSON.stringify(result)}`);
 }
 
 // ============================================================
-// MAILGUN API - Envoi via l'API Mailgun
+// MAILGUN
 // ============================================================
 async function sendViaMailgun(
   config: any,
@@ -339,44 +249,39 @@ async function sendViaMailgun(
   subject: string,
   htmlBody: string,
   textBody: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<{ messageId: string }> {
   const apiKey = config.api_key;
   const domain = config.api_domain;
-  if (!apiKey || !domain) {
-    throw new Error("Mailgun API key or domain not configured");
-  }
+  if (!apiKey || !domain) throw new Error("Mailgun API key or domain not configured");
+
+  const wrappedHtml = wrapInFullHtml(htmlBody, to);
+  const finalText = textBody || htmlToText(htmlBody);
 
   const formData = new FormData();
-  formData.append("from", `${config.from_name || "JobGuinée"} <${config.from_email}>`);
+  formData.append("from", `${config.from_name || "JobGuinee"} <${config.from_email}>`);
   formData.append("to", toName ? `${toName} <${to}>` : to);
   formData.append("subject", subject);
-  formData.append("text", textBody);
-  formData.append("html", htmlBody);
-  if (config.reply_to_email) {
-    formData.append("h:Reply-To", config.reply_to_email);
-  }
+  formData.append("text", finalText);
+  formData.append("html", wrappedHtml);
+  if (config.reply_to_email) formData.append("h:Reply-To", config.reply_to_email);
 
   const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
     method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`api:${apiKey}`)}`,
-    },
+    headers: { Authorization: `Basic ${btoa(`api:${apiKey}`)}` },
     body: formData,
   });
 
   const result = await response.json();
-
   if (response.ok && result.id) {
-    console.log(`✅ Mailgun: Email envoyé à ${to} (ID: ${result.id})`);
-    return { success: true, messageId: result.id };
+    console.log(`[send-email] Mailgun OK to=${to} msgId=${result.id}`);
+    return { messageId: result.id };
   }
 
-  console.error(`❌ Mailgun error:`, result);
-  throw new Error(`Mailgun API error: ${result.message || JSON.stringify(result)}`);
+  throw new Error(`Mailgun error: ${result.message || JSON.stringify(result)}`);
 }
 
 // ============================================================
-// BREVO (Sendinblue) API - Envoi via l'API Brevo
+// BREVO (Sendinblue)
 // ============================================================
 async function sendViaBrevo(
   config: any,
@@ -385,41 +290,37 @@ async function sendViaBrevo(
   subject: string,
   htmlBody: string,
   textBody: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<{ messageId: string }> {
   const apiKey = config.api_key;
-  if (!apiKey) {
-    throw new Error("Brevo API key not configured");
-  }
+  if (!apiKey) throw new Error("Brevo API key not configured");
+
+  const wrappedHtml = wrapInFullHtml(htmlBody, to);
+  const finalText = textBody || htmlToText(htmlBody);
 
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": "application/json",
-    },
+    headers: { "api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({
-      sender: { name: config.from_name || "JobGuinée", email: config.from_email },
+      sender: { name: config.from_name || "JobGuinee", email: config.from_email },
       to: [{ email: to, name: toName || undefined }],
       subject,
-      htmlContent: htmlBody,
-      textContent: textBody,
+      htmlContent: wrappedHtml,
+      textContent: finalText,
       replyTo: config.reply_to_email ? { email: config.reply_to_email } : undefined,
     }),
   });
 
   const result = await response.json();
-
   if (response.ok && result.messageId) {
-    console.log(`✅ Brevo: Email envoyé à ${to} (ID: ${result.messageId})`);
-    return { success: true, messageId: result.messageId };
+    console.log(`[send-email] Brevo OK to=${to} msgId=${result.messageId}`);
+    return { messageId: result.messageId };
   }
 
-  console.error(`❌ Brevo error:`, result);
-  throw new Error(`Brevo API error: ${result.message || JSON.stringify(result)}`);
+  throw new Error(`Brevo error: ${result.message || JSON.stringify(result)}`);
 }
 
 // ============================================================
-// SMTP - Envoi via nodemailer (Hostinger, Gmail, etc.)
+// SMTP (nodemailer)
 // ============================================================
 async function sendViaSMTP(
   config: any,
@@ -428,34 +329,47 @@ async function sendViaSMTP(
   subject: string,
   htmlBody: string,
   textBody: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const transporter = nodemailer.createTransport({
+): Promise<{ messageId: string }> {
+  const nodemailer = await import("npm:nodemailer@6.9.8");
+
+  const transporter = nodemailer.default.createTransport({
     host: config.smtp_host,
     port: config.smtp_port,
     secure: config.smtp_secure,
-    auth: {
-      user: config.smtp_user,
-      pass: config.smtp_password,
-    },
+    auth: { user: config.smtp_user, pass: config.smtp_password },
+    pool: false,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 30000,
   });
 
+  const wrappedHtml = wrapInFullHtml(htmlBody, to);
+  const finalText = textBody || htmlToText(htmlBody);
+  const unsubscribeLink = `${UNSUBSCRIBE_URL}?email=${encodeURIComponent(to)}`;
+  const messageId = `${Date.now()}.${Math.random().toString(36).slice(2)}@${FROM_DOMAIN}`;
+
   const info = await transporter.sendMail({
-    from: `${config.from_name || "JobGuinée"} <${config.from_email}>`,
-    to: toName ? `${toName} <${to}>` : to,
+    messageId: `<${messageId}>`,
+    from: `"${config.from_name || "JobGuinee"}" <${config.from_email}>`,
+    replyTo: `"Support JobGuinee" <${config.reply_to_email || CONTACT_EMAIL}>`,
+    to: toName ? `"${toName}" <${to}>` : to,
     subject,
-    text: textBody,
-    html: htmlBody,
+    text: finalText,
+    html: wrappedHtml,
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeLink}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "X-Mailer": "JobGuinee-Mailer/2.0",
+      Precedence: "bulk",
+    },
   });
 
-  console.log(`✅ SMTP: Email envoyé à ${to} (ID: ${info.messageId})`);
-  return { success: true, messageId: info.messageId };
+  console.log(`[send-email] SMTP OK to=${to} msgId=${info.messageId}`);
+  return { messageId: info.messageId };
 }
 
 // ============================================================
-// TEMPLATE ENGINE - Résolution des templates depuis la DB
+// TEMPLATE ENGINE
 // ============================================================
 async function resolveTemplate(
   supabase: any,
@@ -470,7 +384,7 @@ async function resolveTemplate(
     .maybeSingle();
 
   if (error || !template) {
-    console.warn(`⚠️ Template "${templateKey}" non trouvé`);
+    console.warn(`[send-email] Template "${templateKey}" not found`);
     return null;
   }
 
@@ -478,7 +392,6 @@ async function resolveTemplate(
   let htmlBody = template.html_body || template.body_html || "";
   let textBody = template.text_body || template.body_text || "";
 
-  // Remplacer les variables {{ variable_name }}
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
     subject = subject.replace(regex, value);
@@ -502,50 +415,35 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const emailRequest: EmailRequest = await req.json();
-<<<<<<< HEAD
+    const raw: EmailRequest = await req.json();
 
-    // Normaliser les noms de champs (supporte snake_case et camelCase)
-    const to = emailRequest.to || emailRequest.to_email || "";
-    const toName = emailRequest.toName || emailRequest.to_name;
-    let subject = emailRequest.subject || "";
-    let htmlBody = emailRequest.htmlBody || emailRequest.html_body || "";
-    let textBody = emailRequest.textBody || emailRequest.text_body || "";
+    // Normalize field names (support both camelCase and snake_case)
+    const to = raw.to || raw.to_email || "";
+    const toName = raw.toName || raw.to_name;
+    let subject = raw.subject || "";
+    let htmlBody = raw.htmlBody || raw.html_body || "";
+    let textBody = raw.textBody || raw.text_body || "";
+    const category = raw.category;
 
-    // Si un template_key est fourni, résoudre le template
-    if (emailRequest.template_key) {
-      const templateResult = await resolveTemplate(
-        supabase,
-        emailRequest.template_key,
-        emailRequest.variables || {}
-      );
-      if (templateResult) {
-        subject = templateResult.subject || subject;
-        htmlBody = templateResult.htmlBody || htmlBody;
-        textBody = templateResult.textBody || textBody;
+    // Resolve template if template_key provided
+    if (raw.template_key) {
+      const tpl = await resolveTemplate(supabase, raw.template_key, raw.variables || {});
+      if (tpl) {
+        subject = tpl.subject || subject;
+        htmlBody = tpl.htmlBody || htmlBody;
+        textBody = tpl.textBody || textBody;
       }
     }
-=======
-    const { to, subject, htmlBody } = emailRequest;
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
 
     if (!to || !subject || !htmlBody) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: to/to_email, subject, htmlBody/html_body (or valid template_key)",
+          error: "Missing required fields: to, subject, htmlBody (or valid template_key)",
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-<<<<<<< HEAD
-    // Générer le textBody si absent
-    if (!textBody) {
-      textBody = htmlBody.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-    }
-
-    // Récupérer la configuration du fournisseur email actif (n'importe quel type)
-=======
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return new Response(
         JSON.stringify({ error: "Invalid recipient email address" }),
@@ -553,31 +451,34 @@ Deno.serve(async (req: Request) => {
       );
     }
 
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
+    // Generate textBody if missing
+    if (!textBody) {
+      textBody = htmlToText(htmlBody);
+    }
+
+    // Get active email provider config
     const { data: config, error: configError } = await supabase
       .from("email_provider_config")
       .select("*")
       .eq("is_active", true)
-<<<<<<< HEAD
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (configError || !config) {
-      console.error("❌ Aucune configuration email active trouvée:", configError);
-      throw new Error(
-        "Aucune configuration email active. Configurez un fournisseur dans Admin → Email."
-      );
+      console.error("[send-email] No active email provider config:", configError);
+      throw new Error("No active email provider configuration found");
     }
 
-    console.log(`📧 Envoi email via ${config.provider_type} à ${to}`);
+    const providerType = config.provider_type as string;
+    console.log(`[send-email] provider=${providerType} to=${to} subject="${subject}"`);
 
-    // Router vers le bon fournisseur
-    let result: { success: boolean; messageId?: string; error?: string };
+    // Route to the correct provider
+    let result: { messageId: string };
 
-    switch (config.provider_type) {
+    switch (providerType) {
       case "sendgrid":
-        result = await sendViaSendGrid(config, to, toName, subject, htmlBody, textBody);
+        result = await sendViaSendGrid(config, to, toName, subject, htmlBody, textBody, category);
         break;
       case "resend":
         result = await sendViaResend(config, to, toName, subject, htmlBody, textBody);
@@ -592,84 +493,41 @@ Deno.serve(async (req: Request) => {
         result = await sendViaSMTP(config, to, toName, subject, htmlBody, textBody);
         break;
       default:
-        throw new Error(`Fournisseur email non supporté: ${config.provider_type}`);
+        throw new Error(`Unsupported email provider: ${providerType}`);
     }
 
-    // Loguer l'envoi dans email_logs (best effort)
+    // Log send (best effort)
     try {
       await supabase.from("email_logs").insert({
-        to_email: to,
-        to_name: toName,
+        recipient_email: to,
         subject,
-        provider: config.provider_type,
+        provider: providerType,
         status: "sent",
-        message_id: result.messageId,
-        template_key: emailRequest.template_key || null,
+        email_type: "custom",
+        template_code: raw.template_key || null,
+        sent_at: new Date().toISOString(),
       });
-    } catch (logError) {
-      console.warn("⚠️ Impossible de loguer l'email:", logError);
+    } catch (logErr) {
+      console.warn("[send-email] Failed to log email:", logErr);
     }
-=======
-      .maybeSingle();
-
-    if (configError || !config) {
-      console.error("No active email provider config found:", configError);
-      throw new Error("No active email provider configuration found");
-    }
-
-    let result: { messageId: string };
-    const providerType = config.provider_type as string;
-
-    console.log(`[send-email] provider=${providerType} to=${to} subject="${subject}"`);
-
-    if (providerType === "sendgrid") {
-      result = await sendViaSendGrid(config, emailRequest);
-    } else if (providerType === "smtp") {
-      result = await sendViaSmtp(config, emailRequest);
-    } else {
-      throw new Error(`Unsupported email provider type: ${providerType}`);
-    }
-
-    console.log(`[send-email] sent successfully messageId=${result.messageId}`);
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Email sent successfully",
         messageId: result.messageId,
-<<<<<<< HEAD
-        provider: config.provider_type,
-=======
         provider: providerType,
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-<<<<<<< HEAD
-    console.error("❌ Error sending email:", error);
-
-    // Loguer l'échec (best effort)
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      await supabase.from("email_logs").insert({
-        status: "failed",
-        error_message: error.message,
-      });
-    } catch (_) {
-      // Silent fail
-    }
-
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-=======
     console.error("[send-email] Error:", error);
+
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

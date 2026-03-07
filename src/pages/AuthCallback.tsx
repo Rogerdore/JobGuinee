@@ -27,8 +27,15 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         // Gestion des erreurs de Supabase Auth
         if (errorParam) {
           console.error('❌ Auth error from Supabase:', errorParam, errorDescription);
+          // Si le lien a expiré, proposer de renvoyer
+          if (errorDescription?.includes('expired') || errorDescription?.includes('invalid')) {
+            throw new Error('Le lien de confirmation a expiré. Veuillez vous reconnecter pour recevoir un nouveau lien.');
+          }
           throw new Error(errorDescription || errorParam || 'Erreur d\'authentification');
         }
+
+        // Variable pour stocker la session obtenue via PKCE
+        let pkceSession: any = null;
 
         // PKCE flow: échanger le code contre une session
         if (code) {
@@ -36,26 +43,54 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.error('❌ Erreur échange code PKCE:', exchangeError);
-            throw exchangeError;
+            // Si le code a déjà été utilisé, vérifier si on a une session existante
+            if (exchangeError.message?.includes('already used') ||
+                exchangeError.message?.includes('invalid') ||
+                exchangeError.message?.includes('expired')) {
+              console.log('🔄 Code déjà utilisé/expiré — vérification session existante...');
+              const { data: { session: existingSession } } = await supabase.auth.getSession();
+              if (existingSession?.user) {
+                console.log('✅ Session existante trouvée:', existingSession.user.email);
+                pkceSession = existingSession;
+              } else {
+                throw new Error('Le lien de confirmation a déjà été utilisé. Veuillez vous connecter avec votre email et mot de passe.');
+              }
+            } else {
+              throw exchangeError;
+            }
+          } else {
+            pkceSession = data.session;
+            console.log('✅ PKCE session obtenue:', data.session?.user?.email);
           }
-          console.log('✅ PKCE session obtenue:', data.session?.user?.email);
         }
 
-        // Confirmation email (type=signup) — On doit quand même récupérer la session
-        if (type === 'signup') {
+        // Confirmation email (type=signup ou PKCE signup)
+        if (type === 'signup' || (code && type === 'signup')) {
           console.log('📧 Confirmation email signup détectée');
 
-          // Si on a un access_token dans le hash, Supabase a déjà créé la session
-          if (accessToken) {
+          let session = pkceSession;
+
+          // Si pas de session PKCE, essayer via access_token (implicit flow)
+          if (!session && accessToken) {
             await new Promise(resolve => setTimeout(resolve, 1000));
+            const { data: { session: implicitSession } } = await supabase.auth.getSession();
+            session = implicitSession;
           }
 
-          // Vérifier si on a maintenant une session active
-          const { data: { session } } = await supabase.auth.getSession();
+          // Dernier recours: getSession
+          if (!session) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+            session = fallbackSession;
+          }
 
           if (session?.user) {
             console.log('✅ Session active après confirmation:', session.user.email);
             await ensureProfileExists(session.user.id, session.user.email || '', session.user.user_metadata);
+
+            // Déclencher l'email de bienvenue après confirmation réussie
+            await sendWelcomeEmail(session.user.id, session.user.email || '', session.user.user_metadata);
+
             setConfirmationSuccess(true);
             setTimeout(() => {
               onNavigate('home');
@@ -63,8 +98,9 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
             return;
           }
 
-          // Pas de session — l'utilisateur devra se connecter manuellement
-          console.log('ℹ️ Pas de session après confirmation — redirection vers login');
+          // Pas de session — l'email a été confirmé mais pas de session auto
+          // Le trigger DB handle_user_email_confirmed a quand même créé le profil
+          console.log('ℹ️ Email confirmé mais pas de session — redirection vers login');
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('auth');
@@ -72,12 +108,8 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           return;
         }
 
-        // OAuth callback ou autre — récupérer la session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          throw sessionError;
-        }
+        // OAuth callback ou autre
+        const session = pkceSession || (await supabase.auth.getSession()).data.session;
 
         if (!session?.user) {
           throw new Error('Aucune session utilisateur trouvée');
@@ -107,7 +139,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
       } catch (err: any) {
         console.error('❌ Error handling auth callback:', err);
         setError(err.message || 'Erreur lors de la connexion');
-        setTimeout(() => onNavigate('auth'), 4000);
+        setTimeout(() => onNavigate('auth'), 5000);
       }
     };
 
@@ -117,6 +149,71 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
   // ============================================
   // Helpers
   // ============================================
+
+  async function sendWelcomeEmail(userId: string, email: string, userMeta: any) {
+    try {
+      const fullName = userMeta?.full_name || userMeta?.name || email.split('@')[0] || 'Utilisateur';
+      const userType = userMeta?.user_type || 'candidate';
+      const appUrl = 'https://jobguinee-pro.com';
+      const dashboardUrl = userType === 'recruiter'
+        ? `${appUrl}/recruiter/dashboard`
+        : userType === 'trainer'
+          ? `${appUrl}/trainer/dashboard`
+          : `${appUrl}/candidate/dashboard`;
+
+      // Chercher le template welcome_confirmed
+      const { data: templateData } = await supabase
+        .from('email_templates')
+        .select('id')
+        .eq('template_key', 'welcome_confirmed')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!templateData) {
+        console.log('ℹ️ Template welcome_confirmed non trouvé — skip welcome email');
+        return;
+      }
+
+      // Vérifier qu'un email n'a pas déjà été envoyé (éviter les doublons)
+      const { data: existingEmail } = await supabase
+        .from('email_queue')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('template_id', templateData.id)
+        .maybeSingle();
+
+      if (existingEmail) {
+        console.log('ℹ️ Welcome email déjà dans la queue — skip');
+        return;
+      }
+
+      await supabase.from('email_queue').insert({
+        template_id: templateData.id,
+        to_email: email,
+        to_name: fullName,
+        template_variables: {
+          user_name: fullName,
+          user_email: email,
+          user_type: userType,
+          dashboard_url: dashboardUrl,
+          profile_url: userType === 'recruiter'
+            ? `${appUrl}/recruiter/profile`
+            : `${appUrl}/candidate/profile`,
+          jobs_url: `${appUrl}/jobs`,
+          alerts_url: `${appUrl}/candidate/dashboard`,
+          app_url: appUrl,
+        },
+        priority: 8,
+        scheduled_for: new Date().toISOString(),
+        user_id: userId,
+      });
+
+      console.log('📧 Welcome email queued for', email);
+    } catch (err) {
+      // Non-bloquant — ne pas empêcher la confirmation
+      console.warn('⚠️ Erreur envoi welcome email (non-bloquant):', err);
+    }
+  }
 
   async function ensureProfileExists(userId: string, email: string, userMeta: any) {
     const fullName = userMeta?.full_name || userMeta?.name || email.split('@')[0] || 'Utilisateur';
@@ -241,9 +338,15 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Erreur de connexion</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Problème de confirmation</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <p className="text-sm text-gray-500">Redirection en cours...</p>
+          <p className="text-sm text-gray-500 mb-4">Redirection vers la page de connexion...</p>
+          <button
+            onClick={() => onNavigate('auth')}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            Se connecter maintenant
+          </button>
         </div>
       </div>
     );
