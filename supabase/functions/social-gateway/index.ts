@@ -17,9 +17,14 @@ interface JobData {
   description?: string;
   salary_min?: number;
   salary_max?: number;
+  salary_range?: string;
+  salary_type?: string;
   featured_image_url?: string;
   company_logo_url?: string;
   slug?: string;
+  experience_level?: string;
+  education_level?: string;
+  sector?: string;
   companies?: {
     name?: string;
     logo_url?: string;
@@ -60,7 +65,7 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch job with company details (join companies table for logo)
+    // Fetch job with company details and all profile fields
     const { data: job, error: jobError } = await supabase
       .from("jobs")
       .select("*, companies(name, logo_url)")
@@ -68,6 +73,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (jobError || !job) {
+      console.error("Job fetch error:", jobError, "jobId:", jobId, "job:", job);
       return new Response(generateErrorHTML("404 - Offre introuvable"), {
         status: 404,
         headers: {
@@ -101,6 +107,17 @@ Deno.serve(async (req: Request) => {
   }
 });
 
+function buildSalaryText(job: JobData): string {
+  if (job.salary_range && job.salary_range.trim()) return job.salary_range;
+  if (job.salary_min && job.salary_max) {
+    const fmt = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
+    return `${fmt(job.salary_min)} – ${fmt(job.salary_max)} GNF${job.salary_type ? `/${job.salary_type}` : ''}`;
+  }
+  if (job.salary_min) return `À partir de ${job.salary_min.toLocaleString()} GNF`;
+  if (job.salary_max) return `Jusqu'à ${job.salary_max.toLocaleString()} GNF`;
+  return '';
+}
+
 function cleanDescription(desc: string | null | undefined): string {
   if (!desc) return "";
   
@@ -127,16 +144,43 @@ function cleanDescription(desc: string | null | undefined): string {
 function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const baseUrl = "https://jobguinee-pro.com";
 
-  const title = `${job.title || "Offre d'emploi"} – ${job.company_name || job.company || "JobGuinée"}`;
+  const title = `${job.title || "Offre d'emploi"} - ${job.company_name || job.company || "JobGuin\u00e9e"}`;
 
-  const rawDescription = cleanDescription(job.description);
-  // If cleaned description is too short or just gibberish, use a good fallback
-  const fallbackDesc = `Découvrez l'offre ${job.title || "d'emploi"} chez ${job.company_name || job.company || "une entreprise en Guinée"} sur JobGuinée. Postulez maintenant !`;
-  const description = (rawDescription.length > 30 && rawDescription.length <= 220)
-    ? rawDescription
-    : (rawDescription.length > 220)
-      ? rawDescription.substring(0, 217) + "..."
-      : fallbackDesc;
+  // Build a rich, structured og:description with job profile details
+  const companyName = job.company_name || job.company || job.companies?.name || '';
+  const descParts: string[] = [];
+
+  // Always start: "Nous recrutons un(e) {title}"
+  descParts.push(`Nous recrutons un(e) ${job.title || "professionnel(le)"}`);
+  if (companyName) descParts[0] += ` chez ${companyName}`;
+
+  // Location
+  if (job.location) descParts.push(`Lieu: ${job.location}`);
+
+  // Contract type
+  if (job.contract_type) descParts.push(`Contrat: ${job.contract_type}`);
+
+  // Experience
+  if (job.experience_level) descParts.push(`Exp: ${job.experience_level}`);
+
+  // Education
+  if (job.education_level) descParts.push(`Niveau: ${job.education_level}`);
+
+  // Sector
+  if (job.sector) descParts.push(`Secteur: ${job.sector}`);
+
+  // Salary
+  const salaryText = buildSalaryText(job);
+  if (salaryText) descParts.push(`Salaire: ${salaryText}`);
+
+  // CTA
+  descParts.push('Postulez maintenant !');
+
+  let description = descParts.join(' - ');
+  // Facebook og:description max ~300 chars, keep it under 250 for safety
+  if (description.length > 250) {
+    description = description.substring(0, 247) + '...';
+  }
 
   // OG Image Cascade (PNG/JPG only, NO SVG)
   // Priority: featured_image_url → default PNG (1200x630)
