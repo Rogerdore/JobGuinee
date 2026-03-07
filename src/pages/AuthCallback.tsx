@@ -18,12 +18,34 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         const searchParams = new URLSearchParams(window.location.search);
 
         const type = hashParams.get('type') || searchParams.get('type');
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
 
         // Email confirmation link clicked
         if (type === 'signup' || type === 'email_change') {
-          // Supabase has already updated email_confirmed_at via its own flow.
-          // The handle_user_email_confirmed trigger has created the profile.
-          // Show success screen, then redirect to login.
+          // Must call setSession so Supabase finalizes the confirmation and
+          // sets email_confirmed_at in auth.users — then the DB trigger fires.
+          if (accessToken && refreshToken) {
+            try {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+            } catch {
+              // If setSession fails the tokens may already be consumed — still show success
+            }
+          } else {
+            // Tokens may be in URL via the PKCE flow — just call getSession
+            try {
+              await supabase.auth.getSession();
+            } catch {
+              // Non-blocking
+            }
+          }
+
+          // Sign the user out immediately so they land on the login page cleanly
+          await supabase.auth.signOut();
+
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('auth');
