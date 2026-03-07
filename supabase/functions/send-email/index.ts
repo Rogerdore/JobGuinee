@@ -43,13 +43,18 @@ function buildUnsubscribeFooter(recipientEmail: string): string {
       <p style="margin:0 0 8px 0;">Vous recevez cet email car vous avez un compte sur JobGuin&eacute;e.</p>
       <p style="margin:0 0 4px 0;">JobGuin&eacute;e &mdash; Conakry, Guin&eacute;e</p>
       <p style="margin:0;">
-        <a href="${UNSUBSCRIBE_URL}?email=${encodedEmail}" style="color:#64748b;text-decoration:underline;">Se d&eacute;sabonner</a>
+        <a href="${UNSUBSCRIBE_URL}?email=${encodedEmail}" target="_blank" rel="noopener" style="color:#64748b;text-decoration:underline;">Se d&eacute;sabonner</a>
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        <a href="${SITE_URL}/privacy" style="color:#64748b;text-decoration:underline;">Politique de confidentialit&eacute;</a>
+        <a href="${SITE_URL}/privacy" target="_blank" rel="noopener" style="color:#64748b;text-decoration:underline;">Politique de confidentialit&eacute;</a>
       </p>
     </td>
   </tr>
 </table>`;
+}
+
+function addTargetBlankToLinks(html: string): string {
+  // Add target="_blank" to all <a> tags that don't already have it
+  return html.replace(/<a\s+(?![^>]*target=)/gi, '<a target="_blank" rel="noopener" ');
 }
 
 function wrapInFullHtml(content: string, recipientEmail: string): string {
@@ -59,40 +64,63 @@ function wrapInFullHtml(content: string, recipientEmail: string): string {
     content.trimStart().toLowerCase().startsWith("<html");
 
   if (isFullHtml) {
-    const bodyCloseIndex = content.lastIndexOf("</body>");
-    if (bodyCloseIndex !== -1) {
-      return content.slice(0, bodyCloseIndex) + footer + content.slice(bodyCloseIndex);
+    let html = content;
+    // Ensure viewport meta exists for mobile
+    if (!html.includes('name="viewport"') && !html.includes("name='viewport'")) {
+      html = html.replace(
+        /<head>/i,
+        '<head>\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">'
+      );
     }
-    return content + footer;
+    // Ensure apple disable message reformatting
+    if (!html.includes("x-apple-disable-message-reformatting")) {
+      html = html.replace(
+        /<head>/i,
+        '<head>\n  <meta name="x-apple-disable-message-reformatting">'
+      );
+    }
+    // Add target="_blank" to all links
+    html = addTargetBlankToLinks(html);
+    const bodyCloseIndex = html.lastIndexOf("</body>");
+    if (bodyCloseIndex !== -1) {
+      return html.slice(0, bodyCloseIndex) + footer + html.slice(bodyCloseIndex);
+    }
+    return html + footer;
   }
 
+  // Add target="_blank" to all links in content fragment
+  const safeContent = addTargetBlankToLinks(content);
+
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
   <title>JobGuin&eacute;e</title>
 </head>
-<body style="margin:0;padding:0;background:#f8fafc;">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8fafc;">
-    <tr>
-      <td align="center" style="padding:24px 16px;">
-        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-          <tr>
-            <td style="padding:32px 40px;">
-              ${content}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 40px 24px 40px;">
-              ${footer}
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+<body style="margin:0;padding:0;word-spacing:normal;background:#f8fafc;">
+  <div role="article" aria-roledescription="email" lang="fr" style="text-size-adjust:100%;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8fafc;">
+      <tr>
+        <td align="center" style="padding:24px 10px;">
+          <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="padding:32px 28px;font-family:Arial,Helvetica,sans-serif;">
+                ${safeContent}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px 28px;">
+                ${footer}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
 </body>
 </html>`;
 }

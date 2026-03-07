@@ -224,7 +224,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                         <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
                         <p className="text-xs text-gray-500">{profile?.email}</p>
                         <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full soft-gradient-blue text-primary-700">
-                          {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'candidate' ? 'Candidat' : profile?.user_type === 'trainer' ? 'Formateur' : 'Recruteur'}
+                          {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'recruiter' ? 'Recruteur' : profile?.user_type === 'trainer' ? 'Formateur' : 'Candidat'}
                         </span>
                       </div>
 
@@ -258,7 +258,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                           <LayoutDashboard className="w-4 h-4" />
                           <div>
                             <p className="font-medium">
-                              {profile?.user_type === 'candidate' ? 'Espace Candidat' : profile?.user_type === 'trainer' ? 'Espace Formateur' : 'Espace Recruteur'}
+                              {profile?.user_type === 'recruiter' ? 'Espace Recruteur' : profile?.user_type === 'trainer' ? 'Espace Formateur' : 'Espace Candidat'}
                             </p>
                             <p className="text-xs text-gray-500">Tableau de bord et profil</p>
                           </div>
@@ -343,7 +343,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     </p>
                     <p className="text-xs text-gray-500">{profile?.email}</p>
                     <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full soft-gradient-blue text-primary-700">
-                      {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'candidate' ? 'Candidat' : profile?.user_type === 'trainer' ? 'Formateur' : 'Recruteur'}
+                      {profile?.user_type === 'admin' ? 'Administrateur' : profile?.user_type === 'recruiter' ? 'Recruteur' : profile?.user_type === 'trainer' ? 'Formateur' : 'Candidat'}
                     </span>
                   </div>
 
@@ -377,7 +377,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       <LayoutDashboard className="w-5 h-5" />
                       <div>
                         <p className="font-medium text-sm">
-                          {profile?.user_type === 'candidate' ? 'Espace Candidat' : profile?.user_type === 'trainer' ? 'Espace Formateur' : 'Espace Recruteur'}
+                          {profile?.user_type === 'recruiter' ? 'Espace Recruteur' : profile?.user_type === 'trainer' ? 'Espace Formateur' : 'Espace Candidat'}
                         </p>
                         <p className="text-xs opacity-75">Tableau de bord et profil</p>
                       </div>

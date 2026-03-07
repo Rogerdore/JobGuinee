@@ -230,14 +230,15 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
   async function ensureProfileExists(userId: string, email: string, userMeta: any) {
     const fullName = userMeta?.full_name || userMeta?.name || email.split('@')[0] || 'Utilisateur';
+    // Priority: auth metadata > localStorage (for OAuth) > default 'candidate'
     const role = (userMeta?.user_type || localStorage.getItem('pending_oauth_role') || 'candidate') as UserRole;
 
     let profileData = null;
     let attempts = 0;
-    const maxAttempts = 15;
+    const maxAttempts = 10;
 
     while (!profileData && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 400));
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -253,7 +254,9 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
     }
 
     if (!profileData) {
-      console.log('📝 Création du profil manquant pour', email);
+      console.log('📝 Création du profil manquant pour', email, 'role:', role);
+      
+      // Try inserting via Supabase client (RLS: id = auth.uid())
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
@@ -262,14 +265,27 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           full_name: fullName,
           user_type: role,
           credits_balance: 10,
-          ai_credits_balance: 5,
+          is_account_confirmed: true,
         });
 
       if (insertError && !insertError.message.includes('duplicate')) {
-        console.error('⚠️ Erreur création profil:', insertError);
+        console.error('⚠️ Erreur création profil:', insertError.message);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait and verify profile was created
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const { data: verifyProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (verifyProfile) {
+        console.log('✅ Profil créé avec succès:', verifyProfile.email, 'type:', verifyProfile.user_type);
+      } else {
+        console.error('❌ Profil toujours manquant après insertion pour:', email);
+      }
     }
   }
 
