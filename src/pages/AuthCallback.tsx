@@ -13,7 +13,6 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-<<<<<<< HEAD
         // Détecter le type de callback
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const urlParams = new URLSearchParams(window.location.search);
@@ -47,10 +46,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           console.log('📧 Confirmation email signup détectée');
 
           // Si on a un access_token dans le hash, Supabase a déjà créé la session
-          // On doit laisser le client Supabase la récupérer
           if (accessToken) {
-            // Le hash contient les tokens — Supabase JS les traite automatiquement via detectSessionInUrl
-            // Attendre que Supabase traite le hash
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
 
@@ -59,11 +55,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
           if (session?.user) {
             console.log('✅ Session active après confirmation:', session.user.email);
-
-            // S'assurer que le profil existe
             await ensureProfileExists(session.user.id, session.user.email || '', session.user.user_metadata);
-
-            // Afficher succès puis rediriger vers home (déjà connecté !)
             setConfirmationSuccess(true);
             setTimeout(() => {
               onNavigate('home');
@@ -73,48 +65,6 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
           // Pas de session — l'utilisateur devra se connecter manuellement
           console.log('ℹ️ Pas de session après confirmation — redirection vers login');
-=======
-        // Check both hash params and query params for the callback type
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const searchParams = new URLSearchParams(window.location.search);
-
-        const type = hashParams.get('type') || searchParams.get('type');
-        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
-        const code = searchParams.get('code');
-
-        // Email confirmation link clicked (PKCE flow uses ?code=, legacy uses #access_token=)
-        if (type === 'signup' || type === 'email_change' || (code && !searchParams.get('provider'))) {
-          // PKCE flow: exchange the code for a session — this is what actually marks
-          // email_confirmed_at in auth.users and fires the DB trigger.
-          if (code) {
-            try {
-              await supabase.auth.exchangeCodeForSession(code);
-            } catch {
-              // Code may already be consumed (e.g. double-click) — still show success
-            }
-          } else if (accessToken && refreshToken) {
-            // Legacy implicit flow
-            try {
-              await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-              });
-            } catch {
-              // Non-blocking
-            }
-          } else {
-            try {
-              await supabase.auth.getSession();
-            } catch {
-              // Non-blocking
-            }
-          }
-
-          // Sign out so the user arrives at the login page with a clean state
-          await supabase.auth.signOut();
-
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('auth');
@@ -122,11 +72,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           return;
         }
 
-<<<<<<< HEAD
         // OAuth callback ou autre — récupérer la session
-=======
-        // OAuth callback (Google, etc.)
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -139,14 +85,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
         const userId = session.user.id;
         const userEmail = session.user.email;
-<<<<<<< HEAD
         const userMeta = session.user.user_metadata;
-=======
-        const fullName = session.user.user_metadata?.full_name
-          || session.user.user_metadata?.name
-          || userEmail?.split('@')[0]
-          || 'Utilisateur';
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
 
         await ensureProfileExists(userId, userEmail || '', userMeta);
 
@@ -154,131 +93,19 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         const pendingRole = localStorage.getItem('pending_oauth_role') as UserRole || 'candidate';
         localStorage.removeItem('pending_oauth_role');
 
-<<<<<<< HEAD
         if (pendingRole === 'recruiter') {
           await ensureCompanyExists(userId, userMeta?.full_name || userMeta?.name || 'Utilisateur');
         }
 
         if (pendingRole === 'trainer') {
           await ensureTrainerProfileExists(userId);
-=======
-        // Wait for the trigger (handle_new_user) to create the profile for OAuth
-        let profileData = null;
-        let attempts = 0;
-        const maxAttempts = 20;
-
-        while (!profileData && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-
-          if (profile) {
-            profileData = profile;
-            break;
-          }
-
-          attempts++;
-        }
-
-        // Fallback: manually create profile if trigger didn't fire
-        if (!profileData) {
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: userId,
-              email: userEmail,
-              full_name: fullName,
-              user_type: pendingRole,
-              credits_balance: 0,
-            });
-
-          if (insertError && !insertError.message.includes('duplicate')) {
-            throw insertError;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          const { data: newProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-
-          profileData = newProfile;
-        }
-
-        // Update user_type to the requested OAuth role if it differs
-        if (profileData && profileData.user_type !== pendingRole) {
-          await supabase
-            .from('profiles')
-            .update({ user_type: pendingRole })
-            .eq('id', userId);
-          profileData = { ...profileData, user_type: pendingRole };
-        }
-
-        // Create default company for recruiter
-        if (pendingRole === 'recruiter' && profileData) {
-          const { data: existingCompany } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('created_by', userId)
-            .maybeSingle();
-
-          if (!existingCompany) {
-            const companyName = fullName.includes(' ')
-              ? `Entreprise de ${fullName.split(' ')[0]}`
-              : `Entreprise de ${fullName}`;
-
-            const { data: newCompany, error: companyError } = await supabase
-              .from('companies')
-              .insert({ name: companyName, created_by: userId })
-              .select()
-              .single();
-
-            if (newCompany && !companyError) {
-              await supabase
-                .from('profiles')
-                .update({ company_id: newCompany.id })
-                .eq('id', userId);
-            }
-          }
-        }
-
-        // Create trainer sub-profile
-        if (pendingRole === 'trainer' && profileData) {
-          const { data: existingTrainerProfile } = await supabase
-            .from('trainer_profiles')
-            .select('id')
-            .eq('profile_id', userId)
-            .maybeSingle();
-
-          if (!existingTrainerProfile) {
-            await supabase.from('trainer_profiles').insert({
-              profile_id: userId,
-              user_id: userId,
-              organization_type: 'individual',
-              experience_years: 0,
-              is_verified: false,
-              rating: 0,
-              total_students: 0,
-            });
-          }
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
         }
 
         await new Promise(resolve => setTimeout(resolve, 300));
         onNavigate('home');
 
       } catch (err: any) {
-<<<<<<< HEAD
         console.error('❌ Error handling auth callback:', err);
-=======
-        console.error('Error handling auth callback:', err);
->>>>>>> ddf5518560d0e6e4159ed7f2c0ee6e684b9e257a
         setError(err.message || 'Erreur lors de la connexion');
         setTimeout(() => onNavigate('auth'), 4000);
       }
