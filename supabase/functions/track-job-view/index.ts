@@ -27,14 +27,21 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization');
     const userToken = authHeader?.replace('Bearer ', '') || '';
 
-    // Créer un client avec le token utilisateur pour auth.uid()
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      global: {
-        headers: {
-          Authorization: authHeader || ''
+    // Créer un client avec le service role key pour appeler les RPC SECURITY DEFINER
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Extraire le user_id du JWT pour le passer explicitement à la RPC
+    let userId: string | null = null;
+    if (userToken) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser(userToken);
+        if (!error && user) {
+          userId = user.id;
         }
+      } catch {
+        // Token invalide — continuer en mode anonyme
       }
-    });
+    }
 
     const { job_id, session_id } = await req.json() as TrackJobViewRequest;
 
@@ -65,6 +72,7 @@ Deno.serve(async (req: Request) => {
       p_session_id: session_id || null,
       p_ip_hash: ipHash,
       p_user_agent: userAgent,
+      p_user_id: userId,
     });
 
     if (error) {

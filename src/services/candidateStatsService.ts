@@ -23,6 +23,8 @@ export interface CandidateStats {
   creditsBalance: number;
   isPremium: boolean;
   unreadMessagesCount: number;
+  thisMonthViews: number;
+  thisMonthPurchases: number;
   updatedAt: string;
 }
 
@@ -65,6 +67,8 @@ export const candidateStatsService = {
         creditsBalance: data.credits_balance || 0,
         isPremium: data.is_premium || false,
         unreadMessagesCount: 0, // Will be set separately via real-time
+        thisMonthViews: data.this_month_views || 0,
+        thisMonthPurchases: data.this_month_purchases || 0,
         updatedAt: data.updated_at
       };
 

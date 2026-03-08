@@ -78,24 +78,31 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     }
   }, [profile?.id, user?.id]);
 
+  // Fonction centralisée pour rafraîchir tous les compteurs
+  const refreshAllStats = async () => {
+    if (!user?.id) return;
+    const stats = await candidateStatsService.getAllStats(user.id);
+    if (stats) {
+      setJobViewsCount(stats.jobViewsCount);
+      setAiScore(stats.aiScore);
+      setProfileStats({
+        profile_views_count: stats.profileViewsCount,
+        profile_purchases_count: stats.profilePurchasesCount,
+        this_month_views: stats.thisMonthViews,
+        this_month_purchases: stats.thisMonthPurchases
+      });
+      setCreditsBalance(stats.creditsBalance);
+      setIsPremium(stats.isPremium);
+    }
+  };
+
   // Auto-refresh des stats toutes les 30 secondes
   useEffect(() => {
     if (!user?.id || !profile?.id) return;
 
     const intervalId = setInterval(async () => {
       console.log('⏰ Auto-refresh des statistiques...');
-      const stats = await candidateStatsService.getAllStats(user.id);
-      if (stats) {
-        setJobViewsCount(stats.jobViewsCount);
-        setProfileStats({
-          profile_views_count: stats.profileViewsCount,
-          profile_purchases_count: stats.profilePurchasesCount,
-          this_month_views: 0,
-          this_month_purchases: 0
-        });
-        setCreditsBalance(stats.creditsBalance);
-        setAiScore(stats.aiScore);
-      }
+      await refreshAllStats();
     }, 30000); // 30 secondes
 
     return () => clearInterval(intervalId);
@@ -108,17 +115,28 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     const handleVisibilityChange = async () => {
       if (!document.hidden) {
         console.log('👀 Page visible - rechargement des stats...');
-        const stats = await candidateStatsService.getAllStats(user.id);
-        if (stats) {
-          setJobViewsCount(stats.jobViewsCount);
-          setProfileStats({
-            profile_views_count: stats.profileViewsCount,
-            profile_purchases_count: stats.profilePurchasesCount,
-            this_month_views: 0,
-            this_month_purchases: 0
-          });
-          setCreditsBalance(stats.creditsBalance);
-          setAiScore(stats.aiScore);
+        await refreshAllStats();
+        // Aussi recharger les candidatures et formations
+        const [appsData, formationsData] = await Promise.all([
+          supabase
+            .from('applications')
+            .select('*, jobs(*, companies(*))')
+            .eq('candidate_id', user.id)
+            .order('applied_at', { ascending: false }),
+          supabase
+            .from('formation_enrollments')
+            .select('id, formation_id, status, progress, formations(title)')
+            .eq('user_id', user.id)
+            .in('status', ['enrolled', 'in_progress', 'completed'])
+        ]);
+        if (appsData.data) setApplications(appsData.data as any);
+        if (formationsData.data) {
+          setFormations(formationsData.data.map((enrollment: any) => ({
+            id: enrollment.formation_id,
+            title: enrollment.formations?.title || 'Formation',
+            status: enrollment.status,
+            progress: enrollment.progress
+          })));
         }
       }
     };
@@ -130,35 +148,93 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
     };
   }, [user?.id, profile?.id]);
 
-  // Synchronisation en temps réel des clics sur les offres
+  // Synchronisation en temps réel de TOUS les compteurs
   useEffect(() => {
     if (!user?.id) return;
 
-    const updateJobViewsCount = async () => {
-      console.log('🔄 Nouveau clic détecté - mise à jour du compteur...');
-      const stats = await candidateStatsService.getAllStats(user.id);
-      if (stats) {
-        setJobViewsCount(stats.jobViewsCount);
-      }
+    const handleStatsChange = async () => {
+      console.log('🔄 Changement détecté - mise à jour de tous les compteurs...');
+      await refreshAllStats();
     };
 
-    // Écouter les changements dans job_clicks
-    const jobClicksChannel = supabase
-      .channel('candidate_job_clicks_updates')
+    const handleApplicationsChange = async () => {
+      console.log('🔄 Nouvelle candidature détectée...');
+      const { data } = await supabase
+        .from('applications')
+        .select('*, jobs(*, companies(*))')
+        .eq('candidate_id', user.id)
+        .order('applied_at', { ascending: false });
+      if (data) setApplications(data as any);
+      await refreshAllStats();
+    };
+
+    const handleFormationsChange = async () => {
+      console.log('🔄 Changement de formation détecté...');
+      const { data } = await supabase
+        .from('formation_enrollments')
+        .select('id, formation_id, status, progress, formations(title)')
+        .eq('user_id', user.id)
+        .in('status', ['enrolled', 'in_progress', 'completed']);
+      if (data) {
+        setFormations(data.map((enrollment: any) => ({
+          id: enrollment.formation_id,
+          title: enrollment.formations?.title || 'Formation',
+          status: enrollment.status,
+          progress: enrollment.progress
+        })));
+      }
+      await refreshAllStats();
+    };
+
+    // Écouter candidate_stats (job views, profile views via RPC)
+    const statsChannel = supabase
+      .channel('candidate_all_stats')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'candidate_stats',
+          filter: `candidate_id=eq.${user.id}`
+        },
+        handleStatsChange
+      )
+      .subscribe();
+
+    // Écouter les nouvelles candidatures
+    const applicationsChannel = supabase
+      .channel('candidate_applications_rt')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'job_clicks',
+          table: 'applications',
+          filter: `candidate_id=eq.${user.id}`
+        },
+        handleApplicationsChange
+      )
+      .subscribe();
+
+    // Écouter les inscriptions formations
+    const formationsChannel = supabase
+      .channel('candidate_formations_rt')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'formation_enrollments',
           filter: `user_id=eq.${user.id}`
         },
-        updateJobViewsCount
+        handleFormationsChange
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(jobClicksChannel);
+      supabase.removeChannel(statsChannel);
+      supabase.removeChannel(applicationsChannel);
+      supabase.removeChannel(formationsChannel);
     };
   }, [user?.id]);
 
@@ -268,8 +344,8 @@ export default function CandidateDashboard({ onNavigate }: CandidateDashboardPro
         setProfileStats({
           profile_views_count: stats.profileViewsCount || 0,
           profile_purchases_count: stats.profilePurchasesCount || 0,
-          this_month_views: 0,
-          this_month_purchases: 0
+          this_month_views: stats.thisMonthViews || 0,
+          this_month_purchases: stats.thisMonthPurchases || 0
         });
         setCreditsBalance(stats.creditsBalance || 0);
         setIsPremium(stats.isPremium || false);
