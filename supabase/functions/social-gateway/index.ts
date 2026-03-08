@@ -66,11 +66,28 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch job with company details and all profile fields
-    const { data: job, error: jobError } = await supabase
+    // Try by ID first, then by slug as fallback
+    let job = null;
+    let jobError = null;
+    
+    const { data: jobById, error: errById } = await supabase
       .from("jobs")
       .select("*, companies(name, logo_url)")
       .eq("id", jobId)
       .maybeSingle();
+    
+    if (jobById) {
+      job = jobById;
+    } else {
+      // Fallback: try lookup by slug
+      const { data: jobBySlug, error: errBySlug } = await supabase
+        .from("jobs")
+        .select("*, companies(name, logo_url)")
+        .eq("slug", jobId)
+        .maybeSingle();
+      job = jobBySlug;
+      jobError = !jobBySlug ? (errById || errBySlug) : null;
+    }
 
     if (jobError || !job) {
       console.error("Job fetch error:", jobError, "jobId:", jobId, "job:", job);
@@ -150,9 +167,12 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const companyName = job.company_name || job.company || job.companies?.name || '';
   const descParts: string[] = [];
 
-  // Always start: "Nous recrutons un(e) {title}"
-  descParts.push(`Nous recrutons un(e) ${job.title || "professionnel(le)"}`);
-  if (companyName) descParts[0] += ` chez ${companyName}`;
+  // Start with a short, natural sentence about the job
+  if (companyName) {
+    descParts.push(`${companyName} recrute : ${job.title || "un(e) professionnel(le)"}`);
+  } else {
+    descParts.push(`Recrutement : ${job.title || "un(e) professionnel(le)"}`);
+  }
 
   // Location
   if (job.location) descParts.push(`Lieu: ${job.location}`);
@@ -173,10 +193,23 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const salaryText = buildSalaryText(job);
   if (salaryText) descParts.push(`Salaire: ${salaryText}`);
 
-  // CTA
-  descParts.push('Postulez maintenant !');
+  // Add a short excerpt from the job description if available
+  if (job.description) {
+    const cleanDesc = cleanDescription(job.description);
+    if (cleanDesc.length > 0) {
+      // Trim to fit within overall limit
+      const remaining = 220 - descParts.join(' | ').length;
+      if (remaining > 30) {
+        const excerpt = cleanDesc.length > remaining ? cleanDesc.substring(0, remaining - 3) + '...' : cleanDesc;
+        descParts.push(excerpt);
+      }
+    }
+  }
 
-  let description = descParts.join(' - ');
+  // CTA
+  descParts.push('Postulez sur JobGuinée !');
+
+  let description = descParts.join(' | ');
   // Facebook og:description max ~300 chars, keep it under 250 for safety
   if (description.length > 250) {
     description = description.substring(0, 247) + '...';
@@ -225,8 +258,9 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   <meta name="author" content="JobGuinée" />
   
   <!-- Open Graph Tags (Facebook, LinkedIn, Pinterest) -->
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content="article" />
   <meta property="og:site_name" content="JobGuinée" />
+  <meta property="og:locale" content="fr_FR" />
   <meta property="og:title" content="${escapeHTML(title)}" />
   <meta property="og:description" content="${escapeHTML(description)}" />
   <meta property="og:image" content="${ogImage}" />
@@ -235,6 +269,10 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   <meta property="og:image:type" content="${imageType}" />
   <meta property="og:image:alt" content="${escapeHTML(title)}" />
   <meta property="og:url" content="${shareUrl}" />
+  <meta property="article:section" content="Emploi" />
+  <meta property="article:tag" content="${escapeHTML(job.contract_type || 'Emploi')}" />
+  <meta property="article:tag" content="${escapeHTML(job.location || 'Guinée')}" />
+  <meta property="article:publisher" content="https://www.facebook.com/JobGuinee" />
   
   <!-- Twitter Card Tags -->
   <meta name="twitter:card" content="summary_large_image" />

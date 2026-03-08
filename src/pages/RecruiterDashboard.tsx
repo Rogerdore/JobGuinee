@@ -22,6 +22,8 @@ import {
   Clock,
   Calendar,
   Info,
+  Link2,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -116,6 +118,7 @@ interface Job {
   experience_level?: string;
   education_level?: string;
   requirements?: string;
+  slug?: string;
 }
 
 interface Application {
@@ -173,6 +176,7 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
   const [showDiffusionProposalModal, setShowDiffusionProposalModal] = useState(false);
   const [publishedJobTitle, setPublishedJobTitle] = useState('');
   const [publishedJobId, setPublishedJobId] = useState('');
+  const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
   const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
@@ -1060,6 +1064,32 @@ export default function RecruiterDashboard({ onNavigate }: RecruiterDashboardPro
                       )}
 
                       <JobMiniStats jobId={job.id} initialViews={job.views_count || 0} initialApplications={job.applications_count || 0} />
+
+                      {job.status === 'published' && (
+                        <button
+                          className={`w-full mb-3 px-4 py-2.5 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border relative z-10 ${
+                            copiedJobId === job.id
+                              ? 'bg-green-50 text-green-700 border-green-300'
+                              : 'bg-[#FF8C00]/10 hover:bg-[#FF8C00]/20 text-[#FF8C00] border-[#FF8C00]/30 hover:border-[#FF8C00]/50'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const slug = job.slug || job.id;
+                            const jobUrl = `${window.location.origin}/offres/${slug}`;
+                            navigator.clipboard.writeText(jobUrl).then(() => {
+                              setCopiedJobId(job.id);
+                              showSuccess('Lien copié !', `Le lien de l'offre "${job.title}" a été copié dans le presse-papiers.`);
+                              setTimeout(() => setCopiedJobId(null), 3000);
+                            });
+                          }}
+                        >
+                          {copiedJobId === job.id ? (
+                            <><Check className="w-4 h-4" /><span>Lien copié !</span></>
+                          ) : (
+                            <><Link2 className="w-4 h-4" /><span>Copier le lien de l'offre</span></>
+                          )}
+                        </button>
+                      )}
 
                       <div className="space-y-3 mb-4 relative z-10">
                         <div className="grid grid-cols-2 gap-3">

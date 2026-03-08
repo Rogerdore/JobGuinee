@@ -152,7 +152,7 @@ function generateHTMLWithOGTags(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(metadata.title)}</title>
   
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content="article" />
   <meta property="og:title" content="${escapeHtml(metadata.title)}" />
   <meta property="og:description" content="${escapeHtml(metadata.description)}" />
   <meta property="og:image" content="${ogImage}" />
@@ -161,7 +161,9 @@ function generateHTMLWithOGTags(
   <meta property="og:image:type" content="image/png" />
   <meta property="og:url" content="${metadata.url}" />
   <meta property="og:site_name" content="JobGuinée" />
-  <meta property="og:locale" content="fr_GN" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="article:section" content="Emploi" />
+  <meta property="article:publisher" content="https://www.facebook.com/JobGuinee" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(metadata.title)}" />

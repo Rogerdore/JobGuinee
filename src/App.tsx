@@ -130,6 +130,19 @@ function AppContent() {
       return;
     }
 
+    // Detect /offres/:id clean URL path
+    const pathMatch = window.location.pathname.match(/^\/offres\/([^/?]+)/);
+    if (pathMatch) {
+      const jobIdFromPath = pathMatch[1];
+      const src = searchParams.get('src');
+      setCurrentPage('job-detail');
+      setSelectedJobId(jobIdFromPath);
+      if (src) {
+        setJobDetailState({ jobId: jobIdFromPath, sourceNetwork: src });
+      }
+      return;
+    }
+
     const urlParams = searchParams;
     const page = urlParams.get('page');
     const id = urlParams.get('id');
@@ -142,6 +155,8 @@ function AppContent() {
       if (src) {
         setJobDetailState({ jobId: id, sourceNetwork: src });
       }
+      // Update URL bar to clean /offres/ path
+      window.history.replaceState(null, '', `/offres/${id}`);
     } else if (page && page === 'public-profile' && token) {
       setCurrentPage('public-profile');
       setPublicProfileToken(token);
@@ -153,16 +168,39 @@ function AppContent() {
     }
   }, []);
 
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathMatch = window.location.pathname.match(/^\/offres\/([^/?]+)/);
+      if (pathMatch) {
+        setCurrentPage('job-detail');
+        setSelectedJobId(pathMatch[1]);
+      } else if (window.location.pathname === '/' && !window.location.search) {
+        setCurrentPage('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleNavigate = (page: string, paramOrState?: string | any) => {
     setCurrentPage(page as Page);
     if (page === 'job-detail') {
+      let jobIdForUrl = '';
       if (typeof paramOrState === 'string') {
         setSelectedJobId(paramOrState);
         setJobDetailState(null);
+        jobIdForUrl = paramOrState;
       } else if (paramOrState && typeof paramOrState === 'object') {
         setSelectedJobId(paramOrState.jobId || '');
         setJobDetailState(paramOrState);
+        jobIdForUrl = paramOrState.jobId || '';
       }
+      if (jobIdForUrl) {
+        window.history.pushState(null, '', `/offres/${jobIdForUrl}`);
+      }
+    } else if (page === 'home') {
+      window.history.pushState(null, '', '/');
     }
     if (page === 'job-marketplace' && paramOrState) {
       setMarketplaceSlug(paramOrState as string);

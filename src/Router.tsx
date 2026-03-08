@@ -70,24 +70,9 @@ function ShareRedirect() {
 }
 
 function JobDetailRedirect() {
-  const { jobId } = useParams<{ jobId: string }>();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (jobId) {
-      const src = searchParams.get('src') || '';
-      navigate(`/?page=job-detail&id=${jobId}${src ? `&src=${src}` : ''}`, { replace: true });
-    } else {
-      navigate('/');
-    }
-  }, [jobId, searchParams, navigate]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center">
-      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-900"></div>
-    </div>
-  );
+  // /offres/:jobId is now handled directly by App.tsx
+  // This component just renders App which will detect the /offres/ path
+  return <App />;
 }
 
 function PublicProfileRedirect() {

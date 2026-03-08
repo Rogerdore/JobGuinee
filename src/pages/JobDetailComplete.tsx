@@ -71,13 +71,29 @@ export default function JobDetailComplete({ jobId, onNavigate, autoOpenApply, me
   }, [jobId, user]);
 
   const loadJob = async () => {
-    const { data } = await supabase
+    // Try by ID first, then by slug as fallback
+    let { data } = await supabase
       .from('jobs')
       .select('*, companies(*)')
       .eq('id', jobId)
       .maybeSingle();
 
+    if (!data) {
+      const { data: bySlug } = await supabase
+        .from('jobs')
+        .select('*, companies(*)')
+        .eq('slug', jobId)
+        .maybeSingle();
+      data = bySlug;
+    }
+
     if (data) {
+      // Only allow public access to published jobs
+      if (data.status !== 'published' && (!user || (data.user_id !== user.id && data.companies?.profile_id !== user.id))) {
+        setJob(null);
+        setLoading(false);
+        return;
+      }
       setJob(data as any);
     } else if (jobId.startsWith('sample-')) {
       const sampleJob = sampleJobs.find(j => j.id === jobId);
