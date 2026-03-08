@@ -31,6 +31,45 @@ const COMMON_FIELDS = [
   'Autre',
 ];
 
+const COMMON_DEGREES = [
+  'Baccalauréat', 'BTS', 'DUT', 'Licence', 'Licence Professionnelle',
+  'Master 1', 'Master 2', 'Master Professionnel', 'Master Recherche',
+  'MBA', 'Doctorat', 'PhD',
+  'Diplôme d\'Ingénieur', 'Diplôme d\'État',
+  'Certificat Professionnel', 'Attestation de Formation',
+  'DEUG', 'DEA', 'DESS',
+  'CAP', 'BEP', 'Brevet Professionnel',
+  'Diplôme de Médecine', 'Diplôme de Pharmacie',
+  'Diplôme Universitaire (DU)',
+];
+
+const COMMON_INSTITUTIONS = [
+  'Université Gamal Abdel Nasser de Conakry (UGANC)',
+  'Université Général Lansana Conté de Sonfonia (UGLCS)',
+  'Université de Kankan',
+  'Université de Labé',
+  'Université de N\'Zérékoré',
+  'Université de Faranah',
+  'Université de Boké',
+  'Institut Supérieur des Mines et Géologie de Boké (ISMGB)',
+  'Institut Supérieur de Technologie de Mamou (ISTM)',
+  'ISAV / Institut Supérieur Agronomique et Vétérinaire de Faranah',
+  'Institut Supérieur des Sciences de l\'Éducation de Guinée (ISSEG)',
+  'Centre d\'Études et de Recherche en Environnement (CERE)',
+  'École Nationale des Arts et Métiers (ENAM)',
+  'Université Kofi Annan de Guinée',
+  'Université Nongo Conakry',
+  'Université Koffi Annan',
+  'Université Mahatma Gandhi de Conakry',
+  'Université Al-Imam',
+  'Université Thierno Amadou Diallo',
+  'Institut Supérieur de Commerce et d\'Administration (ISCA)',
+  'Université Cheikh Anta Diop (Dakar)',
+  'Université Paris-Saclay',
+  'Université de Montréal',
+  'Autre',
+];
+
 export default function EducationFieldsImproved({ educations, onChange }: EducationFieldsImprovedProps) {
   const [edus, setEdus] = useState<Education[]>([]);
 
@@ -91,11 +130,17 @@ export default function EducationFieldsImproved({ educations, onChange }: Educat
             </label>
             <input
               type="text"
+              list={`degree-suggestions-${index}`}
               value={edu.degree}
               onChange={(e) => updateEducation(index, 'degree', e.target.value)}
               placeholder="Ex: Licence en Gestion des Ressources Humaines"
               className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+            <datalist id={`degree-suggestions-${index}`}>
+              {COMMON_DEGREES.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
           </div>
 
           <div>
@@ -129,11 +174,17 @@ export default function EducationFieldsImproved({ educations, onChange }: Educat
               </label>
               <input
                 type="text"
+                list={`institution-suggestions-${index}`}
                 value={edu.institution}
                 onChange={(e) => updateEducation(index, 'institution', e.target.value)}
                 placeholder="Ex: Université de Conakry"
                 className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              <datalist id={`institution-suggestions-${index}`}>
+                {COMMON_INSTITUTIONS.map((inst) => (
+                  <option key={inst} value={inst} />
+                ))}
+              </datalist>
             </div>
 
             <div>

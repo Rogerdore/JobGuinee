@@ -17,6 +17,9 @@ import {
   Upload as UploadIcon,
   Lock,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -100,6 +103,34 @@ const COMMON_POSITIONS = [
   'Ingénieur',
 ];
 
+const COMMON_NAMES = [
+  'Mamadou', 'Fatoumata', 'Ibrahima', 'Aissatou', 'Abdoulaye',
+  'Mariama', 'Alpha', 'Kadiatou', 'Mohamed', 'Aminata',
+  'Ousmane', 'Fanta', 'Thierno', 'Djeinab', 'Boubacar',
+  'Hadja', 'Sekou', 'Hawa', 'Aboubacar', 'Safiatou',
+  'Souleymane', 'Binta', 'Alseny', 'N\'Fansou', 'Lamine',
+  'Camara', 'Diallo', 'Barry', 'Bah', 'Sow',
+  'Sylla', 'Condé', 'Touré', 'Keita', 'Bangoura',
+  'Soumah', 'Koulibaly', 'Traoré', 'Diakaby', 'Savane',
+];
+
+const COMMON_NEIGHBORHOODS = [
+  'Kaloum', 'Dixinn', 'Matam', 'Ratoma', 'Matoto',
+  'Cosa', 'Kaporo', 'Kipé', 'Nongo', 'Lambanyi',
+  'Sonfonia', 'Hamdallaye', 'Taouyah', 'Coléah', 'Sandervalia',
+  'Cameroun', 'Bonfi', 'Madina', 'Cosa Tady', 'Dar Es Salam',
+  'Tombolia', 'Sangoyah', 'Simbaya', 'Gbessia', 'Entag',
+  'Enta', 'Dabompa', 'Cimenterie', 'Almamya', 'Boulbinet',
+  'Coronthie', 'Manquepas', 'Tanene', 'Dubréka Centre',
+  'Coyah Centre', 'Kindia Centre', 'Kankan Centre',
+];
+
+const COMMON_STATUSES = [
+  'En poste', 'En recherche active', 'Freelance', 'Stagiaire',
+  'Étudiant(e)', 'En transition', 'Disponible immédiatement',
+  'Auto-entrepreneur', 'En congé', 'Retraité(e)',
+];
+
 type FileType = 'cv' | 'certificate';
 
 interface FileToUpload {
@@ -130,6 +161,19 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string>('');
   const [filesToUpload, setFilesToUpload] = useState<FileToUpload[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // Wizard state
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const WIZARD_STEPS = [
+    { label: 'Identité', icon: <User className="w-4 h-4" /> },
+    { label: 'Profil Pro', icon: <Briefcase className="w-4 h-4" /> },
+    { label: 'Expériences', icon: <Briefcase className="w-4 h-4" /> },
+    { label: 'Formation', icon: <GraduationCap className="w-4 h-4" /> },
+    { label: 'Compétences', icon: <Award className="w-4 h-4" /> },
+    { label: 'Localisation', icon: <MapPin className="w-4 h-4" /> },
+    { label: 'Finalisation', icon: <CheckCircle2 className="w-4 h-4" /> },
+  ];
 
   const saveToDatabaseCallback = useCallback(async (data: any) => {
     if (!profile?.id || !user) return;
@@ -816,6 +860,50 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
     }
   }, [user, uploadFile]);
 
+  // Wizard step validation
+  const validateStep = (step: number): Record<string, string> => {
+    const stepErrors: Record<string, string> = {};
+    switch (step) {
+      case 0: // Identité
+        if (!formData.fullName) stepErrors.fullName = 'Le nom complet est obligatoire';
+        if (!formData.email) stepErrors.email = 'L\'email est obligatoire';
+        if (!formData.phone) stepErrors.phone = 'Le téléphone est obligatoire';
+        break;
+      case 2: // Expériences
+        if (formData.experiences.length === 0) stepErrors.experiences = 'Au moins une expérience est obligatoire';
+        break;
+      case 3: // Formation
+        if (formData.formations.length === 0) stepErrors.formations = 'Au moins une formation est obligatoire';
+        break;
+      case 5: // Localisation
+        if (!formData.city && formData.mobility.length === 0) stepErrors.location = 'La localisation ou mobilité est obligatoire';
+        break;
+      case 6: // Finalisation
+        if (!formData.acceptTerms) stepErrors.acceptTerms = 'Vous devez accepter les conditions';
+        if (!formData.certifyAccuracy) stepErrors.certifyAccuracy = 'Vous devez certifier l\'exactitude';
+        break;
+    }
+    return stepErrors;
+  };
+
+  const handleNextStep = () => {
+    const stepErrors = validateStep(currentStep);
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      setErrorListModal({ isOpen: true, errors: Object.values(stepErrors) });
+      return;
+    }
+    setErrors({});
+    setCurrentStep(prev => Math.min(prev + 1, WIZARD_STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrevStep = () => {
+    setErrors({});
+    setCurrentStep(prev => Math.max(prev - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1045,9 +1133,57 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
         />
       </div>
 
+      {/* Wizard Step Indicator */}
+      <div className="mb-2">
+        <div className="flex items-center justify-between">
+          {WIZARD_STEPS.map((step, index) => (
+            <div key={index} className="flex-1 flex flex-col items-center relative">
+              {index > 0 && (
+                <div
+                  className={`absolute top-5 right-1/2 w-full h-0.5 -translate-y-1/2 ${
+                    index <= currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  // Allow navigating to completed or current steps
+                  if (index <= currentStep) {
+                    setCurrentStep(index);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                  index < currentStep
+                    ? 'bg-green-500 text-white cursor-pointer'
+                    : index === currentStep
+                    ? 'bg-blue-600 text-white ring-4 ring-blue-200'
+                    : 'bg-gray-200 text-gray-500 cursor-default'
+                }`}
+              >
+                {index < currentStep ? <Check className="w-5 h-5" /> : index + 1}
+              </button>
+              <span
+                className={`mt-2 text-xs font-medium text-center hidden sm:block ${
+                  index === currentStep ? 'text-blue-700' : index < currentStep ? 'text-green-600' : 'text-gray-400'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-sm text-gray-500 mt-4">
+          Étape {currentStep + 1} sur {WIZARD_STEPS.length} — <span className="font-semibold text-gray-700">{WIZARD_STEPS[currentStep].label}</span>
+        </p>
+      </div>
+
       {/* Barre de progression */}
       <ProfileProgressBar compact={true} />
 
+      {/* ===== STEP 0: Identité ===== */}
+      {currentStep === 0 && (<>
       {/* Bouton d'analyse IA du CV */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-4">
         <div className="flex items-start gap-4">
@@ -1171,14 +1307,17 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <Input
+          <AutoCompleteInput
             label="Nom complet"
             placeholder="Ex: Fatoumata Camara"
             value={formData.fullName}
             onChange={(value) => updateField('fullName', value)}
-            error={errors.fullName}
+            suggestions={COMMON_NAMES}
             required
           />
+          {errors.fullName && (
+            <p className="text-sm text-red-600 -mt-4">{errors.fullName}</p>
+          )}
           <Input
             label="Adresse email"
             type="email"
@@ -1211,12 +1350,21 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
             label="Nationalité"
             value={formData.nationality}
             onChange={(value) => updateField('nationality', value)}
-            suggestions={['Guinéenne', 'Française', 'Sénégalaise', 'Ivoirienne', 'Malienne']}
+            suggestions={[
+              'Guinéenne', 'Française', 'Sénégalaise', 'Ivoirienne', 'Malienne',
+              'Burkinabè', 'Camerounaise', 'Togolaise', 'Béninoise', 'Nigériane',
+              'Ghanéenne', 'Sierra-Léonaise', 'Libérienne', 'Gambienne',
+              'Mauritanienne', 'Congolaise', 'Gabonaise', 'Canadienne', 'Américaine',
+              'Belge', 'Suisse', 'Marocaine', 'Tunisienne', 'Algérienne',
+            ]}
             placeholder="Ex: Guinéenne"
           />
         </div>
       </FormSection>
+      </>)}
 
+      {/* ===== STEP 1: Profil Pro ===== */}
+      {currentStep === 1 && (<>
       {/* SECTION 3: Résumé Professionnel */}
       <FormSection
         title="2️⃣ Résumé Professionnel"
@@ -1272,7 +1420,10 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           onChange={(value) => updateField('desiredContractTypes', value)}
         />
       </FormSection>
+      </>)}
 
+      {/* ===== STEP 2: Expériences ===== */}
+      {currentStep === 2 && (<>
       {/* SECTION 5: Expériences */}
       <FormSection
         title="4️⃣ Expériences Professionnelles"
@@ -1300,7 +1451,10 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           </div>
         )}
       </FormSection>
+      </>)}
 
+      {/* ===== STEP 3: Formation ===== */}
+      {currentStep === 3 && (<>
       {/* SECTION 6: Formations */}
       <FormSection
         title="5️⃣ Formations & Diplômes"
@@ -1322,7 +1476,10 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           </div>
         )}
       </FormSection>
+      </>)}
 
+      {/* ===== STEP 4: Compétences ===== */}
+      {currentStep === 4 && (<>
       {/* SECTION 7: Compétences & Langues */}
       <FormSection
         title="6️⃣ Compétences & Langues"
@@ -1343,7 +1500,10 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           />
         </div>
       </FormSection>
+      </>)}
 
+      {/* ===== STEP 5: Localisation & Rémunération ===== */}
+      {currentStep === 5 && (<>
       {/* SECTION 8: Localisation & Mobilité */}
       <FormSection
         title="7️⃣ Localisation & Mobilité"
@@ -1355,11 +1515,12 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input
+          <AutoCompleteInput
             label="Adresse actuelle"
             placeholder="Ex: Quartier Ratoma"
             value={formData.address}
             onChange={(value) => updateField('address', value)}
+            suggestions={COMMON_NEIGHBORHOODS}
           />
           <AutoCompleteInput
             label="Ville / Commune"
@@ -1412,7 +1573,10 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           />
         </div>
       </FormSection>
+      </>)}
 
+      {/* ===== STEP 6: Finalisation ===== */}
+      {currentStep === 6 && (<>
       {/* SECTION 10: Liens & Documents */}
       <FormSection
         title="9️⃣ Liens Professionnels & Documents"
@@ -1493,6 +1657,14 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
         </div>
 
         <div className="mt-8 flex gap-4">
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center gap-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Précédent
+          </button>
           <Button variant="primary" type="submit" className="flex-1">
             <Save className="w-5 h-5 mr-2" />
             Enregistrer mon profil
@@ -1505,6 +1677,7 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
                 setFormData(getInitialFormData());
                 setShowManualForm(false);
                 setCvParsed(false);
+                setCurrentStep(0);
               }
             }}
             className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
@@ -1513,6 +1686,33 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           </button>
         </div>
       </FormSection>
+      </>)}
+
+      {/* ===== Wizard Navigation (except last step which has its own submit) ===== */}
+      {currentStep < WIZARD_STEPS.length - 1 && (
+        <div className="flex justify-between items-center pt-4 border-t">
+          {currentStep > 0 ? (
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center gap-2"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Précédent
+            </button>
+          ) : (
+            <div />
+          )}
+          <button
+            type="button"
+            onClick={handleNextStep}
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition flex items-center gap-2"
+          >
+            Suivant
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       <SuccessModal
         isOpen={modalConfig.isOpen}

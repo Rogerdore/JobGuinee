@@ -25,6 +25,45 @@ const MONTHS = [
 
 const YEARS = Array.from({ length: 50 }, (_, i) => (new Date().getFullYear() - i).toString());
 
+const COMMON_POSITIONS = [
+  'Développeur Web', 'Développeur Mobile', 'Développeur Full-Stack',
+  'Responsable RH', 'Chargé RH', 'Assistant RH',
+  'Comptable', 'Chef comptable', 'Auditeur financier',
+  'Ingénieur des mines', 'Géologue', 'Technicien minier',
+  'Commercial', 'Responsable commercial', 'Chargé de clientèle',
+  'Chef de projet', 'Coordinateur de projet',
+  'Assistant administratif', 'Secrétaire de direction',
+  'Technicien informatique', 'Administrateur réseau',
+  'Ingénieur génie civil', 'Conducteur de travaux',
+  'Médecin', 'Infirmier', 'Pharmacien',
+  'Enseignant', 'Formateur',
+  'Logisticien', 'Responsable logistique',
+  'Directeur général', 'Directeur administratif et financier',
+  'Juriste', 'Conseiller juridique',
+  'Community Manager', 'Graphiste', 'Designer UI/UX',
+  'Agent commercial', 'Caissier', 'Magasinier',
+  'Chauffeur', 'Mécanicien', 'Électricien',
+  'Agronome', 'Vétérinaire',
+];
+
+const COMMON_COMPANIES = [
+  'Rio Tinto', 'SMB Winning', 'CBG', 'SAG', 'Nordgold',
+  'AngloGold Ashanti', 'Société Minière de Boké',
+  'Orange Guinée', 'MTN Guinée', 'Cellcom Guinée',
+  'Banque Centrale de Guinée', 'Ecobank Guinée', 'Société Générale Guinée',
+  'BICIGUI', 'UBA Guinée', 'Orabank Guinée',
+  'EDG (Électricité de Guinée)', 'SEG (Société des Eaux de Guinée)',
+  'PAC (Port Autonome de Conakry)',
+  'Université Gamal Abdel Nasser', 'Université de Sonfonia',
+  'Hôpital National Donka', 'Hôpital Ignace Deen',
+  'SOGUIPAMI', 'SOGUIPAH', 'FRIGUIA',
+  'Total Énergies Guinée', 'Vivo Energy Guinée',
+  'UNICEF Guinée', 'OMS Guinée', 'PNUD Guinée', 'GIZ Guinée',
+  'Ministère de la Santé', 'Ministère de l\'Éducation',
+  'BSIC Guinée', 'Bolloré Transport & Logistics',
+  'Guicopres', 'ENCO5', 'Getma',
+];
+
 function calculateDuration(startMonth: string, startYear: string, endMonth: string, endYear: string, isCurrent: boolean): string {
   if (!startMonth || !startYear) return '';
 
@@ -178,11 +217,17 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
               </label>
               <input
                 type="text"
+                list={`position-suggestions-${index}`}
                 value={exp.position}
                 onChange={(e) => updateExperience(index, 'position', e.target.value)}
                 placeholder="Ex: Chargé RH"
                 className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              <datalist id={`position-suggestions-${index}`}>
+                {COMMON_POSITIONS.map((pos) => (
+                  <option key={pos} value={pos} />
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -191,11 +236,17 @@ export default function ExperienceFieldsImproved({ experiences, onChange }: Expe
               </label>
               <input
                 type="text"
+                list={`company-suggestions-${index}`}
                 value={exp.company}
                 onChange={(e) => updateExperience(index, 'company', e.target.value)}
                 placeholder="Ex: UMS Mining"
                 className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              <datalist id={`company-suggestions-${index}`}>
+                {COMMON_COMPANIES.map((comp) => (
+                  <option key={comp} value={comp} />
+                ))}
+              </datalist>
             </div>
           </div>
 
