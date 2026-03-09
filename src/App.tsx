@@ -98,7 +98,44 @@ const Resources = lazy(() => import('./pages/Resources'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
-type Page = 'home' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'privacy-policy' | 'terms-of-service' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-invitations' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-email-events' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'admin-email-config' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list';
+// --- URL <-> Page mapping helpers ---
+function pageToPath(page: string, param?: string): string {
+  if (page === 'home') return '/';
+  if (page === 'job-detail' && param) return `/offres/${param}`;
+  if (page === 'public-profile' && param) return `/profil/${param}`;
+  if (page === 'external-application' && param) return `/candidature/${param}`;
+  if (page === 'job-marketplace' && param) return `/marketplace/${param}`;
+  if (page === 'cvtheque-teaser' && param) return `/decouvrir-cvtheque/${param}`;
+  if (page === 'cms-admin') return '/admin/cms';
+  if (page.startsWith('admin-')) return `/admin/${page.slice(6)}`;
+  return `/${page}`;
+}
+
+function pathToPage(pathname: string): { page: string; param?: string } | null {
+  if (pathname === '/') return { page: 'home' };
+  const offreMatch = pathname.match(/^\/offres\/([^/?]+)/);
+  if (offreMatch) return { page: 'job-detail', param: offreMatch[1] };
+  const profilMatch = pathname.match(/^\/profil\/([^/?]+)/);
+  if (profilMatch) return { page: 'public-profile', param: profilMatch[1] };
+  const candidatureMatch = pathname.match(/^\/candidature\/([^/?]+)/);
+  if (candidatureMatch) return { page: 'external-application', param: candidatureMatch[1] };
+  const marketplaceMatch = pathname.match(/^\/marketplace\/([^/?]+)/);
+  if (marketplaceMatch) return { page: 'job-marketplace', param: marketplaceMatch[1] };
+  const cvthequeMatch = pathname.match(/^\/decouvrir-cvtheque\/([^/?]+)/);
+  if (cvthequeMatch) return { page: 'cvtheque-teaser', param: cvthequeMatch[1] };
+  const adminMatch = pathname.match(/^\/admin\/(.+)/);
+  if (adminMatch) {
+    const sub = adminMatch[1];
+    if (sub === 'cms') return { page: 'cms-admin' };
+    return { page: `admin-${sub}` };
+  }
+  const generic = pathname.slice(1);
+  if (generic) return { page: generic };
+  return { page: 'home' };
+}
+// --- End URL helpers ---
+
+type Page = 'home' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'privacy-policy' | 'terms-of-service' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-invitations' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-email-events' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'admin-email-config' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list' | 'admin-branding' | 'admin-test-email';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -130,53 +167,69 @@ function AppContent() {
       return;
     }
 
-    // Detect /offres/:id clean URL path
-    const pathMatch = window.location.pathname.match(/^\/offres\/([^/?]+)/);
-    if (pathMatch) {
-      const jobIdFromPath = pathMatch[1];
+    // Legacy ?page= support (redirect to clean URL)
+    const legacyPage = searchParams.get('page');
+    if (legacyPage) {
+      const id = searchParams.get('id');
+      const token = searchParams.get('token');
       const src = searchParams.get('src');
-      setCurrentPage('job-detail');
-      setSelectedJobId(jobIdFromPath);
-      if (src) {
-        setJobDetailState({ jobId: jobIdFromPath, sourceNetwork: src });
+      if (legacyPage === 'job-detail' && id) {
+        setCurrentPage('job-detail');
+        setSelectedJobId(id);
+        if (src) setJobDetailState({ jobId: id, sourceNetwork: src });
+        window.history.replaceState(null, '', `/offres/${id}`);
+      } else if (legacyPage === 'public-profile' && token) {
+        setCurrentPage('public-profile');
+        setPublicProfileToken(token);
+        window.history.replaceState(null, '', `/profil/${token}`);
+      } else if (legacyPage === 'external-application' && id) {
+        setCurrentPage('external-application');
+        setSelectedJobId(id);
+        window.history.replaceState(null, '', `/candidature/${id}`);
+      } else {
+        setCurrentPage(legacyPage as Page);
+        window.history.replaceState(null, '', pageToPath(legacyPage));
       }
       return;
     }
 
-    const urlParams = searchParams;
-    const page = urlParams.get('page');
-    const id = urlParams.get('id');
-    const token = urlParams.get('token');
-    const src = urlParams.get('src');
-
-    if (page && page === 'job-detail' && id) {
-      setCurrentPage('job-detail');
-      setSelectedJobId(id);
-      if (src) {
-        setJobDetailState({ jobId: id, sourceNetwork: src });
+    // Resolve clean URL path to page
+    const resolved = pathToPage(window.location.pathname);
+    if (resolved && resolved.page !== 'home') {
+      const src = searchParams.get('src');
+      setCurrentPage(resolved.page as Page);
+      if (resolved.page === 'job-detail' && resolved.param) {
+        setSelectedJobId(resolved.param);
+        if (src) setJobDetailState({ jobId: resolved.param, sourceNetwork: src });
+      } else if (resolved.page === 'public-profile' && resolved.param) {
+        setPublicProfileToken(resolved.param);
+      } else if (resolved.page === 'external-application' && resolved.param) {
+        setSelectedJobId(resolved.param);
+      } else if (resolved.page === 'job-marketplace' && resolved.param) {
+        setMarketplaceSlug(resolved.param);
+      } else if (resolved.page === 'cvtheque-teaser' && resolved.param) {
+        setCvthequeTeaserSlug(resolved.param);
       }
-      // Update URL bar to clean /offres/ path
-      window.history.replaceState(null, '', `/offres/${id}`);
-    } else if (page && page === 'public-profile' && token) {
-      setCurrentPage('public-profile');
-      setPublicProfileToken(token);
-    } else if (page && page === 'external-application' && id) {
-      setCurrentPage('external-application');
-      setSelectedJobId(id);
-    } else if (page) {
-      setCurrentPage(page as Page);
     }
   }, []);
 
   // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
-      const pathMatch = window.location.pathname.match(/^\/offres\/([^/?]+)/);
-      if (pathMatch) {
-        setCurrentPage('job-detail');
-        setSelectedJobId(pathMatch[1]);
-      } else if (window.location.pathname === '/' && !window.location.search) {
-        setCurrentPage('home');
+      const resolved = pathToPage(window.location.pathname);
+      if (resolved) {
+        setCurrentPage(resolved.page as Page);
+        if (resolved.page === 'job-detail' && resolved.param) {
+          setSelectedJobId(resolved.param);
+        } else if (resolved.page === 'public-profile' && resolved.param) {
+          setPublicProfileToken(resolved.param);
+        } else if (resolved.page === 'external-application' && resolved.param) {
+          setSelectedJobId(resolved.param);
+        } else if (resolved.page === 'job-marketplace' && resolved.param) {
+          setMarketplaceSlug(resolved.param);
+        } else if (resolved.page === 'cvtheque-teaser' && resolved.param) {
+          setCvthequeTeaserSlug(resolved.param);
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -185,28 +238,28 @@ function AppContent() {
 
   const handleNavigate = (page: string, paramOrState?: string | any) => {
     setCurrentPage(page as Page);
+
+    // Determine the URL param for pages that need one
+    let urlParam: string | undefined;
+
     if (page === 'job-detail') {
-      let jobIdForUrl = '';
       if (typeof paramOrState === 'string') {
         setSelectedJobId(paramOrState);
         setJobDetailState(null);
-        jobIdForUrl = paramOrState;
+        urlParam = paramOrState;
       } else if (paramOrState && typeof paramOrState === 'object') {
         setSelectedJobId(paramOrState.jobId || '');
         setJobDetailState(paramOrState);
-        jobIdForUrl = paramOrState.jobId || '';
+        urlParam = paramOrState.jobId || '';
       }
-      if (jobIdForUrl) {
-        window.history.pushState(null, '', `/offres/${jobIdForUrl}`);
-      }
-    } else if (page === 'home') {
-      window.history.pushState(null, '', '/');
     }
     if (page === 'job-marketplace' && paramOrState) {
       setMarketplaceSlug(paramOrState as string);
+      urlParam = paramOrState as string;
     }
     if (page === 'cvtheque-teaser' && paramOrState) {
       setCvthequeTeaserSlug(paramOrState as string);
+      urlParam = paramOrState as string;
     }
     if (page === 'jobs') {
       setJobSearchParams((paramOrState as string) || '');
@@ -219,7 +272,16 @@ function AppContent() {
     }
     if (page === 'public-profile' && paramOrState) {
       setPublicProfileToken(paramOrState as string);
+      urlParam = paramOrState as string;
     }
+    if (page === 'external-application' && typeof paramOrState === 'string') {
+      urlParam = paramOrState;
+    }
+
+    // Push clean URL to browser address bar
+    const newPath = pageToPath(page, urlParam);
+    window.history.pushState({ page, param: urlParam }, '', newPath);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

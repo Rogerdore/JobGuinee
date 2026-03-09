@@ -340,7 +340,7 @@ export default function JobApplicationModal({
     sessionStorage.setItem('pendingApplicationJobId', jobId);
     sessionStorage.setItem('pendingApplicationJobTitle', jobTitle);
     sessionStorage.setItem('pendingApplicationCompanyName', companyName);
-    window.location.href = '/candidate-dashboard?tab=profile';
+    window.location.href = '/candidate-profile-form';
   };
 
   const handleCustomSubmit = async () => {

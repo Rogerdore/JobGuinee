@@ -1287,7 +1287,7 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
                   if (onNavigate) {
                     onNavigate('credit-store');
                   } else {
-                    window.location.href = '/?page=credit-store';
+                    window.location.href = '/credit-store';
                   }
                 }}
               />

@@ -46,7 +46,7 @@ export default function CVUploadWithParser({
     if (onNavigateToCreditStore) {
       onNavigateToCreditStore();
     } else {
-      window.location.href = '/?page=credit-store';
+      window.location.href = '/credit-store';
     }
   }, [onNavigateToCreditStore]);
 

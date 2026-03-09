@@ -48,7 +48,7 @@ function ShareRedirect() {
         });
 
         const jobSlug = job.slug || job.id;
-        navigate(`/?page=job-detail&id=${jobSlug}&src=${network}`, { replace: true });
+        navigate(`/offres/${jobSlug}?src=${network}`, { replace: true });
       } catch (err) {
         console.error('Error in share redirect:', err);
         navigate('/');
@@ -81,7 +81,7 @@ function PublicProfileRedirect() {
 
   useEffect(() => {
     if (token) {
-      navigate(`/?page=public-profile&token=${token}`, { replace: true });
+      navigate(`/profil/${token}`, { replace: true });
     } else {
       navigate('/');
     }
@@ -101,9 +101,9 @@ function AuthCallbackRoute() {
     if (page === 'home') {
       navigate('/');
     } else if (page === 'auth') {
-      navigate('/?page=login');
+      navigate('/login');
     } else {
-      navigate(`/?page=${page}`);
+      navigate(`/${page}`);
     }
   };
 
@@ -116,7 +116,7 @@ function ExternalApplicationRedirect() {
 
   useEffect(() => {
     if (applicationId) {
-      navigate(`/?page=external-application&id=${applicationId}`, { replace: true });
+      navigate(`/candidature/${applicationId}`, { replace: true });
     } else {
       navigate('/');
     }

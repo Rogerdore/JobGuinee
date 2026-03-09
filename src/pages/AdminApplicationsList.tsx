@@ -130,7 +130,7 @@ export default function AdminApplicationsList() {
       const result = await publicProfileTokenService.generateToken(candidateId, applicationId);
 
       if (result.success && result.token) {
-        window.location.href = `/profile/${result.token}`;
+        window.location.href = `/profil/${result.token}`;
       } else {
         alert('Erreur lors de la génération du lien de profil');
       }

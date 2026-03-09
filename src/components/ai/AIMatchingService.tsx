@@ -797,7 +797,7 @@ ${cp?.availability ? `\n✓ Disponibilité: ${cp.availability}` : ''}
               </div>
 
               <button
-                onClick={() => window.location.href = `/jobs/${match.id}`}
+                onClick={() => onNavigate?.('job-detail', match.id)}
                 className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
               >
                 Voir l'offre
