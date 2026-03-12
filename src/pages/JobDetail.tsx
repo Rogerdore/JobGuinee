@@ -20,6 +20,7 @@ import { useSavedJobs } from '../hooks/useSavedJobs';
 import { saveAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { useSocialShareMeta } from '../hooks/useSocialShareMeta';
 import { socialShareService } from '../services/socialShareService';
+import { schemaService } from '../services/schemaService';
 import { candidateStatsService } from '../services/candidateStatsService';
 import JobDetailStatsPanel from '../components/jobs/JobDetailStatsPanel';
 
@@ -49,6 +50,33 @@ export default function JobDetail({ jobId, onNavigate, autoOpenApply, metadata }
 
   const shareMetadata = job ? socialShareService.generateJobMetadata(job) : null;
   useSocialShareMeta(shareMetadata);
+
+  // Inject JobPosting schema.org structured data
+  useEffect(() => {
+    if (!job) return;
+    const schema = schemaService.generateJobPostingSchema(job);
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-seo-job', job.id);
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+
+    // Also set keywords and robots for this page
+    const setMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    const company = job.companies?.name || job.company_name || 'Entreprise';
+    const city = job.location || 'Guinée';
+    setMeta('keywords', [job.title, `emploi ${city}`, company, job.sector || 'emploi', 'offres d\'emploi en guinée'].join(', '));
+    setMeta('robots', 'index, follow');
+
+    return () => {
+      const el = document.querySelector(`script[data-seo-job="${job.id}"]`);
+      if (el) el.remove();
+    };
+  }, [job]);
 
   const isRecruiter = profile?.user_type === 'recruiter';
   const isPremium = profile?.subscription_plan === 'premium' || profile?.subscription_plan === 'enterprise';

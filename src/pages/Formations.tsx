@@ -102,6 +102,37 @@ export default function Formations({ onNavigate, searchParams }: FormationsProps
 
   const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // SEO: Update meta tags when a formation detail modal is shown
+  useEffect(() => {
+    if (!showDetailsModal || !selectedFormation) return;
+    const prevTitle = document.title;
+    document.title = `${selectedFormation.title} - Formation en Guinée | JobGuinée`;
+    const setMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    const desc = selectedFormation.description?.substring(0, 160) || `Formation ${selectedFormation.title} en Guinée`;
+    setMeta('description', desc);
+    setMeta('og:title', `${selectedFormation.title} | Formations JobGuinée`, 'property');
+    setMeta('og:description', desc, 'property');
+    setMeta('og:type', 'website', 'property');
+    setMeta('twitter:title', `${selectedFormation.title} | Formations JobGuinée`);
+    setMeta('twitter:description', desc);
+    // Inject Course schema
+    const schema = { '@context': 'https://schema.org', '@type': 'Course', name: selectedFormation.title, description: desc, provider: { '@type': 'Organization', name: 'JobGuinée', sameAs: 'https://jobguinee-pro.com' } };
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-seo-formation', selectedFormation.id);
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+    return () => {
+      document.title = prevTitle;
+      const el = document.querySelector(`script[data-seo-formation="${selectedFormation.id}"]`);
+      if (el) el.remove();
+    };
+  }, [showDetailsModal, selectedFormation]);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [showTrainerModal, setShowTrainerModal] = useState(false);
@@ -194,7 +225,7 @@ export default function Formations({ onNavigate, searchParams }: FormationsProps
         <div className="absolute inset-0 bg-[#0E2F56] opacity-90"></div>
         <div className="relative max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4">Formations & Coaching Carrière</h1>
+            <h1 className="text-5xl font-bold mb-4">Formations & Coaching Carrière en Guinée</h1>
             <p className="text-xl text-blue-100 max-w-3xl mx-auto">
               Développez vos compétences et boostez votre employabilité avec nos programmes de formation certifiants
             </p>

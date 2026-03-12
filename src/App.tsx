@@ -274,11 +274,11 @@ function AppContent() {
         path = '/';
         break;
       case 'jobs':
-        meta = generateJobsPageMeta(0);
+        meta = generateJobsPageMeta();
         path = '/jobs';
         break;
       case 'formations':
-        meta = generateFormationsPageMeta(0);
+        meta = generateFormationsPageMeta();
         path = '/formations';
         break;
       case 'blog':
@@ -292,6 +292,26 @@ function AppContent() {
       case 'terms-of-service':
         meta = { title: 'Conditions d\'utilisation | JobGuinée', description: 'Conditions d\'utilisation de JobGuinée.', keywords: [] };
         path = '/terms-of-service';
+        break;
+      case 'b2b-solutions':
+        meta = { title: 'Solutions B2B recrutement en Guinée | JobGuinée', description: 'Solutions de recrutement pour entreprises en Guinée. Publiez vos offres d\'emploi, accédez à la CVthèque et trouvez les meilleurs talents.', keywords: ['recrutement entreprise guinée', 'solution RH guinée', 'publier offre emploi guinée'] };
+        path = '/b2b-solutions';
+        break;
+      case 'cvtheque':
+        meta = { title: 'CVthèque Guinée - Trouvez les meilleurs profils | JobGuinée', description: 'Accédez à la CVthèque de JobGuinée. Des milliers de CV de candidats qualifiés en Guinée pour vos recrutements.', keywords: ['cvthèque guinée', 'CV candidats guinée', 'recrutement profils guinée'] };
+        path = '/cvtheque';
+        break;
+      case 'premium-ai':
+        meta = { title: 'IA Premium - Outils IA pour l\'emploi en Guinée | JobGuinée', description: 'Boostez votre recherche d\'emploi en Guinée avec l\'intelligence artificielle. Génération de CV, lettres de motivation et coaching carrière.', keywords: ['IA emploi guinée', 'CV intelligent guinée', 'coaching carrière IA'] };
+        path = '/premium-ai';
+        break;
+      case 'credit-store':
+        meta = { title: 'Boutique de crédits - Services premium | JobGuinée', description: 'Achetez des crédits pour accéder aux services premium de JobGuinée : boost de candidature, CV IA, matching intelligent.', keywords: ['services premium emploi guinée', 'crédits JobGuinée'] };
+        path = '/credit-store';
+        break;
+      case 'resources':
+        meta = { title: 'Ressources emploi et carrière en Guinée | JobGuinée', description: 'Guides, modèles de CV, conseils carrière et ressources pour réussir votre recherche d\'emploi en Guinée.', keywords: ['ressources emploi guinée', 'guide carrière guinée', 'modèle CV guinée'] };
+        path = '/resources';
         break;
     }
 

@@ -137,7 +137,7 @@ export function generateHomePageMeta() {
   };
 }
 
-export function generateJobsPageMeta(count: number) {
+export function generateJobsPageMeta(count?: number) {
   return {
     title: `${count ? count + ' ' : ''}Offres d'emploi en Guinée - Toutes les annonces | JobGuinée`,
     description: `Consultez ${count ? count + ' ' : ''}les offres d'emploi disponibles en Guinée. Emploi à Conakry, mines, ONG, secteur privé. Postulez en ligne sur le meilleur site d'emploi en Guinée.`,
@@ -195,7 +195,7 @@ export function generateJobDetailMeta(job: { companies?: { name?: string }; comp
   };
 }
 
-export function generateFormationsPageMeta(count: number) {
+export function generateFormationsPageMeta(count?: number) {
   return {
     title: `Formations professionnelles en Guinée${count ? ' - ' + count + ' programmes' : ''} | JobGuinée`,
     description: `Découvrez les formations professionnelles en Guinée. Formations certifiantes à Conakry, programmes de développement de compétences. Boostez votre carrière avec JobGuinée.`,

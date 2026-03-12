@@ -73,6 +73,39 @@ export default function Blog({ onNavigate }: BlogProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [email, setEmail] = useState('');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+
+  // SEO: Update meta tags when a blog article is selected/deselected
+  useEffect(() => {
+    if (!selectedPost) return;
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
+    const prevTitle = document.title;
+    document.title = `${selectedPost.title} | Blog JobGuinée`;
+    const setMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    const desc = selectedPost.excerpt || selectedPost.content?.substring(0, 160) || '';
+    setMeta('description', desc);
+    setMeta('og:title', `${selectedPost.title} | Blog JobGuinée`, 'property');
+    setMeta('og:description', desc, 'property');
+    setMeta('og:url', `${siteUrl}/blog/${selectedPost.slug}`, 'property');
+    setMeta('og:type', 'article', 'property');
+    setMeta('twitter:title', `${selectedPost.title} | Blog JobGuinée`);
+    setMeta('twitter:description', desc);
+    // Inject Article schema
+    const schema = { '@context': 'https://schema.org', '@type': 'Article', headline: selectedPost.title, datePublished: selectedPost.created_at, author: { '@type': 'Person', name: selectedPost.author }, publisher: { '@type': 'Organization', name: 'JobGuinée', logo: { '@type': 'ImageObject', url: `${siteUrl}/logo_jobguinee.png` } } };
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-seo-blog', selectedPost.id);
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+    return () => {
+      document.title = prevTitle;
+      const el = document.querySelector(`script[data-seo-blog="${selectedPost.id}"]`);
+      if (el) el.remove();
+    };
+  }, [selectedPost]);
   const [resources, setResources] = useState<any[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [resourceCategory, setResourceCategory] = useState('all');
@@ -187,7 +220,7 @@ export default function Blog({ onNavigate }: BlogProps) {
               <Sparkles className="w-4 h-4" />
               Le média RH de référence en Guinée
             </div>
-            <h1 className="text-5xl font-bold mb-4">Blog & Actualités</h1>
+            <h1 className="text-5xl font-bold mb-4">Blog & Actualités emploi en Guinée</h1>
             <p className="text-xl text-blue-100 max-w-3xl mx-auto">
               Conseils carrière, tendances RH, droit du travail et actualités du marché de l'emploi en Guinée
             </p>

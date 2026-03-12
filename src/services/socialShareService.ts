@@ -43,7 +43,7 @@ export const socialShareService = {
       image,
       url: jobUrl,
       siteName: 'JobGuinée',
-      type: 'website'
+      type: 'article'
     };
   },
 
