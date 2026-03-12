@@ -22,15 +22,15 @@ export default async function handler(req, res) {
     if (supabase) {
       const { data: formations, error } = await supabase
         .from('formations')
-        .select('id, slug, created_at, updated_at')
+        .select('id, created_at')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(500);
 
       if (!error && formations) {
         formationUrls = formations.map(f => {
-          const lastmod = (f.updated_at || f.created_at || '').split('T')[0];
-          const loc = `${SITE_URL}/formations/${f.slug || f.id}`;
+          const lastmod = (f.created_at || '').split('T')[0];
+          const loc = `${SITE_URL}/formations/${f.id}`;
           return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastmod}</lastmod>

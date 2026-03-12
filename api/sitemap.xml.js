@@ -44,13 +44,13 @@ async function getJobPages(supabase) {
   try {
     const { data: jobs, error } = await supabase
       .from('jobs')
-      .select('id, slug, created_at, updated_at, title, location, sector')
+      .select('id, created_at, updated_at, title, location, sector')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .limit(5000);
     if (error) throw error;
     return (jobs || []).map(job => ({
-      loc: `/offres/${job.slug || job.id}`,
+      loc: `/offres/${job.id}`,
       lastmod: (job.updated_at || job.created_at || '').split('T')[0],
       changefreq: 'daily',
       priority: '0.8',
@@ -110,14 +110,13 @@ async function getBlogPages(supabase) {
   try {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('id, slug, created_at, updated_at')
-      .eq('status', 'published')
+      .select('id, slug, created_at')
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw error;
     return (posts || []).map(post => ({
       loc: `/blog/${post.slug || post.id}`,
-      lastmod: (post.updated_at || post.created_at || '').split('T')[0],
+      lastmod: (post.created_at || '').split('T')[0],
       changefreq: 'weekly',
       priority: '0.6',
     }));
@@ -132,14 +131,14 @@ async function getFormationPages(supabase) {
   try {
     const { data: formations, error } = await supabase
       .from('formations')
-      .select('id, slug, created_at, updated_at')
+      .select('id, created_at')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw error;
     return (formations || []).map(f => ({
-      loc: `/formations/${f.slug || f.id}`,
-      lastmod: (f.updated_at || f.created_at || '').split('T')[0],
+      loc: `/formations/${f.id}`,
+      lastmod: (f.created_at || '').split('T')[0],
       changefreq: 'weekly',
       priority: '0.6',
     }));
@@ -154,12 +153,12 @@ async function getCompanyPages(supabase) {
   try {
     const { data: companies, error } = await supabase
       .from('companies')
-      .select('id, slug, name, updated_at, created_at')
+      .select('id, name, created_at')
       .limit(1000);
     if (error) throw error;
     return (companies || []).map(c => ({
-      loc: `/company/${c.slug || c.id}`,
-      lastmod: (c.updated_at || c.created_at || '').split('T')[0],
+      loc: `/company/${c.id}`,
+      lastmod: (c.created_at || '').split('T')[0],
       changefreq: 'weekly',
       priority: '0.6',
     }));

@@ -21,12 +21,7 @@ Disallow: /signup
 
 # API et fichiers techniques
 Disallow: /api/
-Disallow: /*.json$
 
 # Sitemaps
 Sitemap: https://jobguinee-pro.com/sitemap.xml
 Sitemap: https://jobguinee-pro.com/sitemap-index.xml
-Sitemap: https://jobguinee-pro.com/sitemap-jobs.xml
-Sitemap: https://jobguinee-pro.com/sitemap-companies.xml
-Sitemap: https://jobguinee-pro.com/sitemap-blog.xml
-Sitemap: https://jobguinee-pro.com/sitemap-formations.xml

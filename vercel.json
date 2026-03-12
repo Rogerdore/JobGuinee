@@ -3,12 +3,13 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap.xml" },
-    { "source": "/sitemap-index.xml", "destination": "/api/sitemap-index.xml" },
-    { "source": "/sitemap-jobs.xml", "destination": "/api/sitemap-jobs.xml" },
-    { "source": "/sitemap-companies.xml", "destination": "/api/sitemap-companies.xml" },
-    { "source": "/sitemap-blog.xml", "destination": "/api/sitemap-blog.xml" },
-    { "source": "/sitemap-formations.xml", "destination": "/api/sitemap-formations.xml" },
+    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/sitemap-index.xml", "destination": "/sitemap-index.xml" },
+    { "source": "/sitemap-jobs.xml", "destination": "/sitemap-jobs.xml" },
+    { "source": "/sitemap-companies.xml", "destination": "/sitemap-companies.xml" },
+    { "source": "/sitemap-blog.xml", "destination": "/sitemap-blog.xml" },
+    { "source": "/sitemap-formations.xml", "destination": "/sitemap-formations.xml" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

@@ -140,6 +140,20 @@ export default async function middleware(request) {
   const pathname = url.pathname;
   const userAgent = request.headers.get('User-Agent') || '';
 
+  // 0. NEVER intercept sitemap or robots.txt — serve static files directly
+  if (
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/sitemap-index.xml' ||
+    pathname === '/sitemap-jobs.xml' ||
+    pathname === '/sitemap-companies.xml' ||
+    pathname === '/sitemap-blog.xml' ||
+    pathname === '/sitemap-formations.xml' ||
+    pathname.endsWith('.xml')
+  ) {
+    return undefined; // Let Vercel serve the static file
+  }
+
   // 1. Social crawlers on /offres/* → proxy to Supabase
   if (pathname.startsWith('/offres/') && isSocialCrawler(userAgent)) {
     const jobId = pathname.replace('/offres/', '').split('?')[0];
@@ -226,5 +240,12 @@ export const config = {
     '/terms-of-service',
     '/b2b-solutions',
     '/offres/:path*',
+    '/sitemap.xml',
+    '/sitemap-index.xml',
+    '/sitemap-jobs.xml',
+    '/sitemap-companies.xml',
+    '/sitemap-blog.xml',
+    '/sitemap-formations.xml',
+    '/robots.txt',
   ],
 };

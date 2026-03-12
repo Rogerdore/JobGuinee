@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     if (supabase) {
       const { data: jobs, error } = await supabase
         .from('jobs')
-        .select('id, slug, title, location, sector, created_at, updated_at, companies(name)')
+        .select('id, title, location, sector, created_at, updated_at, companies(name)')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(5000);
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       if (!error && jobs) {
         jobUrls = jobs.map(job => {
           const lastmod = (job.updated_at || job.created_at || '').split('T')[0];
-          const loc = `${SITE_URL}/offres/${job.slug || job.id}`;
+          const loc = `${SITE_URL}/offres/${job.id}`;
           return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastmod}</lastmod>

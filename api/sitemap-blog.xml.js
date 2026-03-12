@@ -22,14 +22,13 @@ export default async function handler(req, res) {
     if (supabase) {
       const { data: posts, error } = await supabase
         .from('blog_posts')
-        .select('id, slug, created_at, updated_at')
-        .eq('status', 'published')
+        .select('id, slug, created_at')
         .order('created_at', { ascending: false })
         .limit(500);
 
       if (!error && posts) {
         blogUrls = posts.map(post => {
-          const lastmod = (post.updated_at || post.created_at || '').split('T')[0];
+          const lastmod = (post.created_at || '').split('T')[0];
           const loc = `${SITE_URL}/blog/${post.slug || post.id}`;
           return `  <url>
     <loc>${escapeXml(loc)}</loc>

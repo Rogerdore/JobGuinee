@@ -22,13 +22,13 @@ export default async function handler(req, res) {
     if (supabase) {
       const { data: companies, error } = await supabase
         .from('companies')
-        .select('id, slug, name, updated_at, created_at')
+        .select('id, name, created_at')
         .limit(1000);
 
       if (!error && companies) {
         companyUrls = companies.map(c => {
-          const lastmod = (c.updated_at || c.created_at || '').split('T')[0];
-          const loc = `${SITE_URL}/company/${c.slug || c.id}`;
+          const lastmod = (c.created_at || '').split('T')[0];
+          const loc = `${SITE_URL}/company/${c.id}`;
           return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastmod}</lastmod>
