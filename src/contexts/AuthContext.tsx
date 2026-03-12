@@ -373,7 +373,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error.message.includes('Database error finding user') ||
         error.message.includes('Database error')
       ) {
-        throw new Error('ACCOUNT_INCOMPLETE');
+        // User exists in auth.users — check if they have a profile (i.e. confirmed)
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id, is_account_confirmed')
+          .eq('email', email.toLowerCase())
+          .maybeSingle();
+
+        if (existingProfile?.is_account_confirmed) {
+          // Already fully registered — should login instead
+          throw new Error('EMAIL_EXISTS');
+        }
+
+        // User signed up but never confirmed: resend confirmation email
+        try {
+          await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: { emailRedirectTo: confirmationRedirectUrl }
+          });
+        } catch (_) { /* ignore resend errors */ }
+
+        throw new Error('EMAIL_CONFIRMATION_REQUIRED');
       }
       if (error.message.includes('Password') || error.message.includes('password')) {
         throw new Error('WEAK_PASSWORD');
