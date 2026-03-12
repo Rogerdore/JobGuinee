@@ -52,7 +52,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
               console.log('ℹ️ PKCE code verifier absent — email confirmé, redirection login');
               setConfirmationSuccess(true);
               setError(null);
-              setTimeout(() => onNavigate('auth'), 3000);
+              setTimeout(() => onNavigate('login'), 3000);
               return;
             }
 
@@ -104,10 +104,13 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
             // Déclencher l'email de bienvenue après confirmation réussie
             await sendWelcomeEmail(session.user.id, session.user.email || '', session.user.user_metadata);
 
+            // Déconnecter l'utilisateur pour qu'il se connecte avec ses identifiants
+            await supabase.auth.signOut();
+
             setConfirmationSuccess(true);
             setTimeout(() => {
-              onNavigate('home');
-            }, 2000);
+              onNavigate('login');
+            }, 3000);
             return;
           }
 
@@ -116,7 +119,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           console.log('ℹ️ Email confirmé mais pas de session — redirection vers login');
           setConfirmationSuccess(true);
           setTimeout(() => {
-            onNavigate('auth');
+            onNavigate('login');
           }, 3000);
           return;
         }
@@ -152,7 +155,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
       } catch (err: any) {
         console.error('❌ Error handling auth callback:', err);
         setError(err.message || 'Erreur lors de la connexion');
-        setTimeout(() => onNavigate('auth'), 5000);
+        setTimeout(() => onNavigate('login'), 5000);
       }
     };
 
@@ -271,21 +274,27 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
       if (insertError && !insertError.message.includes('duplicate')) {
         console.error('⚠️ Erreur création profil:', insertError.message);
       }
-
-      // Wait and verify profile was created
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const { data: verifyProfile } = await supabase
+    } else if (!profileData.is_account_confirmed) {
+      // Profile exists but not confirmed — mark it confirmed (OAuth users)
+      await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (verifyProfile) {
-        console.log('✅ Profil créé avec succès:', verifyProfile.email, 'type:', verifyProfile.user_type);
-      } else {
-        console.error('❌ Profil toujours manquant après insertion pour:', email);
-      }
+        .update({ is_account_confirmed: true, confirmation_token: null })
+        .eq('id', userId);
+    }
+
+    // Wait and verify profile was created
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const { data: verifyProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (verifyProfile) {
+      console.log('✅ Profil créé avec succès:', verifyProfile.email, 'type:', verifyProfile.user_type);
+    } else {
+      console.error('❌ Profil toujours manquant après insertion pour:', email);
     }
   }
 
@@ -354,7 +363,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           </p>
           <p className="text-sm text-gray-500">Redirection en cours...</p>
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => onNavigate('login')}
             className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             Se connecter maintenant
@@ -377,7 +386,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           <p className="text-gray-600 mb-4">{error}</p>
           <p className="text-sm text-gray-500 mb-4">Redirection vers la page de connexion...</p>
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => onNavigate('login')}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             Se connecter maintenant

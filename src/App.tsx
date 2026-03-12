@@ -154,7 +154,7 @@ function AppContent() {
   const [formationSearchParams, setFormationSearchParams] = useState<string>('');
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const [publicProfileToken, setPublicProfileToken] = useState<string>('');
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   useSiteSettings();
 
   useEffect(() => {
@@ -407,6 +407,22 @@ function AppContent() {
   ];
 
   const isAdminPage = adminPages.includes(currentPage);
+
+  // Protected pages require authentication
+  const protectedPages: Page[] = [
+    'candidate-dashboard', 'recruiter-dashboard', 'trainer-dashboard',
+    'candidate-profile-form', 'recruiter-messaging',
+    'premium-subscribe', 'enterprise-subscribe',
+    'ai-matching', 'ai-cv-generator', 'ai-cover-letter', 'ai-career-plan',
+    'ai-coach', 'ai-interview-simulator', 'ai-alerts', 'ai-chat',
+    'gold-profile', 'credit-store', 'cv-designer',
+    'external-applications', 'campaign-create',
+    'cvtheque',
+  ];
+
+  if ((protectedPages.includes(currentPage) || isAdminPage) && !user) {
+    return <Auth mode="login" onNavigate={handleNavigate} />;
+  }
 
   if (currentPage === 'login' || currentPage === 'signup') {
     return <Auth mode={currentPage} onNavigate={handleNavigate} />;

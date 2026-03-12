@@ -1,11 +1,32 @@
 import { useState } from 'react';
-import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, LogIn } from 'lucide-react';
+import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, LogIn, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface EmailConfirmationModalProps {
   email: string;
   onClose: () => void;
   onGoToLogin?: () => void;
+}
+
+function getMailboxUrl(email: string): { url: string; label: string } | null {
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) return null;
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return { url: 'https://mail.google.com', label: 'Ouvrir Gmail' };
+  }
+  if (domain === 'outlook.com' || domain === 'hotmail.com' || domain === 'live.com' || domain === 'msn.com' || domain === 'outlook.fr') {
+    return { url: 'https://outlook.live.com', label: 'Ouvrir Outlook' };
+  }
+  if (domain === 'yahoo.com' || domain === 'yahoo.fr' || domain === 'ymail.com') {
+    return { url: 'https://mail.yahoo.com', label: 'Ouvrir Yahoo Mail' };
+  }
+  if (domain === 'icloud.com' || domain === 'me.com' || domain === 'mac.com') {
+    return { url: 'https://www.icloud.com/mail', label: 'Ouvrir iCloud Mail' };
+  }
+  if (domain === 'protonmail.com' || domain === 'proton.me' || domain === 'pm.me') {
+    return { url: 'https://mail.proton.me', label: 'Ouvrir ProtonMail' };
+  }
+  return null;
 }
 
 export function EmailConfirmationModal({ email, onClose, onGoToLogin }: EmailConfirmationModalProps) {
@@ -91,7 +112,7 @@ export function EmailConfirmationModal({ email, onClose, onGoToLogin }: EmailCon
 
               <div className="space-y-3 mb-6">
                 {[
-                  { step: '1', text: 'Ouvrez votre boite mail' },
+                  { step: '1', text: 'Ouvrez votre boîte mail' },
                   { step: '2', text: 'Cliquez sur le lien de confirmation' },
                   { step: '3', text: 'Revenez vous connecter avec vos identifiants' },
                 ].map(({ step, text }) => (
@@ -103,6 +124,22 @@ export function EmailConfirmationModal({ email, onClose, onGoToLogin }: EmailCon
                   </div>
                 ))}
               </div>
+
+              {(() => {
+                const mailbox = getMailboxUrl(email);
+                if (!mailbox) return null;
+                return (
+                  <a
+                    href={mailbox.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center space-x-2 py-3 mb-5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    <span>{mailbox.label}</span>
+                  </a>
+                );
+              })()}
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-800">
                 <strong>Apres confirmation</strong>, revenez sur cette page et connectez-vous avec :<br />

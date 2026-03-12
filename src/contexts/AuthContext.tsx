@@ -385,16 +385,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('GENERAL_ERROR');
     }
 
-    // Email confirmation is required — profile will be created by the database
-    // trigger (handle_user_email_confirmed) once the user clicks the link.
+    // Email confirmation is required — Supabase sends the confirmation email automatically.
+    // Profile will be created by the DB trigger (handle_user_email_confirmed) once the user clicks the link.
     if (!data.session) {
-      await sendConfirmationEmail(data.user.id, confirmationRedirectUrl);
       throw new Error('EMAIL_CONFIRMATION_REQUIRED');
     }
 
     // Session exists (email confirmation disabled in Supabase settings).
     // Profile was created by the handle_new_user trigger. Wait briefly then continue.
-    await sendConfirmationEmail(data.user.id, confirmationRedirectUrl);
 
     if (role === 'trainer') {
       await new Promise(resolve => setTimeout(resolve, 800));

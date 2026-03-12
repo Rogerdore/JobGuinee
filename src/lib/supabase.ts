@@ -83,6 +83,7 @@ export type Profile = {
   linkedin_url?: string;
   profile_completed?: boolean;
   profile_completion_percentage?: number;
+  is_account_confirmed?: boolean;
   created_at: string;
   updated_at: string;
 };
