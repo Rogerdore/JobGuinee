@@ -100,7 +100,7 @@ async function fetchJobs(supabase) {
       loc: `/offres/${job.id}`,
       lastmod: (job.updated_at || job.created_at || '').split('T')[0],
       changefreq: 'daily',
-      priority: '0.8',
+      priority: '0.9',
     }));
   } catch (e) {
     console.error('[Sitemap] Error fetching jobs:', e.message);
@@ -109,47 +109,72 @@ async function fetchJobs(supabase) {
 }
 
 async function fetchSectors(supabase) {
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('sector')
-      .eq('status', 'published')
-      .not('sector', 'is', null);
-    if (error) throw error;
-    const sectors = [...new Set((data || []).map(j => j.sector).filter(Boolean))];
-    return sectors.map(sector => ({
-      loc: `/jobs?sector=${encodeURIComponent(sector)}`,
-      lastmod: today(),
-      changefreq: 'daily',
-      priority: '0.7',
-    }));
-  } catch (e) {
-    console.error('[Sitemap] Error fetching sectors:', e.message);
-    return [];
+  // Start with well-known Guinea job sectors as fallback
+  const knownSectors = [
+    'Informatique', 'Marketing & Communication digital',
+    'Mines et Ressources Minérales', 'Comptabilité & Finance',
+    'Ressources Humaines', 'BTP & Construction',
+    'Santé & Médecine', 'Éducation & Formation',
+    'Transport & Logistique', 'Agriculture & Agroalimentaire',
+    'Banque & Assurance', 'Commerce & Vente',
+    'Hôtellerie & Restauration', 'ONG & Organisations internationales',
+    'Télécommunications', 'Juridique & Droit',
+  ];
+  const sectorSet = new Set(knownSectors);
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('sector')
+        .eq('status', 'published')
+        .not('sector', 'is', null);
+      if (!error && data) {
+        data.forEach(j => { if (j.sector) sectorSet.add(j.sector); });
+      }
+    } catch (e) {
+      console.error('[Sitemap] Error fetching sectors:', e.message);
+    }
   }
+
+  return [...sectorSet].map(sector => ({
+    loc: `/jobs?sector=${encodeURIComponent(sector)}`,
+    lastmod: today(),
+    changefreq: 'weekly',
+    priority: '0.8',
+  }));
 }
 
 async function fetchCities(supabase) {
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('location')
-      .eq('status', 'published')
-      .not('location', 'is', null);
-    if (error) throw error;
-    const cities = [...new Set((data || []).map(j => j.location).filter(Boolean))];
-    return cities.map(city => ({
-      loc: `/jobs?location=${encodeURIComponent(city)}`,
-      lastmod: today(),
-      changefreq: 'daily',
-      priority: '0.7',
-    }));
-  } catch (e) {
-    console.error('[Sitemap] Error fetching cities:', e.message);
-    return [];
+  // Start with major Guinea cities as fallback
+  const knownCities = [
+    'Conakry', 'Kindia', 'Labé', 'Boké', 'Nzérékoré',
+    'Kankan', 'Mamou', 'Faranah', 'Siguiri', 'Kamsar',
+    'Kissidougou', 'Guéckédou', 'Dabola',
+  ];
+  const citySet = new Set(knownCities);
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('location')
+        .eq('status', 'published')
+        .not('location', 'is', null);
+      if (!error && data) {
+        data.forEach(j => { if (j.location) citySet.add(j.location); });
+      }
+    } catch (e) {
+      console.error('[Sitemap] Error fetching cities:', e.message);
+    }
   }
+
+  return [...citySet].map(city => ({
+    loc: `/jobs?location=${encodeURIComponent(city)}`,
+    lastmod: today(),
+    changefreq: 'weekly',
+    priority: '0.8',
+  }));
 }
 
 async function fetchBlogPosts(supabase) {
@@ -165,7 +190,7 @@ async function fetchBlogPosts(supabase) {
       loc: `/blog/${post.slug || post.id}`,
       lastmod: (post.created_at || '').split('T')[0],
       changefreq: 'weekly',
-      priority: '0.6',
+      priority: '0.7',
     }));
   } catch (e) {
     console.error('[Sitemap] Error fetching blog posts:', e.message);
@@ -187,7 +212,7 @@ async function fetchFormations(supabase) {
       loc: `/formations/${f.id}`,
       lastmod: (f.created_at || '').split('T')[0],
       changefreq: 'weekly',
-      priority: '0.6',
+      priority: '0.7',
     }));
   } catch (e) {
     console.error('[Sitemap] Error fetching formations:', e.message);
@@ -207,7 +232,7 @@ async function fetchCompanies(supabase) {
       loc: `/company/${c.id}`,
       lastmod: (c.created_at || '').split('T')[0],
       changefreq: 'weekly',
-      priority: '0.6',
+      priority: '0.7',
     }));
   } catch (e) {
     console.error('[Sitemap] Error fetching companies:', e.message);
@@ -265,7 +290,14 @@ async function generateSitemaps() {
   ];
   const mainXml = wrapUrlset(allUrls.map(buildUrlEntry).join('\n'));
   writeFileSync(resolve(DIST, 'sitemap.xml'), mainXml, 'utf-8');
-  console.log(`[Sitemap] sitemap.xml: ${allUrls.length} URLs`);
+  console.log(`[Sitemap] sitemap.xml: ${allUrls.length} URLs total`);
+  console.log(`  → ${STATIC_PAGES.length} pages statiques`);
+  console.log(`  → ${jobs.length} offres d'emploi`);
+  console.log(`  → ${sectors.length} catégories métiers`);
+  console.log(`  → ${cities.length} villes`);
+  console.log(`  → ${blogPosts.length} articles blog`);
+  console.log(`  → ${formations.length} formations`);
+  console.log(`  → ${companies.length} entreprises`);
 
   // 2. sitemap-jobs.xml
   const jobsXml = wrapUrlset(jobs.map(buildUrlEntry).join('\n'));
