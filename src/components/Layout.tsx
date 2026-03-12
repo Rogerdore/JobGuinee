@@ -439,38 +439,69 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <span className="text-xl font-bold">JobGuinée</span>
               </div>
               <p className="text-gray-400 mb-6">
-                La plateforme de recrutement moderne pour digitaliser le marché de l'emploi en Guinée.
+                La plateforme N°1 de recrutement pour trouver un emploi en Guinée. Offres d'emploi à Conakry et partout en Guinée.
               </p>
               <SocialLinks getSetting={getSetting} />
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Liens rapides</h3>
+              <h3 className="font-semibold mb-4">Emploi en Guinée</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <button onClick={() => onNavigate('jobs')} className="hover:text-white transition">
+                  <a href="/jobs" onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }} className="hover:text-white transition">
                     Offres d'emploi
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => onNavigate('cvtheque')} className="hover:text-white transition">
+                  <a href="/cvtheque" onClick={(e) => { e.preventDefault(); onNavigate('cvtheque'); }} className="hover:text-white transition">
                     CVthèque
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => onNavigate('formations')} className="hover:text-white transition">
-                    Formations
-                  </button>
+                  <a href="/formations" onClick={(e) => { e.preventDefault(); onNavigate('formations'); }} className="hover:text-white transition">
+                    Formations en Guinée
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => onNavigate('resources')} className="hover:text-white transition">
+                  <a href="/resources" onClick={(e) => { e.preventDefault(); onNavigate('resources'); }} className="hover:text-white transition">
                     Ressources
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => onNavigate('blog')} className="hover:text-white transition">
-                    Blog
-                  </button>
+                  <a href="/blog" onClick={(e) => { e.preventDefault(); onNavigate('blog'); }} className="hover:text-white transition">
+                    Blog emploi Guinée
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Emploi par ville</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <a href="/jobs?location=Conakry" onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }} className="hover:text-white transition">
+                    Emploi à Conakry
+                  </a>
+                </li>
+                <li>
+                  <a href="/jobs?location=Kankan" onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }} className="hover:text-white transition">
+                    Emploi à Kankan
+                  </a>
+                </li>
+                <li>
+                  <a href="/jobs?location=Lab%C3%A9" onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }} className="hover:text-white transition">
+                    Emploi à Labé
+                  </a>
+                </li>
+                <li>
+                  <a href="/jobs?location=Nz%C3%A9r%C3%A9kor%C3%A9" onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }} className="hover:text-white transition">
+                    Emploi à Nzérékoré
+                  </a>
+                </li>
+                <li>
+                  <a href="/jobs?location=Bok%C3%A9" onClick={(e) => { e.preventDefault(); onNavigate('jobs'); }} className="hover:text-white transition">
+                    Emploi à Boké
+                  </a>
                 </li>
               </ul>
             </div>
@@ -487,19 +518,21 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-4">
-              <button
-                onClick={() => onNavigate('privacy-policy')}
+              <a
+                href="/privacy-policy"
+                onClick={(e) => { e.preventDefault(); onNavigate('privacy-policy'); }}
                 className="hover:text-white transition underline"
               >
                 Politique de confidentialité
-              </button>
+              </a>
               <span className="hidden md:inline">•</span>
-              <button
-                onClick={() => onNavigate('terms-of-service')}
+              <a
+                href="/terms-of-service"
+                onClick={(e) => { e.preventDefault(); onNavigate('terms-of-service'); }}
                 className="hover:text-white transition underline"
               >
                 Conditions d'utilisation
-              </button>
+              </a>
             </div>
             <p>&copy; 2025 JobGuinée. Tous droits réservés.</p>
           </div>

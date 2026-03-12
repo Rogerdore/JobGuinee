@@ -385,12 +385,12 @@ export default function Home({ onNavigate }: HomeProps) {
             </div>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              {getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[0]},<br />
-              <span className="text-[#FF8C00]">{getSetting('homepage_hero_title', 'Simplifiez votre recrutement, trouvez votre emploi').split(',')[1] || 'trouvez votre emploi'}</span>
+              {getSetting('homepage_hero_title', 'Offres d\'emploi en Guinée, trouvez votre emploi').split(',')[0]},<br />
+              <span className="text-[#FF8C00]">{getSetting('homepage_hero_title', 'Offres d\'emploi en Guinée, trouvez votre emploi').split(',')[1] || 'trouvez votre emploi'}</span>
             </h1>
 
             <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              {getSetting('homepage_hero_subtitle', 'La première plateforme guinéenne de recrutement digital connectant talents et opportunités')}
+              {getSetting('homepage_hero_subtitle', 'La première plateforme de recrutement en Guinée. Trouvez votre emploi à Conakry et partout en Guinée.')}
             </p>
 
             <div className="max-w-5xl mx-auto neo-clay-card rounded-3xl p-3 md:p-5">
@@ -498,9 +498,9 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Explorez par secteur
+              Emplois par secteur en Guinée
             </h2>
-            <p className="text-lg text-gray-600">Trouvez les opportunités dans votre domaine</p>
+            <p className="text-lg text-gray-600">Trouvez les opportunités d'emploi dans votre domaine</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -533,9 +533,9 @@ export default function Home({ onNavigate }: HomeProps) {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-                Offres récentes
+                Dernières offres d'emploi en Guinée
               </h2>
-              <p className="text-gray-600">Les dernières opportunités publiées</p>
+              <p className="text-gray-600">Les dernières opportunités d'emploi publiées</p>
             </div>
             <button
               onClick={() => onNavigate('jobs')}
@@ -746,9 +746,9 @@ export default function Home({ onNavigate }: HomeProps) {
               <span className="text-sm font-semibold text-gray-700">Formations à la une</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Développez vos compétences
+              Formations professionnelles en Guinée
             </h2>
-            <p className="text-gray-600">Formations professionnelles pour booster votre carrière</p>
+            <p className="text-gray-600">Formations et programmes pour booster votre carrière en Guinée</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -854,7 +854,7 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Ils nous font confiance
+              Entreprises qui recrutent en Guinée
             </h2>
             <p className="text-gray-600">Témoignages de nos utilisateurs</p>
           </div>
@@ -994,10 +994,10 @@ export default function Home({ onNavigate }: HomeProps) {
       <section className="py-12 bg-gradient-to-br from-[#FF8C00] to-[#e67e00] text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            Ne manquez plus aucune offre !
+            Ne manquez aucune offre d'emploi en Guinée !
           </h2>
           <p className="text-lg mb-6">
-            Recevez les dernières annonces directement par email
+            Recevez les dernières annonces d'emploi directement par email
           </p>
 
           <div className="max-w-md mx-auto">

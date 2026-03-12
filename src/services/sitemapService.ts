@@ -55,7 +55,11 @@ class SitemapService {
       { path: '/blog', priority: 0.7, changefreq: 'daily' as const },
       { path: '/cvtheque', priority: 0.8, changefreq: 'weekly' as const },
       { path: '/premium-ai', priority: 0.7, changefreq: 'weekly' as const },
-      { path: '/credit-store', priority: 0.6, changefreq: 'weekly' as const }
+      { path: '/credit-store', priority: 0.6, changefreq: 'weekly' as const },
+      { path: '/b2b-solutions', priority: 0.7, changefreq: 'weekly' as const },
+      { path: '/privacy-policy', priority: 0.3, changefreq: 'monthly' as const },
+      { path: '/terms-of-service', priority: 0.3, changefreq: 'monthly' as const },
+      { path: '/resources', priority: 0.6, changefreq: 'weekly' as const }
     ];
 
     return staticPages.map(page => ({
@@ -83,7 +87,7 @@ class SitemapService {
       if (error) throw error;
 
       return (jobs || []).map(job => ({
-        loc: `${this.siteUrl}/job-detail/${job.id}`,
+        loc: `${this.siteUrl}/offres/${job.id}`,
         lastmod: (job.updated_at || job.created_at).split('T')[0],
         changefreq: 'daily' as const,
         priority: 0.8

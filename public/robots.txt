@@ -1,0 +1,32 @@
+User-agent: *
+Allow: /
+
+# Pages d'administration
+Disallow: /admin/
+Disallow: /admin-*
+Disallow: /cms-admin
+Disallow: /user-management
+
+# Pages privées et tableaux de bord
+Disallow: /candidate-dashboard
+Disallow: /recruiter-dashboard
+Disallow: /trainer-dashboard
+Disallow: /recruiter-messaging
+Disallow: /external-applications
+
+# Authentification
+Disallow: /auth/callback
+Disallow: /login
+Disallow: /signup
+
+# API et fichiers techniques
+Disallow: /api/
+Disallow: /*.json$
+
+# Sitemaps
+Sitemap: https://jobguinee-pro.com/sitemap.xml
+Sitemap: https://jobguinee-pro.com/sitemap-index.xml
+Sitemap: https://jobguinee-pro.com/sitemap-jobs.xml
+Sitemap: https://jobguinee-pro.com/sitemap-companies.xml
+Sitemap: https://jobguinee-pro.com/sitemap-blog.xml
+Sitemap: https://jobguinee-pro.com/sitemap-formations.xml

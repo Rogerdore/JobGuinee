@@ -12,6 +12,13 @@ import Auth from './pages/Auth';
 import AuthCallback from './pages/AuthCallback';
 import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
 import { useSiteSettings } from './hooks/useFavicon';
+import {
+  generateHomePageMeta,
+  generateJobsPageMeta,
+  generateFormationsPageMeta,
+  generateBlogPageMeta,
+  SEO_SITE_URL,
+} from './constants/seoKeywords';
 
 const Jobs = lazy(() => import('./pages/Jobs'));
 const JobDetail = lazy(() => import('./pages/JobDetail'));
@@ -235,6 +242,72 @@ function AppContent() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // SEO: Update document meta tags on page navigation
+  useEffect(() => {
+    const siteUrl = SEO_SITE_URL;
+    const updateMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+    const updateCanonical = (href: string) => {
+      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', 'canonical');
+        document.head.appendChild(link);
+      }
+      link.setAttribute('href', href);
+    };
+
+    let meta: { title: string; description: string; keywords: string[] } | null = null;
+    let path = '/';
+
+    switch (currentPage) {
+      case 'home':
+        meta = generateHomePageMeta();
+        path = '/';
+        break;
+      case 'jobs':
+        meta = generateJobsPageMeta(0);
+        path = '/jobs';
+        break;
+      case 'formations':
+        meta = generateFormationsPageMeta(0);
+        path = '/formations';
+        break;
+      case 'blog':
+        meta = generateBlogPageMeta();
+        path = '/blog';
+        break;
+      case 'privacy-policy':
+        meta = { title: 'Politique de confidentialité | JobGuinée', description: 'Politique de confidentialité de JobGuinée.', keywords: [] };
+        path = '/privacy-policy';
+        break;
+      case 'terms-of-service':
+        meta = { title: 'Conditions d\'utilisation | JobGuinée', description: 'Conditions d\'utilisation de JobGuinée.', keywords: [] };
+        path = '/terms-of-service';
+        break;
+    }
+
+    if (meta) {
+      document.title = meta.title;
+      updateMeta('description', meta.description);
+      if (meta.keywords.length) updateMeta('keywords', meta.keywords.join(', '));
+      updateMeta('robots', 'index, follow');
+      updateMeta('og:title', meta.title, 'property');
+      updateMeta('og:description', meta.description, 'property');
+      updateMeta('og:url', `${siteUrl}${path}`, 'property');
+      updateMeta('twitter:title', meta.title);
+      updateMeta('twitter:description', meta.description);
+      updateCanonical(`${siteUrl}${path}`);
+    }
+  }, [currentPage]);
 
   const handleNavigate = (page: string, paramOrState?: string | any) => {
     setCurrentPage(page as Page);

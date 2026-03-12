@@ -77,31 +77,54 @@ class SchemaService {
     const location = job.location || 'Guinée';
     const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
-    return {
+    // Ensure description is at least 50 chars for Google Jobs
+    let description = job.description
+      ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      : generateJobCardDescription(job);
+    if (!description || description.length < 50) {
+      description = `Offre d'emploi: ${job.title} chez ${companyName} à ${location}, Guinée. Postulez en ligne sur JobGuinée.`;
+    }
+
+    // Calculate validThrough: use deadline or 30 days from posting
+    const validThrough = job.deadline || job.application_deadline || (
+      job.created_at ? new Date(new Date(job.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() : undefined
+    );
+
+    const schema: any = {
       '@context': 'https://schema.org',
       '@type': 'JobPosting',
       'title': job.title,
-      'description': job.description
-        ? job.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-        : generateJobCardDescription(job),
+      'description': description,
       'datePosted': job.created_at,
-      'validThrough': job.deadline || job.application_deadline,
+      'validThrough': validThrough,
       'employmentType': this.mapContractType(job.contract_type),
       'hiringOrganization': {
         '@type': 'Organization',
         'name': companyName,
-        'sameAs': job.companies?.website || job.company_website,
-        'logo': job.companies?.logo_url || job.company_logo_url
+        'sameAs': job.companies?.website || job.company_website || undefined,
+        'logo': job.companies?.logo_url || job.company_logo_url || `${siteUrl}/logo_jobguinee.png`
       },
       'jobLocation': {
         '@type': 'Place',
         'address': {
           '@type': 'PostalAddress',
           'addressLocality': location,
+          'addressRegion': location,
           'addressCountry': 'GN'
         }
       },
-      'baseSalary': job.salary_min && job.salary_max ? {
+      'directApply': true,
+      'url': `${siteUrl}/offres/${job.slug || job.id}`,
+      'identifier': {
+        '@type': 'PropertyValue',
+        'name': 'JobGuinée',
+        'value': job.id
+      }
+    };
+
+    // Google Jobs requires baseSalary if available
+    if (job.salary_min && job.salary_max) {
+      schema.baseSalary = {
         '@type': 'MonetaryAmount',
         'currency': 'GNF',
         'value': {
@@ -110,14 +133,33 @@ class SchemaService {
           'maxValue': job.salary_max,
           'unitText': 'MONTH'
         }
-      } : undefined,
-      'qualifications': job.requirements,
-      'responsibilities': job.responsibilities,
-      'skills': job.keywords?.join(', '),
-      'experienceRequirements': job.experience_level,
-      'educationRequirements': job.education_level || job.diploma_required,
-      'url': `${siteUrl}/job-detail/${job.id}`
-    };
+      };
+    } else if (job.salary_min) {
+      schema.baseSalary = {
+        '@type': 'MonetaryAmount',
+        'currency': 'GNF',
+        'value': {
+          '@type': 'QuantitativeValue',
+          'value': job.salary_min,
+          'unitText': 'MONTH'
+        }
+      };
+    }
+
+    if (job.requirements) schema.qualifications = job.requirements;
+    if (job.responsibilities) schema.responsibilities = job.responsibilities;
+    if (job.keywords?.length) schema.skills = job.keywords.join(', ');
+    if (job.experience_level) schema.experienceRequirements = job.experience_level;
+    if (job.education_level || job.diploma_required) {
+      schema.educationRequirements = {
+        '@type': 'EducationalOccupationalCredential',
+        'credentialCategory': job.education_level || job.diploma_required
+      };
+    }
+    if (job.sector) schema.industry = job.sector;
+    if (job.is_remote) schema.jobLocationType = 'TELECOMMUTE';
+
+    return schema;
   }
 
   generatePersonSchema(profile: any) {
@@ -178,7 +220,7 @@ class SchemaService {
   }
 
   generateArticleSchema(post: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -233,7 +275,7 @@ class SchemaService {
   }
 
   generateLocalBusinessSchema(company: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -324,7 +366,7 @@ class SchemaService {
   }
 
   generateVideoObjectSchema(video: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -353,7 +395,7 @@ class SchemaService {
   }
 
   generateEventSchema(event: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -403,7 +445,7 @@ class SchemaService {
   }
 
   generateProductSchema(product: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',
@@ -477,7 +519,7 @@ class SchemaService {
   }
 
   generateNewsArticleSchema(article: any) {
-    const siteUrl = 'https://jobguinee.com';
+    const siteUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     return {
       '@context': 'https://schema.org',

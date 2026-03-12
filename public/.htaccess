@@ -7,6 +7,10 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
+  # Serve robots.txt and sitemaps directly (static files)
+  RewriteRule ^robots\.txt$ - [L]
+  RewriteRule ^sitemap.*\.xml$ - [L]
+
   # ========================================
   # OPEN GRAPH - SOCIAL MEDIA CRAWLERS
   # ========================================

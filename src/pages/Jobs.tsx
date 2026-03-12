@@ -294,11 +294,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
-              Trouvez votre emploi idéal
-              <span className="block text-[#FF8C00] mt-2">en Guinée</span>
+              Offres d'emploi en Guinée
+              <span className="block text-[#FF8C00] mt-2">Trouvez votre emploi</span>
             </h1>
             <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-              {jobs.length} opportunités professionnelles vous attendent
+              {jobs.length} offres d'emploi disponibles en Guinée
             </p>
           </div>
 
@@ -712,7 +712,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                 <Sparkles className="w-5 h-5 text-purple-600" />
                 <span className="text-sm font-semibold text-purple-600">Recommandé pour vous</span>
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres qui pourraient vous intéresser</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres d'emploi similaires en Guinée</h2>
               <p className="text-gray-600">Sélectionnées par notre algorithme IA selon votre profil</p>
             </div>
 
@@ -756,7 +756,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Entreprises qui recrutent</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Entreprises qui recrutent en Guinée</h2>
             <p className="text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
           </div>
 
@@ -787,7 +787,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       <div className="bg-gradient-to-br from-[#0E2F56] to-[#1a4275] py-16 text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">JobGuinée en chiffres</h2>
+            <h2 className="text-3xl font-bold mb-3">Marché de l'emploi en Guinée en chiffres</h2>
             <p className="text-blue-100">La plateforme de référence pour l'emploi en Guinée</p>
           </div>
 
@@ -878,7 +878,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
             <BarChart3 className="w-5 h-5" />
             <span className="font-semibold">Pour les recruteurs</span>
           </div>
-          <h2 className="text-4xl font-bold mb-4">Vous recrutez ?</h2>
+          <h2 className="text-4xl font-bold mb-4">Recrutez en Guinée ?</h2>
           <p className="text-xl mb-8 text-orange-50">
             Publiez vos offres et trouvez les meilleurs talents guinéens en quelques clics
           </p>
@@ -910,7 +910,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       <div className="bg-white py-16">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <Mail className="w-16 h-16 text-[#0E2F56] mx-auto mb-6" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Alertes emploi personnalisées</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">Alertes emploi Guinée personnalisées</h2>
           <p className="text-gray-600 mb-8">
             Recevez les nouvelles offres correspondant à votre profil directement par email
           </p>
@@ -951,7 +951,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       <div className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Explorez par secteur d'activité</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Secteurs d'emploi en Guinée</h2>
             <p className="text-gray-600">Trouvez rapidement les offres dans votre domaine</p>
           </div>
 
@@ -979,7 +979,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres d'emploi par région</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres d'emploi par ville en Guinée</h2>
             <p className="text-gray-600">Cliquez sur une région pour voir les opportunités locales</p>
           </div>
 

@@ -1,5 +1,18 @@
 import { supabase } from '../lib/supabase';
 import { generateJobCardDescription } from '../utils/jobNormalization';
+import {
+  PRIMARY_KEYWORDS,
+  SECONDARY_KEYWORDS,
+  FORMATION_KEYWORDS,
+  MARKET_KEYWORDS,
+  generateHomePageMeta,
+  generateJobsPageMeta,
+  generateCityPageMeta,
+  generateSectorPageMeta,
+  generateJobDetailMeta,
+  generateFormationsPageMeta,
+  generateBlogPageMeta,
+} from '../constants/seoKeywords';
 
 export interface SEOConfig {
   id: string;
@@ -350,26 +363,19 @@ class SEOService {
   }
 
   async generateJobMeta(job: any): Promise<Partial<SEOPageMeta>> {
+    const meta = generateJobDetailMeta(job);
     const companyName = job.companies?.name || job.company_name || 'Entreprise';
-    const city = job.location || 'Guinée';
-    const jobTitle = job.title;
 
     return {
-      page_path: `/job-detail/${job.id}`,
+      page_path: `/offres/${job.slug || job.id}`,
       page_type: 'job_detail',
-      title: `${jobTitle} - ${companyName} à ${city} | JobGuinée`,
-      description: `Postulez à l'offre d'emploi ${jobTitle} chez ${companyName} à ${city}. ${job.contract_type || 'CDI'}. Candidatez en ligne sur JobGuinée, la plateforme N°1 de l'emploi en Guinée.`,
-      keywords: [
-        jobTitle.toLowerCase(),
-        `emploi ${city.toLowerCase()}`,
-        companyName.toLowerCase(),
-        job.sector?.toLowerCase() || 'emploi',
-        'guinée'
-      ],
-      og_title: `${jobTitle} - ${companyName}`,
+      title: meta.title,
+      description: meta.description,
+      keywords: meta.keywords,
+      og_title: `${job.title} - ${companyName}`,
       og_description: generateJobCardDescription(job),
       og_type: 'article',
-      canonical_url: `/job-detail/${job.id}`,
+      canonical_url: `/offres/${job.slug || job.id}`,
       robots: 'index, follow',
       priority: 0.8,
       change_freq: 'daily',
@@ -380,16 +386,14 @@ class SEOService {
   }
 
   async generateSectorPageMeta(sector: string, jobCount: number): Promise<Partial<SEOPageMeta>> {
+    const meta = generateSectorPageMeta(sector, jobCount);
     return {
       page_path: `/jobs?sector=${encodeURIComponent(sector)}`,
       page_type: 'job_sector',
-      title: `Emplois ${sector} en Guinée - ${jobCount} Offres | JobGuinée`,
-      description: `Découvrez ${jobCount} offres d'emploi dans le secteur ${sector} en Guinée. Consultez les opportunités et postulez en ligne sur JobGuinée.`,
-      keywords: [
-        `emploi ${sector.toLowerCase()} guinée`,
-        `job ${sector.toLowerCase()}`,
-        `recrutement ${sector.toLowerCase()}`
-      ],
+      title: meta.title,
+      description: meta.description,
+      keywords: meta.keywords,
+      robots: 'index, follow',
       priority: 0.7,
       change_freq: 'daily',
       is_active: true
@@ -397,16 +401,14 @@ class SEOService {
   }
 
   async generateCityPageMeta(city: string, jobCount: number): Promise<Partial<SEOPageMeta>> {
+    const meta = generateCityPageMeta(city, jobCount);
     return {
       page_path: `/jobs?location=${encodeURIComponent(city)}`,
       page_type: 'job_city',
-      title: `Emplois à ${city} - ${jobCount} Offres | JobGuinée`,
-      description: `${jobCount} offres d'emploi disponibles à ${city}, Guinée. Trouvez votre prochain emploi à ${city} sur JobGuinée.`,
-      keywords: [
-        `emploi ${city.toLowerCase()}`,
-        `job ${city.toLowerCase()}`,
-        `travail ${city.toLowerCase()}`
-      ],
+      title: meta.title,
+      description: meta.description,
+      keywords: meta.keywords,
+      robots: 'index, follow',
       priority: 0.7,
       change_freq: 'daily',
       is_active: true

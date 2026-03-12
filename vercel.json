@@ -3,6 +3,12 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap.xml" },
+    { "source": "/sitemap-index.xml", "destination": "/api/sitemap-index.xml" },
+    { "source": "/sitemap-jobs.xml", "destination": "/api/sitemap-jobs.xml" },
+    { "source": "/sitemap-companies.xml", "destination": "/api/sitemap-companies.xml" },
+    { "source": "/sitemap-blog.xml", "destination": "/api/sitemap-blog.xml" },
+    { "source": "/sitemap-formations.xml", "destination": "/api/sitemap-formations.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -10,6 +16,20 @@
       "source": "/assets/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/sitemap(.*).xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, s-maxage=86400" }
       ]
     }
   ]
