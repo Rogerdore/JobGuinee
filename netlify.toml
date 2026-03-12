@@ -1,0 +1,59 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Serve sitemap XML files with correct Content-Type
+[[headers]]
+  for = "/sitemap*.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=utf-8"
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+    Cache-Control = "public, max-age=86400"
+
+# Redirects — sitemap/robots served as static files, SPA fallback for the rest
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap.xml"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap-index.xml"
+  to = "/sitemap-index.xml"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap-jobs.xml"
+  to = "/sitemap-jobs.xml"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap-companies.xml"
+  to = "/sitemap-companies.xml"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap-blog.xml"
+  to = "/sitemap-blog.xml"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap-formations.xml"
+  to = "/sitemap-formations.xml"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
+# SPA catch-all — MUST be last
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
