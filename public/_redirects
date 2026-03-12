@@ -1,11 +1,11 @@
-# Fichiers statiques — servis directement par Netlify (pas de fallback SPA)
-/robots.txt       /robots.txt       200!
-/sitemap.xml      /sitemap.xml      200!
-/sitemap-index.xml      /sitemap-index.xml      200!
-/sitemap-jobs.xml       /sitemap-jobs.xml       200!
-/sitemap-companies.xml  /sitemap-companies.xml  200!
-/sitemap-blog.xml       /sitemap-blog.xml       200!
-/sitemap-formations.xml /sitemap-formations.xml 200!
+# Fichiers statiques — servis directement (pas de fallback SPA)
+/robots.txt       /robots.txt       200
+/sitemap.xml      /sitemap.xml      200
+/sitemap-index.xml      /sitemap-index.xml      200
+/sitemap-jobs.xml       /sitemap-jobs.xml       200
+/sitemap-companies.xml  /sitemap-companies.xml  200
+/sitemap-blog.xml       /sitemap-blog.xml       200
+/sitemap-formations.xml /sitemap-formations.xml 200
 
 # SPA fallback — toutes les autres routes
 /*    /index.html   200
