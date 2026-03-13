@@ -1,6 +1,9 @@
 -- =====================================================
--- MIGRATION: Add display_name to admin_list_all_users
--- Uses auth.users.display_name column directly + profiles.phone
+-- FIX: Use auth.users display_name column + profiles.phone
+-- The previous version extracted from raw_user_meta_data only.
+-- This version checks raw_app_meta_data, raw_user_meta_data,
+-- and falls back through full_name / name keys.
+-- Phone is sourced directly from profiles.phone (already stored).
 -- =====================================================
 
 DROP FUNCTION IF EXISTS public.admin_list_all_users();

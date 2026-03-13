@@ -276,6 +276,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
       list = list.filter(u =>
         u.email?.toLowerCase().includes(s) ||
         u.full_name?.toLowerCase().includes(s) ||
+        u.display_name?.toLowerCase().includes(s) ||
         u.phone?.toLowerCase().includes(s)
       );
     }
