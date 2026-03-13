@@ -177,7 +177,7 @@ export const adminCommunicationService = {
   async getTargetedUsers(filters: CommunicationFilters, limit?: number) {
     let query = supabase
       .from('profiles')
-      .select('id, full_name, email, user_type, profile_completion_percentage');
+      .select('id, full_name, email, user_type, profile_completion_percentage, phone');
 
     if (filters.user_types && filters.user_types.length > 0) {
       query = query.in('user_type', filters.user_types);

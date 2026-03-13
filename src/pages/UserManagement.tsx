@@ -19,6 +19,7 @@ interface Profile {
   id: string;
   email: string;
   full_name: string;
+  display_name?: string;
   user_type: 'candidate' | 'recruiter' | 'admin' | 'trainer';
   created_at: string;
   phone?: string;
@@ -617,32 +618,34 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
               <table className="w-full table-fixed">
                   <thead className="bg-gray-50/80 border-b border-gray-200">
                     <tr>
-                      <th className="w-[30%] px-3 py-2.5 text-left">
+                      <th className="w-[22%] px-3 py-2.5 text-left">
                         <button onClick={() => handleSort('full_name')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Utilisateur <SortIcon col="full_name" />
                         </button>
                       </th>
-                      <th className="w-[12%] px-2 py-2.5 text-left">
+                      <th className="w-[11%] px-2 py-2.5 text-left text-[11px] font-semibold text-gray-700 uppercase tracking-wider">Nom</th>
+                      <th className="w-[10%] px-2 py-2.5 text-left text-[11px] font-semibold text-gray-700 uppercase tracking-wider">Téléphone</th>
+                      <th className="w-[9%] px-2 py-2.5 text-left">
                         <button onClick={() => handleSort('user_type')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Rôle <SortIcon col="user_type" />
                         </button>
                       </th>
-                      <th className="w-[11%] px-2 py-2.5 text-left">
+                      <th className="w-[8%] px-2 py-2.5 text-left">
                         <button onClick={() => handleSort('is_active')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Statut <SortIcon col="is_active" />
                         </button>
                       </th>
-                      <th className="w-[13%] px-2 py-2.5 text-left">
+                      <th className="w-[10%] px-2 py-2.5 text-left">
                         <button onClick={() => handleSort('profile_completion_percentage')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Profil <SortIcon col="profile_completion_percentage" />
                         </button>
                       </th>
-                      <th className="w-[12%] px-2 py-2.5 text-left">
+                      <th className="w-[10%] px-2 py-2.5 text-left">
                         <button onClick={() => handleSort('created_at')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Inscrit <SortIcon col="created_at" />
                         </button>
                       </th>
-                      <th className="w-[12%] px-2 py-2.5 text-left">
+                      <th className="w-[10%] px-2 py-2.5 text-left">
                         <button onClick={() => handleSort('last_sign_in_at')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Dern. co. <SortIcon col="last_sign_in_at" />
                         </button>
@@ -680,6 +683,16 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                                 <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
                               </div>
                             </div>
+                          </td>
+
+                          {/* Nom (display_name from auth.users) */}
+                          <td className="px-2 py-2.5">
+                            <p className="text-[11px] text-gray-700 truncate">{user.display_name || <span className="text-gray-400 italic">—</span>}</p>
+                          </td>
+
+                          {/* Téléphone */}
+                          <td className="px-2 py-2.5">
+                            <p className="text-[11px] text-gray-600 truncate">{user.phone || <span className="text-gray-400 italic">—</span>}</p>
                           </td>
 
                           {/* Role */}
@@ -995,8 +1008,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                   <h3 className="text-sm font-bold text-gray-900">Choisir le canal de communication</h3>
                   {([
                     { key: 'email' as const, icon: Mail, label: 'Email', desc: 'Envoi via le système email (SendGrid/Brevo)', color: 'from-blue-500 to-blue-600' },
-                    { key: 'sms' as const, icon: Phone, label: 'SMS', desc: 'Message texte court (160 car. max)', color: 'from-green-500 to-green-600' },
-                    { key: 'whatsapp' as const, icon: MessageSquare, label: 'WhatsApp', desc: 'Message via WhatsApp Business', color: 'from-emerald-500 to-emerald-600' },
+                    { key: 'sms' as const, icon: Phone, label: 'SMS', desc: 'Message texte court — nécessite un n° de téléphone', color: 'from-green-500 to-green-600' },
+                    { key: 'whatsapp' as const, icon: MessageSquare, label: 'WhatsApp', desc: 'Message via WhatsApp Business — nécessite un n° de téléphone', color: 'from-emerald-500 to-emerald-600' },
                     { key: 'notification' as const, icon: Bell, label: 'Notification in-app', desc: 'Notification intégrée à la plateforme', color: 'from-purple-500 to-purple-600' },
                   ]).map(({ key, icon: Icon, label, desc, color }) => (
                     <button
@@ -1243,6 +1256,14 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                     />
                     {commChannel === 'sms' && (
                       <p className="text-[10px] text-gray-400 text-right mt-0.5">{commContent.length}/160</p>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      Variables: {'{{prenom}}, {{nom}}, {{telephone}}, {{role}}, {{lien}}'}
+                    </p>
+                    {(commChannel === 'sms' || commChannel === 'whatsapp') && (
+                      <p className="text-[10px] text-amber-600 mt-1">
+                        ⚠️ Seuls les utilisateurs ayant un n° de téléphone enregistré recevront ce message.
+                      </p>
                     )}
                   </div>
 

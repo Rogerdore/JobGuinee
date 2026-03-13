@@ -185,6 +185,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
     const sampleData = {
       prenom: 'Mamadou',
       nom: 'Diallo',
+      telephone: '+224 621 00 00 00',
       role: 'Candidat',
       lien: 'https://jobguinee-pro.com',
       message: 'Message test',
@@ -495,8 +496,13 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                                 {channels.sms?.content?.length || 0} / 160 caractères
                               </p>
                             )}
+                            {(channel === 'sms' || channel === 'whatsapp') && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                ⚠️ Seuls les utilisateurs ayant un numéro de téléphone enregistré recevront ce message.
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500 mt-1">
-                              Variables: {'{{prenom}}, {{nom}}, {{role}}, {{lien}}'}
+                              Variables: {'{{prenom}}, {{nom}}, {{telephone}}, {{role}}, {{lien}}'}
                             </p>
                           </div>
 

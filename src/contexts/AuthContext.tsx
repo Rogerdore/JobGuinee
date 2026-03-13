@@ -366,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return 'email';
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
+  const signUp = async (email: string, password: string, fullName: string, role: UserRole, phone?: string) => {
     const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
     const confirmationRedirectUrl = `${appUrl}/auth/callback`;
 
@@ -378,6 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           full_name: fullName,
           user_type: role,
+          ...(phone ? { phone } : {}),
         }
       }
     });

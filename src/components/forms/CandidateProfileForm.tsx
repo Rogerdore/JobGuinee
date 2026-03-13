@@ -307,7 +307,7 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
     return {
       fullName: profile?.full_name || '',
       email: user?.email || '',
-      phone: profile?.phone || '',
+      phone: profile?.phone || user?.user_metadata?.phone || '',
       birthDate: '',
       gender: '',
       nationality: '',
@@ -769,7 +769,7 @@ export default function CandidateProfileForm({ onSaveSuccess, onNavigateDashboar
           setFormData({
             fullName: profile?.full_name || '',
             email: user?.email || '',
-            phone: data.phone || profile?.phone || '',
+            phone: data.phone || profile?.phone || user?.user_metadata?.phone || '',
             birthDate: data.birth_date || '',
             gender: data.gender || '',
             nationality: data.nationality || '',

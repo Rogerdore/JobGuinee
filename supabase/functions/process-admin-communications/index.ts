@@ -149,11 +149,86 @@ Deno.serve(async (req: Request) => {
             }
             status = "sent";
             totalSent++;
-          } else if (channelName === "sms" || channelName === "whatsapp") {
-            // SMS and WhatsApp not yet connected to a provider
-            status = "excluded";
-            exclusionReason = `${channelName}_provider_not_configured`;
-            totalExcluded++;
+          } else if (channelName === "sms") {
+            if (!user.phone) {
+              status = "excluded";
+              exclusionReason = "no_phone";
+              totalExcluded++;
+            } else {
+              const renderedSms = renderContent(channelConfig.content, user);
+              const smsApiUrl = Deno.env.get("SMS_API_URL");
+              const smsApiKey = Deno.env.get("SMS_API_KEY");
+              const smsSenderName = Deno.env.get("SMS_SENDER_NAME") || "JobGuinee";
+
+              if (!smsApiUrl || !smsApiKey) {
+                status = "excluded";
+                exclusionReason = "sms_provider_not_configured";
+                totalExcluded++;
+              } else {
+                const smsResponse = await fetch(smsApiUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${smsApiKey}`,
+                  },
+                  body: JSON.stringify({
+                    to: user.phone,
+                    from: smsSenderName,
+                    message: renderedSms,
+                  }),
+                });
+
+                if (smsResponse.ok) {
+                  status = "sent";
+                  totalSent++;
+                } else {
+                  const err = await smsResponse.text();
+                  throw new Error(`SMS send failed: ${err}`);
+                }
+              }
+            }
+          } else if (channelName === "whatsapp") {
+            if (!user.phone) {
+              status = "excluded";
+              exclusionReason = "no_phone";
+              totalExcluded++;
+            } else {
+              const renderedWa = renderContent(channelConfig.content, user);
+              const waApiUrl = Deno.env.get("WHATSAPP_API_URL");
+              const waApiToken = Deno.env.get("WHATSAPP_API_TOKEN");
+              const waPhoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+
+              if (!waApiUrl || !waApiToken) {
+                status = "excluded";
+                exclusionReason = "whatsapp_provider_not_configured";
+                totalExcluded++;
+              } else {
+                const waResponse = await fetch(
+                  waApiUrl.replace("{phone_number_id}", waPhoneNumberId || ""),
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${waApiToken}`,
+                    },
+                    body: JSON.stringify({
+                      messaging_product: "whatsapp",
+                      to: user.phone.replace(/[^\d]/g, ""),
+                      type: "text",
+                      text: { body: renderedWa },
+                    }),
+                  }
+                );
+
+                if (waResponse.ok) {
+                  status = "sent";
+                  totalSent++;
+                } else {
+                  const err = await waResponse.text();
+                  throw new Error(`WhatsApp send failed: ${err}`);
+                }
+              }
+            }
           }
 
           // Record individual message
@@ -307,18 +382,14 @@ async function fetchAudienceUsers(
 }
 
 // ============================================================
-// HELPER: Build email HTML with JobGuinée logo header
+// HELPER: Replace template variables in content
 // ============================================================
-function buildEmailHtml(
-  content: string,
-  user: any,
-  title: string
-): string {
-  // Replace template variables in content
+function renderContent(content: string, user: any): string {
   let rendered = content;
   rendered = rendered.replace(/\{\{\s*prenom\s*\}\}/g, user.full_name?.split(" ")[0] || "");
   rendered = rendered.replace(/\{\{\s*nom\s*\}\}/g, user.full_name || "");
   rendered = rendered.replace(/\{\{\s*email\s*\}\}/g, user.email || "");
+  rendered = rendered.replace(/\{\{\s*telephone\s*\}\}/g, user.phone || "");
   rendered = rendered.replace(/\{\{\s*role\s*\}\}/g, user.user_type || "");
   rendered = rendered.replace(
     /\{\{\s*lien_profil\s*\}\}/g,
@@ -328,6 +399,18 @@ function buildEmailHtml(
     /\{\{\s*lien_site\s*\}\}/g,
     SITE_URL
   );
+  return rendered;
+}
+
+// ============================================================
+// HELPER: Build email HTML with JobGuinée logo header
+// ============================================================
+function buildEmailHtml(
+  content: string,
+  user: any,
+  title: string
+): string {
+  const rendered = renderContent(content, user);
 
   // Return rendered content (logo is added by send-email wrapInFullHtml)
   return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
