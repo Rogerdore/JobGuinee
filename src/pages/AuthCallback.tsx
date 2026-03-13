@@ -24,38 +24,37 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
         console.log('🔄 AuthCallback:', { type, hasCode: !!code, hasAccessToken: !!accessToken, error: errorParam });
 
-        // Gestion des erreurs de Supabase Auth
+        // Gestion des erreurs de Supabase Auth (erreurs dans les paramètres URL)
         if (errorParam) {
           console.error('❌ Auth error from Supabase:', errorParam, errorDescription);
+          
+          // Pour les liens expirés/invalides (pré-chargement client mail),
+          // vérifier si une session existe quand même
           const isLinkError = errorDescription?.includes('expired') || errorDescription?.includes('invalid');
-
           if (isLinkError) {
-            // Cas fréquent : les clients mail (Gmail, Outlook, Microsoft Defender)
-            // pré-chargent les liens pour vérification de sécurité, ce qui consomme
-            // le token AVANT que l'utilisateur ne clique. L'email est alors confirmé
-            // côté Supabase mais le lien apparaît comme expiré.
             console.log('🔍 Lien expiré/invalide — vérification session existante...');
-
-            // Attendre que detectSessionInUrl traite d'éventuels tokens
             await new Promise(resolve => setTimeout(resolve, 500));
             const { data: { session: existingSession } } = await supabase.auth.getSession();
-
             if (existingSession?.user) {
-              console.log('✅ Session active malgré l\'erreur — email confirmé:', existingSession.user.email);
-              await ensureProfileExists(existingSession.user.id, existingSession.user.email || '', existingSession.user.user_metadata);
-              await sendWelcomeEmail(existingSession.user.id, existingSession.user.email || '', existingSession.user.user_metadata);
-              await supabase.auth.signOut();
+              // Session active (OAuth ou confirmation réussie malgré erreur)
+              console.log('✅ Session active malgré erreur:', existingSession.user.email);
+              if (type === 'signup') {
+                await ensureProfileExists(existingSession.user.id, existingSession.user.email || '', existingSession.user.user_metadata);
+                await sendWelcomeEmail(existingSession.user.id, existingSession.user.email || '', existingSession.user.user_metadata);
+                await supabase.auth.signOut();
+                setConfirmationSuccess(true);
+                setTimeout(() => onNavigate('login'), 3000);
+              } else {
+                onNavigate('home');
+              }
+              return;
+            }
+            // Pas de session — pour signup, l'email a probablement été confirmé
+            if (type === 'signup') {
               setConfirmationSuccess(true);
               setTimeout(() => onNavigate('login'), 3000);
               return;
             }
-
-            // Pas de session — l'email a très probablement été confirmé par le
-            // pré-chargement du client mail. Rediriger vers login pour essayer.
-            console.log('ℹ️ Pas de session — email probablement déjà confirmé, redirection login');
-            setConfirmationSuccess(true);
-            setTimeout(() => onNavigate('login'), 3000);
-            return;
           }
 
           throw new Error(errorDescription || errorParam || 'Erreur d\'authentification');
@@ -65,38 +64,30 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         let pkceSession: any = null;
 
         // PKCE flow: échanger le code contre une session
+        // Note: detectSessionInUrl peut avoir déjà consommé le code,
+        // donc on gère gracieusement les erreurs d'échange
         if (code) {
           console.log('🔑 PKCE flow: échange du code...');
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
-            console.error('❌ Erreur échange code PKCE:', exchangeError);
+            console.log('⚠️ Échange PKCE échoué (peut-être déjà traité par detectSessionInUrl):', exchangeError.message);
 
-            // PKCE code verifier manquant — l'utilisateur a ouvert le lien dans un autre navigateur/appareil
-            // L'email est quand même confirmé côté Supabase, on redirige vers login
-            if (exchangeError.message?.includes('code verifier') ||
-                exchangeError.message?.includes('PKCE') ||
-                exchangeError.message?.includes('not found in storage')) {
-              console.log('ℹ️ PKCE code verifier absent — email confirmé, redirection login');
+            // Attendre que detectSessionInUrl finisse si en cours
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+            if (existingSession?.user) {
+              console.log('✅ Session existante trouvée:', existingSession.user.email);
+              pkceSession = existingSession;
+            } else if (type === 'signup') {
+              // Email confirmation ouverte dans un autre navigateur/appareil
+              // L'email est confirmé côté serveur, on redirige vers login
+              console.log('ℹ️ Pas de session — email confirmé côté serveur, redirection login');
               setConfirmationSuccess(true);
-              setError(null);
               setTimeout(() => onNavigate('login'), 3000);
               return;
-            }
-
-            // Si le code a déjà été utilisé, vérifier si on a une session existante
-            if (exchangeError.message?.includes('already used') ||
-                exchangeError.message?.includes('invalid') ||
-                exchangeError.message?.includes('expired')) {
-              console.log('🔄 Code déjà utilisé/expiré — vérification session existante...');
-              const { data: { session: existingSession } } = await supabase.auth.getSession();
-              if (existingSession?.user) {
-                console.log('✅ Session existante trouvée:', existingSession.user.email);
-                pkceSession = existingSession;
-              } else {
-                throw new Error('Le lien de confirmation a déjà été utilisé. Veuillez vous connecter avec votre email et mot de passe.');
-              }
             } else {
-              throw exchangeError;
+              throw new Error('La connexion a échoué. Veuillez réessayer.');
             }
           } else {
             pkceSession = data.session;
@@ -104,8 +95,8 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           }
         }
 
-        // Confirmation email (type=signup ou PKCE signup)
-        if (type === 'signup' || (code && type === 'signup')) {
+        // Confirmation email (type=signup)
+        if (type === 'signup') {
           console.log('📧 Confirmation email signup détectée');
 
           let session = pkceSession;
