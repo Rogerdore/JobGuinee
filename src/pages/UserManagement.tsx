@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Users, Shield, UserCog, Search, AlertCircle, CheckCircle, X,
   ArrowLeft, Home, ChevronRight, Trash2, UserPlus, RefreshCw,
-  Crown, Send, Mail, ExternalLink, UserCheck, UserX
+  Crown, Send, Mail, ExternalLink, UserCheck, UserX,
+  ArrowUpDown, ArrowUp, ArrowDown, Ban, Power,
+  Filter, MoreVertical
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,58 +23,99 @@ interface Profile {
   has_profile?: boolean;
   profile_completion_percentage?: number;
   profile_completed?: boolean;
+  is_active?: boolean;
+  banned_until?: string | null;
+  email_confirmed_at?: string | null;
+  last_sign_in_at?: string | null;
 }
 
+type SortKey = 'full_name' | 'email' | 'user_type' | 'created_at' | 'profile_completion_percentage' | 'is_active' | 'last_sign_in_at';
+type SortDir = 'asc' | 'desc';
+type StatusFilter = 'all' | 'active' | 'inactive' | 'unconfirmed';
+
 const USER_TYPES = [
-  { value: 'candidate', label: 'Candidat',       color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { value: 'recruiter', label: 'Recruteur',       color: 'bg-green-100 text-green-700 border-green-200' },
-  { value: 'trainer',   label: 'Formateur',       color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  { value: 'admin',     label: 'Administrateur',  color: 'bg-red-100 text-red-700 border-red-200' },
+  { value: 'candidate', label: 'Candidat',       color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Users },
+  { value: 'recruiter', label: 'Recruteur',       color: 'bg-green-100 text-green-700 border-green-200', icon: UserCog },
+  { value: 'trainer',   label: 'Formateur',       color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Shield },
+  { value: 'admin',     label: 'Administrateur',  color: 'bg-red-100 text-red-700 border-red-200', icon: Crown },
 ];
 
-function CompletionBar({ pct, completed }: { pct: number; completed: boolean }) {
-  const color =
-    completed ? 'bg-green-500' :
-    pct >= 75  ? 'bg-blue-500' :
-    pct >= 40  ? 'bg-amber-500' :
-                 'bg-red-400';
-  const label =
-    completed ? 'text-green-700' :
-    pct >= 75  ? 'text-blue-700' :
-    pct >= 40  ? 'text-amber-700' :
-                 'text-red-600';
+const ITEMS_PER_PAGE = 20;
 
+function CompletionBar({ pct, completed }: { pct: number; completed: boolean }) {
+  const color = completed ? 'bg-green-500' : pct >= 75 ? 'bg-blue-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-400';
+  const label = completed ? 'text-green-700' : pct >= 75 ? 'text-blue-700' : pct >= 40 ? 'text-amber-700' : 'text-red-600';
   return (
-    <div className="flex items-center gap-2 min-w-[110px]">
+    <div className="flex items-center gap-2 min-w-[100px]">
       <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
       </div>
       <span className={`text-xs font-semibold tabular-nums ${label}`}>{pct}%</span>
     </div>
   );
 }
 
+function StatusBadge({ user }: { user: Profile }) {
+  const isBanned = user.banned_until && new Date(user.banned_until) > new Date();
+  const isInactive = user.is_active === false;
+  const isUnconfirmed = !user.email_confirmed_at;
+
+  if (isBanned || isInactive) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+        <Ban className="w-3 h-3" />Désactivé
+      </span>
+    );
+  }
+  if (isUnconfirmed) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+        <AlertCircle className="w-3 h-3" />Non confirmé
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+      <CheckCircle className="w-3 h-3" />Actif
+    </span>
+  );
+}
+
 export default function UserManagement({ onNavigate }: UserManagementProps) {
   const { isAdmin, user: currentUser } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'candidate' | 'recruiter' | 'admin' | 'trainer'>('all');
-  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Profile | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<Profile | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showToggleModal, setShowToggleModal] = useState<{ user: Profile; activate: boolean } | null>(null);
+  const [showActionsDropdown, setShowActionsDropdown] = useState<string | null>(null);
+
   const [inviting, setInviting] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', name: '' });
   const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
 
   useEffect(() => { loadUsers(); loadPendingInvitations(); }, []);
-  useEffect(() => { filterUsers(); }, [users, searchTerm, filterType]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterType, statusFilter, sortKey, sortDir]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = () => setShowActionsDropdown(null);
+    if (showActionsDropdown) document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [showActionsDropdown]);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -81,7 +124,7 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
       if (error) throw error;
       setUsers((data || []) as Profile[]);
     } catch {
-      showMessage('error', 'Erreur lors du chargement des utilisateurs');
+      showMsg('error', 'Erreur lors du chargement des utilisateurs');
     } finally {
       setLoading(false);
     }
@@ -95,68 +138,123 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString());
       setPendingInvitationsCount(count || 0);
-    } catch {
-      /* non-critical */
-    }
+    } catch { /* non-critical */ }
   };
 
-  const filterUsers = () => {
-    let filtered = users;
-    if (filterType !== 'all') {
-      filtered = filtered.filter(u => u.user_type === filterType);
+  // ─── Filtering + Sorting + Pagination ──────────────────────────
+  const filteredSorted = useMemo(() => {
+    let list = [...users];
+
+    if (filterType !== 'all') list = list.filter(u => u.user_type === filterType);
+
+    if (statusFilter === 'active') {
+      list = list.filter(u => u.is_active !== false && !(u.banned_until && new Date(u.banned_until) > new Date()) && u.email_confirmed_at);
+    } else if (statusFilter === 'inactive') {
+      list = list.filter(u => u.is_active === false || (u.banned_until && new Date(u.banned_until) > new Date()));
+    } else if (statusFilter === 'unconfirmed') {
+      list = list.filter(u => !u.email_confirmed_at);
     }
+
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      filtered = filtered.filter(u =>
-        u.email?.toLowerCase().includes(s) || u.full_name?.toLowerCase().includes(s)
+      list = list.filter(u =>
+        u.email?.toLowerCase().includes(s) ||
+        u.full_name?.toLowerCase().includes(s) ||
+        u.phone?.toLowerCase().includes(s)
       );
     }
-    setFilteredUsers(filtered);
+
+    list.sort((a, b) => {
+      let va: any = a[sortKey];
+      let vb: any = b[sortKey];
+      if (sortKey === 'is_active') { va = va === false ? 0 : 1; vb = vb === false ? 0 : 1; }
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va == null) va = '';
+      if (vb == null) vb = '';
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return list;
+  }, [users, filterType, statusFilter, searchTerm, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSorted.length / ITEMS_PER_PAGE));
+  const paginatedUsers = filteredSorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // ─── Counts ─────────────────────────────────────────────────────
+  const userCounts = USER_TYPES.reduce((acc, type) => {
+    acc[type.value] = users.filter(u => u.user_type === type.value).length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const activeCount = users.filter(u => u.is_active !== false && !(u.banned_until && new Date(u.banned_until) > new Date()) && u.email_confirmed_at).length;
+  const inactiveCount = users.filter(u => u.is_active === false || (u.banned_until && new Date(u.banned_until) > new Date())).length;
+  const unconfirmedCount = users.filter(u => !u.email_confirmed_at).length;
+
+  // ─── Sort handler ───────────────────────────────────────────────
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); }
+    else { setSortKey(key); setSortDir('asc'); }
   };
 
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
+    return sortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />;
+  };
+
+  // ─── Actions ────────────────────────────────────────────────────
   const handleChangeUserType = async (userId: string, newType: Profile['user_type']) => {
-    if (userId === currentUser?.id) {
-      showMessage('error', 'Vous ne pouvez pas modifier votre propre rôle');
-      return;
-    }
+    if (userId === currentUser?.id) { showMsg('error', 'Vous ne pouvez pas modifier votre propre rôle'); return; }
     setUpdatingUserId(userId);
     try {
-      const { error } = await supabase.rpc('admin_update_user_type', {
-        target_user_id: userId,
-        new_type: newType,
-      });
+      const { error } = await supabase.rpc('admin_update_user_type', { target_user_id: userId, new_type: newType });
       if (error) throw error;
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, user_type: newType } : u));
-      showMessage('success', 'Rôle mis à jour avec succès');
+      showMsg('success', 'Rôle mis à jour');
     } catch (err: any) {
-      showMessage('error', err.message?.includes('admin required') ? 'Droits administrateur requis' : 'Erreur lors de la modification du rôle');
+      showMsg('error', err.message?.includes('admin required') ? 'Droits administrateur requis' : 'Erreur lors de la modification');
     } finally {
       setUpdatingUserId(null);
     }
   };
 
-  const handleDeleteUser = (user: Profile) => {
-    if (user.id === currentUser?.id) {
-      showMessage('error', 'Vous ne pouvez pas supprimer votre propre compte');
-      return;
+  const handleToggleStatus = async () => {
+    if (!showToggleModal) return;
+    const { user, activate } = showToggleModal;
+    setTogglingUserId(user.id);
+    setShowToggleModal(null);
+    try {
+      const { error } = await supabase.rpc('admin_toggle_user_status', { target_user_id: user.id, activate });
+      if (error) throw error;
+      setUsers(prev => prev.map(u => u.id === user.id ? {
+        ...u, is_active: activate, banned_until: activate ? null : '2099-12-31T23:59:59Z'
+      } : u));
+      showMsg('success', activate
+        ? `Compte de ${user.full_name || user.email} activé`
+        : `Compte de ${user.full_name || user.email} désactivé`
+      );
+    } catch {
+      showMsg('error', 'Erreur lors du changement de statut');
+    } finally {
+      setTogglingUserId(null);
     }
-    setShowDeleteConfirm(user);
   };
 
-  const confirmDelete = async () => {
-    if (!showDeleteConfirm) return;
-    setDeletingUserId(showDeleteConfirm.id);
-    setShowDeleteConfirm(null);
+  const handleDeleteUser = async () => {
+    if (!showDeleteModal || deleteConfirmText.toLowerCase() !== 'supprimer') return;
+    const user = showDeleteModal;
+    setDeletingUserId(user.id);
+    setShowDeleteModal(null);
+    setDeleteConfirmText('');
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', showDeleteConfirm.id);
+      const { error } = await supabase.rpc('admin_delete_user_account', { target_user_id: user.id });
       if (error) throw error;
-      setUsers(prev => prev.filter(u => u.id !== showDeleteConfirm.id));
-      showMessage('success', `Utilisateur ${showDeleteConfirm.full_name || showDeleteConfirm.email} supprimé`);
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      showMsg('success', `Compte de ${user.full_name || user.email} supprimé définitivement`);
     } catch {
-      showMessage('error', 'Erreur lors de la suppression');
+      showMsg('error', 'Erreur lors de la suppression du compte');
     } finally {
       setDeletingUserId(null);
     }
@@ -164,61 +262,45 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
 
   const handleSendInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteForm.email.trim() || !inviteForm.name.trim()) {
-      showMessage('error', 'Nom et email sont obligatoires');
-      return;
-    }
-
+    if (!inviteForm.email.trim() || !inviteForm.name.trim()) { showMsg('error', 'Nom et email sont obligatoires'); return; }
     setInviting(true);
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const { data: { session } } = await supabase.auth.getSession();
-
       const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-invite`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || supabaseAnonKey}`,
-        },
-        body: JSON.stringify({
-          invitee_email: inviteForm.email.trim(),
-          invitee_name: inviteForm.name.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || supabaseAnonKey}` },
+        body: JSON.stringify({ invitee_email: inviteForm.email.trim(), invitee_name: inviteForm.name.trim() }),
       });
-
       const result = await response.json();
-      if (!response.ok) {
-        showMessage('error', result.error || "Erreur lors de l'envoi");
-        return;
-      }
-
-      showMessage('success', `Invitation envoyée à ${inviteForm.email}. La personne recevra un lien pour créer son compte.`);
+      if (!response.ok) { showMsg('error', result.error || "Erreur lors de l'envoi"); return; }
+      showMsg('success', `Invitation envoyée à ${inviteForm.email}`);
       setShowInviteModal(false);
       setInviteForm({ email: '', name: '' });
       setPendingInvitationsCount(c => c + 1);
     } catch (err: any) {
-      showMessage('error', err.message || "Erreur lors de l'envoi de l'invitation");
+      showMsg('error', err.message || "Erreur lors de l'envoi");
     } finally {
       setInviting(false);
     }
   };
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
+  const showMsg = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 7000);
   };
 
   const getUserTypeInfo = (type: string) =>
-    USER_TYPES.find(t => t.value === type) || { value: type, label: type, color: 'bg-gray-100 text-gray-700 border-gray-200' };
+    USER_TYPES.find(t => t.value === type) || { value: type, label: type, color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Users };
 
-  const userCounts = USER_TYPES.reduce((acc, type) => {
-    acc[type.value] = users.filter(u => u.user_type === type.value).length;
-    return acc;
-  }, {} as Record<string, number>);
+  const formatDate = (d: string | null | undefined) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
-  const withProfileCount = users.filter(u => u.has_profile).length;
-  const withoutProfileCount = users.filter(u => !u.has_profile).length;
+  const isUserDisabled = (user: Profile) =>
+    user.is_active === false || (user.banned_until != null && new Date(user.banned_until) > new Date());
 
   if (!isAdmin) {
     return (
@@ -239,9 +321,10 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
 
   return (
     <>
-      <div className="py-12">
+      <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
+          {/* Breadcrumb */}
           <div className="mb-6">
             <div className="flex items-center gap-3 text-sm text-gray-600 mb-4">
               <button onClick={() => onNavigate('home')} className="flex items-center gap-1 hover:text-blue-600 transition">
@@ -258,10 +341,11 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
             </button>
           </div>
 
-          <div className="flex items-center justify-between mb-8">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-1">Gestion des utilisateurs</h1>
-              <p className="text-gray-600">Gérez les comptes, rôles et accès des utilisateurs</p>
+              <p className="text-gray-600">{users.length} compte{users.length > 1 ? 's' : ''} au total</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -278,213 +362,281 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
               </button>
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-2 px-5 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition shadow-md"
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition shadow-md text-sm"
               >
-                <UserPlus className="w-5 h-5" />
+                <UserPlus className="w-4 h-4" />
                 Créer un administrateur
               </button>
             </div>
           </div>
 
+          {/* Message */}
           {message && (
             <div className={`mb-6 neo-clay-card rounded-xl p-4 flex items-center gap-3 ${message.type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
-              {message.type === 'success'
-                ? <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
+              {message.type === 'success' ? <CheckCircle className="w-5 h-5 text-green-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
               <p className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>{message.text}</p>
-              <button onClick={() => setMessage(null)} className="ml-auto text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setMessage(null)} className="ml-auto text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
           )}
 
           {/* Stats cards */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-            {USER_TYPES.map(type => (
-              <div key={type.value} className="neo-clay-card rounded-xl p-4 flex items-center gap-3 col-span-1">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${type.color.split(' ').slice(0, 2).join(' ')}`}>
-                  {type.value === 'admin'     && <Crown className="w-4 h-4" />}
-                  {type.value === 'recruiter' && <UserCog className="w-4 h-4" />}
-                  {type.value === 'trainer'   && <Shield className="w-4 h-4" />}
-                  {type.value === 'candidate' && <Users className="w-4 h-4" />}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+            {USER_TYPES.map(type => {
+              const Icon = type.icon;
+              return (
+                <button
+                  key={type.value}
+                  onClick={() => { setFilterType(filterType === type.value as any ? 'all' : type.value as any); setStatusFilter('all'); }}
+                  className={`neo-clay-card rounded-xl p-3 flex items-center gap-2.5 transition cursor-pointer hover:shadow-md ${filterType === type.value ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${type.color.split(' ').slice(0, 2).join(' ')}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xl font-bold text-gray-900 leading-none">{userCounts[type.value] || 0}</p>
+                    <p className="text-[10px] text-gray-500 leading-tight mt-0.5">{type.label}s</p>
+                  </div>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => { setStatusFilter(statusFilter === 'active' ? 'all' : 'active'); setFilterType('all'); }}
+              className={`neo-clay-card rounded-xl p-3 flex items-center gap-2.5 transition cursor-pointer hover:shadow-md ${statusFilter === 'active' ? 'ring-2 ring-green-500 ring-offset-1' : ''}`}
+            >
+              <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0"><CheckCircle className="w-4 h-4 text-green-700" /></div>
+              <div className="text-left">
+                <p className="text-xl font-bold text-gray-900 leading-none">{activeCount}</p>
+                <p className="text-[10px] text-gray-500 leading-tight mt-0.5">Actifs</p>
+              </div>
+            </button>
+            <button
+              onClick={() => { setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive'); setFilterType('all'); }}
+              className={`neo-clay-card rounded-xl p-3 flex items-center gap-2.5 transition cursor-pointer hover:shadow-md ${statusFilter === 'inactive' ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
+            >
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0"><Ban className="w-4 h-4 text-red-700" /></div>
+              <div className="text-left">
+                <p className="text-xl font-bold text-gray-900 leading-none">{inactiveCount}</p>
+                <p className="text-[10px] text-gray-500 leading-tight mt-0.5">Désactivés</p>
+              </div>
+            </button>
+            {unconfirmedCount > 0 && (
+              <button
+                onClick={() => { setStatusFilter(statusFilter === 'unconfirmed' ? 'all' : 'unconfirmed'); setFilterType('all'); }}
+                className={`neo-clay-card rounded-xl p-3 flex items-center gap-2.5 transition cursor-pointer hover:shadow-md ${statusFilter === 'unconfirmed' ? 'ring-2 ring-amber-500 ring-offset-1' : ''}`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0"><AlertCircle className="w-4 h-4 text-amber-700" /></div>
+                <div className="text-left">
+                  <p className="text-xl font-bold text-gray-900 leading-none">{unconfirmedCount}</p>
+                  <p className="text-[10px] text-gray-500 leading-tight mt-0.5">Non confirmés</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{userCounts[type.value] || 0}</p>
-                  <p className="text-xs text-gray-500 leading-tight">{type.label}{(userCounts[type.value] || 0) > 1 ? 's' : ''}</p>
-                </div>
-              </div>
-            ))}
-            <div className="neo-clay-card rounded-xl p-4 flex items-center gap-3 col-span-1">
-              <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                <UserCheck className="w-4 h-4 text-green-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{withProfileCount}</p>
-                <p className="text-xs text-gray-500 leading-tight">Avec profil</p>
-              </div>
-            </div>
-            <div className="neo-clay-card rounded-xl p-4 flex items-center gap-3 col-span-1">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                <UserX className="w-4 h-4 text-amber-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{withoutProfileCount}</p>
-                <p className="text-xs text-gray-500 leading-tight">Sans profil</p>
-              </div>
-            </div>
+              </button>
+            )}
           </div>
 
-          <div className="neo-clay-card rounded-2xl p-6 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
+          {/* Search & Filters bar */}
+          <div className="neo-clay-card rounded-2xl p-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Rechercher par nom ou email..."
+                  placeholder="Rechercher par nom, email ou téléphone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl neo-clay-input focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl neo-clay-input focus:outline-none text-sm"
                 />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 items-center flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Filter className="w-3.5 h-3.5" />Rôle:
+                </div>
                 {(['all', 'candidate', 'recruiter', 'trainer', 'admin'] as const).map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
-                    className={`px-4 py-2 rounded-xl font-medium transition text-sm ${filterType === type ? 'neo-clay-pressed text-blue-700' : 'neo-clay-button text-gray-600'}`}
+                    className={`px-3 py-1.5 rounded-lg font-medium transition text-xs ${filterType === type ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                   >
                     {type === 'all' ? 'Tous' : getUserTypeInfo(type).label}
-                    {type !== 'all' && <span className="ml-1.5 text-xs opacity-70">({userCounts[type] || 0})</span>}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-              <p>{filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''} trouvé{filteredUsers.length > 1 ? 's' : ''}</p>
-              <button onClick={loadUsers} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium">
-                <RefreshCw className="w-4 h-4" />Actualiser
+            <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+              <p className="flex items-center gap-2">
+                <span className="font-medium">{filteredSorted.length}</span> résultat{filteredSorted.length > 1 ? 's' : ''}
+                {(filterType !== 'all' || statusFilter !== 'all' || searchTerm) && (
+                  <button
+                    onClick={() => { setFilterType('all'); setStatusFilter('all'); setSearchTerm(''); }}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Effacer les filtres
+                  </button>
+                )}
+              </p>
+              <button onClick={loadUsers} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium text-sm">
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Actualiser
               </button>
             </div>
           </div>
 
+          {/* Table */}
           {loading ? (
             <div className="text-center py-16">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600" />
               <p className="mt-4 text-gray-600">Chargement...</p>
             </div>
           ) : (
             <div className="neo-clay-card rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50/80 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Utilisateur</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Rôle actuel</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Profil</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Complétion</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Inscription</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Changer le rôle</th>
-                      <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Supprimer</th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('full_name')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Utilisateur <SortIcon col="full_name" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('user_type')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Rôle <SortIcon col="user_type" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('is_active')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Statut <SortIcon col="is_active" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('profile_completion_percentage')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Profil <SortIcon col="profile_completion_percentage" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('created_at')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Inscription <SortIcon col="created_at" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left">
+                        <button onClick={() => handleSort('last_sign_in_at')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Dernière co. <SortIcon col="last_sign_in_at" />
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredUsers.map((user) => {
-                      const typeInfo = getUserTypeInfo(user.user_type);
+                    {paginatedUsers.map((user) => {
                       const isSelf = user.id === currentUser?.id;
+                      const disabled = isUserDisabled(user);
                       const isUpdating = updatingUserId === user.id;
+                      const isToggling = togglingUserId === user.id;
                       const isDeleting = deletingUserId === user.id;
-                      const hasProfile = user.has_profile !== false;
                       const pct = user.profile_completion_percentage ?? 0;
                       const completed = user.profile_completed ?? false;
+                      const hasProfile = user.has_profile !== false;
 
                       return (
-                        <tr key={user.id} className={`hover:bg-gray-50/50 transition ${isSelf ? 'bg-blue-50/30' : ''} ${!hasProfile ? 'bg-amber-50/20' : ''}`}>
-                          <td className="px-6 py-4">
+                        <tr
+                          key={user.id}
+                          className={`transition ${isSelf ? 'bg-blue-50/30' : ''} ${disabled ? 'bg-red-50/20 opacity-75' : 'hover:bg-gray-50/50'}`}
+                        >
+                          {/* User info */}
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${!hasProfile ? 'bg-gradient-to-br from-gray-300 to-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${disabled ? 'bg-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
                                 {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || '?'}
                               </div>
-                              <div>
-                                <p className="font-semibold text-gray-900 text-sm">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 text-sm truncate max-w-[180px]">
                                   {user.full_name || <span className="text-gray-400 font-normal italic">Sans nom</span>}
-                                  {isSelf && <span className="ml-2 text-xs text-blue-600 font-normal">(vous)</span>}
+                                  {isSelf && <span className="ml-1.5 text-[10px] text-blue-600 font-normal">(vous)</span>}
                                 </p>
-                                {user.phone && hasProfile && <p className="text-xs text-gray-400">{user.phone}</p>}
+                                <p className="text-xs text-gray-500 truncate max-w-[180px]">{user.email}</p>
+                                {user.phone && <p className="text-[10px] text-gray-400">{user.phone}</p>}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${typeInfo.color}`}>
-                              {user.user_type === 'admin' && <Crown className="w-3 h-3" />}
-                              {typeInfo.label}
-                            </span>
-                          </td>
 
-                          {/* Colonne Profil */}
-                          <td className="px-6 py-4">
-                            {hasProfile ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                <UserCheck className="w-3 h-3" />
-                                Oui
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
-                                <UserX className="w-3 h-3" />
-                                Non
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Colonne Complétion */}
-                          <td className="px-6 py-4">
-                            {hasProfile ? (
-                              <div className="flex flex-col gap-1">
-                                <CompletionBar pct={pct} completed={completed} />
-                                {completed && (
-                                  <span className="text-xs text-green-600 font-medium">Complet</span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400 italic">—</span>
-                            )}
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </td>
-                          <td className="px-6 py-4">
+                          {/* Role */}
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <select
                                 value={user.user_type}
                                 onChange={(e) => handleChangeUserType(user.id, e.target.value as Profile['user_type'])}
                                 disabled={isUpdating || isSelf}
-                                title={isSelf ? 'Vous ne pouvez pas modifier votre propre rôle' : 'Changer le rôle'}
-                                className="px-3 py-2 rounded-lg neo-clay-input text-sm font-medium focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="px-2 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 <option value="candidate">Candidat</option>
                                 <option value="recruiter">Recruteur</option>
                                 <option value="trainer">Formateur</option>
-                                <option value="admin">Administrateur</option>
+                                <option value="admin">Admin</option>
                               </select>
-                              {isUpdating && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0"></div>}
+                              {isUpdating && <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            {isDeleting ? (
+
+                          {/* Status */}
+                          <td className="px-4 py-3"><StatusBadge user={user} /></td>
+
+                          {/* Profile completion */}
+                          <td className="px-4 py-3">
+                            {hasProfile ? <CompletionBar pct={pct} completed={completed} /> : <span className="text-xs text-gray-400 italic">Aucun</span>}
+                          </td>
+
+                          {/* Created */}
+                          <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(user.created_at)}</td>
+
+                          {/* Last sign in */}
+                          <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(user.last_sign_in_at)}</td>
+
+                          {/* Actions dropdown */}
+                          <td className="px-4 py-3 text-center">
+                            {(isToggling || isDeleting) ? (
                               <div className="inline-flex items-center justify-center w-8 h-8">
-                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                               </div>
+                            ) : isSelf ? (
+                              <span className="text-[10px] text-gray-400">—</span>
                             ) : (
-                              <button
-                                onClick={() => handleDeleteUser(user)}
-                                disabled={isSelf}
-                                title={isSelf ? 'Vous ne pouvez pas supprimer votre propre compte' : 'Supprimer'}
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition disabled:opacity-30 disabled:cursor-not-allowed"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <div className="relative inline-block">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setShowActionsDropdown(showActionsDropdown === user.id ? null : user.id); }}
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                                {showActionsDropdown === user.id && (
+                                  <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20">
+                                    {disabled ? (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setShowActionsDropdown(null); setShowToggleModal({ user, activate: true }); }}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 transition"
+                                      >
+                                        <Power className="w-4 h-4" />Activer le compte
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setShowActionsDropdown(null); setShowToggleModal({ user, activate: false }); }}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-amber-700 hover:bg-amber-50 transition"
+                                      >
+                                        <Ban className="w-4 h-4" />Désactiver le compte
+                                      </button>
+                                    )}
+                                    <div className="border-t border-gray-100 my-1" />
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setShowActionsDropdown(null); setShowDeleteModal(user); }}
+                                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
+                                    >
+                                      <Trash2 className="w-4 h-4" />Supprimer définitivement
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -492,145 +644,192 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                     })}
                   </tbody>
                 </table>
-                {filteredUsers.length === 0 && !loading && (
+                {filteredSorted.length === 0 && !loading && (
                   <div className="text-center py-16">
                     <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">Aucun utilisateur trouvé</p>
+                    <p className="text-gray-500 mb-2">Aucun utilisateur trouvé</p>
+                    {(searchTerm || filterType !== 'all' || statusFilter !== 'all') && (
+                      <button
+                        onClick={() => { setSearchTerm(''); setFilterType('all'); setStatusFilter('all'); }}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Effacer les filtres
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+                  <p className="text-xs text-gray-500">
+                    {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredSorted.length)} sur {filteredSorted.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Précédent
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .reduce((acc, p, i, arr) => {
+                        if (i > 0 && p - arr[i - 1] > 1) acc.push(-1);
+                        acc.push(p);
+                        return acc;
+                      }, [] as number[])
+                      .map((p, i) => p === -1 ? (
+                        <span key={`dots-${i}`} className="px-2 text-gray-400 text-xs">…</span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-8 h-8 rounded-lg text-xs font-medium ${currentPage === p ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700'}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
-          <div className="mt-6 neo-clay-card rounded-xl p-4 flex items-start gap-3 bg-amber-50 border border-amber-100">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">Promouvoir un utilisateur existant en administrateur</p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Pour rendre administrateur un utilisateur déjà inscrit, utilisez le menu déroulant dans la colonne "Changer le rôle" du tableau.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
+      {/* ─── MODAL: Invite Admin ─────────────────────────────────── */}
       {showInviteModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowInviteModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-red-600" />
-                </div>
+                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center"><Crown className="w-5 h-5 text-red-600" /></div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">Inviter un administrateur</h2>
                   <p className="text-xs text-gray-500">Invitation sécurisée par email</p>
                 </div>
               </div>
-              <button onClick={() => setShowInviteModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
+              <button onClick={() => setShowInviteModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
             </div>
-
             <form onSubmit={handleSendInvitation} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom complet *</label>
-                <input
-                  type="text"
-                  value={inviteForm.name}
-                  onChange={(e) => setInviteForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="Jean Dupont"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
-                />
+                <input type="text" value={inviteForm.name} onChange={(e) => setInviteForm(p => ({ ...p, name: e.target.value }))} placeholder="Jean Dupont" required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Adresse email *</label>
-                <input
-                  type="email"
-                  value={inviteForm.email}
-                  onChange={(e) => setInviteForm(p => ({ ...p, email: e.target.value }))}
-                  placeholder="admin@exemple.com"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
-                />
+                <input type="email" value={inviteForm.email} onChange={(e) => setInviteForm(p => ({ ...p, email: e.target.value }))} placeholder="admin@exemple.com" required className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" />
               </div>
-
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-                  <p className="text-xs font-semibold text-blue-800">Processus d'invitation sécurisée</p>
-                </div>
-                <ol className="text-xs text-blue-700 space-y-1 pl-5 list-decimal">
-                  <li>Un email avec un lien sécurisé est envoyé à la personne</li>
-                  <li>Elle clique sur le lien et choisit son propre mot de passe</li>
-                  <li>Son compte administrateur est activé automatiquement</li>
-                  <li>L'invitation expire au bout de 72 heures</li>
-                </ol>
-              </div>
-
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowInviteModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition text-sm"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={inviting}
-                  className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  {inviting ? (
-                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Envoi...</>
-                  ) : (
-                    <><Send className="w-4 h-4" />Envoyer l'invitation</>
-                  )}
+                <button type="button" onClick={() => setShowInviteModal(false)} className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition text-sm">Annuler</button>
+                <button type="submit" disabled={inviting} className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
+                  {inviting ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Envoi...</> : <><Send className="w-4 h-4" />Envoyer</>}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
 
-            <div className="px-6 pb-5 border-t border-gray-100 pt-4">
+      {/* ─── MODAL: Toggle Status (Activate/Deactivate) ──────────── */}
+      {showToggleModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowToggleModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${showToggleModal.activate ? 'bg-green-100' : 'bg-amber-100'}`}>
+                {showToggleModal.activate
+                  ? <Power className="w-8 h-8 text-green-600" />
+                  : <Ban className="w-8 h-8 text-amber-600" />}
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                {showToggleModal.activate ? 'Activer ce compte ?' : 'Désactiver ce compte ?'}
+              </h2>
+              <p className="text-gray-600 text-sm">
+                {showToggleModal.activate
+                  ? <>Le compte de <strong>{showToggleModal.user.full_name || showToggleModal.user.email}</strong> sera réactivé. L'utilisateur pourra se connecter à nouveau.</>
+                  : <>Le compte de <strong>{showToggleModal.user.full_name || showToggleModal.user.email}</strong> sera désactivé. L'utilisateur ne pourra plus se connecter.</>
+                }
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowToggleModal(null)} className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition">Annuler</button>
               <button
-                onClick={() => { setShowInviteModal(false); onNavigate('admin-invitations'); }}
-                className="w-full flex items-center justify-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition"
+                onClick={handleToggleStatus}
+                className={`flex-1 px-4 py-3 rounded-xl text-white font-semibold transition ${showToggleModal.activate ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'}`}
               >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Gérer toutes les invitations
+                {showToggleModal.activate ? 'Activer' : 'Désactiver'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+      {/* ─── MODAL: Delete with "supprimer" confirmation ──────────── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowDeleteModal(null); setDeleteConfirmText(''); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-8 h-8 text-red-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Supprimer cet utilisateur ?</h2>
-              <p className="text-gray-600 text-sm">
-                Vous êtes sur le point de supprimer le profil de{' '}
-                <strong>{showDeleteConfirm.full_name || showDeleteConfirm.email}</strong>.
-                Cette action est irréversible.
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Supprimer ce compte ?</h2>
+              <p className="text-gray-600 text-sm mb-1">
+                Vous êtes sur le point de supprimer <strong>définitivement</strong> le compte de :
               </p>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3 mt-3">
+                <p className="font-semibold text-gray-900">{showDeleteModal.full_name || 'Sans nom'}</p>
+                <p className="text-sm text-gray-600">{showDeleteModal.email}</p>
+                <p className="text-xs text-gray-500 mt-1">Rôle : {getUserTypeInfo(showDeleteModal.user_type).label}</p>
+              </div>
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-xs text-red-700 font-medium mb-1">⚠️ Cette action est irréversible</p>
+                <p className="text-xs text-red-600">
+                  Le compte, le profil, les candidatures et toutes les données associées seront supprimés.
+                </p>
+              </div>
             </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tapez <span className="font-bold text-red-600">supprimer</span> pour confirmer :
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="supprimer"
+                autoComplete="off"
+                className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm font-medium ${
+                  deleteConfirmText.toLowerCase() === 'supprimer'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : 'border-gray-200 focus:border-red-300'
+                }`}
+              />
+            </div>
+
             <div className="flex gap-3">
               <button
-                onClick={() => setShowDeleteConfirm(null)}
+                onClick={() => { setShowDeleteModal(null); setDeleteConfirmText(''); }}
                 className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition"
               >
                 Annuler
               </button>
               <button
-                onClick={confirmDelete}
-                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+                onClick={handleDeleteUser}
+                disabled={deleteConfirmText.toLowerCase() !== 'supprimer'}
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Supprimer
+                <Trash2 className="w-4 h-4" />Supprimer
               </button>
             </div>
           </div>
