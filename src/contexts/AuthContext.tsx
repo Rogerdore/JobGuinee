@@ -342,20 +342,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
-    const { data: existingUsers } = await supabase
-      .from('profiles')
-      .select('id, email, user_type')
-      .eq('email', email.toLowerCase())
-      .maybeSingle();
-
-    if (existingUsers) {
-      const { data: provider } = await supabase.rpc('get_user_provider', { user_email: email.toLowerCase() });
-      if (provider === 'google') {
-        throw new Error('EMAIL_EXISTS_GOOGLE');
-      }
-      throw new Error('EMAIL_EXISTS');
-    }
-
     const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
     const confirmationRedirectUrl = `${appUrl}/auth/callback`;
 
@@ -386,7 +372,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (existingProfile?.is_account_confirmed) {
-          // Already fully registered — should login instead
           throw new Error('EMAIL_EXISTS');
         }
 
@@ -414,11 +399,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Supabase returns a fake user with empty identities when email already exists
     // (security feature to prevent email enumeration)
     if (!data.user.identities || data.user.identities.length === 0) {
-      const { data: provider } = await supabase.rpc('get_user_provider', { user_email: email.toLowerCase() });
-      if (provider === 'google') {
-        throw new Error('EMAIL_EXISTS_GOOGLE');
+      // Check profiles to distinguish confirmed vs unconfirmed accounts
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, is_account_confirmed')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+
+      if (existingProfile?.is_account_confirmed) {
+        throw new Error('EMAIL_EXISTS');
       }
-      throw new Error('EMAIL_EXISTS');
+
+      // Unconfirmed account — resend confirmation email
+      try {
+        await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: confirmationRedirectUrl }
+        });
+      } catch (_) { /* ignore resend errors */ }
+
+      throw new Error('EMAIL_CONFIRMATION_REQUIRED');
     }
 
     // Email confirmation is required — Supabase sends the confirmation email automatically.
