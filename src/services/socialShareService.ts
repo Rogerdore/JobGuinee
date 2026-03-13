@@ -19,7 +19,7 @@ export interface SocialShareLinks {
 const BASE_URL = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 const SUPABASE_FUNCTIONS_URL = 'https://hhhjzgeidjqctuveopso.supabase.co/functions/v1';
 const JOBGUINEE_LOGO = `${BASE_URL}/logo_jobguinee.png`;
-const DEFAULT_JOB_IMAGE = `${BASE_URL}/assets/share/default-job.png`;
+const DEFAULT_JOB_IMAGE = JOBGUINEE_LOGO;
 
 export const socialShareService = {
   generateJobMetadata(job: Partial<Job> & { companies?: any }): SocialShareMetadata {
@@ -162,24 +162,37 @@ export const socialShareService = {
     };
   },
 
-  openShareLink(platform: keyof SocialShareLinks, links: SocialShareLinks): void {
+  openShareLink(platform: keyof SocialShareLinks, links: SocialShareLinks): boolean {
     const url = links[platform];
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (platform === 'whatsapp' && isMobile) {
       window.location.href = url;
-    } else {
-      const width = 600;
-      const height = 600;
-      const left = (window.innerWidth - width) / 2;
-      const top = (window.innerHeight - height) / 2;
+      return true;
+    }
 
-      window.open(
-        url,
-        '_blank',
-        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-      );
+    // Ouvrir dans un nouvel onglet (pas popup) pour éviter les bloqueurs
+    const newWindow = window.open(url, '_blank');
+
+    if (newWindow) {
+      newWindow.focus();
+      return true;
+    }
+
+    // Fallback si le popup blocker bloque window.open
+    // Utiliser un lien temporaire pour forcer l'ouverture
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return true;
+    } catch {
+      return false;
     }
   },
 

@@ -424,6 +424,12 @@ function AppContent() {
     return <Auth mode="login" onNavigate={handleNavigate} />;
   }
 
+  // Bloquer l'accès aux pages protégées si l'email n'est pas confirmé
+  // Les utilisateurs Google OAuth ont toujours email_confirmed_at défini
+  if ((protectedPages.includes(currentPage) || isAdminPage) && user && !user.email_confirmed_at) {
+    return <Auth mode="login" onNavigate={handleNavigate} />;
+  }
+
   if (currentPage === 'login' || currentPage === 'signup') {
     return <Auth mode={currentPage} onNavigate={handleNavigate} />;
   }

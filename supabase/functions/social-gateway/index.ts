@@ -216,10 +216,10 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   }
 
   // OG Image Cascade (PNG/JPG only, NO SVG)
-  // Priority: featured_image_url → default PNG (1200x630)
+  // Priority: featured_image_url → logo PNG
   // Company logos are excluded: they are typically small icons (<200x200) 
   // and Facebook requires at least 200x200px for og:image
-  let ogImage = `${baseUrl}/assets/share/default-job.png`; // Final fallback (1200x630)
+  let ogImage = `${baseUrl}/logo_jobguinee.png`; // Final fallback (logo PNG qui existe)
   
   const isValidImageUrl = (url: string | undefined | null): boolean => {
     if (!url || typeof url !== 'string') return false;

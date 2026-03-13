@@ -261,6 +261,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data.user) {
       throw new Error('Connexion échouée');
     }
+
+    // Vérification email_confirmed_at
+    if (!data.user.email_confirmed_at) {
+      throw new Error('EMAIL_NOT_CONFIRMED');
+    }
   };
 
   // Confirmation email is sent natively by Supabase Auth via emailRedirectTo.

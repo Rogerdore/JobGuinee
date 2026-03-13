@@ -19,6 +19,8 @@ interface ShareJobModalProps {
 export default function ShareJobModal({ job, isOpen = true, onClose }: ShareJobModalProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<'facebook' | 'linkedin' | 'twitter' | 'generic'>('generic');
+  const [shareSuccess, setShareSuccess] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const metadata = useMemo(() => socialShareService.generateJobMetadata(job), [job]);
   const links = useMemo(() => socialShareService.generateShareLinks(job), [job]);
@@ -26,9 +28,22 @@ export default function ShareJobModal({ job, isOpen = true, onClose }: ShareJobM
   if (!isOpen) return null;
 
   const handleShare = async (platform: keyof SocialShareLinks) => {
+    setShareSuccess(null);
+    setShareError(null);
+
+    // Ouvrir le lien AVANT toute opération async (éviter popup blocker)
+    const opened = socialShareService.openShareLink(platform, links);
+
+    // Mettre à jour la preview APRES l'ouverture
     setSelectedPlatform(platform === 'whatsapp' ? 'generic' : platform);
 
-    socialShareService.openShareLink(platform, links);
+    if (!opened) {
+      setShareError('Le navigateur a bloqué l\'ouverture. Désactivez votre bloqueur de popups ou copiez le lien ci-dessous.');
+      return;
+    }
+
+    setShareSuccess(platform);
+    setTimeout(() => setShareSuccess(null), 3000);
 
     if (job.id) {
       await socialShareService.trackShare(job.id, platform);
@@ -113,6 +128,21 @@ export default function ShareJobModal({ job, isOpen = true, onClose }: ShareJobM
             <h3 className="text-sm font-semibold text-slate-700 mb-3">
               Partager sur les réseaux sociaux
             </h3>
+
+            {shareError && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+                <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>{shareError}</span>
+              </div>
+            )}
+
+            {shareSuccess && (
+              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                <span>Partage ouvert sur {shareSuccess} !</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               {shareButtons.map(({ platform, label, icon: Icon, color, textColor }) => (
                 <button

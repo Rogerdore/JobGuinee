@@ -29,11 +29,11 @@ export default function SocialSharePreview({
     const baseUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
 
     if (fallbackAttempts === 0) {
-      // Premier fallback : image par défaut d'offre
-      setCurrentImage(`${baseUrl}/assets/share/default-job.svg`);
+      // Premier fallback : logo JobGuinée PNG (fichier qui existe)
+      setCurrentImage(`${baseUrl}/logo_jobguinee.png`);
       setFallbackAttempts(1);
     } else if (fallbackAttempts === 1) {
-      // Deuxième fallback : logo JobGuinée
+      // Deuxième fallback : logo SVG
       setCurrentImage(`${baseUrl}/logo_jobguinee.svg`);
       setFallbackAttempts(2);
     } else {
