@@ -186,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // N'utilise PAS WebSocket, juste les events locaux d'auth
     let subscription: any = null;
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
         // Utiliser une fonction async immédiatement invoquée (IIFE)
         // pour éviter de bloquer le callback sync
         (async () => {
@@ -212,6 +212,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   return;
                 }
                 setIsAccountDeactivated(false);
+
+                // Envoyer l'email de bienvenue au premier login après confirmation
+                if (event === 'SIGNED_IN' && profileData && profileData.is_account_confirmed) {
+                  const fullName = profileData.full_name || session.user.user_metadata?.full_name || 'Utilisateur';
+                  const userType = profileData.user_type || 'candidate';
+                  sendWelcomeConfirmedEmail(session.user.id, fullName, userType);
+                }
               } catch (timeoutErr) {
                 console.warn('⚠️ Timeout récupération profil dans onAuthStateChange');
                 // Continue sans profil

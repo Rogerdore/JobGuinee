@@ -1,13 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users, Shield, UserCog, Search, AlertCircle, CheckCircle, X,
   ArrowLeft, Home, ChevronRight, Trash2, UserPlus, RefreshCw,
-  Crown, Send, Mail, ExternalLink, UserCheck, UserX,
+  Crown, Send, Mail, ExternalLink,
   ArrowUpDown, ArrowUp, ArrowDown, Ban, Power,
-  Filter, MoreVertical
+  Filter, MoreVertical, MessageSquare, Bell, Phone, Megaphone,
+  ArrowRight, FileText, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { adminCommunicationService, CommunicationFilters, ChannelsConfig, CommunicationTemplate } from '../services/adminCommunicationService';
 
 interface UserManagementProps {
   onNavigate: (page: string) => void;
@@ -46,11 +48,11 @@ function CompletionBar({ pct, completed }: { pct: number; completed: boolean }) 
   const color = completed ? 'bg-green-500' : pct >= 75 ? 'bg-blue-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-400';
   const label = completed ? 'text-green-700' : pct >= 75 ? 'text-blue-700' : pct >= 40 ? 'text-amber-700' : 'text-red-600';
   return (
-    <div className="flex items-center gap-2 min-w-[100px]">
-      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+    <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden min-w-[40px]">
         <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
       </div>
-      <span className={`text-xs font-semibold tabular-nums ${label}`}>{pct}%</span>
+      <span className={`text-[11px] font-semibold tabular-nums ${label} shrink-0`}>{pct}%</span>
     </div>
   );
 }
@@ -62,20 +64,20 @@ function StatusBadge({ user }: { user: Profile }) {
 
   if (isBanned || isInactive) {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-        <Ban className="w-3 h-3" />Désactivé
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-100 text-red-700 border border-red-200">
+        <Ban className="w-3 h-3" />Inactif
       </span>
     );
   }
   if (isUnconfirmed) {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
-        <AlertCircle className="w-3 h-3" />Non confirmé
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+        <AlertCircle className="w-3 h-3" />Non conf.
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-700 border border-green-200">
       <CheckCircle className="w-3 h-3" />Actif
     </span>
   );
@@ -107,8 +109,121 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
   const [inviteForm, setInviteForm] = useState({ email: '', name: '' });
   const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
 
+  // Communication module state
+  const [showCommPanel, setShowCommPanel] = useState(false);
+  const [commStep, setCommStep] = useState<1 | 2 | 3 | 4>(1); // 1=channel, 2=audience, 3=template, 4=preview+send
+  const [commChannel, setCommChannel] = useState<'email' | 'sms' | 'whatsapp' | 'notification'>('email');
+  const [commFilters, setCommFilters] = useState<CommunicationFilters>({ user_types: [], account_status: [] });
+  const [commAudienceCount, setCommAudienceCount] = useState(0);
+  const [commLoadingAudience, setCommLoadingAudience] = useState(false);
+  const [commTemplates, setCommTemplates] = useState<CommunicationTemplate[]>([]);
+  const [commSelectedTemplate, setCommSelectedTemplate] = useState<CommunicationTemplate | null>(null);
+  const [commSubject, setCommSubject] = useState('');
+  const [commContent, setCommContent] = useState('');
+  const [commSending, setCommSending] = useState(false);
+  const [commTitle, setCommTitle] = useState('');
+
   useEffect(() => { loadUsers(); loadPendingInvitations(); }, []);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, filterType, statusFilter, sortKey, sortDir]);
+
+  // Communication module helpers
+  const loadCommTemplates = useCallback(async (channel: string) => {
+    try {
+      const data = await adminCommunicationService.getTemplates(channel);
+      setCommTemplates(data);
+    } catch { setCommTemplates([]); }
+  }, []);
+
+  const calculateCommAudience = useCallback(async (filters: CommunicationFilters) => {
+    setCommLoadingAudience(true);
+    try {
+      const count = await adminCommunicationService.calculateAudienceCount(filters);
+      setCommAudienceCount(count);
+    } catch { setCommAudienceCount(0); }
+    finally { setCommLoadingAudience(false); }
+  }, []);
+
+  const handleOpenCommPanel = () => {
+    setShowCommPanel(true);
+    setCommStep(1);
+    setCommChannel('email');
+    setCommFilters({ user_types: [], account_status: [] });
+    setCommSelectedTemplate(null);
+    setCommSubject('');
+    setCommContent('');
+    setCommTitle('');
+    setCommAudienceCount(0);
+  };
+
+  const handleCommChannelSelect = async (ch: typeof commChannel) => {
+    setCommChannel(ch);
+    await loadCommTemplates(ch);
+    setCommSelectedTemplate(null);
+    setCommSubject('');
+    setCommContent('');
+    setCommStep(2);
+  };
+
+  const handleCommFiltersDone = async () => {
+    await calculateCommAudience(commFilters);
+    setCommStep(3);
+  };
+
+  const handleCommTemplateSelect = (tpl: CommunicationTemplate) => {
+    setCommSelectedTemplate(tpl);
+    setCommSubject(tpl.subject || '');
+    setCommContent(tpl.content);
+    setCommStep(4);
+  };
+
+  const handleCommSkipTemplate = () => {
+    setCommSelectedTemplate(null);
+    setCommStep(4);
+  };
+
+  const handleSendCommunication = async () => {
+    if (!commContent.trim()) { showMsg('error', 'Le contenu ne peut pas être vide'); return; }
+    if (!commTitle.trim()) { showMsg('error', 'Veuillez donner un titre à cette communication'); return; }
+
+    setCommSending(true);
+    try {
+      const channelsConfig: ChannelsConfig = {
+        [commChannel]: {
+          enabled: true,
+          subject: commSubject || commTitle,
+          content: commContent,
+          template_id: commSelectedTemplate?.id,
+        },
+        notification: {
+          enabled: true,
+          content: commContent.replace(/<[^>]*>/g, '').slice(0, 300),
+        },
+      };
+
+      const comm = await adminCommunicationService.createCommunication({
+        title: commTitle,
+        type: 'system_info',
+        description: `Communication via ${commChannel}`,
+        filters_json: commFilters,
+        estimated_audience_count: commAudienceCount,
+        channels_json: channelsConfig,
+        status: 'draft',
+        total_recipients: commAudienceCount,
+        total_sent: 0,
+        total_failed: 0,
+        total_excluded: 0,
+      });
+
+      await adminCommunicationService.sendCommunication(comm.id);
+
+      showMsg('success', `Communication envoyée à ${commAudienceCount} destinataire(s)`);
+      setShowCommPanel(false);
+    } catch (err: any) {
+      showMsg('error', err.message || 'Erreur lors de l\'envoi');
+    } finally {
+      setCommSending(false);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -347,10 +462,17 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
               <h1 className="text-3xl font-bold text-gray-900 mb-1">Gestion des utilisateurs</h1>
               <p className="text-gray-600">{users.length} compte{users.length > 1 ? 's' : ''} au total</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleOpenCommPanel}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-md text-sm"
+              >
+                <Megaphone className="w-4 h-4" />
+                Communication
+              </button>
               <button
                 onClick={() => onNavigate('admin-invitations')}
-                className="relative flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition text-sm"
+                className="relative flex items-center gap-2 px-3 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition text-sm"
               >
                 <Mail className="w-4 h-4" />
                 Invitations
@@ -492,41 +614,40 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
             </div>
           ) : (
             <div className="neo-clay-card rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <table className="w-full table-fixed">
                   <thead className="bg-gray-50/80 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left">
-                        <button onClick={() => handleSort('full_name')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                      <th className="w-[30%] px-3 py-2.5 text-left">
+                        <button onClick={() => handleSort('full_name')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Utilisateur <SortIcon col="full_name" />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left">
-                        <button onClick={() => handleSort('user_type')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                      <th className="w-[12%] px-2 py-2.5 text-left">
+                        <button onClick={() => handleSort('user_type')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Rôle <SortIcon col="user_type" />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left">
-                        <button onClick={() => handleSort('is_active')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                      <th className="w-[11%] px-2 py-2.5 text-left">
+                        <button onClick={() => handleSort('is_active')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Statut <SortIcon col="is_active" />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left">
-                        <button onClick={() => handleSort('profile_completion_percentage')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                      <th className="w-[13%] px-2 py-2.5 text-left">
+                        <button onClick={() => handleSort('profile_completion_percentage')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
                           Profil <SortIcon col="profile_completion_percentage" />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left">
-                        <button onClick={() => handleSort('created_at')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
-                          Inscription <SortIcon col="created_at" />
+                      <th className="w-[12%] px-2 py-2.5 text-left">
+                        <button onClick={() => handleSort('created_at')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Inscrit <SortIcon col="created_at" />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-left">
-                        <button onClick={() => handleSort('last_sign_in_at')} className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
-                          Dernière co. <SortIcon col="last_sign_in_at" />
+                      <th className="w-[12%] px-2 py-2.5 text-left">
+                        <button onClick={() => handleSort('last_sign_in_at')} className="flex items-center gap-1 text-[11px] font-semibold text-gray-700 hover:text-blue-600 uppercase tracking-wider">
+                          Dern. co. <SortIcon col="last_sign_in_at" />
                         </button>
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                      <th className="w-[10%] px-2 py-2.5 text-center text-[11px] font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -546,56 +667,52 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                           className={`transition ${isSelf ? 'bg-blue-50/30' : ''} ${disabled ? 'bg-red-50/20 opacity-75' : 'hover:bg-gray-50/50'}`}
                         >
                           {/* User info */}
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${disabled ? 'bg-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs shrink-0 ${disabled ? 'bg-gray-400' : 'bg-gradient-to-br from-gray-600 to-gray-800'}`}>
                                 {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || '?'}
                               </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-gray-900 text-sm truncate max-w-[180px]">
+                              <div className="min-w-0 overflow-hidden">
+                                <p className="font-semibold text-gray-900 text-xs truncate">
                                   {user.full_name || <span className="text-gray-400 font-normal italic">Sans nom</span>}
-                                  {isSelf && <span className="ml-1.5 text-[10px] text-blue-600 font-normal">(vous)</span>}
+                                  {isSelf && <span className="ml-1 text-[10px] text-blue-600 font-normal">(vous)</span>}
                                 </p>
-                                <p className="text-xs text-gray-500 truncate max-w-[180px]">{user.email}</p>
-                                {user.phone && <p className="text-[10px] text-gray-400">{user.phone}</p>}
+                                <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
                               </div>
                             </div>
                           </td>
 
                           {/* Role */}
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={user.user_type}
-                                onChange={(e) => handleChangeUserType(user.id, e.target.value as Profile['user_type'])}
-                                disabled={isUpdating || isSelf}
-                                className="px-2 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                <option value="candidate">Candidat</option>
-                                <option value="recruiter">Recruteur</option>
-                                <option value="trainer">Formateur</option>
-                                <option value="admin">Admin</option>
-                              </select>
-                              {isUpdating && <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />}
-                            </div>
+                          <td className="px-2 py-2.5">
+                            <select
+                              value={user.user_type}
+                              onChange={(e) => handleChangeUserType(user.id, e.target.value as Profile['user_type'])}
+                              disabled={isUpdating || isSelf}
+                              className="w-full px-1.5 py-1 rounded-md text-[11px] font-medium bg-white border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <option value="candidate">Candidat</option>
+                              <option value="recruiter">Recruteur</option>
+                              <option value="trainer">Formateur</option>
+                              <option value="admin">Admin</option>
+                            </select>
                           </td>
 
                           {/* Status */}
-                          <td className="px-4 py-3"><StatusBadge user={user} /></td>
+                          <td className="px-2 py-2.5"><StatusBadge user={user} /></td>
 
                           {/* Profile completion */}
-                          <td className="px-4 py-3">
-                            {hasProfile ? <CompletionBar pct={pct} completed={completed} /> : <span className="text-xs text-gray-400 italic">Aucun</span>}
+                          <td className="px-2 py-2.5">
+                            {hasProfile ? <CompletionBar pct={pct} completed={completed} /> : <span className="text-[11px] text-gray-400 italic">—</span>}
                           </td>
 
                           {/* Created */}
-                          <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(user.created_at)}</td>
+                          <td className="px-2 py-2.5 text-[11px] text-gray-500">{formatDate(user.created_at)}</td>
 
                           {/* Last sign in */}
-                          <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(user.last_sign_in_at)}</td>
+                          <td className="px-2 py-2.5 text-[11px] text-gray-500">{formatDate(user.last_sign_in_at)}</td>
 
                           {/* Actions dropdown */}
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-2 py-2.5 text-center">
                             {(isToggling || isDeleting) ? (
                               <div className="inline-flex items-center justify-center w-8 h-8">
                                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -658,7 +775,6 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
                     )}
                   </div>
                 )}
-              </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
@@ -831,6 +947,327 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
               >
                 <Trash2 className="w-4 h-4" />Supprimer
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── COMMUNICATION PANEL (Slide-over) ────────────────────── */}
+      {showCommPanel && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-end" onClick={() => setShowCommPanel(false)}>
+          <div
+            className="bg-white w-full max-w-lg h-full shadow-2xl overflow-y-auto animate-slide-in-right"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Panel Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <Megaphone className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Communication</h2>
+                  <p className="text-xs text-gray-500">Étape {commStep}/4</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCommPanel(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Step progress */}
+            <div className="px-6 pt-4 pb-2">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4].map((s) => (
+                  <div key={s} className={`flex-1 h-1.5 rounded-full transition-all ${s <= commStep ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                ))}
+              </div>
+              <div className="flex justify-between mt-1.5 text-[10px] text-gray-400">
+                <span>Canal</span><span>Audience</span><span>Template</span><span>Envoi</span>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 space-y-4">
+
+              {/* ═══ STEP 1: Channel Selection ═══ */}
+              {commStep === 1 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-gray-900">Choisir le canal de communication</h3>
+                  {([
+                    { key: 'email' as const, icon: Mail, label: 'Email', desc: 'Envoi via le système email (SendGrid/Brevo)', color: 'from-blue-500 to-blue-600' },
+                    { key: 'sms' as const, icon: Phone, label: 'SMS', desc: 'Message texte court (160 car. max)', color: 'from-green-500 to-green-600' },
+                    { key: 'whatsapp' as const, icon: MessageSquare, label: 'WhatsApp', desc: 'Message via WhatsApp Business', color: 'from-emerald-500 to-emerald-600' },
+                    { key: 'notification' as const, icon: Bell, label: 'Notification in-app', desc: 'Notification intégrée à la plateforme', color: 'from-purple-500 to-purple-600' },
+                  ]).map(({ key, icon: Icon, label, desc, color }) => (
+                    <button
+                      key={key}
+                      onClick={() => handleCommChannelSelect(key)}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 transition text-left group"
+                    >
+                      <div className={`w-11 h-11 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shrink-0`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm">{label}</p>
+                        <p className="text-xs text-gray-500">{desc}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 ml-auto shrink-0" />
+                    </button>
+                  ))}
+                  <div className="pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => onNavigate('admin-communications')}
+                      className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Voir l'historique des communications
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ STEP 2: Audience Filters ═══ */}
+              {commStep === 2 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setCommStep(1)} className="text-gray-400 hover:text-gray-600"><ArrowLeft className="w-4 h-4" /></button>
+                    <h3 className="text-sm font-bold text-gray-900">Sélectionner l'audience</h3>
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Titre de la communication *</label>
+                    <input
+                      type="text"
+                      value={commTitle}
+                      onChange={(e) => setCommTitle(e.target.value)}
+                      placeholder="Ex: Rappel complétion de profil"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* User types */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Type d'utilisateur</label>
+                    <div className="flex flex-wrap gap-2">
+                      {['candidate', 'recruiter', 'trainer', 'admin'].map((ut) => (
+                        <button
+                          key={ut}
+                          onClick={() => {
+                            const current = commFilters.user_types || [];
+                            setCommFilters(p => ({
+                              ...p,
+                              user_types: current.includes(ut) ? current.filter(t => t !== ut) : [...current, ut],
+                            }));
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                            (commFilters.user_types || []).includes(ut)
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {ut === 'candidate' ? 'Candidats' : ut === 'recruiter' ? 'Recruteurs' : ut === 'trainer' ? 'Formateurs' : 'Admins'}
+                        </button>
+                      ))}
+                    </div>
+                    {(!commFilters.user_types || commFilters.user_types.length === 0) && (
+                      <p className="text-[11px] text-gray-400 mt-1">Aucun filtre = tous les utilisateurs</p>
+                    )}
+                  </div>
+
+                  {/* Account status */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Statut du compte</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'active', label: 'Actifs' },
+                        { value: 'inactive', label: 'Inactifs' },
+                        { value: 'unconfirmed', label: 'Non confirmés' },
+                      ].map((s) => (
+                        <button
+                          key={s.value}
+                          onClick={() => {
+                            const current = commFilters.account_status || [];
+                            setCommFilters(p => ({
+                              ...p,
+                              account_status: current.includes(s.value) ? current.filter(t => t !== s.value) : [...current, s.value],
+                            }));
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                            (commFilters.account_status || []).includes(s.value)
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Profile completion min */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Profil complété à min. {commFilters.min_completion || 0}%
+                    </label>
+                    <input
+                      type="range"
+                      min={0} max={100} step={5}
+                      value={commFilters.min_completion || 0}
+                      onChange={(e) => setCommFilters(p => ({ ...p, min_completion: Number(e.target.value) }))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400">
+                      <span>0%</span><span>50%</span><span>100%</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleCommFiltersDone}
+                    disabled={!commTitle.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {commLoadingAudience ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />Calcul de l'audience...</>
+                    ) : (
+                      <>Continuer <ArrowRight className="w-4 h-4" /></>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* ═══ STEP 3: Template Selection ═══ */}
+              {commStep === 3 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setCommStep(2)} className="text-gray-400 hover:text-gray-600"><ArrowLeft className="w-4 h-4" /></button>
+                      <h3 className="text-sm font-bold text-gray-900">Choisir un template</h3>
+                    </div>
+                    <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2.5 py-1 rounded-full">
+                      {commAudienceCount} destinataire{commAudienceCount > 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {commTemplates.length > 0 ? (
+                    <div className="space-y-2">
+                      {commTemplates.map((tpl) => (
+                        <button
+                          key={tpl.id}
+                          onClick={() => handleCommTemplateSelect(tpl)}
+                          className="w-full text-left p-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 transition group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm text-gray-900 truncate">{tpl.name}</p>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 shrink-0" />
+                          </div>
+                          {tpl.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{tpl.description}</p>}
+                          {tpl.subject && <p className="text-[11px] text-gray-400 mt-1 truncate">Objet: {tpl.subject}</p>}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Aucun template pour ce canal</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleCommSkipTemplate}
+                    className="w-full px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition text-sm"
+                  >
+                    Rédiger un message libre
+                  </button>
+                </div>
+              )}
+
+              {/* ═══ STEP 4: Preview & Send ═══ */}
+              {commStep === 4 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setCommStep(3)} className="text-gray-400 hover:text-gray-600"><ArrowLeft className="w-4 h-4" /></button>
+                      <h3 className="text-sm font-bold text-gray-900">Aperçu & envoi</h3>
+                    </div>
+                    <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2.5 py-1 rounded-full">
+                      {commAudienceCount} dest.
+                    </span>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-gray-500">Canal:</span>
+                      <span className="font-medium text-gray-900 capitalize">{commChannel}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-gray-500">Audience:</span>
+                      <span className="font-medium text-gray-900">
+                        {(commFilters.user_types && commFilters.user_types.length > 0) ? commFilters.user_types.join(', ') : 'Tous les utilisateurs'}
+                        {commFilters.min_completion ? ` (profil ≥ ${commFilters.min_completion}%)` : ''}
+                      </span>
+                    </div>
+                    {commSelectedTemplate && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-500">Template:</span>
+                        <span className="font-medium text-gray-900">{commSelectedTemplate.name}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Subject */}
+                  {commChannel === 'email' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Objet de l'email *</label>
+                      <input
+                        type="text"
+                        value={commSubject}
+                        onChange={(e) => setCommSubject(e.target.value)}
+                        placeholder="Objet de l'email..."
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Content */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Contenu du message *</label>
+                    <textarea
+                      value={commContent}
+                      onChange={(e) => setCommContent(e.target.value)}
+                      rows={commChannel === 'sms' ? 4 : 10}
+                      maxLength={commChannel === 'sms' ? 160 : undefined}
+                      placeholder={commChannel === 'sms' ? 'Message SMS (160 car. max)...' : 'Contenu du message...'}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+                    />
+                    {commChannel === 'sms' && (
+                      <p className="text-[10px] text-gray-400 text-right mt-0.5">{commContent.length}/160</p>
+                    )}
+                  </div>
+
+                  {/* Notification copy notice */}
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Bell className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700">
+                      Une notification in-app sera aussi envoyée à chaque destinataire en complément du {commChannel}.
+                    </p>
+                  </div>
+
+                  {/* Send button */}
+                  <button
+                    onClick={handleSendCommunication}
+                    disabled={commSending || !commContent.trim() || !commTitle.trim() || (commChannel === 'email' && !commSubject.trim())}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {commSending ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />Envoi en cours...</>
+                    ) : (
+                      <><Send className="w-4 h-4" />Envoyer à {commAudienceCount} destinataire{commAudienceCount > 1 ? 's' : ''}</>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

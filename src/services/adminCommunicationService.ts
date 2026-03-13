@@ -200,6 +200,7 @@ export const adminCommunicationService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    // 1. Set status to 'sending'
     const { data, error } = await supabase
       .from('admin_communications')
       .update({
@@ -212,6 +213,18 @@ export const adminCommunicationService = {
       .single();
 
     if (error) throw error;
+
+    // 2. Invoke the edge function to process sending asynchronously
+    supabase.functions.invoke('process-admin-communications', {
+      body: { communication_id: id },
+    }).then(({ error: fnError }) => {
+      if (fnError) {
+        console.error('[adminCommunicationService] Edge function error:', fnError);
+      }
+    }).catch((err: any) => {
+      console.error('[adminCommunicationService] Failed to invoke edge function:', err);
+    });
+
     return data as AdminCommunication;
   },
 

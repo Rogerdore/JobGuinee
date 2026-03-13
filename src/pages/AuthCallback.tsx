@@ -134,7 +134,32 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
           // Pas de session — l'email a été confirmé mais pas de session auto
           // Le trigger DB handle_user_email_confirmed a quand même créé le profil
-          console.log('ℹ️ Email confirmé mais pas de session — redirection vers login');
+          console.log('ℹ️ Email confirmé mais pas de session — tentative envoi welcome email');
+
+          // Tenter d'envoyer l'email de bienvenue même sans session
+          // en cherchant le profil le plus récemment confirmé
+          try {
+            const emailParam = urlParams.get('email') || hashParams.get('email');
+            if (emailParam) {
+              const { data: confirmedProfile } = await supabase
+                .from('profiles')
+                .select('id, email, full_name, user_type')
+                .eq('email', emailParam.toLowerCase())
+                .eq('is_account_confirmed', true)
+                .maybeSingle();
+
+              if (confirmedProfile) {
+                await sendWelcomeEmail(
+                  confirmedProfile.id,
+                  confirmedProfile.email,
+                  { full_name: confirmedProfile.full_name, user_type: confirmedProfile.user_type }
+                );
+              }
+            }
+          } catch {
+            // Non-bloquant
+          }
+
           setConfirmationSuccess(true);
           setTimeout(() => {
             onNavigate('login');
@@ -285,7 +310,7 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           email: email,
           full_name: fullName,
           user_type: role,
-          credits_balance: 10,
+          credits_balance: 100,
           is_account_confirmed: true,
         });
 
