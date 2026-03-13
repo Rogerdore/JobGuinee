@@ -84,6 +84,7 @@ export type Profile = {
   profile_completed?: boolean;
   profile_completion_percentage?: number;
   is_account_confirmed?: boolean;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 };

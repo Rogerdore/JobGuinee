@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
+import { AccountDeactivatedModal } from './components/auth/AccountDeactivatedModal';
 import Auth from './pages/Auth';
 import AuthCallback from './pages/AuthCallback';
 import { seoCoreWebVitalsService } from './services/seoCoreWebVitalsService';
@@ -154,8 +155,13 @@ function AppContent() {
   const [formationSearchParams, setFormationSearchParams] = useState<string>('');
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const [publicProfileToken, setPublicProfileToken] = useState<string>('');
-  const { loading, user } = useAuth();
+  const { loading, user, isAccountDeactivated } = useAuth();
+  const [showDeactivatedPopup, setShowDeactivatedPopup] = useState(false);
   useSiteSettings();
+
+  useEffect(() => {
+    if (isAccountDeactivated) setShowDeactivatedPopup(true);
+  }, [isAccountDeactivated]);
 
   useEffect(() => {
     // Disabled temporarily - RLS permissions issue
@@ -596,6 +602,10 @@ function AppContent() {
         {currentPage === 'terms-of-service' && <TermsOfService onNavigate={handleNavigate} />}
         {currentPage === 'partner-hub' && <PartnerHub onNavigate={handleNavigate} />}
       </Suspense>
+      <AccountDeactivatedModal
+        isOpen={showDeactivatedPopup}
+        onClose={() => setShowDeactivatedPopup(false)}
+      />
     </Layout>
   );
 }

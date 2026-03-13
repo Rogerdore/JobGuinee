@@ -5,6 +5,7 @@ import { UserRole } from '../lib/supabase';
 import { getAuthRedirectIntent } from '../hooks/useAuthRedirect';
 import { EmailConfirmationModal } from '../components/auth/EmailConfirmationModal';
 import { SignupHelpModal } from '../components/auth/SignupHelpModal';
+import { AccountDeactivatedModal } from '../components/auth/AccountDeactivatedModal';
 
 interface AuthProps {
   mode: 'login' | 'signup';
@@ -30,6 +31,7 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
   const [showSignupHelp, setShowSignupHelp] = useState(false);
   const [signupHelpScenario, setSignupHelpScenario] = useState<'email_exists' | 'email_exists_google' | 'profile_timeout' | 'account_incomplete' | 'weak_password' | 'general_error'>('general_error');
+  const [showDeactivatedModal, setShowDeactivatedModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +93,9 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
       } else if (errorMessage === 'EMAIL_NOT_CONFIRMED') {
         setPendingConfirmationEmail(email);
         setShowEmailConfirmation(true);
+        setError('');
+      } else if (errorMessage === 'ACCOUNT_DEACTIVATED') {
+        setShowDeactivatedModal(true);
         setError('');
       } else if (errorMessage === 'GOOGLE_ACCOUNT_NO_PASSWORD') {
         setError('Ce compte est associé à Google. Utilisez le bouton "Google" ci-dessous pour vous connecter.');
@@ -500,6 +505,11 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
           }}
         />
       )}
+
+      <AccountDeactivatedModal
+        isOpen={showDeactivatedModal}
+        onClose={() => setShowDeactivatedModal(false)}
+      />
 
       {showSignupHelp && (
         <SignupHelpModal

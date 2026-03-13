@@ -235,8 +235,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
         ? `Compte de ${user.full_name || user.email} activé`
         : `Compte de ${user.full_name || user.email} désactivé`
       );
-    } catch {
-      showMsg('error', 'Erreur lors du changement de statut');
+    } catch (err: any) {
+      showMsg('error', err.message || 'Erreur lors du changement de statut');
     } finally {
       setTogglingUserId(null);
     }
@@ -253,8 +253,8 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
       if (error) throw error;
       setUsers(prev => prev.filter(u => u.id !== user.id));
       showMsg('success', `Compte de ${user.full_name || user.email} supprimé définitivement`);
-    } catch {
-      showMsg('error', 'Erreur lors de la suppression du compte');
+    } catch (err: any) {
+      showMsg('error', err.message || 'Erreur lors de la suppression du compte');
     } finally {
       setDeletingUserId(null);
     }

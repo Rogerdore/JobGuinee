@@ -8,6 +8,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
+  isAccountDeactivated: boolean;
   redirectIntent: AuthRedirectIntent | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirectIntent, setRedirectIntent] = useState<AuthRedirectIntent | null>(null);
+  const [isAccountDeactivated, setIsAccountDeactivated] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -200,12 +202,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               try {
                 const profileData = await Promise.race([profilePromise, timeoutPromise]);
                 setProfile(profileData as Profile | null);
+
+                // Vérifier si le compte est désactivé
+                if (profileData && profileData.is_active === false) {
+                  setIsAccountDeactivated(true);
+                  await supabase.auth.signOut();
+                  setUser(null);
+                  setProfile(null);
+                  return;
+                }
+                setIsAccountDeactivated(false);
               } catch (timeoutErr) {
                 console.warn('⚠️ Timeout récupération profil dans onAuthStateChange');
                 // Continue sans profil
               }
             } else {
               setProfile(null);
+              setIsAccountDeactivated(false);
             }
           } catch (error) {
             console.error('⚠️ Erreur dans onAuthStateChange:', error);
@@ -239,6 +252,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
+      if (error.message.includes('User is banned') || error.message.includes('banned')) {
+        throw new Error('ACCOUNT_DEACTIVATED');
+      }
       if (error.message.includes('Email not confirmed')) {
         throw new Error('EMAIL_NOT_CONFIRMED');
       }
@@ -265,6 +281,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Vérification email_confirmed_at
     if (!data.user.email_confirmed_at) {
       throw new Error('EMAIL_NOT_CONFIRMED');
+    }
+
+    // Vérification compte désactivé (is_active)
+    const { data: profileCheck } = await supabase
+      .from('profiles')
+      .select('is_active')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    if (profileCheck && profileCheck.is_active === false) {
+      await supabase.auth.signOut();
+      throw new Error('ACCOUNT_DEACTIVATED');
     }
   };
 
@@ -553,6 +581,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     loading,
     isAdmin,
+    isAccountDeactivated,
     redirectIntent,
     signIn,
     signUp,

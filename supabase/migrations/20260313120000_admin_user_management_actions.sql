@@ -119,7 +119,49 @@ BEGIN
     RAISE EXCEPTION 'Cannot delete your own account';
   END IF;
 
-  -- Delete from auth.users (profiles will cascade due to FK ON DELETE CASCADE)
+  -- Nullify NO ACTION FK references before deletion
+  UPDATE b2b_contracts SET signed_by_admin = NULL WHERE signed_by_admin = target_user_id;
+  UPDATE b2b_contracts SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE b2b_documents SET uploaded_by = NULL WHERE uploaded_by = target_user_id;
+  UPDATE b2b_leads SET assigned_to = NULL WHERE assigned_to = target_user_id;
+  UPDATE b2b_mission_reports SET generated_by = NULL WHERE generated_by = target_user_id;
+  UPDATE b2b_mission_reports SET approved_by = NULL WHERE approved_by = target_user_id;
+  UPDATE b2b_missions SET project_manager_id = NULL WHERE project_manager_id = target_user_id;
+  UPDATE b2b_pipeline SET assigned_to = NULL WHERE assigned_to = target_user_id;
+  UPDATE b2b_quotes SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE candidate_gold_subscriptions SET approved_by = NULL WHERE approved_by = target_user_id;
+  UPDATE candidate_profiles SET verified_by = NULL WHERE verified_by = target_user_id;
+  UPDATE candidate_verifications SET verified_by = NULL WHERE verified_by = target_user_id;
+  UPDATE credit_purchases SET validated_by = NULL WHERE validated_by = target_user_id;
+  UPDATE credit_purchases SET cancelled_by = NULL WHERE cancelled_by = target_user_id;
+  UPDATE direct_profile_purchases SET validated_by = NULL WHERE validated_by = target_user_id;
+  UPDATE direct_profile_purchases SET payment_verified_by = NULL WHERE payment_verified_by = target_user_id;
+  UPDATE document_download_logs SET downloaded_by = NULL WHERE downloaded_by = target_user_id;
+  UPDATE email_provider_config SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE email_queue SET user_id = NULL WHERE user_id = target_user_id;
+  UPDATE email_templates SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE enterprise_subscriptions SET approved_by = NULL WHERE approved_by = target_user_id;
+  UPDATE external_applications_config SET updated_by = NULL WHERE updated_by = target_user_id;
+  UPDATE formation_badges SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE formation_moderation_requests SET reviewed_by = NULL WHERE reviewed_by = target_user_id;
+  UPDATE formations SET trainer_id = NULL WHERE trainer_id = target_user_id;
+  UPDATE jobs SET admin_publisher_id = NULL WHERE admin_publisher_id = target_user_id;
+  UPDATE jobs SET moderated_by = NULL WHERE moderated_by = target_user_id;
+  UPDATE partners SET invited_by = NULL WHERE invited_by = target_user_id;
+  UPDATE profile_form_settings SET updated_by = NULL WHERE updated_by = target_user_id;
+  UPDATE profile_purchases SET verified_by = NULL WHERE verified_by = target_user_id;
+  UPDATE public_profile_tokens SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE seo_ab_tests SET created_by = NULL WHERE created_by = target_user_id;
+  UPDATE seo_content_ideas SET assigned_to = NULL WHERE assigned_to = target_user_id;
+  UPDATE seo_conversion_tracking SET user_id = NULL WHERE user_id = target_user_id;
+  UPDATE seo_generation_logs SET triggered_by = NULL WHERE triggered_by = target_user_id;
+  UPDATE seo_link_opportunities SET assigned_to = NULL WHERE assigned_to = target_user_id;
+  UPDATE seo_optimization_suggestions SET applied_by = NULL WHERE applied_by = target_user_id;
+  UPDATE seo_page_scores SET audited_by = NULL WHERE audited_by = target_user_id;
+  UPDATE site_settings SET updated_by = NULL WHERE updated_by = target_user_id;
+  UPDATE trainer_account_status SET blocked_by = NULL WHERE blocked_by = target_user_id;
+
+  -- Delete from auth.users (profiles + CASCADE tables follow automatically)
   DELETE FROM auth.users WHERE id = target_user_id;
 END;
 $$;
