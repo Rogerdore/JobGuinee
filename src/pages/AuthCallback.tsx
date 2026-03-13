@@ -27,10 +27,37 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         // Gestion des erreurs de Supabase Auth
         if (errorParam) {
           console.error('❌ Auth error from Supabase:', errorParam, errorDescription);
-          // Si le lien a expiré, proposer de renvoyer
-          if (errorDescription?.includes('expired') || errorDescription?.includes('invalid')) {
-            throw new Error('Le lien de confirmation a expiré. Veuillez vous reconnecter pour recevoir un nouveau lien.');
+          const isLinkError = errorDescription?.includes('expired') || errorDescription?.includes('invalid');
+
+          if (isLinkError) {
+            // Cas fréquent : les clients mail (Gmail, Outlook, Microsoft Defender)
+            // pré-chargent les liens pour vérification de sécurité, ce qui consomme
+            // le token AVANT que l'utilisateur ne clique. L'email est alors confirmé
+            // côté Supabase mais le lien apparaît comme expiré.
+            console.log('🔍 Lien expiré/invalide — vérification session existante...');
+
+            // Attendre que detectSessionInUrl traite d'éventuels tokens
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+            if (existingSession?.user) {
+              console.log('✅ Session active malgré l\'erreur — email confirmé:', existingSession.user.email);
+              await ensureProfileExists(existingSession.user.id, existingSession.user.email || '', existingSession.user.user_metadata);
+              await sendWelcomeEmail(existingSession.user.id, existingSession.user.email || '', existingSession.user.user_metadata);
+              await supabase.auth.signOut();
+              setConfirmationSuccess(true);
+              setTimeout(() => onNavigate('login'), 3000);
+              return;
+            }
+
+            // Pas de session — l'email a très probablement été confirmé par le
+            // pré-chargement du client mail. Rediriger vers login pour essayer.
+            console.log('ℹ️ Pas de session — email probablement déjà confirmé, redirection login');
+            setConfirmationSuccess(true);
+            setTimeout(() => onNavigate('login'), 3000);
+            return;
           }
+
           throw new Error(errorDescription || errorParam || 'Erreur d\'authentification');
         }
 
