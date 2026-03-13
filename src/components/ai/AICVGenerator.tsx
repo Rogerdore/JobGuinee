@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileText, Download, Loader, Sparkles, ArrowLeft } from 'lucide-react';
@@ -347,7 +348,7 @@ export default function AICVGenerator({ onNavigate }: AICVGeneratorProps = {}) {
           </div>
           <div
             className="border border-gray-200 rounded-lg p-8 bg-gray-50"
-            dangerouslySetInnerHTML={{ __html: generatedCV }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(generatedCV) }}
           />
         </div>
       )}

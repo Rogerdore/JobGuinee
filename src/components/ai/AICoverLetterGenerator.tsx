@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Download, Loader, Sparkles, ArrowLeft, FileDown, User, Edit3, Check, AlertCircle } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
@@ -426,7 +427,7 @@ ${input.extrait_offre ? `\n✓ Offre analysée (${input.extrait_offre.length} ca
 
             <div className="border rounded-lg p-6 bg-gray-50">
               {generatedFormat === 'html' ? (
-                <div dangerouslySetInnerHTML={{ __html: generatedLetter }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(generatedLetter) }} />
               ) : (
                 <pre className="whitespace-pre-wrap font-sans text-sm">{generatedLetter}</pre>
               )}

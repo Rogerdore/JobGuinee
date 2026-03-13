@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {
   FileText, Upload, Download, Eye, Star, Archive, Trash2,
   Search, Filter, Plus, RefreshCw, Calendar, Tag, Sparkles,
@@ -1109,7 +1110,7 @@ function DocumentPreviewModal({ document, onClose, onEdit }: DocumentPreviewModa
             />
           ) : content ? (
             <div className="prose max-w-none p-4 bg-gray-50 rounded-lg">
-              <div dangerouslySetInnerHTML={{ __html: content }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
             </div>
           ) : (
             <div className="text-center py-12">

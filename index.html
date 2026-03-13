@@ -6,6 +6,8 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1e40af" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="version" content="2026-03-12-seo-enhanced">
     <title>JobGuinée - Plateforme N°1 de l'emploi et du recrutement en Guinée</title>
@@ -27,7 +29,7 @@
     <meta property="og:site_name" content="JobGuinée">
     <meta property="og:title" content="JobGuinée - Plateforme N°1 de l'emploi et du recrutement en Guinée">
     <meta property="og:description" content="Trouvez votre emploi en Guinée sur JobGuinée. Offres d'emploi à Conakry, opportunités dans les mines, ONG, secteur privé. La première plateforme de recrutement digital en Guinée.">
-    <meta property="og:image" content="https://jobguinee-pro.com/assets/share/default-job.png">
+    <meta property="og:image" content="https://jobguinee-pro.com/logo_jobguinee.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
@@ -39,10 +41,19 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="JobGuinée - Plateforme N°1 de l'emploi en Guinée">
     <meta name="twitter:description" content="Trouvez votre emploi en Guinée. Offres d'emploi, recrutement, formations professionnelles à Conakry et partout en Guinée.">
-    <meta name="twitter:image" content="https://jobguinee-pro.com/assets/share/default-job.png">
+    <meta name="twitter:image" content="https://jobguinee-pro.com/logo_jobguinee.png">
 
     <!-- Canonical URL -->
     <link rel="canonical" href="https://jobguinee-pro.com">
+
+    <!-- Google Analytics GA4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
 
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://hhhjzgeidjqctuveopso.supabase.co" crossorigin>
@@ -129,6 +140,13 @@
     </div>
     <div id="modal-root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
     <style>
       @keyframes spin {
         to { transform: rotate(360deg); }

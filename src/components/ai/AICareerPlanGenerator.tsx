@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useAuth } from '../../contexts/AuthContext';
 import { TrendingUp, Download, Loader, Sparkles, ArrowLeft, User, Edit3, Check, AlertCircle } from 'lucide-react';
 import { useConsumeCredits } from '../../hooks/useCreditService';
@@ -353,7 +354,7 @@ ${input.profil_actuel.secteurs_interets?.length ? `\n✓ Secteurs d'intérêt: $
 
             <div className="border rounded-lg p-6 bg-gray-50">
               {generatedFormat === 'html' ? (
-                <div dangerouslySetInnerHTML={{ __html: generatedPlan }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(generatedPlan) }} />
               ) : (
                 <pre className="whitespace-pre-wrap">{generatedPlan}</pre>
               )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import {
   MessageCircle, Send, Search, Filter, Mail, Bell, Phone,
   Briefcase, Building2, Calendar, Clock, Check, CheckCheck,
@@ -677,7 +678,7 @@ export default function CandidateMessaging() {
                           )}
                           <div
                             className="whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: message.message }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.message) }}
                           />
 
                           {message.application && (
