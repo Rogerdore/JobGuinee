@@ -97,10 +97,8 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
       } else if (errorMessage === 'ACCOUNT_DEACTIVATED') {
         setShowDeactivatedModal(true);
         setError('');
-      } else if (errorMessage === 'GOOGLE_ACCOUNT_NO_PASSWORD') {
-        setError('Ce compte est associé à Google. Utilisez le bouton "Google" ci-dessous pour vous connecter.');
       } else if (errorMessage === 'INVALID_CREDENTIALS') {
-        setError('Email ou mot de passe incorrect');
+        setError('Email ou mot de passe incorrect. Si vous avez créé votre compte avec Google, cliquez sur le bouton "Continuer avec Google" ci-dessous.');
       } else if (errorMessage === 'EMAIL_EXISTS_GOOGLE') {
         setSignupHelpScenario('email_exists_google');
         setShowSignupHelp(true);

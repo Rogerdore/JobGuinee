@@ -259,16 +259,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('EMAIL_NOT_CONFIRMED');
       }
       if (error.message.includes('Invalid login credentials')) {
-        // Check if this email exists as a Google-only account
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', email.toLowerCase())
-          .maybeSingle();
-
-        if (profileData) {
-          throw new Error('GOOGLE_ACCOUNT_NO_PASSWORD');
-        }
         throw new Error('INVALID_CREDENTIALS');
       }
       throw error;
