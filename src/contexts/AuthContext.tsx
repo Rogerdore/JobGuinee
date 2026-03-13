@@ -411,6 +411,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('GENERAL_ERROR');
     }
 
+    // Supabase returns a fake user with empty identities when email already exists
+    // (security feature to prevent email enumeration)
+    if (!data.user.identities || data.user.identities.length === 0) {
+      const { data: provider } = await supabase.rpc('get_user_provider', { user_email: email.toLowerCase() });
+      if (provider === 'google') {
+        throw new Error('EMAIL_EXISTS_GOOGLE');
+      }
+      throw new Error('EMAIL_EXISTS');
+    }
+
     // Email confirmation is required — Supabase sends the confirmation email automatically.
     // Profile will be created by the DB trigger (handle_user_email_confirmed) once the user clicks the link.
     if (!data.session) {
