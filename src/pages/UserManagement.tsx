@@ -225,7 +225,7 @@ export default function UserManagement({ onNavigate, initialFilter }: UserManage
 
       await adminCommunicationService.sendCommunication(comm.id);
 
-      showMsg('success', `Communication envoyée à ${commAudienceCount} destinataire(s)`);
+      showMsg('success', `Communication lancée pour ${commAudienceCount} destinataire(s). Les emails sont en cours d'envoi.`);
       setShowCommPanel(false);
     } catch (err: any) {
       showMsg('error', err.message || 'Erreur lors de l\'envoi');

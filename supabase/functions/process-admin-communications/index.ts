@@ -78,11 +78,57 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    let totalSent = 0;
-    let totalFailed = 0;
-    let totalExcluded = 0;
+    // 3. Respond immediately, process emails in background
+    // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Runtime
+    EdgeRuntime.waitUntil(processEmails(supabase, supabaseUrl, supabaseServiceKey, communication_id, comm, channels, users));
 
-    // 3. Process each channel
+    return new Response(
+      JSON.stringify({
+        message: "Communication accepted, processing in background",
+        total_recipients: users.length,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error: any) {
+    console.error("[process-admin-comm] Fatal error:", error.message);
+
+    // Try to mark communication as failed
+    try {
+      const { communication_id } = await req.clone().json();
+      if (communication_id) {
+        await supabase
+          .from("admin_communications")
+          .update({ status: "failed" })
+          .eq("id", communication_id);
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+// ============================================================
+// Background email processing
+// ============================================================
+async function processEmails(
+  supabase: any,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  communication_id: string,
+  comm: any,
+  channels: Record<string, any>,
+  users: any[]
+) {
+  let totalSent = 0;
+  let totalFailed = 0;
+  let totalExcluded = 0;
+
+  try {
     for (const [channelName, channelConfig] of Object.entries(channels)) {
       if (!channelConfig?.enabled) continue;
 
@@ -99,14 +145,12 @@ Deno.serve(async (req: Request) => {
               exclusionReason = "no_email";
               totalExcluded++;
             } else {
-              // Build email HTML with logo
               const emailHtml = buildEmailHtml(
                 channelConfig.content,
                 user,
                 comm.title
               );
 
-              // Call send-email directly for reliability
               const sendResponse = await fetch(
                 `${supabaseUrl}/functions/v1/send-email`,
                 {
@@ -133,14 +177,13 @@ Deno.serve(async (req: Request) => {
               }
             }
           } else if (channelName === "notification") {
-            // Insert in-app notification
             const { error: notifError } = await supabase
               .from("notifications")
               .insert({
                 user_id: user.id,
                 type: "info",
                 title: comm.title,
-                message: (channelConfig.content || "").slice(0, 500),
+                message: (channelConfig.content || "").replace(/<[^>]*>/g, "").slice(0, 500),
                 link: channelConfig.link || null,
               });
 
@@ -261,7 +304,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 4. Update communication status
+    // Update communication status
     await supabase
       .from("admin_communications")
       .update({
@@ -277,39 +320,14 @@ Deno.serve(async (req: Request) => {
     console.log(
       `[process-admin-comm] Completed: sent=${totalSent}, failed=${totalFailed}, excluded=${totalExcluded}`
     );
-
-    return new Response(
-      JSON.stringify({
-        message: "Communication processed",
-        total_recipients: users.length,
-        total_sent: totalSent,
-        total_failed: totalFailed,
-        total_excluded: totalExcluded,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: any) {
-    console.error("[process-admin-comm] Fatal error:", error.message);
-
-    // Try to mark communication as failed
-    try {
-      const { communication_id } = await req.clone().json();
-      if (communication_id) {
-        await supabase
-          .from("admin_communications")
-          .update({ status: "failed" })
-          .eq("id", communication_id);
-      }
-    } catch (_) {
-      // ignore
-    }
-
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+  } catch (fatalErr: any) {
+    console.error("[process-admin-comm] Background processing fatal error:", fatalErr.message);
+    await supabase
+      .from("admin_communications")
+      .update({ status: "failed" })
+      .eq("id", communication_id);
   }
-});
+}
 
 // ============================================================
 // HELPER: Fetch audience users matching filters
