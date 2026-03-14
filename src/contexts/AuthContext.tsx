@@ -213,7 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
                 setIsAccountDeactivated(false);
 
-                // Envoyer l'email de bienvenue au premier login après confirmation
+                // Envoyer l'email de bienvenue uniquement au premier login après confirmation
+                // (la déduplication dans sendWelcomeConfirmedEmail empêche les doublons)
                 if (event === 'SIGNED_IN' && profileData && profileData.is_account_confirmed) {
                   const fullName = profileData.full_name || session.user.user_metadata?.full_name || 'Utilisateur';
                   const userType = profileData.user_type || 'candidate';
@@ -318,6 +319,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (!templateData) return;
+
+      // Check if welcome email was already sent/queued for this user
+      const { data: existing } = await supabase
+        .from('email_queue')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('template_id', templateData.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) return; // Already sent — don't duplicate
 
       const { data: userRow } = await supabase
         .from('profiles')
