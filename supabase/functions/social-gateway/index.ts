@@ -264,6 +264,7 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   <meta name="author" content="JobGuinée" />
   
   <!-- Open Graph Tags (Facebook, LinkedIn, Pinterest) -->
+
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="JobGuinée" />
   <meta property="og:locale" content="fr_FR" />
