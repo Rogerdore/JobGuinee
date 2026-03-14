@@ -192,10 +192,10 @@ export default function Home({ onNavigate }: HomeProps) {
     }
 
     setStats({
-      jobs: jobsCount.count || sampleJobs.length,
-      companies: companiesCount.count || 15,
-      candidates: candidatesCount.count || 1250,
-      formations: formationsCount.count || 8,
+      jobs: jobsCount.count ?? 0,
+      companies: companiesCount.count ?? 0,
+      candidates: candidatesCount.count ?? 0,
+      formations: formationsCount.count ?? 0,
     });
   };
 
