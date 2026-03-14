@@ -134,31 +134,9 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
 
           // Pas de session — l'email a été confirmé mais pas de session auto
           // Le trigger DB handle_user_email_confirmed a quand même créé le profil
-          console.log('ℹ️ Email confirmé mais pas de session — tentative envoi welcome email');
-
-          // Tenter d'envoyer l'email de bienvenue même sans session
-          // en cherchant le profil le plus récemment confirmé
-          try {
-            const emailParam = urlParams.get('email') || hashParams.get('email');
-            if (emailParam) {
-              const { data: confirmedProfile } = await supabase
-                .from('profiles')
-                .select('id, email, full_name, user_type')
-                .eq('email', emailParam.toLowerCase())
-                .eq('is_account_confirmed', true)
-                .maybeSingle();
-
-              if (confirmedProfile) {
-                await sendWelcomeEmail(
-                  confirmedProfile.id,
-                  confirmedProfile.email,
-                  { full_name: confirmedProfile.full_name, user_type: confirmedProfile.user_type }
-                );
-              }
-            }
-          } catch {
-            // Non-bloquant
-          }
+          // NOTE: Sans session authentifiée, on ne tente PAS d'envoyer d'email
+          // pour éviter qu'un paramètre URL forgé déclenche un envoi non autorisé
+          console.log('ℹ️ Email confirmé mais pas de session — welcome email sera envoyé à la prochaine connexion');
 
           setConfirmationSuccess(true);
           setTimeout(() => {
@@ -233,12 +211,13 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
         return;
       }
 
-      // Vérifier qu'un email n'a pas déjà été envoyé (éviter les doublons)
+      // Vérifier qu'un email n'a pas déjà été envoyé ou n'est pas en cours (éviter les doublons)
       const { data: existingEmail } = await supabase
         .from('email_queue')
         .select('id')
         .eq('user_id', userId)
         .eq('template_id', templateData.id)
+        .in('status', ['pending', 'processing', 'sent'])
         .maybeSingle();
 
       if (existingEmail) {
@@ -262,9 +241,10 @@ export default function AuthCallback({ onNavigate }: AuthCallbackProps) {
           alerts_url: `${appUrl}/candidate/dashboard`,
           app_url: appUrl,
         },
-        priority: 8,
+        priority: 1,
         scheduled_for: new Date().toISOString(),
         user_id: userId,
+        event_id: `welcome_confirmed_${userId}`,
       });
 
       console.log('📧 Welcome email queued for', email);

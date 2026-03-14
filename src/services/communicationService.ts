@@ -1,5 +1,15 @@
 import { supabase } from '../lib/supabase';
 
+// Escape HTML special characters to prevent XSS in email content
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export interface CommunicationTemplate {
   id: string;
   company_id?: string;
@@ -144,25 +154,28 @@ export const communicationService = {
           .maybeSingle();
 
         if (recipientProfile?.email) {
+          const safeSubject = escapeHtml(params.subject);
+          const safeMessage = escapeHtml(params.message);
           const htmlBody = `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
               <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:16px;border-radius:8px;margin-bottom:20px">
-                <h2 style="margin:0;color:#1e40af;font-size:18px">${params.subject}</h2>
+                <h2 style="margin:0;color:#1e40af;font-size:18px">${safeSubject}</h2>
               </div>
-              <div style="white-space:pre-line;line-height:1.6;color:#374151">${params.message}</div>
+              <div style="white-space:pre-line;line-height:1.6;color:#374151">${safeMessage}</div>
               <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
               <p style="font-size:12px;color:#9ca3af">JobGuinée – Plateforme emploi &amp; RH en Guinée</p>
             </div>
           `;
 
-          await supabase.rpc('queue_email', {
-            p_recipient_email: recipientProfile.email,
-            p_recipient_name: recipientProfile.full_name || '',
+          await supabase.rpc('queue_raw_email', {
+            p_to_email: recipientProfile.email,
+            p_to_name: recipientProfile.full_name || '',
             p_subject: params.subject,
             p_html_body: htmlBody,
             p_text_body: params.message,
             p_template_key: 'message_received',
-            p_metadata: { application_id: params.applicationId, communication_id: commLog?.id }
+            p_event_id: params.applicationId ? `message_received_${params.applicationId}_${Date.now()}` : null,
+            p_entity_id: params.applicationId || null,
           });
         }
       }

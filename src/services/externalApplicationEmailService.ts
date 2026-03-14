@@ -1,6 +1,21 @@
 import { supabase } from '../lib/supabase';
 import { publicProfileTokenService } from './publicProfileTokenService';
 
+// Escape HTML special characters to prevent XSS in email content
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Strip template injection patterns from user-controlled content
+function sanitizeTemplateContent(str: string): string {
+  return str.replace(/\{\{[^}]*\}\}/g, '');
+}
+
 interface EmailParams {
   applicationId: string;
   candidateName: string;
@@ -79,15 +94,15 @@ class ExternalApplicationEmailService {
     const profileURL = publicProfileTokenService.getPublicProfileURL(params.publicProfileToken);
 
     const variables = {
-      candidate_name: params.candidateName,
-      candidate_email: params.candidateEmail,
-      candidate_phone: params.candidatePhone || '',
-      job_title: params.jobTitle,
-      company_name: params.companyName,
-      recruiter_name: params.recruiterName || '',
+      candidate_name: escapeHtml(params.candidateName),
+      candidate_email: escapeHtml(params.candidateEmail),
+      candidate_phone: escapeHtml(params.candidatePhone || ''),
+      job_title: escapeHtml(params.jobTitle),
+      company_name: escapeHtml(params.companyName),
+      recruiter_name: escapeHtml(params.recruiterName || ''),
       profile_url: profileURL,
       platform_url: window.location.origin,
-      custom_message: params.customMessage || '',
+      custom_message: sanitizeTemplateContent(escapeHtml(params.customMessage || '')),
       has_cv: params.hasCV,
       has_cover_letter: params.hasCoverLetter,
       has_other_documents: params.hasOtherDocuments
@@ -105,9 +120,17 @@ class ExternalApplicationEmailService {
   private generateFallbackEmail(params: EmailParams): { subject: string; body: string } {
     const profileURL = publicProfileTokenService.getPublicProfileURL(params.publicProfileToken);
 
-    const subject = `Candidature – ${params.jobTitle} | ${params.candidateName}`;
+    const safeJobTitle = escapeHtml(params.jobTitle);
+    const safeCandidateName = escapeHtml(params.candidateName);
+    const safeCompanyName = escapeHtml(params.companyName);
+    const safeRecruiterName = params.recruiterName ? escapeHtml(params.recruiterName) : '';
+    const safeCandidateEmail = escapeHtml(params.candidateEmail);
+    const safeCandidatePhone = params.candidatePhone ? escapeHtml(params.candidatePhone) : '';
+    const safeCustomMessage = params.customMessage ? sanitizeTemplateContent(escapeHtml(params.customMessage)) : '';
 
-    const greeting = params.recruiterName ? `Bonjour ${params.recruiterName},` : 'Bonjour,';
+    const subject = `Candidature – ${safeJobTitle} | ${safeCandidateName}`;
+
+    const greeting = safeRecruiterName ? `Bonjour ${safeRecruiterName},` : 'Bonjour,';
 
     const attachmentsList = this.generateAttachmentsList(
       params.hasCV,
@@ -118,11 +141,11 @@ class ExternalApplicationEmailService {
     const body = `
 ${greeting}
 
-Je vous adresse ma candidature pour le poste de ${params.jobTitle} au sein de ${params.companyName}.
+Je vous adresse ma candidature pour le poste de ${safeJobTitle} au sein de ${safeCompanyName}.
 
 Cette candidature vous est transmise via la plateforme JobGuinée.
 
-${params.customMessage ? `\n${params.customMessage}\n` : ''}
+${safeCustomMessage ? `\n${safeCustomMessage}\n` : ''}
 Vous trouverez en pièces jointes :
 ${attachmentsList}
 
@@ -131,8 +154,8 @@ ${profileURL}
 
 Cordialement,
 
-${params.candidateName}
-${params.candidateEmail}${params.candidatePhone ? `\n${params.candidatePhone}` : ''}
+${safeCandidateName}
+${safeCandidateEmail}${safeCandidatePhone ? `\n${safeCandidatePhone}` : ''}
 
 ---
 Envoyé via JobGuinée – Plateforme emploi & RH en Guinée
@@ -221,6 +244,10 @@ ${window.location.origin}
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
+      if (!session?.access_token) {
+        return { success: false, error: 'Session expirée, veuillez vous reconnecter' };
+      }
+
       const htmlBody = `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
           <div style="white-space:pre-line;line-height:1.6">${params.body.replace(/\n/g, '<br/>')}</div>
@@ -235,7 +262,7 @@ ${window.location.origin}
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             to: params.to,

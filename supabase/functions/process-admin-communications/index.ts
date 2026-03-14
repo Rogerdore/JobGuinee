@@ -8,6 +8,19 @@ const corsHeaders = {
 };
 
 const SITE_URL = "https://jobguinee-pro.com";
+const CONCURRENCY = 10; // parallel sends per batch
+const FETCH_TIMEOUT_MS = 15_000;
+
+// Fetch with timeout
+async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 interface ProcessRequest {
   communication_id: string;
@@ -132,26 +145,23 @@ async function processEmails(
     for (const [channelName, channelConfig] of Object.entries(channels)) {
       if (!channelConfig?.enabled) continue;
 
-      console.log(`[process-admin-comm] Processing channel: ${channelName}`);
+      console.log(`[process-admin-comm] Processing channel: ${channelName}, ${users.length} users`);
 
-      for (const user of users) {
-        try {
-          let status = "pending";
-          let exclusionReason: string | null = null;
+      // Process users in parallel batches of CONCURRENCY
+      for (let i = 0; i < users.length; i += CONCURRENCY) {
+        const batch = users.slice(i, i + CONCURRENCY);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (user: any) => {
+            let status = "pending";
+            let exclusionReason: string | null = null;
 
-          if (channelName === "email") {
-            if (!user.email) {
-              status = "excluded";
-              exclusionReason = "no_email";
-              totalExcluded++;
-            } else {
-              const emailHtml = buildEmailHtml(
-                channelConfig.content,
-                user,
-                comm.title
-              );
+            if (channelName === "email") {
+              if (!user.email) {
+                return { status: "excluded", reason: "no_email", user };
+              }
 
-              const sendResponse = await fetch(
+              const emailHtml = buildEmailHtml(channelConfig.content, user, comm.title);
+              const sendResponse = await fetchWithTimeout(
                 `${supabaseUrl}/functions/v1/send-email`,
                 {
                   method: "POST",
@@ -165,141 +175,111 @@ async function processEmails(
                     subject: channelConfig.subject || comm.title,
                     htmlBody: emailHtml,
                   }),
-                }
+                },
+                FETCH_TIMEOUT_MS
               );
 
-              if (sendResponse.ok) {
-                status = "sent";
-                totalSent++;
-              } else {
+              if (!sendResponse.ok) {
                 const err = await sendResponse.text();
                 throw new Error(`send-email failed: ${err}`);
               }
+
+              return { status: "sent", user };
+            } else if (channelName === "notification") {
+              return { status: "notification", user };
+            } else if (channelName === "sms") {
+              if (!user.phone) return { status: "excluded", reason: "no_phone", user };
+              const renderedSms = renderContent(channelConfig.content, user);
+              const smsApiUrl = Deno.env.get("SMS_API_URL");
+              const smsApiKey = Deno.env.get("SMS_API_KEY");
+              const smsSenderName = Deno.env.get("SMS_SENDER_NAME") || "JobGuinee";
+              if (!smsApiUrl || !smsApiKey) return { status: "excluded", reason: "sms_provider_not_configured", user };
+              const smsResponse = await fetchWithTimeout(smsApiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${smsApiKey}` },
+                body: JSON.stringify({ to: user.phone, from: smsSenderName, message: renderedSms }),
+              }, FETCH_TIMEOUT_MS);
+              if (!smsResponse.ok) throw new Error(`SMS send failed: ${await smsResponse.text()}`);
+              return { status: "sent", user };
+            } else if (channelName === "whatsapp") {
+              if (!user.phone) return { status: "excluded", reason: "no_phone", user };
+              const renderedWa = renderContent(channelConfig.content, user);
+              const waApiUrl = Deno.env.get("WHATSAPP_API_URL");
+              const waApiToken = Deno.env.get("WHATSAPP_API_TOKEN");
+              const waPhoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+              if (!waApiUrl || !waApiToken) return { status: "excluded", reason: "whatsapp_provider_not_configured", user };
+              const waResponse = await fetchWithTimeout(
+                waApiUrl.replace("{phone_number_id}", waPhoneNumberId || ""),
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${waApiToken}` },
+                  body: JSON.stringify({ messaging_product: "whatsapp", to: user.phone.replace(/[^\d]/g, ""), type: "text", text: { body: renderedWa } }),
+                },
+                FETCH_TIMEOUT_MS
+              );
+              if (!waResponse.ok) throw new Error(`WhatsApp send failed: ${await waResponse.text()}`);
+              return { status: "sent", user };
             }
-          } else if (channelName === "notification") {
-            const { error: notifError } = await supabase
-              .from("notifications")
-              .insert({
+            return { status: "excluded", reason: "unknown_channel", user };
+          })
+        );
+
+        // Process batch results: record messages and tally
+        const messagesInserts: any[] = [];
+        const notificationInserts: any[] = [];
+
+        for (let j = 0; j < batchResults.length; j++) {
+          const r = batchResults[j];
+          const user = batch[j];
+
+          if (r.status === "fulfilled") {
+            const val = r.value;
+            if (val.status === "sent") {
+              totalSent++;
+              messagesInserts.push({
+                communication_id, user_id: user.id, channel: channelName,
+                content_rendered: channelConfig.content || "", subject: channelConfig.subject || null,
+                status: "sent",
+              });
+            } else if (val.status === "excluded") {
+              totalExcluded++;
+              messagesInserts.push({
+                communication_id, user_id: user.id, channel: channelName,
+                content_rendered: channelConfig.content || "", subject: channelConfig.subject || null,
+                status: "excluded", exclusion_reason: val.reason,
+              });
+            } else if (val.status === "notification") {
+              // Batch notification inserts instead of one-by-one
+              notificationInserts.push({
                 user_id: user.id,
                 type: "info",
                 title: comm.title,
                 message: (channelConfig.content || "").replace(/<[^>]*>/g, "").slice(0, 500),
                 link: channelConfig.link || null,
               });
-
-            if (notifError) {
-              throw new Error(`Notification insert failed: ${notifError.message}`);
+              totalSent++;
+              messagesInserts.push({
+                communication_id, user_id: user.id, channel: channelName,
+                content_rendered: channelConfig.content || "", subject: channelConfig.subject || null,
+                status: "sent",
+              });
             }
-            status = "sent";
-            totalSent++;
-          } else if (channelName === "sms") {
-            if (!user.phone) {
-              status = "excluded";
-              exclusionReason = "no_phone";
-              totalExcluded++;
-            } else {
-              const renderedSms = renderContent(channelConfig.content, user);
-              const smsApiUrl = Deno.env.get("SMS_API_URL");
-              const smsApiKey = Deno.env.get("SMS_API_KEY");
-              const smsSenderName = Deno.env.get("SMS_SENDER_NAME") || "JobGuinee";
-
-              if (!smsApiUrl || !smsApiKey) {
-                status = "excluded";
-                exclusionReason = "sms_provider_not_configured";
-                totalExcluded++;
-              } else {
-                const smsResponse = await fetch(smsApiUrl, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${smsApiKey}`,
-                  },
-                  body: JSON.stringify({
-                    to: user.phone,
-                    from: smsSenderName,
-                    message: renderedSms,
-                  }),
-                });
-
-                if (smsResponse.ok) {
-                  status = "sent";
-                  totalSent++;
-                } else {
-                  const err = await smsResponse.text();
-                  throw new Error(`SMS send failed: ${err}`);
-                }
-              }
-            }
-          } else if (channelName === "whatsapp") {
-            if (!user.phone) {
-              status = "excluded";
-              exclusionReason = "no_phone";
-              totalExcluded++;
-            } else {
-              const renderedWa = renderContent(channelConfig.content, user);
-              const waApiUrl = Deno.env.get("WHATSAPP_API_URL");
-              const waApiToken = Deno.env.get("WHATSAPP_API_TOKEN");
-              const waPhoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
-
-              if (!waApiUrl || !waApiToken) {
-                status = "excluded";
-                exclusionReason = "whatsapp_provider_not_configured";
-                totalExcluded++;
-              } else {
-                const waResponse = await fetch(
-                  waApiUrl.replace("{phone_number_id}", waPhoneNumberId || ""),
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${waApiToken}`,
-                    },
-                    body: JSON.stringify({
-                      messaging_product: "whatsapp",
-                      to: user.phone.replace(/[^\d]/g, ""),
-                      type: "text",
-                      text: { body: renderedWa },
-                    }),
-                  }
-                );
-
-                if (waResponse.ok) {
-                  status = "sent";
-                  totalSent++;
-                } else {
-                  const err = await waResponse.text();
-                  throw new Error(`WhatsApp send failed: ${err}`);
-                }
-              }
-            }
+          } else {
+            totalFailed++;
+            messagesInserts.push({
+              communication_id, user_id: user.id, channel: channelName,
+              content_rendered: channelConfig.content || "", subject: channelConfig.subject || null,
+              status: "failed", error_message: r.reason?.message || "Unknown error",
+            });
           }
+        }
 
-          // Record individual message
-          await supabase.from("admin_communication_messages").insert({
-            communication_id,
-            user_id: user.id,
-            channel: channelName,
-            content_rendered: channelConfig.content || "",
-            subject: channelConfig.subject || null,
-            status,
-            exclusion_reason: exclusionReason,
-          });
-        } catch (err: any) {
-          console.error(
-            `[process-admin-comm] Error for user ${user.id} on ${channelName}:`,
-            err.message
-          );
-          totalFailed++;
-
-          await supabase.from("admin_communication_messages").insert({
-            communication_id,
-            user_id: user.id,
-            channel: channelName,
-            content_rendered: channelConfig.content || "",
-            subject: channelConfig.subject || null,
-            status: "failed",
-            error_message: err.message,
-          });
+        // Batch insert messages and notifications
+        if (messagesInserts.length > 0) {
+          await supabase.from("admin_communication_messages").insert(messagesInserts);
+        }
+        if (notificationInserts.length > 0) {
+          await supabase.from("notifications").insert(notificationInserts);
         }
       }
     }
@@ -336,67 +316,74 @@ async function fetchAudienceUsers(
   supabase: any,
   filters: Record<string, any>
 ): Promise<any[]> {
-  let query = supabase
-    .from("profiles")
-    .select("id, email, full_name, user_type, profile_completion_percentage, phone, region, city");
+  const PAGE_SIZE = 500;
+  const allUsers: any[] = [];
+  let offset = 0;
 
-  // Filter by user types
-  if (filters.user_types && filters.user_types.length > 0) {
-    query = query.in("user_type", filters.user_types);
+  // Paginated fetch to avoid Supabase default 1000-row limit
+  while (true) {
+    let query = supabase
+      .from("profiles")
+      .select("id, email, full_name, user_type, profile_completion_percentage, phone, region, city")
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (filters.user_types && filters.user_types.length > 0) {
+      query = query.in("user_type", filters.user_types);
+    }
+    if (filters.min_completion && filters.min_completion > 0) {
+      query = query.gte("profile_completion_percentage", filters.min_completion);
+    }
+    if (filters.region) {
+      query = query.eq("region", filters.region);
+    }
+    if (filters.city) {
+      query = query.eq("city", filters.city);
+    }
+    if (filters.date_from) {
+      query = query.gte("created_at", filters.date_from);
+    }
+    if (filters.date_to) {
+      query = query.lte("created_at", filters.date_to);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("[process-admin-comm] Error fetching audience:", error);
+      throw error;
+    }
+    if (!data || data.length === 0) break;
+
+    allUsers.push(...data);
+    if (data.length < PAGE_SIZE) break; // last page
+    offset += PAGE_SIZE;
   }
 
-  // Filter by minimum profile completion
-  if (filters.min_completion && filters.min_completion > 0) {
-    query = query.gte("profile_completion_percentage", filters.min_completion);
-  }
-
-  // Filter by region
-  if (filters.region) {
-    query = query.eq("region", filters.region);
-  }
-
-  // Filter by city
-  if (filters.city) {
-    query = query.eq("city", filters.city);
-  }
-
-  // Date range filter on account creation
-  if (filters.date_from) {
-    query = query.gte("created_at", filters.date_from);
-  }
-  if (filters.date_to) {
-    query = query.lte("created_at", filters.date_to);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("[process-admin-comm] Error fetching audience:", error);
-    throw error;
-  }
-
-  // Get emails from auth.users for users whose profile doesn't have email
-  if (data && data.length > 0) {
-    const usersWithoutEmail = data.filter((u: any) => !u.email);
-    if (usersWithoutEmail.length > 0) {
-      const { data: authUsers } = await supabase.auth.admin.listUsers({
-        perPage: 1000,
-      });
-
-      if (authUsers?.users) {
-        const emailMap = new Map(
-          authUsers.users.map((u: any) => [u.id, u.email])
-        );
-        for (const user of data) {
-          if (!user.email) {
-            user.email = emailMap.get(user.id) || null;
-          }
+  // Backfill emails from auth.users for profiles missing email (paginated)
+  const usersWithoutEmail = allUsers.filter((u: any) => !u.email);
+  if (usersWithoutEmail.length > 0) {
+    const missingIds = new Set(usersWithoutEmail.map((u: any) => u.id));
+    const emailMap = new Map<string, string>();
+    let page = 1;
+    while (true) {
+      const { data: authPage } = await supabase.auth.admin.listUsers({ page, perPage: 500 });
+      if (!authPage?.users || authPage.users.length === 0) break;
+      for (const au of authPage.users) {
+        if (missingIds.has(au.id) && au.email) {
+          emailMap.set(au.id, au.email);
         }
+      }
+      if (authPage.users.length < 500) break;
+      page++;
+    }
+    for (const user of allUsers) {
+      if (!user.email) {
+        user.email = emailMap.get(user.id) || null;
       }
     }
   }
 
-  return data || [];
+  return allUsers;
 }
 
 // ============================================================
@@ -430,7 +417,13 @@ function buildEmailHtml(
 ): string {
   const rendered = renderContent(content, user);
 
-  // Return rendered content (logo is added by send-email wrapInFullHtml)
+  // Detect full HTML templates (rich emails with logo, CTA, etc.) — send as-is
+  const trimmed = rendered.trimStart();
+  if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+    return rendered;
+  }
+
+  // Plain text content: wrap in a basic table
   return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
   <tr>
     <td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">

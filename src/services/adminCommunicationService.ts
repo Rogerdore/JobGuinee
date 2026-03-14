@@ -1,5 +1,15 @@
 import { supabase } from '../lib/supabase';
 
+// Escape HTML special characters to prevent XSS
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export interface CommunicationFilters {
   user_types?: string[];
   account_status?: string[];
@@ -229,93 +239,120 @@ export const adminCommunicationService = {
     let totalSent = 0;
     let totalFailed = 0;
     let totalExcluded = 0;
+    let lastRenderedSubject = '';
 
-    // 3. Process email channel - call send-email directly for each user
+    // 3. Process email channel - batched in groups of 20 for throughput + error isolation
     const emailConfig = channels.email;
     if (emailConfig?.enabled) {
-      for (const recipient of users) {
-        if (!recipient.email) {
-          totalExcluded++;
-          continue;
-        }
-        try {
-          const renderedContent = this._renderContent(emailConfig.content, recipient);
-          const renderedSubject = this._renderContent(emailConfig.subject || comm.title, recipient);
-          // Convert newlines to <br> for HTML email (templates use plain text newlines)
-          const htmlContent = renderedContent.replace(/\n/g, '<br>');
-          const emailHtml = `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-  <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">${htmlContent}</td></tr>
+      const BATCH_SIZE = 20;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      // Fetch session once before the loop to avoid expiry during batch
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session?.access_token) {
+        throw new Error('Session expired, cannot send emails');
+      }
+      const token = session.access_token;
+
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const batch = users.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (recipient) => {
+            if (!recipient.email) {
+              totalExcluded++;
+              return;
+            }
+            const renderedContent = this._renderContent(emailConfig.content, recipient);
+            const renderedSubject = this._renderContent(emailConfig.subject || comm.title, recipient);
+            lastRenderedSubject = renderedSubject;
+            // Detect full HTML templates (rich emails with logo, CTA, etc.) — send as-is
+            const isFullHtml = renderedContent.trimStart().startsWith('<!DOCTYPE') || renderedContent.trimStart().startsWith('<html');
+            const emailHtml = isFullHtml
+              ? renderedContent
+              : `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">${renderedContent.replace(/\n/g, '<br>')}</td></tr>
 </table>`;
 
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const session = (await supabase.auth.getSession()).data.session;
-          const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+            const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                to: recipient.email,
+                toName: recipient.full_name || undefined,
+                subject: renderedSubject,
+                htmlBody: emailHtml,
+              }),
+            });
 
-          const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              to: recipient.email,
-              toName: recipient.full_name || undefined,
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || `HTTP ${response.status}`);
+            }
+
+            // Record message
+            await supabase.from('admin_communication_messages').insert({
+              communication_id: id,
+              user_id: recipient.id,
+              channel: 'email',
+              content_rendered: renderedContent,
               subject: renderedSubject,
-              htmlBody: emailHtml,
-            }),
-          });
+              status: 'sent',
+            }).select().maybeSingle();
 
-          const result = await response.json();
-          if (!response.ok || !result.success) {
-            throw new Error(result.error || `HTTP ${response.status}`);
+            return recipient;
+          })
+        );
+
+        // Tally results from this batch
+        for (let j = 0; j < batchResults.length; j++) {
+          const r = batchResults[j];
+          const recipient = batch[j];
+          if (r.status === 'fulfilled' && r.value !== undefined) {
+            totalSent++;
+          } else if (r.status === 'rejected') {
+            const errMsg = r.reason?.message || 'Unknown error';
+            console.error(`[sendCommunication] Email failed for ${recipient.email}:`, errMsg);
+            totalFailed++;
+            await supabase.from('admin_communication_messages').insert({
+              communication_id: id,
+              user_id: recipient.id,
+              channel: 'email',
+              content_rendered: emailConfig.content,
+              subject: lastRenderedSubject || comm.title,
+              status: 'failed',
+              error_message: errMsg,
+            }).select().maybeSingle();
           }
-          totalSent++;
-
-          // Record message
-          await supabase.from('admin_communication_messages').insert({
-            communication_id: id,
-            user_id: recipient.id,
-            channel: 'email',
-            content_rendered: renderedContent,
-            subject: renderedSubject,
-            status: 'sent',
-          }).select().maybeSingle();
-        } catch (err: any) {
-          console.error(`[sendCommunication] Email failed for ${recipient.email}:`, err.message);
-          totalFailed++;
-          await supabase.from('admin_communication_messages').insert({
-            communication_id: id,
-            user_id: recipient.id,
-            channel: 'email',
-            content_rendered: emailConfig.content,
-            subject: renderedSubject,
-            status: 'failed',
-            error_message: err.message,
-          }).select().maybeSingle();
         }
       }
     }
 
-    // 4. Process notification channel (best-effort, don't count as failures)
+    // 4. Process notification channel (batch insert instead of one-by-one)
     const notifConfig = channels.notification;
     if (notifConfig?.enabled) {
-      for (const recipient of users) {
-        try {
-          const renderedNotif = this._renderContent(notifConfig.content || '', recipient)
-            .replace(/<[^>]*>/g, '')
-            .replace(/\n{2,}/g, '\n')
-            .trim()
-            .slice(0, 500);
-          const renderedTitle = this._renderContent(comm.title, recipient)
-            .replace(/<[^>]*>/g, '');
-          await supabase.from('notifications').insert({
-            user_id: recipient.id,
-            type: 'info',
-            title: renderedTitle,
-            message: renderedNotif,
-          });
-        } catch (err: any) {
-          console.warn(`[sendCommunication] Notification failed for ${recipient.id}:`, err.message);
+      const NOTIF_BATCH = 50;
+      const notifRows = users.map((recipient) => {
+        const renderedNotif = this._renderContent(notifConfig.content || '', recipient)
+          .replace(/<[^>]*>/g, '')
+          .replace(/\n{2,}/g, '\n')
+          .trim()
+          .slice(0, 500);
+        const renderedTitle = this._renderContent(comm.title, recipient)
+          .replace(/<[^>]*>/g, '');
+        return {
+          user_id: recipient.id,
+          type: 'info',
+          title: renderedTitle,
+          message: renderedNotif,
+        };
+      });
+      for (let i = 0; i < notifRows.length; i += NOTIF_BATCH) {
+        const batch = notifRows.slice(i, i + NOTIF_BATCH);
+        const { error } = await supabase.from('notifications').insert(batch);
+        if (error) {
+          console.warn(`[sendCommunication] Notification batch insert failed:`, error.message);
         }
       }
     }
@@ -341,11 +378,14 @@ export const adminCommunicationService = {
     } as AdminCommunication;
   },
 
-  /** Replace template variables in content */
+  /** Replace template variables in content (with HTML escaping for safety) */
   _renderContent(content: string, user: { full_name?: string; email?: string; phone?: string; user_type?: string }) {
     const parts = (user.full_name || '').trim().split(/\s+/);
-    const prenom = parts[0] || '';
-    const nom = parts.length > 1 ? parts.slice(1).join(' ') : '';
+    const prenom = escapeHtml(parts[0] || '');
+    const nom = escapeHtml(parts.length > 1 ? parts.slice(1).join(' ') : '');
+    const safeName = escapeHtml(user.full_name || '');
+    const safeEmail = escapeHtml(user.email || '');
+    const safePhone = escapeHtml(user.phone || '');
 
     const roleLabels: Record<string, string> = {
       candidate: 'candidat',
@@ -357,10 +397,10 @@ export const adminCommunicationService = {
     return content
       .replace(/\{\{\s*prenom\s*\}\}/g, prenom)
       .replace(/\{\{\s*nom\s*\}\}/g, nom || prenom)
-      .replace(/\{\{\s*nom_complet\s*\}\}/g, user.full_name || '')
-      .replace(/\{\{\s*email\s*\}\}/g, user.email || '')
-      .replace(/\{\{\s*telephone\s*\}\}/g, user.phone || '')
-      .replace(/\{\{\s*role\s*\}\}/g, roleLabels[user.user_type || ''] || user.user_type || '')
+      .replace(/\{\{\s*nom_complet\s*\}\}/g, safeName)
+      .replace(/\{\{\s*email\s*\}\}/g, safeEmail)
+      .replace(/\{\{\s*telephone\s*\}\}/g, safePhone)
+      .replace(/\{\{\s*role\s*\}\}/g, roleLabels[user.user_type || ''] || escapeHtml(user.user_type || ''))
       .replace(/\{\{\s*lien_profil\s*\}\}/g, '<a href="https://jobguinee-pro.com/profile" target="_blank" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Mon profil</a>')
       .replace(/\{\{\s*lien_site\s*\}\}/g, '<a href="https://jobguinee-pro.com" target="_blank" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Visiter JobGuinée</a>')
       .replace(/\{\{\s*lien\s*\}\}/g, '<a href="https://jobguinee-pro.com" target="_blank" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Accéder à JobGuinée</a>');

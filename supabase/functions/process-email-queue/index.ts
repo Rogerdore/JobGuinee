@@ -7,7 +7,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+// Escape HTML special characters to prevent XSS in email content
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Escape regex special characters for safe placeholder matching
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const MAX_RETRIES = 3;
+const CONCURRENCY = 10; // parallel emails per batch
+const MAX_RUNTIME_MS = 120_000; // stop 30s before Edge Function 150s timeout
+const FETCH_TIMEOUT_MS = 15_000; // per-email send timeout
+
+// Helper: fetch with timeout via AbortController
+async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 Deno.serve(async (req: Request) => {
+  const functionStart = Date.now();
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
@@ -23,16 +55,46 @@ Deno.serve(async (req: Request) => {
       }
     });
 
-    console.log("Fetching pending emails...");
-
-    const { data: pendingEmails, error: fetchError } = await supabase
+    // Recover orphaned "processing" emails stuck for > 5 minutes (from crashed invocations)
+    await supabase
       .from("email_queue")
-      .select("*")
-      .eq("status", "pending")
-      .lte("scheduled_for", new Date().toISOString())
-      .order("priority", { ascending: false })
-      .order("created_at", { ascending: true })
-      .limit(10);
+      .update({ status: "pending" })
+      .eq("status", "processing")
+      .lt("created_at", new Date(Date.now() - 5 * 60 * 1000).toISOString());
+
+    // Also auto-retry previously failed/retrying emails (up to MAX_RETRIES)
+    console.log("Retrying failed emails...");
+    await supabase
+      .from("email_queue")
+      .update({ status: "pending" })
+      .in("status", ["failed", "retrying"])
+      .lt("retry_count", MAX_RETRIES)
+      .lte("scheduled_for", new Date().toISOString());
+
+    // Atomically claim pending emails to prevent duplicate processing
+    // Uses RPC to do UPDATE ... WHERE status='pending' ... RETURNING *
+    console.log("Claiming pending emails...");
+
+    const { data: claimedEmails, error: claimError } = await supabase
+      .rpc("claim_pending_emails", { p_limit: 100 });
+
+    // Fallback: if the RPC doesn't exist, use the old select + update approach
+    let pendingEmails = claimedEmails;
+    let fetchError = claimError;
+
+    if (claimError) {
+      console.warn("claim_pending_emails RPC not available, using fallback:", claimError.message);
+      const { data, error } = await supabase
+        .from("email_queue")
+        .select("*")
+        .eq("status", "pending")
+        .lte("scheduled_for", new Date().toISOString())
+        .order("priority", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(100);
+      pendingEmails = data;
+      fetchError = error;
+    }
 
     console.log("Fetch result:", { count: pendingEmails?.length, error: fetchError });
 
@@ -48,43 +110,68 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const results = [];
+    const results: Array<{ id: string; status: string; email: string; error?: string }> = [];
 
-    for (const email of pendingEmails) {
+    // Process emails in parallel batches with deadline awareness
+    async function processOneEmail(email: any): Promise<{ id: string; status: string; email: string; error?: string }> {
+      const emailStartTime = Date.now();
       try {
-        console.log(`Processing email ${email.id} to ${email.to_email}`);
-
-        await supabase
+        // Mark as processing (idempotent if already claimed by RPC)
+        const { data: claimed, error: claimErr } = await supabase
           .from("email_queue")
           .update({ status: "processing" })
-          .eq("id", email.id);
+          .eq("id", email.id)
+          .in("status", ["pending", "processing"])
+          .select("id")
+          .maybeSingle();
 
-        const { data: template } = await supabase
-          .from("email_templates")
-          .select("*")
-          .eq("id", email.template_id)
-          .single();
-
-        if (!template) {
-          throw new Error("Template not found");
+        if (claimErr || !claimed) {
+          return { id: email.id, status: "skipped", email: email.to_email };
         }
 
-        let htmlBody = template.html_body;
-        let textBody = template.text_body;
-        let subject = template.subject;
+        let htmlBody: string;
+        let textBody: string;
+        let subject: string;
+        let templateKey: string | null = null;
 
-        if (email.template_variables) {
-          Object.entries(email.template_variables).forEach(([key, value]) => {
-            const placeholder = `{{${key}}}`;
-            htmlBody = htmlBody.replace(new RegExp(placeholder, "g"), String(value));
-            textBody = textBody.replace(new RegExp(placeholder, "g"), String(value));
-            subject = subject.replace(new RegExp(placeholder, "g"), String(value));
-          });
+        // Support raw emails (no template_id) — used by notification/communication services
+        const vars = email.template_variables || {};
+        if (!email.template_id && vars._raw_subject) {
+          subject = String(vars._raw_subject);
+          htmlBody = String(vars._raw_html_body || '');
+          textBody = String(vars._raw_text_body || '');
+          templateKey = String(vars._template_key || 'raw_email');
+        } else {
+          const { data: template } = await supabase
+            .from("email_templates")
+            .select("*")
+            .eq("id", email.template_id)
+            .single();
+
+          if (!template) {
+            throw new Error("Template not found");
+          }
+
+          htmlBody = template.html_body;
+          textBody = template.text_body;
+          subject = template.subject;
+          templateKey = template.template_key;
+
+          if (email.template_variables) {
+            Object.entries(email.template_variables).forEach(([key, value]) => {
+              if (key.startsWith('_')) return;
+              const safeKey = escapeRegex(`{{${key}}}`);
+              const regex = new RegExp(safeKey, "g");
+              const safeValue = escapeHtml(String(value));
+              const rawValue = String(value);
+              htmlBody = htmlBody.replace(regex, safeValue);
+              textBody = textBody.replace(regex, rawValue);
+              subject = subject.replace(regex, rawValue);
+            });
+          }
         }
 
-        console.log(`Calling send-email for ${email.to_email}`);
-
-        const sendResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        const sendResponse = await fetchWithTimeout(`${supabaseUrl}/functions/v1/send-email`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -97,69 +184,120 @@ Deno.serve(async (req: Request) => {
             htmlBody,
             textBody,
           }),
-        });
+        }, FETCH_TIMEOUT_MS);
 
         const sendResult = await sendResponse.json();
-        console.log(`Send result for ${email.to_email}:`, sendResult);
 
         if (!sendResponse.ok) {
           throw new Error(sendResult.error || "Failed to send email");
         }
 
+        const latencyMs = Date.now() - emailStartTime;
+
         await supabase
           .from("email_queue")
-          .update({
-            status: "sent",
-            processed_at: new Date().toISOString(),
-          })
+          .update({ status: "sent", processed_at: new Date().toISOString() })
           .eq("id", email.id);
 
-        await supabase.from("email_logs").insert({
+        // Observability — fire-and-forget
+        supabase.from("email_events").insert({
+          email_queue_id: email.id,
+          event_type: "sent",
+          recipient_email: email.to_email,
+          template_key: templateKey,
+          provider: sendResult.provider || "default",
+          status: "sent",
+          latency_ms: latencyMs,
+          metadata: { messageId: sendResult.messageId },
+        }).then(() => {}).catch(() => {});
+
+        supabase.from("email_logs").insert({
           recipient_email: email.to_email,
           recipient_id: email.user_id,
-          email_type: "welcome",
-          template_code: template.template_key,
+          email_type: templateKey || "transactional",
+          template_code: templateKey,
           subject,
           body_text: textBody,
           body_html: htmlBody,
-          provider: "hostinger",
+          provider: sendResult.provider || "default",
           status: "delivered",
           sent_at: new Date().toISOString(),
           provider_message_id: sendResult.messageId,
           metadata: { queueId: email.id },
-        });
+        }).then(() => {}).catch(() => {});
 
-        console.log(`Successfully sent email to ${email.to_email}`);
-        results.push({ id: email.id, status: "sent", email: email.to_email });
-      } catch (error) {
-        console.error(`Error processing email ${email.id}:`, error);
+        return { id: email.id, status: "sent", email: email.to_email };
+      } catch (error: any) {
+        const failLatencyMs = Date.now() - emailStartTime;
+        const newRetryCount = (email.retry_count || 0) + 1;
+        const failStatus = newRetryCount < MAX_RETRIES ? "retrying" : "failed";
 
         await supabase
           .from("email_queue")
           .update({
-            status: "failed",
-            retry_count: (email.retry_count || 0) + 1,
+            status: failStatus,
+            retry_count: newRetryCount,
             error_message: error.message,
             processed_at: new Date().toISOString(),
           })
           .eq("id", email.id);
 
-        await supabase.from("email_logs").insert({
+        supabase.from("email_events").insert({
+          email_queue_id: email.id,
+          event_type: failStatus,
+          recipient_email: email.to_email,
+          template_key: email.template_key || null,
+          status: failStatus,
+          error_message: error.message,
+          latency_ms: failLatencyMs,
+          metadata: { retry_count: newRetryCount },
+        }).then(() => {}).catch(() => {});
+
+        supabase.from("email_logs").insert({
           recipient_email: email.to_email,
           recipient_id: email.user_id,
-          email_type: "welcome",
-          template_code: "unknown",
-          subject: "Error",
+          email_type: email.template_key || "transactional",
+          template_code: email.template_key || "unknown",
+          subject: email.subject || "Error",
           body_text: "",
           body_html: "",
-          provider: "hostinger",
+          provider: "default",
           status: "failed",
           error_message: error.message,
           sent_at: new Date().toISOString(),
-          metadata: { queueId: email.id },
-        });
+          metadata: { queueId: email.id, retry_count: newRetryCount },
+        }).then(() => {}).catch(() => {});
 
-        results.push({ id: email.id, status: "failed", email: email.to_email, error: error.message });
+        return { id: email.id, status: "failed", email: email.to_email, error: error.message };
+      }
+    }
+
+    // Process in parallel batches of CONCURRENCY, with deadline check
+    for (let i = 0; i < pendingEmails.length; i += CONCURRENCY) {
+      // Deadline check — stop if we're running out of time
+      if (Date.now() - functionStart > MAX_RUNTIME_MS) {
+        console.warn(`Deadline reached after ${results.length} emails, stopping. ${pendingEmails.length - i} remaining.`);
+        // Release unclaimed emails back to pending
+        const remainingIds = pendingEmails.slice(i).map((e: any) => e.id);
+        if (remainingIds.length > 0) {
+          await supabase
+            .from("email_queue")
+            .update({ status: "pending" })
+            .in("id", remainingIds)
+            .eq("status", "processing");
+        }
+        break;
+      }
+
+      const batch = pendingEmails.slice(i, i + CONCURRENCY);
+      const batchResults = await Promise.allSettled(batch.map(processOneEmail));
+
+      for (const r of batchResults) {
+        if (r.status === "fulfilled") {
+          results.push(r.value);
+        } else {
+          results.push({ id: "unknown", status: "failed", email: "unknown", error: r.reason?.message });
+        }
       }
     }
 
@@ -174,7 +312,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Error processing email queue:", error);
     return new Response(
-      JSON.stringify({ error: error.message, stack: error.stack }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
