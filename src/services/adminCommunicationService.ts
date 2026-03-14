@@ -281,7 +281,7 @@ export const adminCommunicationService = {
       }
     }
 
-    // 4. Process notification channel
+    // 4. Process notification channel (best-effort, don't count as failures)
     const notifConfig = channels.notification;
     if (notifConfig?.enabled) {
       for (const recipient of users) {
@@ -292,9 +292,8 @@ export const adminCommunicationService = {
             title: comm.title,
             message: (notifConfig.content || '').replace(/<[^>]*>/g, '').slice(0, 500),
           });
-          totalSent++;
         } catch (err: any) {
-          totalFailed++;
+          console.warn(`[sendCommunication] Notification failed for ${recipient.id}:`, err.message);
         }
       }
     }
