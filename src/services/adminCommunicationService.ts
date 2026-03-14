@@ -301,11 +301,18 @@ export const adminCommunicationService = {
     if (notifConfig?.enabled) {
       for (const recipient of users) {
         try {
+          const renderedNotif = this._renderContent(notifConfig.content || '', recipient)
+            .replace(/<[^>]*>/g, '')
+            .replace(/\n{2,}/g, '\n')
+            .trim()
+            .slice(0, 500);
+          const renderedTitle = this._renderContent(comm.title, recipient)
+            .replace(/<[^>]*>/g, '');
           await supabase.from('notifications').insert({
             user_id: recipient.id,
             type: 'info',
-            title: comm.title,
-            message: (notifConfig.content || '').replace(/<[^>]*>/g, '').slice(0, 500),
+            title: renderedTitle,
+            message: renderedNotif,
           });
         } catch (err: any) {
           console.warn(`[sendCommunication] Notification failed for ${recipient.id}:`, err.message);
