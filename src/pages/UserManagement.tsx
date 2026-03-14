@@ -1127,21 +1127,57 @@ export default function UserManagement({ onNavigate, initialFilter }: UserManage
                     </div>
                   </div>
 
-                  {/* Profile completion min */}
+                  {/* Profile completion range */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Profil complété à min. {commFilters.min_completion || 0}%
+                      Profil complété entre {commFilters.min_completion ?? 0}% et {commFilters.max_completion ?? 100}%
                     </label>
-                    <input
-                      type="range"
-                      min={0} max={100} step={5}
-                      value={commFilters.min_completion || 0}
-                      onChange={(e) => setCommFilters(p => ({ ...p, min_completion: Number(e.target.value) }))}
-                      className="w-full"
-                    />
+                    <div className="space-y-2">
+                      <div>
+                        <div className="flex justify-between text-[10px] text-gray-500 mb-0.5">
+                          <span>Min: {commFilters.min_completion ?? 0}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0} max={100} step={5}
+                          value={commFilters.min_completion ?? 0}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setCommFilters(p => ({
+                              ...p,
+                              min_completion: val,
+                              max_completion: Math.max(val, p.max_completion ?? 100),
+                            }));
+                          }}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[10px] text-gray-500 mb-0.5">
+                          <span>Max: {commFilters.max_completion ?? 100}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0} max={100} step={5}
+                          value={commFilters.max_completion ?? 100}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setCommFilters(p => ({
+                              ...p,
+                              max_completion: val,
+                              min_completion: Math.min(val, p.min_completion ?? 0),
+                            }));
+                          }}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
                     <div className="flex justify-between text-[10px] text-gray-400">
                       <span>0%</span><span>50%</span><span>100%</span>
                     </div>
+                    {(commFilters.min_completion === 0 && commFilters.max_completion === 0) && (
+                      <p className="text-[11px] text-amber-600 mt-1 font-medium">🎯 Cible : candidats n'ayant pas rempli leur profil</p>
+                    )}
                   </div>
 
                   <button
@@ -1227,7 +1263,7 @@ export default function UserManagement({ onNavigate, initialFilter }: UserManage
                       <span className="text-gray-500">Audience:</span>
                       <span className="font-medium text-gray-900">
                         {(commFilters.user_types && commFilters.user_types.length > 0) ? commFilters.user_types.join(', ') : 'Tous les utilisateurs'}
-                        {commFilters.min_completion ? ` (profil ≥ ${commFilters.min_completion}%)` : ''}
+                        {(commFilters.min_completion != null || commFilters.max_completion != null) ? ` (profil ${commFilters.min_completion ?? 0}% – ${commFilters.max_completion ?? 100}%)` : ''}
                       </span>
                     </div>
                     {commSelectedTemplate && (

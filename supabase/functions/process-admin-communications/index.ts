@@ -331,8 +331,11 @@ async function fetchAudienceUsers(
     if (filters.user_types && filters.user_types.length > 0) {
       query = query.in("user_type", filters.user_types);
     }
-    if (filters.min_completion && filters.min_completion > 0) {
+    if (filters.min_completion != null && filters.min_completion > 0) {
       query = query.gte("profile_completion_percentage", filters.min_completion);
+    }
+    if (filters.max_completion != null && filters.max_completion < 100) {
+      query = query.lte("profile_completion_percentage", filters.max_completion);
     }
     if (filters.region) {
       query = query.eq("region", filters.region);
