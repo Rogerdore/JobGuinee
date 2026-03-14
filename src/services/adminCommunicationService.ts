@@ -241,8 +241,10 @@ export const adminCommunicationService = {
         try {
           const renderedContent = this._renderContent(emailConfig.content, recipient);
           const renderedSubject = this._renderContent(emailConfig.subject || comm.title, recipient);
+          // Convert newlines to <br> for HTML email (templates use plain text newlines)
+          const htmlContent = renderedContent.replace(/\n/g, '<br>');
           const emailHtml = `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-  <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">${renderedContent}</td></tr>
+  <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">${htmlContent}</td></tr>
 </table>`;
 
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -334,14 +336,27 @@ export const adminCommunicationService = {
 
   /** Replace template variables in content */
   _renderContent(content: string, user: { full_name?: string; email?: string; phone?: string; user_type?: string }) {
+    const parts = (user.full_name || '').trim().split(/\s+/);
+    const prenom = parts[0] || '';
+    const nom = parts.length > 1 ? parts.slice(1).join(' ') : '';
+
+    const roleLabels: Record<string, string> = {
+      candidate: 'candidat',
+      recruiter: 'recruteur',
+      admin: 'admin',
+      trainer: 'formateur',
+    };
+
     return content
-      .replace(/\{\{\s*prenom\s*\}\}/g, user.full_name?.split(' ')[0] || '')
-      .replace(/\{\{\s*nom\s*\}\}/g, user.full_name || '')
+      .replace(/\{\{\s*prenom\s*\}\}/g, prenom)
+      .replace(/\{\{\s*nom\s*\}\}/g, nom || prenom)
+      .replace(/\{\{\s*nom_complet\s*\}\}/g, user.full_name || '')
       .replace(/\{\{\s*email\s*\}\}/g, user.email || '')
       .replace(/\{\{\s*telephone\s*\}\}/g, user.phone || '')
-      .replace(/\{\{\s*role\s*\}\}/g, user.user_type || '')
-      .replace(/\{\{\s*lien_profil\s*\}\}/g, 'https://jobguinee-pro.com/profile')
-      .replace(/\{\{\s*lien_site\s*\}\}/g, 'https://jobguinee-pro.com');
+      .replace(/\{\{\s*role\s*\}\}/g, roleLabels[user.user_type || ''] || user.user_type || '')
+      .replace(/\{\{\s*lien_profil\s*\}\}/g, '<a href="https://jobguinee-pro.com/profile" target="_blank" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Mon profil</a>')
+      .replace(/\{\{\s*lien_site\s*\}\}/g, '<a href="https://jobguinee-pro.com" target="_blank" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Visiter JobGuinée</a>')
+      .replace(/\{\{\s*lien\s*\}\}/g, '<a href="https://jobguinee-pro.com" target="_blank" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Accéder à JobGuinée</a>');
   },
 
   async scheduleCommunication(id: string, scheduledAt: string) {
