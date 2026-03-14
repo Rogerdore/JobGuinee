@@ -153,7 +153,7 @@ export default function Home({ onNavigate }: HomeProps) {
         .limit(3),
       supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('status', 'published'),
       supabase.from('companies').select('id', { count: 'exact', head: true }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'candidate'),
+      supabase.rpc('count_total_users'),
       supabase.from('formations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       supabase.from('jobs').select('sector').eq('status', 'published'),
     ]);
@@ -194,7 +194,7 @@ export default function Home({ onNavigate }: HomeProps) {
     setStats({
       jobs: jobsCount.count ?? 0,
       companies: companiesCount.count ?? 0,
-      candidates: candidatesCount.count ?? 0,
+      candidates: (candidatesCount.data as number) ?? 0,
       formations: formationsCount.count ?? 0,
     });
   };
