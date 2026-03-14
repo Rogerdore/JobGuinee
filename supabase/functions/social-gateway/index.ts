@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
 
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", "text/html; charset=utf-8");
-    responseHeaders.set("Cache-Control", "public, max-age=3600");
+    responseHeaders.set("Cache-Control", "public, max-age=1800");
     responseHeaders.set("Access-Control-Allow-Origin", "*");
     responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
 
@@ -139,7 +139,7 @@ function cleanDescription(desc: string | null | undefined): string {
   if (!desc) return "";
   
   return desc
-    .replace(/<[^>]*>/g, "")
+    .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -234,8 +234,14 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   }
 
   // Detect image type for og:image:type
-  const imageType = ogImage.toLowerCase().endsWith('.jpg') || ogImage.toLowerCase().endsWith('.jpeg')
-    ? 'image/jpeg' : 'image/png';
+  const lowerImage = ogImage.toLowerCase();
+  const imageType = lowerImage.endsWith('.jpg') || lowerImage.endsWith('.jpeg')
+    ? 'image/jpeg'
+    : lowerImage.endsWith('.webp')
+    ? 'image/webp'
+    : lowerImage.endsWith('.gif')
+    ? 'image/gif'
+    : 'image/png';
 
   // Check if job-specific image exists (would need server-side validation in production)
   // For now, we use the featured_image_url if available, otherwise fallback
