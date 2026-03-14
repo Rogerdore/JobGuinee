@@ -240,20 +240,33 @@ export const adminCommunicationService = {
         }
         try {
           const renderedContent = this._renderContent(emailConfig.content, recipient);
+          const renderedSubject = this._renderContent(emailConfig.subject || comm.title, recipient);
           const emailHtml = `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
   <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">${renderedContent}</td></tr>
 </table>`;
 
-          const { error: sendErr } = await supabase.functions.invoke('send-email', {
-            body: {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const session = (await supabase.auth.getSession()).data.session;
+          const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+          const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
               to: recipient.email,
               toName: recipient.full_name || undefined,
-              subject: emailConfig.subject || comm.title,
+              subject: renderedSubject,
               htmlBody: emailHtml,
-            },
+            }),
           });
 
-          if (sendErr) throw sendErr;
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || `HTTP ${response.status}`);
+          }
           totalSent++;
 
           // Record message
@@ -262,7 +275,7 @@ export const adminCommunicationService = {
             user_id: recipient.id,
             channel: 'email',
             content_rendered: renderedContent,
-            subject: emailConfig.subject || comm.title,
+            subject: renderedSubject,
             status: 'sent',
           }).select().maybeSingle();
         } catch (err: any) {
@@ -273,7 +286,7 @@ export const adminCommunicationService = {
             user_id: recipient.id,
             channel: 'email',
             content_rendered: emailConfig.content,
-            subject: emailConfig.subject || comm.title,
+            subject: renderedSubject,
             status: 'failed',
             error_message: err.message,
           }).select().maybeSingle();
