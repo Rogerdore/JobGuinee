@@ -214,16 +214,20 @@ export const adminCommunicationService = {
 
     if (error) throw error;
 
-    // 2. Invoke the edge function to process sending asynchronously
-    supabase.functions.invoke('process-admin-communications', {
+    // 2. Invoke the edge function and await result
+    const { data: fnData, error: fnError } = await supabase.functions.invoke('process-admin-communications', {
       body: { communication_id: id },
-    }).then(({ error: fnError }) => {
-      if (fnError) {
-        console.error('[adminCommunicationService] Edge function error:', fnError);
-      }
-    }).catch((err: any) => {
-      console.error('[adminCommunicationService] Failed to invoke edge function:', err);
     });
+
+    if (fnError) {
+      console.error('[adminCommunicationService] Edge function error:', fnError);
+      throw new Error(`Erreur d'envoi: ${fnError.message || 'La fonction de traitement a échoué'}`);
+    }
+
+    // Check for application-level errors in the response
+    if (fnData?.error) {
+      throw new Error(`Erreur de traitement: ${fnData.error}`);
+    }
 
     return data as AdminCommunication;
   },
