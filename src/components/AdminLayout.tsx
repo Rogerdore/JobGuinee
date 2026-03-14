@@ -11,8 +11,9 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
-  onNavigate?: (page: string) => void;
+  onNavigate?: (page: string, param?: string) => void;
   currentPage?: string;
+  activeParam?: string;
 }
 
 interface MenuItem {
@@ -20,11 +21,12 @@ interface MenuItem {
   label: string;
   icon: any;
   route?: string;
+  param?: string;
   badge?: string;
   children?: MenuItem[];
 }
 
-export default function AdminLayout({ children, onNavigate, currentPage = '' }: AdminLayoutProps) {
+export default function AdminLayout({ children, onNavigate, currentPage = '', activeParam }: AdminLayoutProps) {
   const { profile, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const saved = localStorage.getItem('admin-sidebar-open');
@@ -94,10 +96,10 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
       label: 'Utilisateurs',
       icon: Users,
       children: [
-        { id: 'all-users', label: 'Tous les utilisateurs', icon: Users, route: 'user-management' },
-        { id: 'candidates', label: 'Candidats', icon: FileCheck, route: 'user-management' },
-        { id: 'recruiters', label: 'Recruteurs', icon: Building2, route: 'user-management' },
-        { id: 'admins', label: 'Administrateurs', icon: Shield, route: 'user-management' },
+        { id: 'all-users', label: 'Tous les utilisateurs', icon: Users, route: 'user-management', param: 'all' },
+        { id: 'candidates', label: 'Candidats', icon: FileCheck, route: 'user-management', param: 'candidate' },
+        { id: 'recruiters', label: 'Recruteurs', icon: Building2, route: 'user-management', param: 'recruiter' },
+        { id: 'admins', label: 'Administrateurs', icon: Shield, route: 'user-management', param: 'admin' },
         { id: 'admin-invitations', label: 'Invitations admin', icon: Mail, route: 'admin-invitations' }
       ]
     },
@@ -244,15 +246,17 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
 
   const isMenuExpanded = (menuId: string) => expandedMenus.includes(menuId);
 
-  const isActive = (route?: string) => {
+  const isActive = (route?: string, param?: string) => {
     if (!route) return false;
-    return currentPage === route;
+    if (currentPage !== route) return false;
+    if (param) return activeParam === param;
+    return !param;
   };
 
   const hasActiveChild = (item: MenuItem): boolean => {
     if (!item.children) return false;
     return item.children.some(child => {
-      if (isActive(child.route)) return true;
+      if (isActive(child.route, child.param)) return true;
       return hasActiveChild(child);
     });
   };
@@ -260,7 +264,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = isMenuExpanded(item.id);
-    const active = isActive(item.route);
+    const active = isActive(item.route, item.param);
     const hasActiveDescendant = hasActiveChild(item);
     const Icon = item.icon;
 
@@ -273,7 +277,7 @@ export default function AdminLayout({ children, onNavigate, currentPage = '' }: 
               if (hasChildren) {
                 toggleMenu(item.id);
               } else if (item.route && onNavigate) {
-                onNavigate(item.route);
+                onNavigate(item.route, item.param);
               }
             }}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl group relative transition-all duration-200

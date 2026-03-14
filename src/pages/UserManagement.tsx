@@ -13,6 +13,7 @@ import { adminCommunicationService, CommunicationFilters, ChannelsConfig, Commun
 
 interface UserManagementProps {
   onNavigate: (page: string) => void;
+  initialFilter?: string;
 }
 
 interface Profile {
@@ -84,7 +85,7 @@ function StatusBadge({ user }: { user: Profile }) {
   );
 }
 
-export default function UserManagement({ onNavigate }: UserManagementProps) {
+export default function UserManagement({ onNavigate, initialFilter }: UserManagementProps) {
   const { isAdmin, user: currentUser } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +127,13 @@ export default function UserManagement({ onNavigate }: UserManagementProps) {
 
   useEffect(() => { loadUsers(); loadPendingInvitations(); }, []);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, filterType, statusFilter, sortKey, sortDir]);
+
+  // Sync filter from sidebar navigation
+  useEffect(() => {
+    if (initialFilter && ['all', 'candidate', 'recruiter', 'admin', 'trainer'].includes(initialFilter)) {
+      setFilterType(initialFilter as typeof filterType);
+    }
+  }, [initialFilter]);
 
   // Communication module helpers
   const loadCommTemplates = useCallback(async (channel: string) => {

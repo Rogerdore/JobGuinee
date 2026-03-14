@@ -155,6 +155,7 @@ function AppContent() {
   const [formationSearchParams, setFormationSearchParams] = useState<string>('');
   const [scrollTarget, setScrollTarget] = useState<string>('');
   const [publicProfileToken, setPublicProfileToken] = useState<string>('');
+  const [userManagementFilter, setUserManagementFilter] = useState<string>('all');
   const { loading, user, isAccountDeactivated } = useAuth();
   const [showDeactivatedPopup, setShowDeactivatedPopup] = useState(false);
   useSiteSettings();
@@ -369,6 +370,9 @@ function AppContent() {
     if ((page === 'credit-store' || page === 'premium-ai') && paramOrState) {
       setScrollTarget(paramOrState as string);
     }
+    if (page === 'user-management') {
+      setUserManagementFilter((paramOrState as string) || 'all');
+    }
     if (page === 'public-profile' && paramOrState) {
       setPublicProfileToken(paramOrState as string);
       urlParam = paramOrState as string;
@@ -455,7 +459,7 @@ function AppContent() {
 
   if (isAdminPage) {
     return (
-      <AdminLayout currentPage={currentPage} onNavigate={handleNavigate}>
+      <AdminLayout currentPage={currentPage} onNavigate={handleNavigate} activeParam={userManagementFilter}>
         <Suspense fallback={loadingFallback}>
         {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
         {currentPage === 'jobs' && <Jobs onNavigate={handleNavigate} initialSearch={jobSearchParams} />}
@@ -477,7 +481,7 @@ function AppContent() {
         {currentPage === 'resources' && <Resources />}
         {currentPage === 'cvtheque' && <CVTheque onNavigate={handleNavigate} />}
         {currentPage === 'cms-admin' && <CMSAdmin onNavigate={handleNavigate} />}
-        {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} />}
+        {currentPage === 'user-management' && <UserManagement onNavigate={handleNavigate} initialFilter={userManagementFilter} />}
         {currentPage === 'admin-invitations' && <AdminInvitations onNavigate={handleNavigate} />}
         {currentPage === 'admin-credits-ia' && <AdminCreditsIA onNavigate={handleNavigate} />}
         {currentPage === 'admin-ia-pricing' && <AdminIAPricing onNavigate={handleNavigate} />}
