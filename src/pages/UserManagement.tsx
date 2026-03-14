@@ -223,9 +223,9 @@ export default function UserManagement({ onNavigate, initialFilter }: UserManage
         total_excluded: 0,
       });
 
-      await adminCommunicationService.sendCommunication(comm.id);
+      const result = await adminCommunicationService.sendCommunication(comm.id, commFilters, channelsConfig);
 
-      showMsg('success', `Communication lancée pour ${commAudienceCount} destinataire(s). Les emails sont en cours d'envoi.`);
+      showMsg('success', `Communication terminée : ${result.total_sent} envoyé(s), ${result.total_failed} échoué(s), ${result.total_excluded} exclu(s)`);
       setShowCommPanel(false);
     } catch (err: any) {
       showMsg('error', err.message || 'Erreur lors de l\'envoi');

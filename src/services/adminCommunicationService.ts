@@ -196,12 +196,12 @@ export const adminCommunicationService = {
     return data;
   },
 
-  async sendCommunication(id: string) {
+  async sendCommunication(id: string, filters: CommunicationFilters, channels: ChannelsConfig) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
     // 1. Set status to 'sending'
-    const { data, error } = await supabase
+    const { data: comm, error } = await supabase
       .from('admin_communications')
       .update({
         status: 'sending',
@@ -214,24 +214,122 @@ export const adminCommunicationService = {
 
     if (error) throw error;
 
-    // 2. Invoke the edge function (responds immediately, processes in background)
-    const { data: fnData, error: fnError } = await supabase.functions.invoke('process-admin-communications', {
-      body: { communication_id: id },
-    });
-
-    if (fnError) {
-      console.error('[adminCommunicationService] Edge function error:', fnError);
-      // Reset status to draft so user can retry
-      await supabase.from('admin_communications').update({ status: 'draft' }).eq('id', id);
-      throw new Error(`Erreur d'envoi: ${fnError.message || 'La fonction de traitement a échoué'}`);
+    // 2. Get targeted users
+    const users = await this.getTargetedUsers(filters);
+    if (!users || users.length === 0) {
+      await supabase.from('admin_communications').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        total_recipients: 0,
+        total_sent: 0,
+      }).eq('id', id);
+      return { ...comm, total_recipients: 0, total_sent: 0 } as AdminCommunication;
     }
 
-    if (fnData?.error) {
-      await supabase.from('admin_communications').update({ status: 'draft' }).eq('id', id);
-      throw new Error(`Erreur de traitement: ${fnData.error}`);
+    let totalSent = 0;
+    let totalFailed = 0;
+    let totalExcluded = 0;
+
+    // 3. Process email channel - call send-email directly for each user
+    const emailConfig = channels.email;
+    if (emailConfig?.enabled) {
+      for (const recipient of users) {
+        if (!recipient.email) {
+          totalExcluded++;
+          continue;
+        }
+        try {
+          const renderedContent = this._renderContent(emailConfig.content, recipient);
+          const emailHtml = `<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#334155;">${renderedContent}</td></tr>
+</table>`;
+
+          const { error: sendErr } = await supabase.functions.invoke('send-email', {
+            body: {
+              to: recipient.email,
+              toName: recipient.full_name || undefined,
+              subject: emailConfig.subject || comm.title,
+              htmlBody: emailHtml,
+            },
+          });
+
+          if (sendErr) throw sendErr;
+          totalSent++;
+
+          // Record message
+          await supabase.from('admin_communication_messages').insert({
+            communication_id: id,
+            user_id: recipient.id,
+            channel: 'email',
+            content_rendered: renderedContent,
+            subject: emailConfig.subject || comm.title,
+            status: 'sent',
+          }).select().maybeSingle();
+        } catch (err: any) {
+          console.error(`[sendCommunication] Email failed for ${recipient.email}:`, err.message);
+          totalFailed++;
+          await supabase.from('admin_communication_messages').insert({
+            communication_id: id,
+            user_id: recipient.id,
+            channel: 'email',
+            content_rendered: emailConfig.content,
+            subject: emailConfig.subject || comm.title,
+            status: 'failed',
+            error_message: err.message,
+          }).select().maybeSingle();
+        }
+      }
     }
 
-    return data as AdminCommunication;
+    // 4. Process notification channel
+    const notifConfig = channels.notification;
+    if (notifConfig?.enabled) {
+      for (const recipient of users) {
+        try {
+          await supabase.from('notifications').insert({
+            user_id: recipient.id,
+            type: 'info',
+            title: comm.title,
+            message: (notifConfig.content || '').replace(/<[^>]*>/g, '').slice(0, 500),
+          });
+          totalSent++;
+        } catch (err: any) {
+          totalFailed++;
+        }
+      }
+    }
+
+    // 5. Update communication status
+    const finalStatus = totalFailed > 0 && totalSent === 0 ? 'failed' : 'completed';
+    await supabase.from('admin_communications').update({
+      status: finalStatus,
+      completed_at: new Date().toISOString(),
+      total_recipients: users.length,
+      total_sent: totalSent,
+      total_failed: totalFailed,
+      total_excluded: totalExcluded,
+    }).eq('id', id);
+
+    return {
+      ...comm,
+      status: finalStatus,
+      total_recipients: users.length,
+      total_sent: totalSent,
+      total_failed: totalFailed,
+      total_excluded: totalExcluded,
+    } as AdminCommunication;
+  },
+
+  /** Replace template variables in content */
+  _renderContent(content: string, user: { full_name?: string; email?: string; phone?: string; user_type?: string }) {
+    return content
+      .replace(/\{\{\s*prenom\s*\}\}/g, user.full_name?.split(' ')[0] || '')
+      .replace(/\{\{\s*nom\s*\}\}/g, user.full_name || '')
+      .replace(/\{\{\s*email\s*\}\}/g, user.email || '')
+      .replace(/\{\{\s*telephone\s*\}\}/g, user.phone || '')
+      .replace(/\{\{\s*role\s*\}\}/g, user.user_type || '')
+      .replace(/\{\{\s*lien_profil\s*\}\}/g, 'https://jobguinee-pro.com/profile')
+      .replace(/\{\{\s*lien_site\s*\}\}/g, 'https://jobguinee-pro.com');
   },
 
   async scheduleCommunication(id: string, scheduledAt: string) {
