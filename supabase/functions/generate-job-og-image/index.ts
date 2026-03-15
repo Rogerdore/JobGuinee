@@ -90,126 +90,225 @@ function generateSvg(params: {
   location: string;
   contractType: string;
   sector: string;
+  experienceLevel: string;
+  educationLevel: string;
+  salaryRange: string;
+  deadline: string;
   isUrgent: boolean;
   isFeatured: boolean;
-  logoBase64: string | null;
-  siteName: string;
-  siteUrl: string;
+  companyLogoBase64: string | null;
+  siteLogoBase64: string | null;
 }): string {
-  const { title, company, location, contractType, sector, isUrgent, isFeatured, logoBase64, siteName, siteUrl } = params;
+  const {
+    title, company, location, contractType, sector,
+    experienceLevel, educationLevel, salaryRange, deadline,
+    isUrgent, isFeatured, companyLogoBase64, siteLogoBase64,
+  } = params;
 
-  const titleUpper = escapeXml(truncate(title.toUpperCase(), 65));
-  const titleLines = wrapText(titleUpper, 28);
+  const F = "Inter, sans-serif";
+  const titleUpper = escapeXml(truncate(title.toUpperCase(), 60));
+  const titleLines = wrapText(titleUpper, 30);
   const titleLine1 = titleLines[0] || "";
   const titleLine2 = titleLines[1] || "";
-  const companyShort = escapeXml(truncate(company, 40));
-  const locationShort = escapeXml(truncate(location, 30));
-  const contractShort = escapeXml(truncate(contractType, 20));
-  const sectorShort = escapeXml(truncate(sector, 30));
-  const experienceLabel = sector ? sectorShort : "";
+  const companyShort = escapeXml(truncate(company, 35));
+  const locationShort = escapeXml(truncate(location, 25));
+  const contractShort = escapeXml(truncate(contractType, 18));
+  const sectorShort = escapeXml(truncate(sector, 25));
+  const expShort = escapeXml(truncate(experienceLevel, 18));
+  const eduShort = escapeXml(truncate(educationLevel, 20));
+  const salaryShort = escapeXml(truncate(salaryRange, 25));
 
-  // Dynamic title font size based on length
-  const titleFontSize = titleUpper.length <= 25 ? 56 : titleUpper.length <= 40 ? 48 : 40;
-  // Y positions depend on whether title wraps to 2 lines
-  const hasLine2 = !!titleLine2;
-  const titleY1 = hasLine2 ? 230 : 255;
-  const titleY2 = titleY1 + titleFontSize + 10;
-  const companyY = hasLine2 ? titleY2 + 20 : titleY1 + 55;
-  const tagsY = companyY + 60;
-
-  const logoEl = logoBase64
-    ? `<image href="${logoBase64}" x="880" y="48" width="270" height="80" preserveAspectRatio="xMaxYMid meet" />`
-    : "";
-
-  const urgentBadge = isUrgent
-    ? `<rect x="60" y="148" width="130" height="38" rx="19" fill="#ef4444"/>
-       <text x="125" y="173" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`
-    : "";
-
-  const featuredBadge = isFeatured
-    ? `<rect x="${isUrgent ? "205" : "60"}" y="148" width="140" height="38" rx="19" fill="#f59e0b"/>
-       <text x="${isUrgent ? "275" : "130"}" y="173" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`
-    : "";
-
-  // Build detail tags
-  const tags: string[] = [];
-  if (locationShort) tags.push(locationShort);
-  if (contractShort) tags.push(contractShort);
-  if (experienceLabel) tags.push(experienceLabel);
-
-  let tagsSvg = "";
-  let tagX = 80;
-  for (const tag of tags) {
-    const tagWidth = tag.length * 12 + 36;
-    tagsSvg += `
-      <rect x="${tagX}" y="${tagsY}" width="${tagWidth}" height="42" rx="21" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-      <text x="${tagX + tagWidth / 2}" y="${tagsY + 27}" font-family="Inter, sans-serif" font-size="18" fill="rgba(255,255,255,0.9)" text-anchor="middle">${tag}</text>`;
-    tagX += tagWidth + 16;
+  // Format deadline
+  let deadlineStr = "";
+  if (deadline) {
+    try {
+      const d = new Date(deadline);
+      deadlineStr = escapeXml(`Avant le ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}`);
+    } catch { /* ignore */ }
   }
 
-  return `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  // Dynamic title sizing
+  const titleFontSize = titleUpper.length <= 22 ? 46 : titleUpper.length <= 35 ? 40 : 34;
+  const hasLine2 = !!titleLine2;
+
+  // Layout constants
+  const headerH = 80;
+  const titleStartY = 180;
+  const titleY1 = titleStartY;
+  const titleY2 = titleY1 + titleFontSize + 8;
+  const afterTitleY = hasLine2 ? titleY2 + 16 : titleY1 + 16;
+
+  // Company row Y (logo + name)
+  const companyRowY = afterTitleY + 10;
+  const companyLogoSize = 44;
+  const companyTextX = companyLogoBase64 ? 140 : 90;
+
+  // Info cards row
+  const cardsY = companyRowY + companyLogoSize + 20;
+
+  // Build info pills
+  const pills: { icon: string; text: string; color: string; bg: string }[] = [];
+  if (locationShort) pills.push({ icon: "\uD83D\uDCCD", text: locationShort, color: "#0891b2", bg: "#ecfeff" });
+  if (contractShort) pills.push({ icon: "\uD83D\uDCBC", text: contractShort, color: "#2563eb", bg: "#eff6ff" });
+  if (expShort) pills.push({ icon: "\u2B50", text: expShort, color: "#7c3aed", bg: "#f5f3ff" });
+  if (eduShort) pills.push({ icon: "\uD83C\uDF93", text: eduShort, color: "#4f46e5", bg: "#eef2ff" });
+  if (sectorShort) pills.push({ icon: "\uD83C\uDFE2", text: sectorShort, color: "#059669", bg: "#ecfdf5" });
+
+  // Render pills as claymorphism mini-cards (2 rows if needed)
+  let pillsSvg = "";
+  let pX = 90;
+  let pY = cardsY;
+  const pillH = 40;
+  const pillGap = 12;
+  const maxRowWidth = 1020;
+
+  for (const pill of pills) {
+    const textW = pill.text.length * 9.5 + 44;
+    const pw = Math.max(textW, 80);
+    if (pX + pw > maxRowWidth + 90) {
+      pX = 90;
+      pY += pillH + pillGap;
+    }
+    pillsSvg += `
+      <rect x="${pX}" y="${pY}" width="${pw}" height="${pillH}" rx="12" fill="${pill.bg}" />
+      <rect x="${pX}" y="${pY}" width="${pw}" height="${pillH}" rx="12" fill="white" opacity="0.5" />
+      <text x="${pX + pw / 2}" y="${pY + 26}" font-family="${F}" font-size="15" font-weight="600" fill="${pill.color}" text-anchor="middle">${pill.text}</text>`;
+    pX += pw + pillGap;
+  }
+
+  // Salary section
+  const salaryY = pY + pillH + 28;
+  let salarySvg = "";
+  if (salaryShort) {
+    salarySvg = `
+      <rect x="90" y="${salaryY}" width="${salaryShort.length * 11 + 60}" height="44" rx="14" fill="#FFF7ED" />
+      <rect x="90" y="${salaryY}" width="${salaryShort.length * 11 + 60}" height="44" rx="14" fill="white" opacity="0.4" />
+      <text x="120" y="${salaryY + 29}" font-family="${F}" font-size="18" font-weight="bold" fill="#ea580c">${salaryShort}</text>`;
+  }
+
+  // Deadline
+  const deadlineY = salaryY + (salaryShort ? 56 : 0);
+  let deadlineSvg = "";
+  if (deadlineStr) {
+    deadlineSvg = `
+      <text x="90" y="${deadlineY + 20}" font-family="${F}" font-size="15" fill="#dc2626" font-weight="600">${deadlineStr}</text>`;
+  }
+
+  // Badges (URGENT / EN VEDETTE)
+  let badgesSvg = "";
+  let bX = 850;
+  if (isUrgent) {
+    badgesSvg += `
+      <rect x="${bX}" y="145" width="130" height="36" rx="18" fill="#ef4444" />
+      <text x="${bX + 65}" y="169" font-family="${F}" font-size="14" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
+    bX += 142;
+  }
+  if (isFeatured) {
+    badgesSvg += `
+      <rect x="${bX}" y="145" width="150" height="36" rx="18" fill="#f59e0b" />
+      <text x="${bX + 75}" y="169" font-family="${F}" font-size="14" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+  }
+
+  // Site logo
+  const siteLogoSvg = siteLogoBase64
+    ? `<image href="${siteLogoBase64}" x="60" y="24" width="180" height="50" preserveAspectRatio="xMinYMid meet" />`
+    : `<text x="60" y="60" font-family="${F}" font-size="26" font-weight="bold" fill="#1e1b4b">JobGuin&#233;e</text>`;
+
+  // Company logo next to name
+  const companyLogoSvg = companyLogoBase64
+    ? `<rect x="86" y="${companyRowY - 2}" width="${companyLogoSize + 4}" height="${companyLogoSize + 4}" rx="12" fill="white" />
+       <image href="${companyLogoBase64}" x="88" y="${companyRowY}" width="${companyLogoSize}" height="${companyLogoSize}" preserveAspectRatio="xMidYMid meet" clip-path="inset(0 round 10px)" />`
+    : "";
+
+  return `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#1a0533"/>
-      <stop offset="40%" stop-color="#2d1b69"/>
-      <stop offset="70%" stop-color="#4c1d95"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ddd6fe"/>
+      <stop offset="35%" stop-color="#c4b5fd"/>
+      <stop offset="65%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
     </linearGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="ctaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#fbbf24"/>
     </linearGradient>
-    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="550" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.10)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
-    </linearGradient>
+    <filter id="cardShadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#7c3aed" flood-opacity="0.18"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.06"/>
+    </filter>
+    <filter id="pillShadow" x="-8%" y="-15%" width="116%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#7c3aed" flood-opacity="0.12"/>
+    </filter>
+    <filter id="topShadow" x="-2%" y="-5%" width="104%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <!-- Background gradient -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- Decorative circles -->
-  <circle cx="1100" cy="80" r="250" fill="rgba(124,58,237,0.25)"/>
-  <circle cx="100" cy="580" r="300" fill="rgba(139,92,246,0.15)"/>
+  <!-- Decorative blobs (soft 3D feel) -->
+  <circle cx="1050" cy="100" r="200" fill="#c084fc" opacity="0.3"/>
+  <circle cx="150" cy="550" r="250" fill="#818cf8" opacity="0.2"/>
+  <circle cx="600" cy="650" r="180" fill="#a78bfa" opacity="0.15"/>
+  <ellipse cx="1100" cy="500" rx="120" ry="80" fill="#f0abfc" opacity="0.2"/>
 
-  <!-- Inner card -->
-  <rect x="40" y="35" width="1120" height="560" rx="24" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+  <!-- Main card (claymorphism: white, rounded, soft shadow) -->
+  <rect x="40" y="14" width="1120" height="602" rx="32" fill="url(#shine)" filter="url(#cardShadow)" />
+  <rect x="40" y="14" width="1120" height="602" rx="32" fill="white" opacity="0.88" />
 
-  <!-- Gold accent bar left -->
-  <rect x="40" y="35" width="6" height="560" rx="3" fill="url(#goldGrad)"/>
+  <!-- TOP BAR: purple header strip -->
+  <rect x="40" y="14" width="1120" height="${headerH}" rx="32" fill="url(#headerGrad)"/>
+  <rect x="40" y="54" width="1120" height="40" fill="url(#headerGrad)"/>
 
-  ${logoEl}
-  ${urgentBadge}
-  ${featuredBadge}
+  <!-- Site logo (JobGuinee) in header -->
+  ${siteLogoSvg}
 
-  <!-- Header: AVIS DE RECRUTEMENT -->
-  <rect x="80" y="65" width="5" height="32" rx="2" fill="#fbbf24"/>
-  <text x="100" y="92" font-family="Inter, sans-serif" font-size="22" font-weight="bold" fill="#fbbf24" letter-spacing="2">AVIS DE RECRUTEMENT</text>
+  <!-- "AVIS DE RECRUTEMENT" header text -->
+  <text x="1120" y="62" font-family="${F}" font-size="18" font-weight="bold" fill="rgba(255,255,255,0.9)" text-anchor="end" letter-spacing="3">AVIS DE RECRUTEMENT</text>
 
-  <!-- Separator line -->
-  <rect x="80" y="120" width="1040" height="1" fill="rgba(255,255,255,0.12)"/>
+  <!-- Badges -->
+  ${badgesSvg}
 
-  <!-- Job Title (UPPERCASE, large) -->
-  <text x="80" y="${titleY1}" font-family="Inter, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine1}</text>
-  ${hasLine2 ? `<text x="80" y="${titleY2}" font-family="Inter, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine2}</text>` : ""}
+  <!-- ============ CONTENT AREA ============ -->
 
-  <!-- Company name -->
-  <text x="80" y="${companyY}" font-family="Inter, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)" font-weight="600">${companyShort}</text>
+  <!-- Job Title -->
+  <text x="90" y="${titleY1}" font-family="${F}" font-size="${titleFontSize}" font-weight="bold" fill="#1e1b4b">${titleLine1}</text>
+  ${hasLine2 ? `<text x="90" y="${titleY2}" font-family="${F}" font-size="${titleFontSize}" font-weight="bold" fill="#1e1b4b">${titleLine2}</text>` : ""}
 
-  <!-- Detail tags (pills) -->
-  ${tagsSvg}
+  <!-- Company row: logo + name -->
+  ${companyLogoSvg}
+  <text x="${companyTextX}" y="${companyRowY + 30}" font-family="${F}" font-size="24" fill="#4b5563" font-weight="600">${companyShort}</text>
 
-  <!-- Bottom separator -->
-  <rect x="80" y="500" width="1040" height="1" fill="rgba(255,255,255,0.12)"/>
+  <!-- Info pills (claymorphism mini cards) -->
+  <g filter="url(#pillShadow)">
+    ${pillsSvg}
+  </g>
 
-  <!-- CTA -->
-  <text x="80" y="548" font-family="Inter, sans-serif" font-size="24" font-weight="bold" fill="#fbbf24">Postulez via JobGuin&#233;e!</text>
+  <!-- Salary -->
+  ${salarySvg}
+
+  <!-- Deadline -->
+  ${deadlineSvg}
+
+  <!-- ============ BOTTOM BAR ============ -->
+  <!-- CTA button -->
+  <rect x="90" y="545" width="340" height="52" rx="26" fill="url(#ctaGrad)" filter="url(#topShadow)" />
+  <text x="260" y="578" font-family="${F}" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Postulez via JobGuin&#233;e!</text>
 
   <!-- URL -->
-  <text x="1120" y="548" font-family="Inter, sans-serif" font-size="20" fill="rgba(255,255,255,0.4)" text-anchor="end">jobguinee-pro.com</text>
+  <text x="1120" y="578" font-family="${F}" font-size="17" fill="#6b7280" text-anchor="end">jobguinee-pro.com</text>
 
-  <!-- Bottom accent bar -->
-  <rect x="40" y="589" width="1120" height="6" rx="3" fill="url(#goldGrad)"/>
+  <!-- Bottom accent line -->
+  <rect x="40" y="608" width="1120" height="8" rx="4" fill="url(#ctaGrad)" opacity="0.7"/>
 </svg>`;
 }
 
@@ -236,7 +335,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, title, location, contract_type, sector, is_urgent, is_featured, company_logo_url, partner_logo_url, use_profile_logo, company_id, company_name")
+      .select("id, title, location, contract_type, sector, experience_level, education_level, salary_range, deadline, is_urgent, is_featured, company_logo_url, partner_logo_url, use_profile_logo, company_id, company_name")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -248,7 +347,7 @@ Deno.serve(async (req: Request) => {
     }
 
     let companyName = (job as any).company_name || "";
-    let logoUrl: string | null = null;
+    let companyLogoUrl: string | null = null;
 
     if (!companyName && job.company_id) {
       const { data: company } = await supabase
@@ -258,12 +357,12 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (company) {
         companyName = company.name || "";
-        if (job.use_profile_logo) logoUrl = company.logo_url;
+        companyLogoUrl = company.logo_url || null;
       }
     }
 
-    if (!logoUrl) {
-      logoUrl = job.company_logo_url || job.partner_logo_url || null;
+    if (!companyLogoUrl) {
+      companyLogoUrl = job.company_logo_url || job.partner_logo_url || null;
     }
 
     const { data: settings } = await supabase
@@ -276,19 +375,21 @@ Deno.serve(async (req: Request) => {
       settingsMap[s.key] = typeof s.value === "string" ? s.value : JSON.stringify(s.value);
     });
 
-    const siteName = settingsMap["site_name"] || "JobGuin茅e";
     const siteUrl = settingsMap["site_url"] || "jobguinee.com";
     const siteLogoPath = settingsMap["site_logo_url"] || null;
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const appOrigin = siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`;
 
-    let resolvedLogoUrl: string | null = logoUrl;
-    if (!resolvedLogoUrl && siteLogoPath) {
-      resolvedLogoUrl = siteLogoPath.startsWith("http") ? siteLogoPath : `${appOrigin}${siteLogoPath}`;
+    // Resolve site logo URL
+    let siteLogoUrl: string | null = null;
+    if (siteLogoPath) {
+      siteLogoUrl = siteLogoPath.startsWith("http") ? siteLogoPath : `${appOrigin}${siteLogoPath}`;
     }
 
-    const logoBase64 = resolvedLogoUrl ? await fetchImageAsBase64(resolvedLogoUrl) : null;
+    // Fetch both logos in parallel
+    const [companyLogoBase64, siteLogoBase64] = await Promise.all([
+      companyLogoUrl ? fetchImageAsBase64(companyLogoUrl) : Promise.resolve(null),
+      siteLogoUrl ? fetchImageAsBase64(siteLogoUrl) : Promise.resolve(null),
+    ]);
 
     const svg = generateSvg({
       title: job.title || "Offre d'emploi",
@@ -296,11 +397,14 @@ Deno.serve(async (req: Request) => {
       location: job.location || "",
       contractType: job.contract_type || "",
       sector: job.sector || "",
+      experienceLevel: (job as any).experience_level || "",
+      educationLevel: (job as any).education_level || "",
+      salaryRange: (job as any).salary_range || "",
+      deadline: (job as any).deadline || "",
       isUrgent: job.is_urgent || false,
       isFeatured: job.is_featured || false,
-      logoBase64,
-      siteName,
-      siteUrl: siteUrl.replace(/^https?:\/\//, ""),
+      companyLogoBase64,
+      siteLogoBase64,
     });
 
     await ensureWasm();
