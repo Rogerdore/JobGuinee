@@ -215,11 +215,15 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
     description = description.substring(0, 247) + '...';
   }
 
-  // OG Image Cascade (PNG/JPG only, NO SVG)
-  // Priority: featured_image_url → logo PNG
+  // OG Image Cascade
+  // Priority: featured_image_url (via Supabase transform → JPEG 1200x630) → logo PNG fallback
   // Company logos are excluded: they are typically small icons (<200x200) 
   // and Facebook requires at least 200x200px for og:image
-  let ogImage = `${baseUrl}/logo_jobguinee.png`; // Final fallback (logo PNG qui existe)
+  const fallbackImage = `${baseUrl}/logo_jobguinee.png`;
+  let ogImage = fallbackImage;
+  let imageType = 'image/png';
+  let imageWidth = '1200';
+  let imageHeight = '630';
   
   const isValidImageUrl = (url: string | undefined | null): boolean => {
     if (!url || typeof url !== 'string') return false;
@@ -228,20 +232,32 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
     return true;
   };
 
-  // Only use featured_image_url (full-size image uploaded by recruiter)
+  // Use Supabase Image Transformations to serve JPEG at optimal OG dimensions
+  // Converts WebP/PNG to JPEG and resizes to 1200x630 (Facebook recommended)
+  const supabaseStorageBase = Deno.env.get("SUPABASE_URL") + '/storage/v1';
+  
   if (isValidImageUrl(job.featured_image_url)) {
-    ogImage = job.featured_image_url!;
+    const rawUrl = job.featured_image_url!;
+    // Check if image is hosted on our Supabase Storage
+    const objectPrefix = supabaseStorageBase + '/object/public/';
+    if (rawUrl.startsWith(objectPrefix)) {
+      // Extract the bucket/path part and use render endpoint for JPEG conversion
+      const storagePath = rawUrl.substring(objectPrefix.length);
+      ogImage = `${supabaseStorageBase}/render/image/public/${storagePath}?width=1200&height=630&resize=cover`;
+      imageType = 'image/jpeg';
+    } else {
+      // External image URL — use as-is
+      ogImage = rawUrl;
+      const lowerImage = rawUrl.toLowerCase();
+      imageType = lowerImage.endsWith('.jpg') || lowerImage.endsWith('.jpeg')
+        ? 'image/jpeg'
+        : lowerImage.endsWith('.webp')
+        ? 'image/webp'
+        : lowerImage.endsWith('.gif')
+        ? 'image/gif'
+        : 'image/png';
+    }
   }
-
-  // Detect image type for og:image:type
-  const lowerImage = ogImage.toLowerCase();
-  const imageType = lowerImage.endsWith('.jpg') || lowerImage.endsWith('.jpeg')
-    ? 'image/jpeg'
-    : lowerImage.endsWith('.webp')
-    ? 'image/webp'
-    : lowerImage.endsWith('.gif')
-    ? 'image/gif'
-    : 'image/png';
 
   // Check if job-specific image exists (would need server-side validation in production)
   // For now, we use the featured_image_url if available, otherwise fallback
@@ -271,8 +287,8 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   <meta property="og:title" content="${escapeHTML(title)}" />
   <meta property="og:description" content="${escapeHTML(description)}" />
   <meta property="og:image" content="${ogImage}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image:width" content="${imageWidth}" />
+  <meta property="og:image:height" content="${imageHeight}" />
   <meta property="og:image:type" content="${imageType}" />
   <meta property="og:image:alt" content="${escapeHTML(title)}" />
   <meta property="og:url" content="${shareUrl}" />
