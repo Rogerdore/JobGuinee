@@ -4,7 +4,7 @@ import { Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock, C
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
-import { testimonials, jobCategories, guineaRegions } from '../utils/testimonials';
+import { testimonials } from '../utils/testimonials';
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
@@ -41,6 +41,8 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [newsletterDomain, setNewsletterDomain] = useState('');
   const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 0 });
   const [realCompanies, setRealCompanies] = useState<{name: string; logo: string | null; jobCount: number; sector: string}[]>([]);
+  const [realSectors, setRealSectors] = useState<{name: string; count: number}[]>([]);
+  const [realRegions, setRealRegions] = useState<{name: string; jobs: number}[]>([]);
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
   const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
@@ -122,6 +124,30 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
     const companiesList = Object.values(companyMap).sort((a, b) => b.jobCount - a.jobCount);
     setRealCompanies(companiesList);
+
+    // Compute real sector counts
+    const sectorMap: Record<string, number> = {};
+    (publishedJobs || []).forEach((j: any) => {
+      if (j.sector) {
+        sectorMap[j.sector] = (sectorMap[j.sector] || 0) + 1;
+      }
+    });
+    const sectorsList = Object.entries(sectorMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    setRealSectors(sectorsList);
+
+    // Compute real region counts
+    const regionMap: Record<string, number> = {};
+    (publishedJobs || []).forEach((j: any) => {
+      if (j.location) {
+        regionMap[j.location] = (regionMap[j.location] || 0) + 1;
+      }
+    });
+    const regionsList = Object.entries(regionMap)
+      .map(([name, jobs]) => ({ name, jobs }))
+      .sort((a, b) => b.jobs - a.jobs);
+    setRealRegions(regionsList);
 
     setStats({
       jobs: jobsCount || 0,
@@ -973,6 +999,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       </div>
 
       {/* Section 12: Offres par catégorie */}
+      {realSectors.length > 0 && (
       <div className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -980,27 +1007,32 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
             <p className="text-gray-600">Trouvez rapidement les offres dans votre domaine</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {jobCategories.map((category) => (
+          <div className={`grid gap-4 ${realSectors.length <= 2 ? 'grid-cols-2 max-w-lg mx-auto' : realSectors.length === 3 ? 'grid-cols-3 max-w-3xl mx-auto' : 'grid-cols-2 md:grid-cols-4'}`}>
+            {realSectors.map((cat, i) => {
+              const colors = ['from-orange-500 to-orange-700', 'from-blue-500 to-blue-700', 'from-green-500 to-green-700', 'from-purple-500 to-purple-700', 'from-red-500 to-red-700', 'from-indigo-500 to-indigo-700', 'from-yellow-500 to-yellow-700', 'from-gray-600 to-gray-800'];
+              return (
               <div
-                key={category.id}
+                key={cat.name}
                 onClick={() => {
-                  setSector(category.name);
+                  setSector(cat.name);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`bg-gradient-to-br ${category.color} text-white rounded-xl p-6 cursor-pointer hover:shadow-2xl transition-all card-hover text-center`}
+                className={`bg-gradient-to-br ${colors[i % colors.length]} text-white rounded-xl p-6 cursor-pointer hover:shadow-2xl transition-all card-hover text-center`}
               >
-                <div className="text-4xl mb-3">{category.icon}</div>
-                <h3 className="font-bold mb-2">{category.name}</h3>
-                <div className="text-2xl font-bold">{category.count}</div>
+                <Briefcase className="w-8 h-8 mx-auto mb-3" />
+                <h3 className="font-bold mb-2 text-sm">{cat.name}</h3>
+                <div className="text-2xl font-bold">{cat.count}</div>
                 <div className="text-sm opacity-90">offres disponibles</div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
+      )}
 
-      {/* Section 13: Carte interactive */}
+      {/* Section 13: Offres par ville */}
+      {realRegions.length > 0 && (
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -1008,8 +1040,8 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
             <p className="text-gray-600">Cliquez sur une région pour voir les opportunités locales</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {guineaRegions.map((region) => (
+          <div className={`grid gap-4 ${realRegions.length === 1 ? 'grid-cols-1 max-w-xs mx-auto' : realRegions.length <= 3 ? 'grid-cols-' + realRegions.length + ' max-w-3xl mx-auto' : 'grid-cols-2 md:grid-cols-5'}`}>
+            {realRegions.map((region) => (
               <div
                 key={region.name}
                 onClick={() => {
@@ -1027,6 +1059,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
           </div>
         </div>
       </div>
+      )}
 
       <div className="py-8"></div>
 
