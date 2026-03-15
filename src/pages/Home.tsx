@@ -256,15 +256,15 @@ export default function Home({ onNavigate }: HomeProps) {
           showWarning('Information', '✅ Cet email est déjà inscrit à notre newsletter !');
         } else {
           console.error('Newsletter subscription error:', error);
-          alert('❌ Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');
+          showError('Erreur', 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');
         }
       } else {
-        alert('🎉 Merci de vous être inscrit à notre newsletter !\n\nVous recevrez bientôt les dernières offres d\'emploi directement par email.');
+        showSuccess('Inscription réussie !', 'Merci ! Vous recevrez prochainement nos articles et actualités par email.', true);
         setNewsletterEmail('');
       }
     } catch (err) {
       console.error('Newsletter subscription error:', err);
-      alert('❌ Une erreur est survenue. Veuillez réessayer.');
+      showError('Erreur', 'Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setIsSubscribing(false);
     }
@@ -994,10 +994,10 @@ export default function Home({ onNavigate }: HomeProps) {
       <section className="py-12 bg-gradient-to-br from-[#FF8C00] to-[#e67e00] text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            Ne manquez aucune offre d'emploi en Guinée !
+            Restez informé avec notre newsletter
           </h2>
           <p className="text-lg mb-6">
-            Recevez les dernières annonces d'emploi directement par email
+            Articles, conseils carrière et actualités du marché de l'emploi en Guinée, directement dans votre boîte mail
           </p>
 
           <div className="max-w-md mx-auto">

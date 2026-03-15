@@ -136,10 +136,26 @@ export interface ChannelsConfig {
   notification?: ChannelContent;
 }
 
+export interface NewsletterContentItem {
+  type: 'article' | 'formation' | 'resource';
+  id: string;
+  title: string;
+  slug?: string;
+  excerpt?: string;
+  description?: string;
+  image_url?: string;
+  category?: string;
+  price?: number;
+  start_date?: string;
+  published_at?: string;
+}
+
 export interface AdminCommunication {
   id: string;
   title: string;
-  type: 'system_info' | 'important_notice' | 'promotion' | 'maintenance_alert' | 'institutional';
+  type: 'system_info' | 'important_notice' | 'promotion' | 'maintenance_alert' | 'institutional' | 'newsletter';
+  content_items?: NewsletterContentItem[];
+  include_newsletter_subscribers?: boolean;
   description?: string;
   filters_json: CommunicationFilters;
   estimated_audience_count: number;
@@ -785,5 +801,186 @@ export const adminCommunicationService = {
       valid: errors.length === 0,
       errors,
     };
+  },
+
+  // ================= Newsletter Methods =================
+
+  async getNewsletterContent(): Promise<{ articles: any[]; formations: any[]; resources: any[] }> {
+    const [articlesRes, formationsRes, pagesRes] = await Promise.all([
+      supabase
+        .from('blog_posts')
+        .select('id, title, slug, excerpt, image_url, category, published_at')
+        .eq('published', true)
+        .order('published_at', { ascending: false }),
+      supabase
+        .from('formations')
+        .select('id, title, description, category, price, start_date, image_url, status')
+        .eq('status', 'active')
+        .order('start_date', { ascending: false }),
+      supabase
+        .from('cms_pages')
+        .select('id, title, slug, meta_description, updated_at')
+        .eq('is_published', true)
+        .order('updated_at', { ascending: false }),
+    ]);
+
+    return {
+      articles: articlesRes.data || [],
+      formations: formationsRes.data || [],
+      resources: pagesRes.data || [],
+    };
+  },
+
+  async getNewsletterSubscribersCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('id', { count: 'exact', head: true });
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async getNewsletterSubscribers(): Promise<{ email: string; id: string }[]> {
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('id, email');
+    if (error) throw error;
+    return data || [];
+  },
+
+  generateNewsletterHtml(items: NewsletterContentItem[], subject: string): string {
+    const typeLabels: Record<string, string> = {
+      article: 'Article',
+      formation: 'Formation',
+      resource: 'Ressource',
+    };
+    const typeColors: Record<string, string> = {
+      article: '#2563eb',
+      formation: '#16a34a',
+      resource: '#9333ea',
+    };
+
+    const cards = items.map((item) => {
+      const safeTitle = escapeHtml(item.title);
+      const safeExcerpt = escapeHtml(item.excerpt || item.description || '');
+      const label = typeLabels[item.type] || item.type;
+      const color = typeColors[item.type] || '#64748b';
+      let url = 'https://jobguinee-pro.com';
+      if (item.type === 'article') url = `https://jobguinee-pro.com/blog/${item.slug || item.id}`;
+      else if (item.type === 'formation') url = `https://jobguinee-pro.com/formations/${item.id}`;
+      else if (item.type === 'resource') url = `https://jobguinee-pro.com/pages/${item.slug || item.id}`;
+
+      const imageBlock = item.image_url
+        ? `<img src="${escapeHtml(item.image_url)}" alt="${safeTitle}" width="560" style="width:100%;max-width:560px;border-radius:10px 10px 0 0;display:block;" />`
+        : '';
+
+      return `<tr><td style="padding:0 0 24px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+          ${imageBlock ? `<tr><td>${imageBlock}</td></tr>` : ''}
+          <tr><td style="padding:20px 24px;">
+            <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#fff;background:${color};margin-bottom:10px;">${label}</span>
+            <h3 style="margin:8px 0 6px;font-size:18px;font-weight:700;color:#0E2F56;line-height:1.3;">${safeTitle}</h3>
+            <p style="margin:0 0 16px;font-size:14px;color:#64748b;line-height:1.6;">${safeExcerpt}</p>
+            <a href="${url}" style="display:inline-block;padding:10px 24px;background:${color};color:#ffffff;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">Lire la suite &rarr;</a>
+          </td></tr>
+        </table>
+      </td></tr>`;
+    }).join('');
+
+    const safeSubject = escapeHtml(subject);
+    const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${safeSubject}</title></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f3f4f6;">
+<tr><td align="center" style="padding:32px 12px;">
+  <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;">
+    <!-- Header -->
+    <tr><td style="background:linear-gradient(135deg,#0E2F56 0%,#1a4a80 100%);padding:28px 32px;border-radius:12px 12px 0 0;text-align:center;">
+      <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>
+        <td><img src="https://jobguinee-pro.com/logo_jobguinee.png" alt="JobGuin&eacute;e" width="40" height="40" style="display:block;border-radius:10px;" /></td>
+        <td style="padding-left:10px;"><span style="color:#ffffff;font-size:22px;font-weight:800;">Job</span><span style="color:#F59E0B;font-size:22px;font-weight:800;">Guin&eacute;e</span></td>
+      </tr></table>
+      <p style="color:rgba(255,255,255,0.6);font-size:11px;margin:8px 0 0;letter-spacing:0.5px;text-transform:uppercase;">Newsletter &middot; ${today}</p>
+    </td></tr>
+    <!-- Intro -->
+    <tr><td style="background:#ffffff;padding:28px 32px 16px;">
+      <h1 style="margin:0 0 8px;font-size:24px;color:#0E2F56;font-weight:800;">${safeSubject}</h1>
+      <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">D&eacute;couvrez notre s&eacute;lection de contenus pour vous accompagner dans votre parcours professionnel.</p>
+    </td></tr>
+    <!-- Content Cards -->
+    <tr><td style="background:#ffffff;padding:8px 32px 24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        ${cards}
+      </table>
+    </td></tr>
+    <!-- Footer -->
+    <tr><td style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:20px 32px;border-radius:0 0 12px 12px;text-align:center;">
+      <table cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>
+        <td><img src="https://jobguinee-pro.com/logo_jobguinee.png" alt="JG" width="18" height="18" style="display:block;border-radius:4px;" /></td>
+        <td style="padding-left:6px;"><span style="color:#0E2F56;font-size:12px;font-weight:800;">Job</span><span style="color:#F59E0B;font-size:12px;font-weight:800;">Guin&eacute;e</span></td>
+      </tr></table>
+      <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;">Plateforme emploi &amp; RH en Guin&eacute;e</p>
+      <p style="margin:0;font-size:11px;color:#cbd5e1;"><a href="https://jobguinee-pro.com" style="color:#94a3b8;text-decoration:none;">jobguinee-pro.com</a></p>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  },
+
+  async sendNewsletterToSubscribers(
+    communicationId: string,
+    subscribers: { email: string; id: string }[],
+    subject: string,
+    htmlBody: string
+  ) {
+    const BATCH_SIZE = 20;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const session = (await supabase.auth.getSession()).data.session;
+    if (!session?.access_token) {
+      throw new Error('Session expired, cannot send emails');
+    }
+    const token = session.access_token;
+
+    let sent = 0;
+    let failed = 0;
+
+    for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
+      const batch = subscribers.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (sub) => {
+          const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              to: sub.email,
+              subject,
+              htmlBody,
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || `HTTP ${response.status}`);
+          }
+          return sub;
+        })
+      );
+
+      for (const r of results) {
+        if (r.status === 'fulfilled') sent++;
+        else {
+          failed++;
+          console.error('[sendNewsletter] Failed:', r.reason?.message);
+        }
+      }
+    }
+
+    return { sent, failed };
   },
 };

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Send, Calendar, Users, Mail, MessageSquare, Bell, AlertTriangle, CheckCircle, Eye } from 'lucide-react';
-import { adminCommunicationService, CommunicationFilters, ChannelsConfig, CommunicationTemplate } from '../services/adminCommunicationService';
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, ArrowRight, Send, Calendar, Users, Mail, MessageSquare, Bell, AlertTriangle, CheckCircle, Eye, Newspaper, Search, BookOpen, GraduationCap, FileText, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { adminCommunicationService, CommunicationFilters, ChannelsConfig, CommunicationTemplate, NewsletterContentItem } from '../services/adminCommunicationService';
 import { useModalContext } from '../contexts/ModalContext';
 
 interface AdminCommunicationCreateProps {
@@ -39,15 +39,52 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
 
+  // Newsletter-specific state
+  const [newsletterContent, setNewsletterContent] = useState<{ articles: any[]; formations: any[]; resources: any[] }>({ articles: [], formations: [], resources: [] });
+  const [selectedItems, setSelectedItems] = useState<NewsletterContentItem[]>([]);
+  const [contentSearch, setContentSearch] = useState('');
+  const [contentTab, setContentTab] = useState<'articles' | 'formations' | 'resources'>('articles');
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [includeNewsletterSubs, setIncludeNewsletterSubs] = useState(false);
+  const [newsletterSubsCount, setNewsletterSubsCount] = useState(0);
+
+  const isNewsletter = type === 'newsletter';
+  const totalSteps = isNewsletter ? 5 : 4;
+
   useEffect(() => {
     loadTemplates();
   }, []);
 
   useEffect(() => {
-    if (currentStep === 2) {
-      calculateAudience();
+    if (isNewsletter && selectedItems.length === 0) {
+      loadNewsletterContent();
     }
-  }, [filters, currentStep]);
+  }, [isNewsletter]);
+
+  useEffect(() => {
+    const audienceStep = isNewsletter ? 3 : 2;
+    if (currentStep === audienceStep) {
+      calculateAudience();
+      if (isNewsletter) {
+        loadNewsletterSubsCount();
+      }
+    }
+    // Auto-generate newsletter email when entering channels step
+    const channelsStep = isNewsletter ? 4 : 3;
+    if (currentStep === channelsStep && isNewsletter && selectedItems.length > 0) {
+      const emailSubject = title || 'Newsletter JobGuinée';
+      const htmlContent = adminCommunicationService.generateNewsletterHtml(selectedItems, emailSubject);
+      setChannels((prev) => ({
+        ...prev,
+        email: {
+          ...prev.email,
+          enabled: true,
+          subject: prev.email?.subject || emailSubject,
+          content: htmlContent,
+        },
+      }));
+    }
+  }, [filters, currentStep, isNewsletter]);
 
   const loadTemplates = async () => {
     try {
@@ -57,6 +94,72 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
       console.error('Error loading templates:', error);
     }
   };
+
+  const loadNewsletterContent = async () => {
+    setLoadingContent(true);
+    try {
+      const data = await adminCommunicationService.getNewsletterContent();
+      setNewsletterContent(data);
+    } catch (error) {
+      console.error('Error loading newsletter content:', error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const loadNewsletterSubsCount = async () => {
+    try {
+      const count = await adminCommunicationService.getNewsletterSubscribersCount();
+      setNewsletterSubsCount(count);
+    } catch (error) {
+      console.error('Error loading newsletter subs count:', error);
+    }
+  };
+
+  const toggleContentItem = (item: any, itemType: 'article' | 'formation' | 'resource') => {
+    const exists = selectedItems.find((s) => s.id === item.id && s.type === itemType);
+    if (exists) {
+      setSelectedItems((prev) => prev.filter((s) => !(s.id === item.id && s.type === itemType)));
+    } else {
+      setSelectedItems((prev) => [
+        ...prev,
+        {
+          type: itemType,
+          id: item.id,
+          title: item.title,
+          slug: item.slug,
+          excerpt: item.excerpt || item.description || item.meta_description || '',
+          image_url: item.image_url,
+          category: item.category,
+          price: item.price,
+          start_date: item.start_date,
+          published_at: item.published_at,
+        },
+      ]);
+    }
+  };
+
+  const moveItem = (index: number, direction: 'up' | 'down') => {
+    const newItems = [...selectedItems];
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= newItems.length) return;
+    [newItems[index], newItems[swapIndex]] = [newItems[swapIndex], newItems[index]];
+    setSelectedItems(newItems);
+  };
+
+  const filteredContent = useMemo(() => {
+    const list =
+      contentTab === 'articles' ? newsletterContent.articles :
+      contentTab === 'formations' ? newsletterContent.formations :
+      newsletterContent.resources;
+    if (!contentSearch.trim()) return list;
+    const q = contentSearch.toLowerCase();
+    return list.filter((item: any) =>
+      (item.title || '').toLowerCase().includes(q) ||
+      (item.category || '').toLowerCase().includes(q) ||
+      (item.excerpt || item.description || item.meta_description || '').toLowerCase().includes(q)
+    );
+  }, [contentTab, newsletterContent, contentSearch]);
 
   const calculateAudience = async () => {
     setLoadingAudience(true);
@@ -123,24 +226,42 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
     if (currentStep === 1) {
       return title.trim().length > 0 && type;
     }
-    if (currentStep === 2) {
-      return audienceCount > 0;
-    }
-    if (currentStep === 3) {
-      const enabledChannels = Object.entries(channels).filter(([_, config]) => config?.enabled);
-      if (enabledChannels.length === 0) return false;
-      return enabledChannels.every(([channel, config]) => {
-        if (channel === 'email') {
-          return config.subject && config.subject.trim().length > 0 && config.content && config.content.trim().length > 0;
-        }
-        return config.content && config.content.trim().length > 0;
-      });
-    }
-    if (currentStep === 4) {
-      if (sendMode === 'scheduled') {
-        return scheduledDate && scheduledTime;
+
+    if (isNewsletter) {
+      // Newsletter: 5 steps — 1:Objectif 2:Contenus 3:Audience 4:Canaux 5:Envoi
+      if (currentStep === 2) return selectedItems.length > 0;
+      if (currentStep === 3) return audienceCount > 0 || includeNewsletterSubs;
+      if (currentStep === 4) {
+        const enabledChannels = Object.entries(channels).filter(([_, config]) => config?.enabled);
+        if (enabledChannels.length === 0) return false;
+        return enabledChannels.every(([channel, config]) => {
+          if (channel === 'email') {
+            return config.subject && config.subject.trim().length > 0 && config.content && config.content.trim().length > 0;
+          }
+          return config.content && config.content.trim().length > 0;
+        });
       }
-      return true;
+      if (currentStep === 5) {
+        if (sendMode === 'scheduled') return !!scheduledDate && !!scheduledTime;
+        return true;
+      }
+    } else {
+      // Normal: 4 steps — 1:Objectif 2:Audience 3:Canaux 4:Envoi
+      if (currentStep === 2) return audienceCount > 0;
+      if (currentStep === 3) {
+        const enabledChannels = Object.entries(channels).filter(([_, config]) => config?.enabled);
+        if (enabledChannels.length === 0) return false;
+        return enabledChannels.every(([channel, config]) => {
+          if (channel === 'email') {
+            return config.subject && config.subject.trim().length > 0 && config.content && config.content.trim().length > 0;
+          }
+          return config.content && config.content.trim().length > 0;
+        });
+      }
+      if (currentStep === 4) {
+        if (sendMode === 'scheduled') return !!scheduledDate && !!scheduledTime;
+        return true;
+      }
     }
     return false;
   };
@@ -155,18 +276,37 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
         type: type as any,
         description,
         filters_json: filters,
-        estimated_audience_count: audienceCount,
+        estimated_audience_count: audienceCount + (includeNewsletterSubs ? newsletterSubsCount : 0),
         channels_json: channels,
+        content_items: isNewsletter ? selectedItems : undefined,
+        include_newsletter_subscribers: includeNewsletterSubs,
         status: 'draft',
       });
 
       if (sendMode === 'immediate') {
-        await adminCommunicationService.sendCommunication(communication.id);
-        alert('Communication envoyée avec succès !');
+        // Send to profile users
+        await adminCommunicationService.sendCommunication(communication.id, filters, channels);
+
+        // If newsletter with subscribers, also send to newsletter subscribers
+        if (isNewsletter && includeNewsletterSubs) {
+          const subscribers = await adminCommunicationService.getNewsletterSubscribers();
+          if (subscribers.length > 0) {
+            const emailContent = channels.email?.content || '';
+            const emailSubject = channels.email?.subject || title;
+            await adminCommunicationService.sendNewsletterToSubscribers(
+              communication.id,
+              subscribers,
+              emailSubject,
+              emailContent
+            );
+          }
+        }
+
+        showSuccess('Succès', 'Communication envoyée avec succès !');
       } else {
         const scheduledAt = `${scheduledDate}T${scheduledTime}:00`;
         await adminCommunicationService.scheduleCommunication(communication.id, scheduledAt);
-        alert('Communication programmée avec succès !');
+        showSuccess('Succès', 'Communication programmée avec succès !');
       }
 
       onNavigate('admin-communications');
@@ -251,7 +391,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
 
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              {[1, 2, 3, 4].map((step) => (
+              {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
                 <div key={step} className="flex items-center flex-1">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                     currentStep >= step
@@ -260,7 +400,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                   }`}>
                     {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
                   </div>
-                  {step < 4 && (
+                  {step < totalSteps && (
                     <div className={`flex-1 h-1 mx-2 ${
                       currentStep > step ? 'bg-[#FF8C00]' : 'bg-gray-300'
                     }`} />
@@ -269,10 +409,22 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
               ))}
             </div>
             <div className="flex justify-between mt-2">
-              <span className="text-xs text-gray-600">Objectif</span>
-              <span className="text-xs text-gray-600">Audience</span>
-              <span className="text-xs text-gray-600">Canaux</span>
-              <span className="text-xs text-gray-600">Envoi</span>
+              {isNewsletter ? (
+                <>
+                  <span className="text-xs text-gray-600">Objectif</span>
+                  <span className="text-xs text-gray-600">Contenus</span>
+                  <span className="text-xs text-gray-600">Audience</span>
+                  <span className="text-xs text-gray-600">Canaux</span>
+                  <span className="text-xs text-gray-600">Envoi</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-xs text-gray-600">Objectif</span>
+                  <span className="text-xs text-gray-600">Audience</span>
+                  <span className="text-xs text-gray-600">Canaux</span>
+                  <span className="text-xs text-gray-600">Envoi</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -300,6 +452,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
+                      { value: 'newsletter', label: 'Newsletter', icon: Newspaper },
                       { value: 'system_info', label: 'Information Système', icon: Bell },
                       { value: 'important_notice', label: 'Notification Importante', icon: AlertTriangle },
                       { value: 'promotion', label: 'Annonce / Promotion', icon: Send },
@@ -308,7 +461,15 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                     ].map(({ value, label, icon: Icon }) => (
                       <button
                         key={value}
-                        onClick={() => setType(value)}
+                        onClick={() => {
+                          setType(value);
+                          // When switching to/from newsletter, reset step to 1
+                          if (currentStep > 1) setCurrentStep(1);
+                          // Auto-enable email & set defaults for newsletter
+                          if (value === 'newsletter') {
+                            setIncludeNewsletterSubs(true);
+                          }
+                        }}
                         className={`p-4 border-2 rounded-lg text-left transition flex items-center gap-3 ${
                           type === value
                             ? 'border-[#FF8C00] bg-orange-50'
@@ -339,9 +500,152 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
               </div>
             )}
 
-            {currentStep === 2 && (
+            {currentStep === 2 && isNewsletter && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape 2: Filtrage de l'Audience</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape 2: Sélection des Contenus</h2>
+
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Content browser */}
+                  <div className="flex-1">
+                    {/* Tabs */}
+                    <div className="flex gap-2 mb-4">
+                      {([
+                        { key: 'articles', label: 'Articles', icon: BookOpen, count: newsletterContent.articles.length },
+                        { key: 'formations', label: 'Formations', icon: GraduationCap, count: newsletterContent.formations.length },
+                        { key: 'resources', label: 'Ressources', icon: FileText, count: newsletterContent.resources.length },
+                      ] as const).map(({ key, label, icon: Icon, count }) => (
+                        <button
+                          key={key}
+                          onClick={() => { setContentTab(key); setContentSearch(''); }}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            contentTab === key
+                              ? 'bg-[#FF8C00] text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {label} ({count})
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={contentSearch}
+                        onChange={(e) => setContentSearch(e.target.value)}
+                        placeholder="Rechercher un contenu..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Content list */}
+                    {loadingContent ? (
+                      <div className="text-center py-8 text-gray-500">Chargement des contenus...</div>
+                    ) : filteredContent.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">Aucun contenu trouvé</div>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                        {filteredContent.map((item: any) => {
+                          const itemType = contentTab === 'articles' ? 'article' : contentTab === 'formations' ? 'formation' : 'resource';
+                          const isSelected = selectedItems.some((s) => s.id === item.id && s.type === itemType);
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => toggleContentItem(item, itemType)}
+                              className={`w-full text-left p-4 rounded-lg border-2 transition flex gap-4 items-start ${
+                                isSelected
+                                  ? 'border-[#FF8C00] bg-orange-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              {item.image_url && (
+                                <img src={item.image_url} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 text-sm truncate">{item.title}</h4>
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                  {item.excerpt || item.description || item.meta_description || ''}
+                                </p>
+                                <div className="flex gap-2 mt-2">
+                                  {item.category && (
+                                    <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">{item.category}</span>
+                                  )}
+                                  {item.published_at && (
+                                    <span className="text-xs text-gray-400">{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
+                                  )}
+                                  {item.start_date && (
+                                    <span className="text-xs text-gray-400">Début: {new Date(item.start_date).toLocaleDateString('fr-FR')}</span>
+                                  )}
+                                  {item.price != null && (
+                                    <span className="text-xs text-green-600 font-medium">{item.price === 0 ? 'Gratuit' : `${item.price.toLocaleString()} GNF`}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
+                                isSelected ? 'bg-[#FF8C00] border-[#FF8C00]' : 'border-gray-300'
+                              }`}>
+                                {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected items cart */}
+                  <div className="lg:w-72 flex-shrink-0">
+                    <div className="sticky top-4 bg-gray-50 rounded-lg border border-gray-200 p-4">
+                      <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <Newspaper className="w-4 h-4 text-[#FF8C00]" />
+                        Contenus sélectionnés ({selectedItems.length})
+                      </h3>
+                      {selectedItems.length === 0 ? (
+                        <p className="text-sm text-gray-500">Sélectionnez au moins 1 contenu pour votre newsletter</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {selectedItems.map((item, index) => {
+                            const typeColors = { article: 'bg-blue-100 text-blue-700', formation: 'bg-green-100 text-green-700', resource: 'bg-purple-100 text-purple-700' };
+                            const typeLabels = { article: 'Article', formation: 'Formation', resource: 'Ressource' };
+                            return (
+                              <div key={`${item.type}-${item.id}`} className="bg-white rounded-lg p-3 border border-gray-200 flex items-start gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded ${typeColors[item.type]}`}>
+                                    {typeLabels[item.type]}
+                                  </span>
+                                  <p className="text-xs font-medium text-gray-900 mt-1 truncate">{item.title}</p>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <button onClick={() => moveItem(index, 'up')} disabled={index === 0} className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30">
+                                    <ChevronUp className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={() => moveItem(index, 'down')} disabled={index === selectedItems.length - 1} className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30">
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedItems((prev) => prev.filter((_, i) => i !== index))}
+                                  className="p-0.5 text-gray-400 hover:text-red-500"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentStep === (isNewsletter ? 3 : 2) && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape {isNewsletter ? 3 : 2}: Filtrage de l'Audience</h2>
 
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <div className="flex items-center gap-3">
@@ -399,7 +703,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                   </div>
                 </div>
 
-                {audienceCount === 0 && (
+                {audienceCount === 0 && !includeNewsletterSubs && (
                   <div className="bg-yellow-50 rounded-lg p-4 flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
                     <div>
@@ -410,12 +714,44 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                     </div>
                   </div>
                 )}
+
+                {/* Newsletter subscribers toggle */}
+                {isNewsletter && (
+                  <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-[#FF8C00]" />
+                        <div>
+                          <p className="font-semibold text-gray-900">Inclure les abonnés newsletter</p>
+                          <p className="text-sm text-gray-600">{newsletterSubsCount} abonné{newsletterSubsCount > 1 ? 's' : ''} (non connectés)</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setIncludeNewsletterSubs(!includeNewsletterSubs)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          includeNewsletterSubs ? 'bg-[#FF8C00]' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          includeNewsletterSubs ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </div>
+                    {includeNewsletterSubs && (
+                      <div className="mt-3 pt-3 border-t border-orange-200">
+                        <p className="text-sm text-gray-700">
+                          <strong>Audience totale :</strong> {audienceCount} profils + {newsletterSubsCount} abonnés = <strong className="text-[#FF8C00]">{audienceCount + newsletterSubsCount}</strong> destinataires
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {currentStep === 3 && (
+            {currentStep === (isNewsletter ? 4 : 3) && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape 3: Canaux & Contenu</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape {isNewsletter ? 4 : 3}: Canaux & Contenu</h2>
 
                 {(['email', 'sms', 'whatsapp', 'notification'] as const).map((channel) => {
                   const channelLabels = {
@@ -524,16 +860,16 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
               </div>
             )}
 
-            {currentStep === 4 && (
+            {currentStep === (isNewsletter ? 5 : 4) && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape 4: Envoi & Planification</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Étape {isNewsletter ? 5 : 4}: Envoi & Planification</h2>
 
                 <div className="bg-yellow-50 rounded-lg p-4 flex items-start gap-3 mb-6">
                   <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
                   <div>
                     <p className="font-semibold text-yellow-900">Communication à grande échelle</p>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Cette communication sera envoyée à {audienceCount} utilisateurs. Vérifiez bien le contenu avant d'envoyer.
+                      Cette communication sera envoyée à {audienceCount + (includeNewsletterSubs ? newsletterSubsCount : 0)} destinataires. Vérifiez bien le contenu avant d'envoyer.
                     </p>
                   </div>
                 </div>
@@ -607,7 +943,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                     </div>
                     <div>
                       <p className="text-gray-600">Audience</p>
-                      <p className="font-medium text-gray-900">{audienceCount} utilisateurs</p>
+                      <p className="font-medium text-gray-900">{audienceCount + (includeNewsletterSubs ? newsletterSubsCount : 0)} destinataires</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Canaux activés</p>
@@ -636,7 +972,7 @@ export default function AdminCommunicationCreate({ onNavigate }: AdminCommunicat
                 Précédent
               </button>
 
-              {currentStep < 4 ? (
+              {currentStep < totalSteps ? (
                 <button
                   onClick={() => setCurrentStep((prev) => prev + 1)}
                   disabled={!canGoNext()}
