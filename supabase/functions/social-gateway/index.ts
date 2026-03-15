@@ -161,7 +161,9 @@ function cleanDescription(desc: string | null | undefined): string {
 function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const baseUrl = "https://jobguinee-pro.com";
 
-  const title = `${job.title || "Offre d'emploi"} - ${job.company_name || job.company || "JobGuin\u00e9e"}`;
+  const jobTitle = job.title || "Offre d'emploi";
+  const companyLabel = job.company_name || job.company || "JobGuinée";
+  const title = `Avis de recrutement d'un(e) ${jobTitle} - ${companyLabel} - Postulez sur JobGuinée`;
 
   // Build a rich, structured og:description with job profile details
   const companyName = job.company_name || job.company || job.companies?.name || '';
