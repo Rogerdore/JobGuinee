@@ -39,6 +39,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterDomain, setNewsletterDomain] = useState('');
+  const [newsletterModal, setNewsletterModal] = useState<{
+    type: 'already-subscribed' | 'choose-email' | null;
+    profileEmail?: string;
+    typedEmail?: string;
+  }>({ type: null });
   const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 0 });
   const [realCompanies, setRealCompanies] = useState<{name: string; logo: string | null; jobCount: number; sector: string}[]>([]);
   const [realSectors, setRealSectors] = useState<{name: string; count: number}[]>([]);
@@ -329,19 +334,94 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
-  const subscribeNewsletter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsletterEmail) return;
-
-    await supabase.from('newsletter_subscribers').insert({
-      email: newsletterEmail,
+  const doSubscribe = async (email: string) => {
+    const { error } = await supabase.from('newsletter_subscribers').insert({
+      email,
       domain: newsletterDomain || 'all',
       subscribed_at: new Date().toISOString(),
     });
 
+    if (error?.code === '23505') {
+      showWarning('Déjà abonné', `L'adresse ${email} est déjà inscrite aux alertes emploi.`);
+      return;
+    }
+
     setNewsletterEmail('');
     setNewsletterDomain('');
-    showWarning('Information', 'Merci pour votre inscription ! Vous recevrez nos alertes emploi.');
+    showSuccess('Inscription réussie !', `Vous recevrez les alertes emploi sur ${email}.`, true);
+  };
+
+  const subscribeNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailToCheck = newsletterEmail.trim().toLowerCase();
+    if (!emailToCheck) return;
+
+    // Check if email is already subscribed
+    const { data: existing } = await supabase
+      .from('newsletter_subscribers')
+      .select('id')
+      .eq('email', emailToCheck)
+      .maybeSingle();
+
+    const profileEmail = user?.email?.toLowerCase();
+
+    if (user && profileEmail) {
+      // Connected user
+      if (existing) {
+        // Email already subscribed
+        if (emailToCheck === profileEmail) {
+          showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi. Vous n\'avez rien à faire !');
+        } else {
+          setNewsletterModal({
+            type: 'already-subscribed',
+            profileEmail,
+            typedEmail: emailToCheck,
+          });
+        }
+        return;
+      }
+
+      if (emailToCheck !== profileEmail) {
+        // Typed email is different from profile email — ask which to use
+        setNewsletterModal({
+          type: 'choose-email',
+          profileEmail,
+          typedEmail: emailToCheck,
+        });
+        return;
+      }
+
+      // Same email as profile, not yet subscribed
+      await doSubscribe(emailToCheck);
+    } else {
+      // Not connected
+      if (existing) {
+        setNewsletterModal({
+          type: 'already-subscribed',
+          typedEmail: emailToCheck,
+        });
+        return;
+      }
+      await doSubscribe(emailToCheck);
+    }
+  };
+
+  const handleQuickSubscribe = async () => {
+    if (!user?.email) return;
+    const profileEmail = user.email.toLowerCase();
+
+    const { data: existing } = await supabase
+      .from('newsletter_subscribers')
+      .select('id')
+      .eq('email', profileEmail)
+      .maybeSingle();
+
+    if (existing) {
+      showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi.');
+      return;
+    }
+
+    await doSubscribe(profileEmail);
   };
 
   const recommendedJobs = sortedJobs.slice(0, 3);
@@ -986,13 +1066,26 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
             Recevez les nouvelles offres correspondant à votre profil directement par email
           </p>
 
+          {user && (
+            <div className="mb-6">
+              <button
+                onClick={handleQuickSubscribe}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-lg transition shadow-md"
+              >
+                <Zap className="w-5 h-5" />
+                S'abonner avec {user.email}
+              </button>
+              <p className="text-sm text-gray-500 mt-2">ou utilisez un autre email ci-dessous</p>
+            </div>
+          )}
+
           <form onSubmit={subscribeNewsletter} className="max-w-xl mx-auto">
             <div className="flex flex-col md:flex-row gap-3 mb-4">
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Votre adresse email"
+                placeholder={user ? 'Ou saisissez un autre email...' : 'Votre adresse email'}
                 required
                 className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
               />
@@ -1017,6 +1110,106 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
           </form>
         </div>
       </div>
+
+      {/* Modal choix email newsletter */}
+      {newsletterModal.type && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setNewsletterModal({ type: null })}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Mail className="w-7 h-7 text-[#FF8C00]" />
+              </div>
+
+              {newsletterModal.type === 'already-subscribed' && (
+                <>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Email déjà abonné</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    L'adresse <strong>{newsletterModal.typedEmail}</strong> est déjà inscrite aux alertes emploi.
+                  </p>
+                  {newsletterModal.profileEmail && newsletterModal.profileEmail !== newsletterModal.typedEmail ? (
+                    <div className="space-y-3">
+                      <button
+                        onClick={async () => {
+                          setNewsletterModal({ type: null });
+                          await doSubscribe(newsletterModal.profileEmail!);
+                        }}
+                        className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
+                      >
+                        S'abonner avec {newsletterModal.profileEmail}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setNewsletterModal({ type: null });
+                          setNewsletterEmail('');
+                        }}
+                        className="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                      >
+                        Saisir un autre email
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-gray-500 text-sm">Souhaitez-vous vous abonner avec une autre adresse ?</p>
+                      <button
+                        onClick={() => {
+                          setNewsletterModal({ type: null });
+                          setNewsletterEmail('');
+                        }}
+                        className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
+                      >
+                        Saisir un autre email
+                      </button>
+                      <button
+                        onClick={() => setNewsletterModal({ type: null })}
+                        className="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                      >
+                        Fermer
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {newsletterModal.type === 'choose-email' && (
+                <>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Quel email utiliser ?</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Vous avez saisi un email différent de celui de votre profil. Lequel souhaitez-vous utiliser pour recevoir les alertes ?
+                  </p>
+                  <div className="space-y-3">
+                    <button
+                      onClick={async () => {
+                        setNewsletterModal({ type: null });
+                        await doSubscribe(newsletterModal.profileEmail!);
+                      }}
+                      className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition text-sm"
+                    >
+                      <span className="block font-bold">Mon email de profil</span>
+                      <span className="opacity-80">{newsletterModal.profileEmail}</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setNewsletterModal({ type: null });
+                        await doSubscribe(newsletterModal.typedEmail!);
+                      }}
+                      className="w-full py-3 border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-lg hover:bg-blue-50 transition text-sm"
+                    >
+                      <span className="block font-bold">L'email saisi</span>
+                      <span className="opacity-80">{newsletterModal.typedEmail}</span>
+                    </button>
+                    <button
+                      onClick={() => setNewsletterModal({ type: null })}
+                      className="w-full py-2 text-gray-500 text-sm hover:text-gray-700 transition"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Section 12: Offres par catégorie */}
       <div className="bg-gray-50 py-16">
