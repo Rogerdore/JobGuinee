@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useModalContext } from '../contexts/ModalContext';
 import { Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock, ChevronDown, Grid2x2 as Grid, List, SlidersHorizontal, TrendingUp, Calendar, DollarSign, Zap, Users, Award, GraduationCap, Globe, Star, ChevronLeft, ChevronRight, Sparkles, Target, Mail, Send, ArrowRight, CheckCircle, Quote, BarChart3, MessageCircle } from 'lucide-react';
 import { supabase, Job, Company } from '../lib/supabase';
@@ -43,6 +43,8 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [realCompanies, setRealCompanies] = useState<{name: string; logo: string | null; jobCount: number; sector: string}[]>([]);
   const [realSectors, setRealSectors] = useState<{name: string; count: number}[]>([]);
   const [realRegions, setRealRegions] = useState<{name: string; jobs: number}[]>([]);
+  const sectorsRef = useRef<HTMLDivElement>(null);
+  const regionsRef = useRef<HTMLDivElement>(null);
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
   const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
@@ -1019,30 +1021,45 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       {/* Section 12: Offres par catégorie */}
       <div className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Secteurs d'emploi en Guinée</h2>
             <p className="text-gray-600">Trouvez rapidement les offres dans votre domaine</p>
           </div>
 
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-            {realSectors.map((cat, i) => {
-              const colors = ['from-orange-500 to-orange-700', 'from-blue-500 to-blue-700', 'from-green-500 to-green-700', 'from-purple-500 to-purple-700', 'from-red-500 to-red-700', 'from-indigo-500 to-indigo-700', 'from-yellow-500 to-yellow-700', 'from-gray-600 to-gray-800'];
-              return (
-              <div
-                key={cat.name}
-                onClick={() => {
-                  setSector(cat.name);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`bg-gradient-to-br ${colors[i % colors.length]} text-white rounded-xl p-6 cursor-pointer hover:shadow-2xl transition-all card-hover text-center`}
-              >
-                <Briefcase className="w-8 h-8 mx-auto mb-3" />
-                <h3 className="font-bold mb-2 text-sm">{cat.name}</h3>
-                <div className="text-2xl font-bold">{cat.count}</div>
-                <div className="text-sm opacity-90">offres disponibles</div>
-              </div>
-              );
-            })}
+          <div className="relative group">
+            <button
+              onClick={() => { const el = sectorsRef.current; if (el) el.scrollBy({ left: -el.offsetWidth, behavior: 'smooth' }); }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition opacity-0 group-hover:opacity-100"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <div ref={sectorsRef} className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {realSectors.map((cat, i) => {
+                const colors = ['from-orange-500 to-orange-700', 'from-blue-500 to-blue-700', 'from-green-500 to-green-700', 'from-purple-500 to-purple-700', 'from-red-500 to-red-700', 'from-indigo-500 to-indigo-700', 'from-yellow-500 to-yellow-700', 'from-gray-600 to-gray-800'];
+                return (
+                <div
+                  key={cat.name}
+                  onClick={() => {
+                    setSector(cat.name);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`bg-gradient-to-br ${colors[i % colors.length]} text-white rounded-lg px-4 py-3 cursor-pointer hover:shadow-xl transition-all flex-shrink-0 snap-start flex items-center gap-3 w-[calc((100%-60px)/6)] min-w-[180px]`}
+                >
+                  <Briefcase className="w-5 h-5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-xs leading-tight truncate">{cat.name}</h3>
+                    <div className="text-lg font-bold leading-tight">{cat.count} <span className="text-xs font-normal opacity-90">offres</span></div>
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => { const el = sectorsRef.current; if (el) el.scrollBy({ left: el.offsetWidth, behavior: 'smooth' }); }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition opacity-0 group-hover:opacity-100"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-700" />
+            </button>
           </div>
         </div>
       </div>
@@ -1050,27 +1067,42 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       {/* Section 13: Offres par ville */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Offres d'emploi par ville en Guinée</h2>
             <p className="text-gray-600">Cliquez sur une région pour voir les opportunités locales</p>
           </div>
 
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-            {realRegions.map((region) => (
-              <div
-                key={region.name}
-                onClick={() => {
-                  setLocation(region.name);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="bg-gradient-to-br from-[#0E2F56] to-blue-700 text-white rounded-xl p-6 cursor-pointer hover:shadow-xl transition-all card-hover text-center"
-              >
-                <MapPin className="w-8 h-8 mx-auto mb-3" />
-                <h3 className="font-bold mb-2">{region.name}</h3>
-                <div className="text-2xl font-bold text-[#FF8C00]">{region.jobs}</div>
-                <div className="text-sm opacity-90">offres</div>
-              </div>
-            ))}
+          <div className="relative group">
+            <button
+              onClick={() => { const el = regionsRef.current; if (el) el.scrollBy({ left: -el.offsetWidth, behavior: 'smooth' }); }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition opacity-0 group-hover:opacity-100"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <div ref={regionsRef} className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {realRegions.map((region) => (
+                <div
+                  key={region.name}
+                  onClick={() => {
+                    setLocation(region.name);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="bg-gradient-to-br from-[#0E2F56] to-blue-700 text-white rounded-lg px-4 py-3 cursor-pointer hover:shadow-xl transition-all flex-shrink-0 snap-start flex items-center gap-3 w-[calc((100%-60px)/6)] min-w-[180px]"
+                >
+                  <MapPin className="w-5 h-5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-sm truncate">{region.name}</h3>
+                    <div className="text-lg font-bold text-[#FF8C00] leading-tight">{region.jobs} <span className="text-xs font-normal text-white opacity-90">offres</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => { const el = regionsRef.current; if (el) el.scrollBy({ left: el.offsetWidth, behavior: 'smooth' }); }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 transition opacity-0 group-hover:opacity-100"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-700" />
+            </button>
           </div>
         </div>
       </div>
