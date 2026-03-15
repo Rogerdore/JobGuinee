@@ -40,7 +40,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterDomain, setNewsletterDomain] = useState('');
   const [newsletterModal, setNewsletterModal] = useState<{
-    type: 'already-subscribed' | 'choose-email' | null;
+    type: 'already-subscribed' | 'choose-email' | 'login-required' | null;
     profileEmail?: string;
     typedEmail?: string;
   }>({ type: null });
@@ -358,36 +358,28 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
   const subscribeNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setNewsletterModal({ type: 'login-required' });
+      return;
+    }
+
     const emailToCheck = newsletterEmail.trim().toLowerCase();
     if (!emailToCheck) return;
 
-    const profileEmail = user?.email?.toLowerCase();
+    const profileEmail = user.email?.toLowerCase();
 
-    if (user && profileEmail) {
-      // Connected user typing a different email — ask which to use
-      if (emailToCheck !== profileEmail) {
-        setNewsletterModal({
-          type: 'choose-email',
-          profileEmail,
-          typedEmail: emailToCheck,
-        });
-        return;
-      }
+    if (profileEmail && emailToCheck !== profileEmail) {
+      setNewsletterModal({
+        type: 'choose-email',
+        profileEmail,
+        typedEmail: emailToCheck,
+      });
+      return;
+    }
 
-      // Same email as profile — try to subscribe
-      const success = await doSubscribe(emailToCheck);
-      if (!success) {
-        showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi. Vous n\'avez rien à faire !');
-      }
-    } else {
-      // Not connected — try to subscribe
-      const success = await doSubscribe(emailToCheck);
-      if (!success) {
-        setNewsletterModal({
-          type: 'already-subscribed',
-          typedEmail: emailToCheck,
-        });
-      }
+    const success = await doSubscribe(emailToCheck);
+    if (!success) {
+      showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi. Vous n\'avez rien à faire !');
     }
   };
 
@@ -1043,48 +1035,73 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
             Recevez les nouvelles offres correspondant à votre profil directement par email
           </p>
 
-          {user && (
-            <div className="mb-6">
-              <button
-                onClick={handleQuickSubscribe}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-lg transition shadow-md"
-              >
-                <Zap className="w-5 h-5" />
-                S'abonner avec {user.email}
-              </button>
-              <p className="text-sm text-gray-500 mt-2">ou utilisez un autre email ci-dessous</p>
+          {user ? (
+            <>
+              <div className="mb-6">
+                <button
+                  onClick={handleQuickSubscribe}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF8C00] hover:bg-orange-600 text-white font-semibold rounded-lg transition shadow-md"
+                >
+                  <Zap className="w-5 h-5" />
+                  S'abonner avec {user.email}
+                </button>
+                <p className="text-sm text-gray-500 mt-2">ou utilisez un autre email ci-dessous</p>
+              </div>
+
+              <form onSubmit={subscribeNewsletter} className="max-w-xl mx-auto">
+                <div className="flex flex-col md:flex-row gap-3 mb-4">
+                  <input
+                    type="email"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    placeholder="Saisissez un autre email..."
+                    required
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
+                  />
+                  <select
+                    value={newsletterDomain}
+                    onChange={(e) => setNewsletterDomain(e.target.value)}
+                    className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
+                  >
+                    <option value="">Tous les domaines</option>
+                    {sectors.map((sector) => (
+                      <option key={sector} value={sector}>{sector}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full md:w-auto px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 mx-auto"
+                >
+                  <Send className="w-5 h-5" />
+                  <span>S'abonner aux alertes</span>
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="max-w-md mx-auto">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-4">
+                <Users className="w-10 h-10 text-[#0E2F56] mx-auto mb-3" />
+                <p className="text-gray-700 text-sm mb-4">
+                  Pour recevoir des alertes emploi personnalisées, vous devez d'abord créer un compte ou vous connecter.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => onNavigate('login')}
+                    className="px-6 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
+                  >
+                    Se connecter
+                  </button>
+                  <button
+                    onClick={() => onNavigate('register')}
+                    className="px-6 py-3 border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-lg hover:bg-blue-50 transition"
+                  >
+                    Créer un compte
+                  </button>
+                </div>
+              </div>
             </div>
           )}
-
-          <form onSubmit={subscribeNewsletter} className="max-w-xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-3 mb-4">
-              <input
-                type="email"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder={user ? 'Ou saisissez un autre email...' : 'Votre adresse email'}
-                required
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
-              />
-              <select
-                value={newsletterDomain}
-                onChange={(e) => setNewsletterDomain(e.target.value)}
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#0E2F56] focus:outline-none"
-              >
-                <option value="">Tous les domaines</option>
-                {sectors.map((sector) => (
-                  <option key={sector} value={sector}>{sector}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="w-full md:w-auto px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 mx-auto"
-            >
-              <Send className="w-5 h-5" />
-              <span>S'abonner aux alertes</span>
-            </button>
-          </form>
         </div>
       </div>
 
@@ -1097,57 +1114,65 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                 <Mail className="w-7 h-7 text-[#FF8C00]" />
               </div>
 
+              {newsletterModal.type === 'login-required' && (
+                <>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Connexion requise</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Pour recevoir des alertes emploi personnalisées, vous devez être connecté à votre compte JobGuinée.
+                  </p>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => {
+                        setNewsletterModal({ type: null });
+                        onNavigate('login');
+                      }}
+                      className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
+                    >
+                      Se connecter
+                    </button>
+                    <button
+                      onClick={() => {
+                        setNewsletterModal({ type: null });
+                        onNavigate('register');
+                      }}
+                      className="w-full py-3 border-2 border-[#0E2F56] text-[#0E2F56] font-medium rounded-lg hover:bg-blue-50 transition"
+                    >
+                      Créer un compte gratuitement
+                    </button>
+                    <button
+                      onClick={() => setNewsletterModal({ type: null })}
+                      className="w-full py-2 text-gray-500 text-sm hover:text-gray-700 transition"
+                    >
+                      Fermer
+                    </button>
+                  </div>
+                </>
+              )}
+
               {newsletterModal.type === 'already-subscribed' && (
                 <>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Email déjà abonné</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Déjà abonné</h3>
                   <p className="text-gray-600 text-sm mb-4">
                     L'adresse <strong>{newsletterModal.typedEmail}</strong> est déjà inscrite aux alertes emploi.
                   </p>
-                  {newsletterModal.profileEmail && newsletterModal.profileEmail !== newsletterModal.typedEmail ? (
-                    <div className="space-y-3">
-                      <button
-                        onClick={async () => {
-                          const email = newsletterModal.profileEmail!;
-                          setNewsletterModal({ type: null });
-                          const success = await doSubscribe(email);
-                          if (!success) {
-                            showWarning('Déjà abonné', `L'adresse ${email} est aussi déjà inscrite aux alertes emploi.`);
-                          }
-                        }}
-                        className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
-                      >
-                        S'abonner avec {newsletterModal.profileEmail}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNewsletterModal({ type: null });
-                          setNewsletterEmail('');
-                        }}
-                        className="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-                      >
-                        Saisir un autre email
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-gray-500 text-sm">Souhaitez-vous vous abonner avec une autre adresse ?</p>
-                      <button
-                        onClick={() => {
-                          setNewsletterModal({ type: null });
-                          setNewsletterEmail('');
-                        }}
-                        className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
-                      >
-                        Saisir un autre email
-                      </button>
-                      <button
-                        onClick={() => setNewsletterModal({ type: null })}
-                        className="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-                      >
-                        Fermer
-                      </button>
-                    </div>
-                  )}
+                  <div className="space-y-3">
+                    <p className="text-gray-500 text-sm">Souhaitez-vous utiliser une autre adresse ?</p>
+                    <button
+                      onClick={() => {
+                        setNewsletterModal({ type: null });
+                        setNewsletterEmail('');
+                      }}
+                      className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
+                    >
+                      Saisir un autre email
+                    </button>
+                    <button
+                      onClick={() => setNewsletterModal({ type: null })}
+                      className="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Fermer
+                    </button>
+                  </div>
                 </>
               )}
 
