@@ -5,7 +5,7 @@ import {
   LogOut, Home, Menu, X, AlertTriangle, Zap, DollarSign, Code,
   FileText, Mail, Crown, Building2, Globe, ShoppingCart, Send,
   TrendingUp, Database, Lock, Download, Palette, Search, Activity,
-  GraduationCap, AlertCircle, Calendar, Video, ArrowLeft
+  GraduationCap, AlertCircle, Calendar, Video, ArrowLeft, Image
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -231,7 +231,8 @@ export default function AdminLayout({ children, onNavigate, currentPage = '', ac
         { id: 'b2b-management', label: 'Gestion B2B', icon: Building2, route: 'admin-b2b-management' },
         { id: 'b2b-seo', label: 'SEO B2B', icon: Globe, route: 'admin-b2b-seo-config' },
         { id: 'diffusion-settings', label: 'Config Diffusion', icon: Send, route: 'admin-diffusion-settings' },
-        { id: 'automation-rules', label: 'Règles d\'Automatisation', icon: Zap, route: 'admin-automation-rules' }
+        { id: 'automation-rules', label: 'Règles d\'Automatisation', icon: Zap, route: 'admin-automation-rules' },
+        { id: 'template-affiche', label: 'Template Affiche', icon: Image, route: 'admin-template-affiche' }
       ]
     }
   ];

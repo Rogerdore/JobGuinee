@@ -68,6 +68,7 @@ const AdminAutomationRules = lazy(() => import('./pages/AdminAutomationRules'));
 const AdminRecruiterNotifications = lazy(() => import('./pages/AdminRecruiterNotifications'));
 const AdminEmailEvents = lazy(() => import('./pages/AdminEmailEvents'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
+const AdminOGTemplate = lazy(() => import('./pages/AdminOGTemplate'));
 const AdminJobModeration = lazy(() => import('./pages/AdminJobModerationEnhanced'));
 const AdminJobList = lazy(() => import('./pages/AdminJobList'));
 const AdminJobBadges = lazy(() => import('./pages/AdminJobBadges'));
@@ -143,7 +144,7 @@ function pathToPage(pathname: string): { page: string; param?: string } | null {
 }
 // --- End URL helpers ---
 
-type Page = 'home' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'privacy-policy' | 'terms-of-service' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-invitations' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-email-events' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'admin-email-config' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list' | 'admin-branding' | 'admin-test-email';
+type Page = 'home' | 'login' | 'signup' | 'auth-callback' | 'jobs' | 'job-detail' | 'job-marketplace' | 'cvtheque-teaser' | 'candidate-dashboard' | 'recruiter-dashboard' | 'trainer-dashboard' | 'formations' | 'blog' | 'resources' | 'privacy-policy' | 'terms-of-service' | 'cvtheque' | 'cms-admin' | 'user-management' | 'admin-invitations' | 'admin-credits-ia' | 'admin-ia-pricing' | 'admin-ia-config' | 'admin-ia-templates' | 'admin-chatbot' | 'admin-ia-center' | 'admin-credit-store-settings' | 'admin-credit-purchases' | 'admin-credit-packages' | 'admin-security-logs' | 'admin-premium-subscriptions' | 'admin-ia-premium-quota' | 'admin-profile-purchases' | 'admin-homepage-content' | 'admin-automation-rules' | 'admin-recruiter-notifications' | 'admin-email-events' | 'admin-seo' | 'admin-job-moderation' | 'admin-job-list' | 'admin-job-create' | 'admin-job-badges' | 'partner-hub' | 'candidate-profile-form' | 'premium-ai' | 'premium-subscribe' | 'enterprise-subscribe' | 'admin-enterprise-subscriptions' | 'recruiter-messaging' | 'ai-matching' | 'ai-cv-generator' | 'ai-cover-letter' | 'ai-career-plan' | 'ai-coach' | 'ai-interview-simulator' | 'ai-alerts' | 'ai-chat' | 'gold-profile' | 'credit-store' | 'b2b-solutions' | 'admin-b2b-management' | 'admin-b2b-seo-config' | 'admin-seo-landing-pages' | 'download-documentation' | 'cv-designer' | 'external-application' | 'external-applications' | 'public-profile' | 'admin-external-applications' | 'admin-email-templates' | 'admin-email-config' | 'campaign-create' | 'admin-campaign-payments' | 'admin-diffusion-settings' | 'admin-communications' | 'admin-communication-create' | 'admin-communication-templates' | 'admin-communication-logs' | 'admin-formation-config' | 'admin-cv-builder-config' | 'admin-job-alerts-config' | 'admin-interview-config' | 'admin-formation-list' | 'admin-trainer-management' | 'admin-formation-boost' | 'admin-applications-list' | 'admin-branding' | 'admin-template-affiche' | 'admin-test-email';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -413,7 +414,8 @@ function AppContent() {
     'admin-communication-templates', 'admin-communication-logs', 'admin-formation-config',
     'admin-cv-builder-config', 'admin-job-alerts-config', 'admin-interview-config',
     'admin-formation-list', 'admin-trainer-management', 'admin-formation-boost',
-    'admin-applications-list'
+    'admin-applications-list',
+    'admin-template-affiche'
   ];
 
   const isAdminPage = adminPages.includes(currentPage);
@@ -540,6 +542,7 @@ function AppContent() {
         {currentPage === 'public-profile' && <PublicProfile token={publicProfileToken} onNavigate={handleNavigate} />}
         {currentPage === 'admin-external-applications' && <AdminExternalApplications />}
         {currentPage === 'admin-applications-list' && <AdminApplicationsList />}
+        {currentPage === 'admin-template-affiche' && <AdminOGTemplate />}
         {currentPage === 'admin-email-templates' && <AdminEmailTemplates />}
         {currentPage === 'admin-email-config' && <AdminEmailConfig />}
         {currentPage === 'admin-test-email' && <AdminTestEmail />}
