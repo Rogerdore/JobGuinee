@@ -165,187 +165,141 @@ function generateSvg(params: {
     backgroundImageBase64, tpl,
   } = params;
 
-  // ═══ LANDSCAPE FORMAT 1200×630 (Facebook/LinkedIn recommended) ═══
-  const W = 1200, H = 630, CX = W / 2, F = "Inter, sans-serif";
-  const R = tpl.card_border_radius;
+  // ═══ BOLD LANDSCAPE 1200×630 — optimized for Facebook small display (~500px) ═══
+  // All text ≥24px at SVG coords so it stays readable when Facebook shrinks it
+  const W = 1200, H = 630, F = "Inter, sans-serif";
 
-  const companyShort = escapeXml(truncate(company, 40));
-  const titleText = escapeXml(truncate(title, 70));
-  const titleLines = wrapText(titleText, 50, 2);
-  const locationShort = escapeXml(truncate(location, 22));
+  const companyShort = escapeXml(truncate(company, 35));
+  const titleText = escapeXml(truncate(title, 50));
+  const titleLines = wrapText(titleText, 28, 2);
+  const locationShort = escapeXml(truncate(location, 20));
   const contractShort = escapeXml(truncate(contractType, 18));
-  const sectorShort = escapeXml(truncate(sector, 28));
+  const sectorShort = escapeXml(truncate(sector, 25));
+  const deadlineStr = deadline ? (() => { try { return escapeXml(new Date(deadline).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })); } catch { return ""; } })() : "";
   const expShort = escapeXml(truncate(experienceLevel, 18));
-  const eduShort = escapeXml(truncate(educationLevel, 22));
-  const salaryShort = escapeXml(truncate(salaryRange, 22));
-  const durationShort = escapeXml(truncate(publicationDuration || "30 jours", 15));
-  const langShort = escapeXml(truncate(language || "Fran\u00e7ais", 15));
-  const levelShort = escapeXml(truncate(positionLevel, 20));
-  const postsStr = positionCount > 1 ? `${positionCount} postes` : "";
 
-  const fmtDate = (s: string) => {
-    try { return escapeXml(new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })); }
-    catch { return ""; }
-  };
-  const publishedStr = createdAt ? fmtDate(createdAt) : "";
-  const deadlineStr = deadline ? fmtDate(deadline) : "";
+  // ═══ LEFT PANEL (dark blue) — 480px wide ═══
+  const LP = 480;
 
-  // ═══ HEADER (0→80) ═══
-  const headerH = 80;
-
+  // Site logo in top-left
   let siteLogoSvg: string;
   if (siteLogoBase64) {
     const glowFilter = tpl.logo_glow_enabled ? ' filter="url(#logoGlow)"' : '';
-    siteLogoSvg = `<image href="${siteLogoBase64}" x="${CX - 130}" y="5" width="260" height="50" preserveAspectRatio="xMidYMid meet"${glowFilter} />`;
+    siteLogoSvg = `<image href="${siteLogoBase64}" x="30" y="18" width="200" height="48" preserveAspectRatio="xMinYMid meet"${glowFilter} />`;
   } else {
-    siteLogoSvg = `<text x="${CX}" y="40" font-family="${F}" font-size="28" font-weight="bold" fill="white" text-anchor="middle">JobGuin&#233;e</text>`;
+    siteLogoSvg = `<text x="40" y="52" font-family="${F}" font-size="32" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
   }
 
-  // ═══ BADGES ═══
-  let badgesSvg = "";
-  let bX = W - 60;
-  if (isFeatured) {
-    const bw = 130;
-    bX -= bw;
-    badgesSvg += `<rect x="${bX}" y="${headerH + 6}" width="${bw}" height="24" rx="12" fill="${tpl.accent_color}" /><text x="${bX + bw/2}" y="${headerH + 22}" font-family="${F}" font-size="11" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
-    bX -= 8;
-  }
-  if (isUrgent) {
-    const bw = 100;
-    bX -= bw;
-    badgesSvg += `<rect x="${bX}" y="${headerH + 6}" width="${bw}" height="24" rx="12" fill="#ef4444" /><text x="${bX + bw/2}" y="${headerH + 22}" font-family="${F}" font-size="11" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
-  }
-
-  // ═══ COMPANY SECTION ═══
-  const companyY = headerH + 12;
-  const cLogoSize = 36;
-  const nameW = Math.min(companyShort.length * 11, 400);
-  const groupW = companyLogoBase64 ? cLogoSize + 12 + nameW : nameW;
-  const groupX = CX - groupW / 2;
-
+  // Company logo + name
+  const cLogoSize = 56;
+  const companyStartY = 90;
   const companyLogoSvg = companyLogoBase64
-    ? `<rect x="${groupX - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="10" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
-       <image href="${companyLogoBase64}" x="${groupX}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
+    ? `<rect x="38" y="${companyStartY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="rgba(255,255,255,0.15)" />
+       <image href="${companyLogoBase64}" x="40" y="${companyStartY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
     : "";
-  const cNameX = companyLogoBase64 ? groupX + cLogoSize + 12 : CX;
-  const cNameAnchor = companyLogoBase64 ? "start" : "middle";
-  const cNameY = companyY + 24;
+  const cNameX = companyLogoBase64 ? 40 + cLogoSize + 16 : 40;
+  const cNameY = companyStartY + 35;
 
-  const rechercheY = companyY + cLogoSize + 10;
-
-  // ═══ TITLE CARD ═══
-  const tcY = rechercheY + 8;
-  const tcW = 1060;
-  const tcX = (W - tcW) / 2;
-  const tfs = titleLines.length <= 1 && titleText.length <= 20 ? 30
-    : titleLines.length <= 1 ? 26
-    : 22;
+  // Title — large bold text
+  const titleStartY = companyStartY + cLogoSize + 30;
+  const tfs = titleLines.length <= 1 ? 44 : 38;
   const tlh = tfs + 10;
-  const tcH = Math.max(titleLines.length * tlh + 24, 50);
-  const tbh = titleLines.length * tlh;
-  const tsY = tcY + (tcH - tbh) / 2 + tfs - 2;
   let titleSvg = "";
   titleLines.forEach((line, i) => {
-    titleSvg += `<text x="${CX}" y="${tsY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white" text-anchor="middle">${line}</text>`;
+    titleSvg += `<text x="40" y="${titleStartY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white">${line}</text>`;
   });
 
-  // ═══ LOCATION / LEVEL / POSTS bar ═══
-  const barY = tcY + tcH + 8;
-  const barItems: { text: string; bg: string; fg: string }[] = [];
-  if (locationShort) barItems.push({ text: locationShort, bg: "#dbeafe", fg: "#1e40af" });
-  if (levelShort) barItems.push({ text: `Niveau: ${levelShort}`, bg: "#e0e7ff", fg: "#3730a3" });
-  if (postsStr) barItems.push({ text: postsStr, bg: "#fef3c7", fg: "#d97706" });
+  // Details under title (large readable text)
+  const detailsY = titleStartY + titleLines.length * tlh + 20;
+  let detailsSvg = "";
+  let dy = detailsY;
+  const detailItems: string[] = [];
+  if (locationShort) detailItems.push(locationShort);
+  if (contractShort) detailItems.push(contractShort);
+  if (expShort) detailItems.push(expShort);
+  if (sectorShort) detailItems.push(sectorShort);
 
-  let barSvg = "";
-  if (barItems.length > 0) {
-    const pillPadH = 16;
-    const pillH = 26;
-    const pillWidths = barItems.map(t => t.text.length * 7.5 + pillPadH * 2);
-    const totalBarW = pillWidths.reduce((a, b) => a + b, 0) + (barItems.length - 1) * 8;
-    let px = CX - totalBarW / 2;
-    barItems.forEach((item, i) => {
-      const pw = pillWidths[i];
-      barSvg += `<rect x="${px}" y="${barY}" width="${pw}" height="${pillH}" rx="13" fill="${item.bg}" />`;
-      barSvg += `<text x="${px + pw / 2}" y="${barY + 18}" font-family="${F}" font-size="11" font-weight="600" fill="${item.fg}" text-anchor="middle">${item.text}</text>`;
-      px += pw + 8;
-    });
-  }
-
-  // ═══ INFO CARDS GRID (4 columns for landscape) ═══
-  const cols = 4;
-  const gridY = barY + (barItems.length > 0 ? 34 : 10);
-  const cardW = 258, cardH = 62, gapX = 14, gapY = 8;
-  const totalGridW = cols * cardW + (cols - 1) * gapX;
-  const gridStartX = (W - totalGridW) / 2;
-
-  type IC = { label: string; value: string; color: string; abbr: string; hl?: boolean };
-  const cards: IC[] = [];
-  if (contractShort) cards.push({ label: "Type de contrat", value: contractShort, color: "#1e3a5f", abbr: "CT" });
-  if (expShort) cards.push({ label: "Exp&#233;rience requise", value: expShort, color: "#0891b2", abbr: "EX" });
-  if (eduShort) cards.push({ label: "Formation requise", value: eduShort, color: "#059669", abbr: "FO" });
-  if (sectorShort) cards.push({ label: "Secteur d&#39;activit&#233;", value: sectorShort, color: "#4338ca", abbr: "SE" });
-  if (publishedStr) cards.push({ label: "Publi&#233; le", value: publishedStr, color: "#2563eb", abbr: "PU" });
-  if (deadlineStr) cards.push({ label: "Date limite candidature", value: deadlineStr, color: "#dc2626", abbr: "DL", hl: true });
-  if (durationShort) cards.push({ label: "Dur&#233;e de publication", value: durationShort, color: "#7c3aed", abbr: "DP" });
-  if (langShort) cards.push({ label: "Langue", value: langShort, color: "#ea580c", abbr: "LA" });
-  if (salaryShort) cards.push({ label: "Salaire", value: salaryShort, color: "#16a34a", abbr: "SA" });
-
-  // Limit to 8 cards (2 rows) for landscape layout
-  const displayCards = cards.slice(0, 8);
-
-  let infoSvg = "";
-  displayCards.forEach((c, i) => {
-    const col = i % cols, row = Math.floor(i / cols);
-    const x = gridStartX + col * (cardW + gapX);
-    const y = gridY + row * (cardH + gapY);
-    const bg = c.hl ? "#fef2f2" : "white";
-    const border = c.hl ? "#fecaca" : "#e2e8f0";
-    infoSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${R}" fill="${bg}" />`;
-    infoSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${R}" fill="none" stroke="${border}" stroke-width="1.5" />`;
-    infoSvg += `<circle cx="${x + 28}" cy="${y + cardH / 2}" r="16" fill="${c.color}" opacity="0.12" />`;
-    infoSvg += `<text x="${x + 28}" y="${y + cardH / 2 + 4}" font-family="${F}" font-size="11" font-weight="bold" fill="${c.color}" text-anchor="middle">${c.abbr}</text>`;
-    infoSvg += `<text x="${x + 52}" y="${y + 24}" font-family="${F}" font-size="10" fill="#64748b">${c.label}</text>`;
-    infoSvg += `<text x="${x + 52}" y="${y + 44}" font-family="${F}" font-size="13" font-weight="bold" fill="${c.hl ? "#dc2626" : "#0f172a"}">${c.value}</text>`;
+  detailItems.slice(0, 4).forEach((item) => {
+    detailsSvg += `<circle cx="54" cy="${dy - 8}" r="4" fill="${tpl.accent_color}"/>`;
+    detailsSvg += `<text x="68" y="${dy}" font-family="${F}" font-size="24" fill="rgba(255,255,255,0.9)">${item}</text>`;
+    dy += 36;
   });
 
-  const infoRows = Math.ceil(displayCards.length / cols);
-  const afterInfoY = gridY + infoRows * (cardH + gapY);
-
-  // ═══ CTA + FOOTER ═══
-  const ctaY = Math.min(afterInfoY + 12, H - 72);
-  const urlY = ctaY + 50;
+  // CTA button at bottom-left
+  const ctaY = H - 110;
   const ctaText = escapeXml(tpl.cta_text);
   const footerUrl = escapeXml(tpl.footer_url);
 
-  // ═══ BACKGROUND (image with blur OR solid gradient) ═══
+  // Badges
+  let badgesSvg = "";
+  if (isUrgent) {
+    badgesSvg += `<rect x="40" y="${H - 60}" width="130" height="36" rx="18" fill="#ef4444" /><text x="105" y="${H - 36}" font-family="${F}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
+  }
+  if (isFeatured) {
+    const bx = isUrgent ? 185 : 40;
+    badgesSvg += `<rect x="${bx}" y="${H - 60}" width="160" height="36" rx="18" fill="${tpl.accent_color}" /><text x="${bx + 80}" y="${H - 36}" font-family="${F}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+  }
+
+  // ═══ RIGHT PANEL (light) — 720px wide ═══
+  const RP_X = LP;
+  const RP_W = W - LP;
+
+  // Right panel content: deadline + big CTA
+  let rightContent = "";
+
+  // Deadline card if exists
+  if (deadlineStr) {
+    rightContent += `
+      <rect x="${RP_X + 50}" y="60" width="${RP_W - 100}" height="100" rx="20" fill="#fef2f2" stroke="#fecaca" stroke-width="2"/>
+      <text x="${RP_X + RP_W / 2}" y="105" font-family="${F}" font-size="24" fill="#dc2626" font-weight="600" text-anchor="middle">Date limite de candidature</text>
+      <text x="${RP_X + RP_W / 2}" y="142" font-family="${F}" font-size="30" fill="#dc2626" font-weight="bold" text-anchor="middle">${deadlineStr}</text>`;
+  }
+
+  // Key info cards (only 3, large)
+  const cardsStartY = deadlineStr ? 190 : 60;
+  type SimpleCard = { label: string; value: string; color: string };
+  const simpleCards: SimpleCard[] = [];
+  if (contractShort) simpleCards.push({ label: "Contrat", value: contractShort, color: tpl.header_gradient_end });
+  if (locationShort) simpleCards.push({ label: "Lieu", value: locationShort, color: "#0891b2" });
+  if (expShort) simpleCards.push({ label: "Exp&#233;rience", value: expShort, color: "#059669" });
+
+  simpleCards.slice(0, 3).forEach((card, i) => {
+    const cy = cardsStartY + i * 90;
+    rightContent += `
+      <rect x="${RP_X + 50}" y="${cy}" width="${RP_W - 100}" height="76" rx="16" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+      <text x="${RP_X + 80}" y="${cy + 30}" font-family="${F}" font-size="20" fill="#64748b">${card.label}</text>
+      <text x="${RP_X + 80}" y="${cy + 58}" font-family="${F}" font-size="28" font-weight="bold" fill="${card.color}">${card.value}</text>`;
+  });
+
+  // CTA at bottom-right
+  const ctaRightY = H - 130;
+  rightContent += `
+    <rect x="${RP_X + 40}" y="${ctaRightY}" width="${RP_W - 80}" height="56" rx="28" fill="url(#cta)" filter="url(#bs)"/>
+    <text x="${RP_X + RP_W / 2}" y="${ctaRightY + 37}" font-family="${F}" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>`;
+
+  // Footer URL
+  rightContent += `
+    <text x="${RP_X + RP_W / 2}" y="${H - 50}" font-family="${F}" font-size="22" fill="${tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>`;
+
+  // Background
   let backgroundSvg: string;
   if (backgroundImageBase64) {
-    backgroundSvg = `<image href="${backgroundImageBase64}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice" filter="url(#bgBlur)" />
-    <rect width="${W}" height="${H}" fill="#0f172a" opacity="${tpl.background_overlay_opacity}" />`;
+    backgroundSvg = `<image href="${backgroundImageBase64}" x="0" y="0" width="${LP}" height="${H}" preserveAspectRatio="xMidYMid slice" filter="url(#bgBlur)" />
+    <rect width="${LP}" height="${H}" fill="${tpl.header_gradient_start}" opacity="${tpl.background_overlay_opacity}" />`;
   } else {
-    backgroundSvg = `<rect width="${W}" height="${H}" fill="#f1f5f9"/>`;
+    backgroundSvg = "";
   }
 
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="hdr" x1="0" y1="0" x2="${W}" y2="0" gradientUnits="userSpaceOnUse">
+    <linearGradient id="hdr" x1="0" y1="0" x2="0" y2="${H}" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="${tpl.header_gradient_start}"/><stop offset="100%" stop-color="${tpl.header_gradient_end}"/>
-    </linearGradient>
-    <linearGradient id="tc" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${tpl.title_card_start}"/><stop offset="100%" stop-color="${tpl.title_card_end}"/>
     </linearGradient>
     <linearGradient id="cta" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="${tpl.cta_gradient_start}"/><stop offset="100%" stop-color="${tpl.cta_gradient_end}"/>
     </linearGradient>
-    <filter id="ts" x="-3%" y="-5%" width="106%" height="115%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="${tpl.title_card_start}" flood-opacity="0.22"/>
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.06"/>
-    </filter>
-    <filter id="cs" x="-2%" y="-3%" width="104%" height="110%">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.06"/>
-    </filter>
     <filter id="bs" x="-4%" y="-10%" width="108%" height="130%">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="${tpl.cta_gradient_end}" flood-opacity="0.25"/>
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="${tpl.cta_gradient_end}" flood-opacity="0.3"/>
     </filter>
     <filter id="bgBlur" x="-5%" y="-5%" width="110%" height="110%">
       <feGaussianBlur stdDeviation="${tpl.background_blur}" />
@@ -355,55 +309,45 @@ function generateSvg(params: {
       <feComposite in="glowColor" in2="SourceAlpha" operator="in" result="coloredGlow"/>
       <feGaussianBlur in="coloredGlow" stdDeviation="${tpl.logo_glow_intensity}" result="blurredGlow"/>
       <feMerge>
-        <feMergeNode in="blurredGlow"/><feMergeNode in="blurredGlow"/><feMergeNode in="blurredGlow"/>
+        <feMergeNode in="blurredGlow"/><feMergeNode in="blurredGlow"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
   </defs>
 
-  <!-- Background -->
+  <!-- LEFT PANEL: dark gradient -->
+  <rect x="0" y="0" width="${LP}" height="${H}" fill="url(#hdr)"/>
   ${backgroundSvg}
 
-  <!-- Blue header bar -->
-  <rect width="${W}" height="${headerH}" fill="url(#hdr)"/>
-  <!-- Accent line at header bottom -->
-  <rect x="0" y="${headerH - 3}" width="${W}" height="3" fill="${tpl.accent_color}"/>
+  <!-- RIGHT PANEL: light background -->
+  <rect x="${RP_X}" y="0" width="${RP_W}" height="${H}" fill="#f8fafc"/>
 
-  <!-- JobGuin&#233;e logo -->
+  <!-- Accent divider line -->
+  <rect x="${LP - 2}" y="0" width="4" height="${H}" fill="${tpl.accent_color}"/>
+
+  <!-- LEFT: Site logo -->
   ${siteLogoSvg}
-  <!-- AVIS DE RECRUTEMENT -->
-  <text x="${CX}" y="${headerH - 10}" font-family="${F}" font-size="12" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
 
-  ${badgesSvg}
-
-  <!-- Company logo + name -->
+  <!-- LEFT: Company logo + name -->
   ${companyLogoSvg}
-  <text x="${cNameX}" y="${cNameY}" font-family="${F}" font-size="20" fill="${backgroundImageBase64 ? "white" : "#0f172a"}" font-weight="bold" text-anchor="${cNameAnchor}">${companyShort}</text>
+  <text x="${cNameX}" y="${cNameY}" font-family="${F}" font-size="28" fill="white" font-weight="bold">${companyShort}</text>
+  <text x="40" y="${cNameY + 26}" font-family="${F}" font-size="22" fill="rgba(255,255,255,0.7)">recherche un(e)</text>
 
-  <!-- "recherche un(e)" -->
-  <text x="${CX}" y="${rechercheY}" font-family="${F}" font-size="14" fill="${backgroundImageBase64 ? "rgba(255,255,255,0.8)" : "#64748b"}" text-anchor="middle">recherche un(e)</text>
-
-  <!-- Title card -->
-  <rect x="${tcX}" y="${tcY}" width="${tcW}" height="${tcH}" rx="16" fill="url(#tc)" filter="url(#ts)"/>
-  <rect x="${tcX + 2}" y="${tcY + 2}" width="${tcW - 4}" height="${Math.floor(tcH * 0.4)}" rx="14" fill="white" opacity="0.06"/>
+  <!-- LEFT: Job title (BIG) -->
   ${titleSvg}
 
-  <!-- Location / Level / Posts pills -->
-  ${barSvg}
+  <!-- LEFT: Key details -->
+  ${detailsSvg}
 
-  <!-- Info cards grid -->
-  <g filter="url(#cs)">
-    ${infoSvg}
-  </g>
+  <!-- LEFT: Badges -->
+  ${badgesSvg}
 
-  <!-- CTA button -->
-  <rect x="${CX - 230}" y="${ctaY}" width="460" height="44" rx="22" fill="url(#cta)" filter="url(#bs)"/>
-  <text x="${CX}" y="${ctaY + 29}" font-family="${F}" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>
+  <!-- RIGHT: Cards + CTA -->
+  ${rightContent}
 
-  <!-- Site URL -->
-  <text x="${CX}" y="${urlY}" font-family="${F}" font-size="13" fill="${backgroundImageBase64 ? "white" : tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>
-
-  <!-- Bottom accent -->
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="${W}" height="4" fill="${tpl.accent_color}"/>
+  <!-- Bottom accent line -->
   <rect x="0" y="${H - 4}" width="${W}" height="4" fill="${tpl.accent_color}"/>
 </svg>`;
 }
