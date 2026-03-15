@@ -429,7 +429,6 @@ function AppContent() {
     'ai-coach', 'ai-interview-simulator', 'ai-alerts', 'ai-chat',
     'gold-profile', 'credit-store', 'cv-designer',
     'external-applications', 'campaign-create',
-    'cvtheque',
   ];
 
   if ((protectedPages.includes(currentPage) || isAdminPage) && !user) {
