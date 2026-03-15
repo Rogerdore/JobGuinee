@@ -334,7 +334,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
-  const doSubscribe = async (email: string) => {
+  const doSubscribe = async (email: string): Promise<boolean> => {
     const { error } = await supabase.from('newsletter_subscribers').insert({
       email,
       domain: newsletterDomain || 'all',
@@ -342,13 +342,18 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     });
 
     if (error?.code === '23505') {
-      showWarning('Déjà abonné', `L'adresse ${email} est déjà inscrite aux alertes emploi.`);
-      return;
+      return false; // already subscribed
+    }
+
+    if (error) {
+      showError('Erreur', 'Une erreur est survenue. Veuillez réessayer.');
+      return false;
     }
 
     setNewsletterEmail('');
     setNewsletterDomain('');
     showSuccess('Inscription réussie !', `Vous recevrez les alertes emploi sur ${email}.`, true);
+    return true;
   };
 
   const subscribeNewsletter = async (e: React.FormEvent) => {
@@ -356,33 +361,11 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     const emailToCheck = newsletterEmail.trim().toLowerCase();
     if (!emailToCheck) return;
 
-    // Check if email is already subscribed
-    const { data: existing } = await supabase
-      .from('newsletter_subscribers')
-      .select('id')
-      .eq('email', emailToCheck)
-      .maybeSingle();
-
     const profileEmail = user?.email?.toLowerCase();
 
     if (user && profileEmail) {
-      // Connected user
-      if (existing) {
-        // Email already subscribed
-        if (emailToCheck === profileEmail) {
-          showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi. Vous n\'avez rien à faire !');
-        } else {
-          setNewsletterModal({
-            type: 'already-subscribed',
-            profileEmail,
-            typedEmail: emailToCheck,
-          });
-        }
-        return;
-      }
-
+      // Connected user typing a different email — ask which to use
       if (emailToCheck !== profileEmail) {
-        // Typed email is different from profile email — ask which to use
         setNewsletterModal({
           type: 'choose-email',
           profileEmail,
@@ -391,18 +374,20 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
         return;
       }
 
-      // Same email as profile, not yet subscribed
-      await doSubscribe(emailToCheck);
+      // Same email as profile — try to subscribe
+      const success = await doSubscribe(emailToCheck);
+      if (!success) {
+        showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi. Vous n\'avez rien à faire !');
+      }
     } else {
-      // Not connected
-      if (existing) {
+      // Not connected — try to subscribe
+      const success = await doSubscribe(emailToCheck);
+      if (!success) {
         setNewsletterModal({
           type: 'already-subscribed',
           typedEmail: emailToCheck,
         });
-        return;
       }
-      await doSubscribe(emailToCheck);
     }
   };
 
@@ -410,18 +395,10 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     if (!user?.email) return;
     const profileEmail = user.email.toLowerCase();
 
-    const { data: existing } = await supabase
-      .from('newsletter_subscribers')
-      .select('id')
-      .eq('email', profileEmail)
-      .maybeSingle();
-
-    if (existing) {
+    const success = await doSubscribe(profileEmail);
+    if (!success) {
       showWarning('Déjà abonné', 'Votre adresse email de profil est déjà inscrite aux alertes emploi.');
-      return;
     }
-
-    await doSubscribe(profileEmail);
   };
 
   const recommendedJobs = sortedJobs.slice(0, 3);
@@ -1130,8 +1107,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                     <div className="space-y-3">
                       <button
                         onClick={async () => {
+                          const email = newsletterModal.profileEmail!;
                           setNewsletterModal({ type: null });
-                          await doSubscribe(newsletterModal.profileEmail!);
+                          const success = await doSubscribe(email);
+                          if (!success) {
+                            showWarning('Déjà abonné', `L'adresse ${email} est aussi déjà inscrite aux alertes emploi.`);
+                          }
                         }}
                         className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition"
                       >
@@ -1179,8 +1160,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                   <div className="space-y-3">
                     <button
                       onClick={async () => {
+                        const email = newsletterModal.profileEmail!;
                         setNewsletterModal({ type: null });
-                        await doSubscribe(newsletterModal.profileEmail!);
+                        const success = await doSubscribe(email);
+                        if (!success) {
+                          showWarning('Déjà abonné', `L'adresse ${email} est déjà inscrite aux alertes emploi.`);
+                        }
                       }}
                       className="w-full py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition text-sm"
                     >
@@ -1189,8 +1174,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                     </button>
                     <button
                       onClick={async () => {
+                        const email = newsletterModal.typedEmail!;
                         setNewsletterModal({ type: null });
-                        await doSubscribe(newsletterModal.typedEmail!);
+                        const success = await doSubscribe(email);
+                        if (!success) {
+                          showWarning('Déjà abonné', `L'adresse ${email} est déjà inscrite aux alertes emploi.`);
+                        }
                       }}
                       className="w-full py-3 border-2 border-[#0E2F56] text-[#0E2F56] font-semibold rounded-lg hover:bg-blue-50 transition text-sm"
                     >
