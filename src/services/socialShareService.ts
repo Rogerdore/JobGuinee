@@ -124,6 +124,55 @@ export const socialShareService = {
     return JOBGUINEE_LOGO;
   },
 
+  generateMarketingText(job: Partial<Job>): string {
+    const title = job.title || 'Offre d\'emploi';
+    const company = job.company_name || job.company || '';
+    const slug = (job as any).slug || job.id;
+    const url = `${BASE_URL}/offres/${slug}`;
+
+    const lines: string[] = [];
+
+    lines.push(`🔔📢 AVIS DE RECRUTEMENT`);
+    lines.push('');
+    if (company) {
+      lines.push(`🏢 ${company} recrute !`);
+      lines.push('');
+    }
+    lines.push(`💼 Poste : ${title}`);
+
+    if ((job as any).location) lines.push(`📍 Lieu : ${(job as any).location}`);
+    if ((job as any).contract_type) lines.push(`📄 Contrat : ${(job as any).contract_type}`);
+    if ((job as any).experience_level) lines.push(`⭐ Expérience : ${(job as any).experience_level}`);
+    if ((job as any).education_level) lines.push(`🎓 Formation : ${(job as any).education_level}`);
+    if ((job as any).sector) lines.push(`🏭 Secteur : ${(job as any).sector}`);
+    if ((job as any).salary_range) {
+      lines.push(`💰 Salaire : ${(job as any).salary_range}`);
+    } else if (job.salary_min && job.salary_max) {
+      lines.push(`💰 Salaire : ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()} GNF`);
+    }
+    if ((job as any).position_count && (job as any).position_count > 1) {
+      lines.push(`👥 Nombre de postes : ${(job as any).position_count}`);
+    }
+    if ((job as any).announcement_language) lines.push(`🌐 Langue : ${(job as any).announcement_language}`);
+
+    if ((job as any).deadline) {
+      try {
+        const d = new Date((job as any).deadline);
+        const formatted = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        lines.push(`⏰ Date limite : ${formatted}`);
+      } catch { /* skip */ }
+    }
+
+    lines.push('');
+    lines.push(`✅ Postulez maintenant sur JobGuinée 👇`);
+    lines.push(`🔗 ${url}`);
+    lines.push('');
+    lines.push(`📲 Partagez autour de vous, quelqu'un en a peut-être besoin ! 🙏`);
+    lines.push(`#Emploi #Recrutement #JobGuinée #Guinée`);
+
+    return lines.join('\n');
+  },
+
   generateShareLinks(job: Partial<Job>): SocialShareLinks {
     // Use jobguinee-pro.com/offres/ URL for sharing
     // Cloudflare Worker intercepts crawler requests and proxies to Supabase Edge Function
@@ -140,23 +189,16 @@ export const socialShareService = {
     // Tracking is already handled client-side via trackShare()
     const encodedShareUrl = encodeURIComponent(baseShareUrl);
 
-    const whatsappText = company
-      ? `${jobTitle} chez ${company}\n${baseShareUrl}`
-      : `${jobTitle}\n${baseShareUrl}`;
-    const encodedWhatsappText = encodeURIComponent(whatsappText);
+    // Use the full marketing text for WhatsApp and Facebook quote
+    const marketingText = this.generateMarketingText(job);
+    const encodedWhatsappText = encodeURIComponent(marketingText);
 
     const twitterText = company
       ? `${jobTitle} chez ${company} sur @JobGuinee`
       : `${jobTitle} sur @JobGuinee`;
     const encodedTwitterText = encodeURIComponent(twitterText);
 
-    // Build a rich quote text for Facebook's "Quoi de neuf ?" field
-    const quoteParts = [`📢 Avis de recrutement d'un(e) ${jobTitle.toUpperCase()}`];
-    if (company) quoteParts.push(`🏢 ${company}`);
-    if ((job as any).location) quoteParts.push(`📍 ${(job as any).location}`);
-    if ((job as any).contract_type) quoteParts.push(`📄 ${(job as any).contract_type}`);
-    quoteParts.push('👉 Postulez sur JobGuinée !');
-    const facebookQuote = encodeURIComponent(quoteParts.join(' | '));
+    const facebookQuote = encodeURIComponent(marketingText);
 
     return {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}&quote=${facebookQuote}`,

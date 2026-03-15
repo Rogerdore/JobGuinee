@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Facebook, Linkedin, Twitter, MessageCircle, Link2, Check, TrendingUp } from 'lucide-react';
+import { X, Facebook, Linkedin, Twitter, MessageCircle, Link2, Check, TrendingUp, Copy, FileText } from 'lucide-react';
 import { Job } from '../../lib/supabase';
 import { socialShareService, SocialShareLinks } from '../../services/socialShareService';
 import SocialSharePreview from './SocialSharePreview';
@@ -18,12 +18,14 @@ interface ShareJobModalProps {
 
 export default function ShareJobModal({ job, isOpen = true, onClose }: ShareJobModalProps) {
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<'facebook' | 'linkedin' | 'twitter' | 'generic'>('generic');
   const [shareSuccess, setShareSuccess] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
 
   const metadata = useMemo(() => socialShareService.generateJobMetadata(job), [job]);
   const links = useMemo(() => socialShareService.generateShareLinks(job), [job]);
+  const marketingText = useMemo(() => socialShareService.generateMarketingText(job), [job]);
 
   if (!isOpen) return null;
 
@@ -122,6 +124,44 @@ export default function ShareJobModal({ job, isOpen = true, onClose }: ShareJobM
               Cet aperçu montre comment l'offre apparaîtra sur les réseaux sociaux
             </p>
             <SocialSharePreview metadata={metadata} platform={selectedPlatform} />
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Texte marketing à copier
+            </h3>
+            <p className="text-xs text-slate-500 mb-2">
+              Copiez ce texte et collez-le dans la zone « À quoi pensez-vous ? » sur Facebook ou LinkedIn
+            </p>
+            <div className="relative">
+              <textarea
+                value={marketingText}
+                readOnly
+                rows={10}
+                className="w-full bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0E2F56] resize-none font-medium leading-relaxed"
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    await socialShareService.copyToClipboard(marketingText);
+                    setCopiedText(true);
+                    setTimeout(() => setCopiedText(false), 3000);
+                  } catch {}
+                }}
+                className={`absolute top-2 right-2 ${
+                  copiedText ? 'bg-green-600' : 'bg-[#0E2F56] hover:bg-[#1a4a7e]'
+                } text-white rounded-lg px-3 py-1.5 text-xs font-medium transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5`}
+              >
+                {copiedText ? <><Check className="w-3.5 h-3.5" /> Copié !</> : <><Copy className="w-3.5 h-3.5" /> Copier le texte</>}
+              </button>
+            </div>
+            {copiedText && (
+              <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                Texte copié ! Collez-le dans « À quoi pensez-vous ? » sur Facebook/LinkedIn
+              </p>
+            )}
           </div>
 
           <div>
