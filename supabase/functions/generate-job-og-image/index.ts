@@ -67,7 +67,7 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.substring(0, max - 3) + "..." : text;
 }
 
-function wrapText(text: string, maxChars: number): string[] {
+function wrapText(text: string, maxChars: number, maxLines = 2): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
   let current = "";
@@ -78,9 +78,9 @@ function wrapText(text: string, maxChars: number): string[] {
     } else {
       current = (current + " " + word).trim();
     }
-    if (lines.length >= 2) break;
+    if (lines.length >= maxLines) break;
   }
-  if (current && lines.length < 2) lines.push(current.trim());
+  if (current && lines.length < maxLines) lines.push(current.trim());
   return lines;
 }
 
@@ -105,210 +105,206 @@ function generateSvg(params: {
     isUrgent, isFeatured, companyLogoBase64, siteLogoBase64,
   } = params;
 
+  const W = 1080;
+  const H = 1080;
+  const CX = W / 2; // center X = 540
   const F = "Inter, sans-serif";
-  const titleUpper = escapeXml(truncate(title.toUpperCase(), 60));
-  const titleLines = wrapText(titleUpper, 30);
-  const titleLine1 = titleLines[0] || "";
-  const titleLine2 = titleLines[1] || "";
-  const companyShort = escapeXml(truncate(company, 35));
-  const locationShort = escapeXml(truncate(location, 25));
-  const contractShort = escapeXml(truncate(contractType, 18));
-  const sectorShort = escapeXml(truncate(sector, 25));
-  const expShort = escapeXml(truncate(experienceLevel, 18));
-  const eduShort = escapeXml(truncate(educationLevel, 20));
-  const salaryShort = escapeXml(truncate(salaryRange, 25));
 
-  // Format deadline
+  const companyShort = escapeXml(truncate(company, 38));
+  const titleText = escapeXml(truncate(title, 70));
+  const titleLines = wrapText(titleText, 26, 3);
+  const locationShort = escapeXml(truncate(location, 25));
+  const contractShort = escapeXml(truncate(contractType, 20));
+  const sectorShort = escapeXml(truncate(sector, 28));
+  const expShort = escapeXml(truncate(experienceLevel, 20));
+  const eduShort = escapeXml(truncate(educationLevel, 22));
+  const salaryShort = escapeXml(truncate(salaryRange, 28));
+
   let deadlineStr = "";
   if (deadline) {
     try {
       const d = new Date(deadline);
-      deadlineStr = escapeXml(`Avant le ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}`);
+      deadlineStr = escapeXml(`Date limite : ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}`);
     } catch { /* ignore */ }
   }
 
-  // Dynamic title sizing
-  const titleFontSize = titleUpper.length <= 22 ? 46 : titleUpper.length <= 35 ? 40 : 34;
-  const hasLine2 = !!titleLine2;
+  // === SECTION 1: Top — "Avis de recrutement" (Y ~60-90) ===
+  const avisY = 72;
 
-  // Layout constants
-  const headerH = 80;
-  const titleStartY = 180;
-  const titleY1 = titleStartY;
-  const titleY2 = titleY1 + titleFontSize + 8;
-  const afterTitleY = hasLine2 ? titleY2 + 16 : titleY1 + 16;
+  // === SECTION 2: Company logo + name (Y ~120-190) ===
+  const companyY = 145;
+  const logoSize = 56;
+  const companyLogoSvg = companyLogoBase64
+    ? `<rect x="${CX - 160}" y="${companyY - 4}" width="${logoSize + 8}" height="${logoSize + 8}" rx="16" fill="white" />
+       <image href="${companyLogoBase64}" x="${CX - 156}" y="${companyY}" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet" />`
+    : "";
+  const companyNameX = companyLogoBase64 ? CX - 160 + logoSize + 20 : CX;
+  const companyNameAnchor = companyLogoBase64 ? "start" : "middle";
+  const companyNameY = companyLogoBase64 ? companyY + 37 : companyY + 30;
 
-  // Company row Y (logo + name)
-  const companyRowY = afterTitleY + 10;
-  const companyLogoSize = 44;
-  const companyTextX = companyLogoBase64 ? 140 : 90;
+  // === SECTION 3: "recherche un(e)" (Y ~210) ===
+  const rechercheY = 222;
 
-  // Info cards row
-  const cardsY = companyRowY + companyLogoSize + 20;
+  // === SECTION 4: Title card 3D (Y ~250-430) ===
+  const titleCardY = 255;
+  const titleFontSize = titleLines.length <= 1 && titleText.length <= 20 ? 42
+    : titleLines.length <= 1 ? 36
+    : titleLines.length <= 2 ? 34
+    : 30;
+  const lineH = titleFontSize + 10;
+  const titleCardH = Math.max(titleLines.length * lineH + 40, 90);
+  const titleCardW = 900;
+  const titleCardX = (W - titleCardW) / 2;
 
-  // Build info pills
-  const pills: { icon: string; text: string; color: string; bg: string }[] = [];
-  if (locationShort) pills.push({ icon: "\uD83D\uDCCD", text: locationShort, color: "#0891b2", bg: "#ecfeff" });
-  if (contractShort) pills.push({ icon: "\uD83D\uDCBC", text: contractShort, color: "#2563eb", bg: "#eff6ff" });
-  if (expShort) pills.push({ icon: "\u2B50", text: expShort, color: "#7c3aed", bg: "#f5f3ff" });
-  if (eduShort) pills.push({ icon: "\uD83C\uDF93", text: eduShort, color: "#4f46e5", bg: "#eef2ff" });
-  if (sectorShort) pills.push({ icon: "\uD83C\uDFE2", text: sectorShort, color: "#059669", bg: "#ecfdf5" });
+  let titleSvg = "";
+  titleLines.forEach((line, i) => {
+    const ty = titleCardY + 45 + i * lineH;
+    titleSvg += `<text x="${CX}" y="${ty}" font-family="${F}" font-size="${titleFontSize}" font-weight="bold" fill="white" text-anchor="middle">${line}</text>`;
+  });
 
-  // Render pills as claymorphism mini-cards (2 rows if needed)
-  let pillsSvg = "";
-  let pX = 90;
-  let pY = cardsY;
-  const pillH = 40;
-  const pillGap = 12;
-  const maxRowWidth = 1020;
+  // === SECTION 5: Info items (Y after title card, ~460+) ===
+  const infoStartY = titleCardY + titleCardH + 30;
+  const infos: { label: string; value: string }[] = [];
+  if (locationShort) infos.push({ label: "Lieu", value: locationShort });
+  if (contractShort) infos.push({ label: "Contrat", value: contractShort });
+  if (expShort) infos.push({ label: "Exp&#233;rience", value: expShort });
+  if (eduShort) infos.push({ label: "Niveau", value: eduShort });
+  if (sectorShort) infos.push({ label: "Secteur", value: sectorShort });
+  if (salaryShort) infos.push({ label: "Salaire", value: salaryShort });
 
-  for (const pill of pills) {
-    const textW = pill.text.length * 9.5 + 44;
-    const pw = Math.max(textW, 80);
-    if (pX + pw > maxRowWidth + 90) {
-      pX = 90;
-      pY += pillH + pillGap;
-    }
-    pillsSvg += `
-      <rect x="${pX}" y="${pY}" width="${pw}" height="${pillH}" rx="12" fill="${pill.bg}" />
-      <rect x="${pX}" y="${pY}" width="${pw}" height="${pillH}" rx="12" fill="white" opacity="0.5" />
-      <text x="${pX + pw / 2}" y="${pY + 26}" font-family="${F}" font-size="15" font-weight="600" fill="${pill.color}" text-anchor="middle">${pill.text}</text>`;
-    pX += pw + pillGap;
-  }
+  // Render info as 2-column grid, centered
+  const colW = 420;
+  const rowH = 52;
+  const gridX1 = CX - colW - 10;
+  const gridX2 = CX + 10;
+  let infoSvg = "";
+  infos.forEach((info, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = col === 0 ? gridX1 : gridX2;
+    const y = infoStartY + row * rowH;
+    const cardW = colW;
+    infoSvg += `
+      <rect x="${x}" y="${y}" width="${cardW}" height="42" rx="12" fill="white" opacity="0.7" />
+      <text x="${x + 16}" y="${y + 27}" font-family="${F}" font-size="14" fill="#6b7280" font-weight="600">${info.label}</text>
+      <text x="${x + cardW - 16}" y="${y + 27}" font-family="${F}" font-size="15" fill="#1e1b4b" font-weight="bold" text-anchor="end">${info.value}</text>`;
+  });
 
-  // Salary section
-  const salaryY = pY + pillH + 28;
-  let salarySvg = "";
-  if (salaryShort) {
-    salarySvg = `
-      <rect x="90" y="${salaryY}" width="${salaryShort.length * 11 + 60}" height="44" rx="14" fill="#FFF7ED" />
-      <rect x="90" y="${salaryY}" width="${salaryShort.length * 11 + 60}" height="44" rx="14" fill="white" opacity="0.4" />
-      <text x="120" y="${salaryY + 29}" font-family="${F}" font-size="18" font-weight="bold" fill="#ea580c">${salaryShort}</text>`;
-  }
+  const infoRows = Math.ceil(infos.length / 2);
+  const afterInfoY = infoStartY + infoRows * rowH + 10;
 
   // Deadline
-  const deadlineY = salaryY + (salaryShort ? 56 : 0);
   let deadlineSvg = "";
   if (deadlineStr) {
-    deadlineSvg = `
-      <text x="90" y="${deadlineY + 20}" font-family="${F}" font-size="15" fill="#dc2626" font-weight="600">${deadlineStr}</text>`;
+    deadlineSvg = `<text x="${CX}" y="${afterInfoY + 16}" font-family="${F}" font-size="15" fill="#dc2626" font-weight="600" text-anchor="middle">${deadlineStr}</text>`;
   }
 
-  // Badges (URGENT / EN VEDETTE)
+  // Badges URGENT / EN VEDETTE (top-right area)
   let badgesSvg = "";
-  let bX = 850;
-  if (isUrgent) {
-    badgesSvg += `
-      <rect x="${bX}" y="145" width="130" height="36" rx="18" fill="#ef4444" />
-      <text x="${bX + 65}" y="169" font-family="${F}" font-size="14" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
-    bX += 142;
-  }
+  let bX = W - 80;
   if (isFeatured) {
+    const bw = 150;
+    bX -= bw;
     badgesSvg += `
-      <rect x="${bX}" y="145" width="150" height="36" rx="18" fill="#f59e0b" />
-      <text x="${bX + 75}" y="169" font-family="${F}" font-size="14" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+      <rect x="${bX}" y="52" width="${bw}" height="34" rx="17" fill="#f59e0b" />
+      <text x="${bX + bw / 2}" y="74" font-family="${F}" font-size="13" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+    bX -= 8;
+  }
+  if (isUrgent) {
+    const bw = 120;
+    bX -= bw;
+    badgesSvg += `
+      <rect x="${bX}" y="52" width="${bw}" height="34" rx="17" fill="#ef4444" />
+      <text x="${bX + bw / 2}" y="74" font-family="${F}" font-size="13" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
   }
 
   // Site logo
   const siteLogoSvg = siteLogoBase64
-    ? `<image href="${siteLogoBase64}" x="60" y="24" width="180" height="50" preserveAspectRatio="xMinYMid meet" />`
-    : `<text x="60" y="60" font-family="${F}" font-size="26" font-weight="bold" fill="#1e1b4b">JobGuin&#233;e</text>`;
-
-  // Company logo next to name
-  const companyLogoSvg = companyLogoBase64
-    ? `<rect x="86" y="${companyRowY - 2}" width="${companyLogoSize + 4}" height="${companyLogoSize + 4}" rx="12" fill="white" />
-       <image href="${companyLogoBase64}" x="88" y="${companyRowY}" width="${companyLogoSize}" height="${companyLogoSize}" preserveAspectRatio="xMidYMid meet" clip-path="inset(0 round 10px)" />`
+    ? `<image href="${siteLogoBase64}" x="${CX - 80}" y="10" width="160" height="42" preserveAspectRatio="xMidYMid meet" />`
     : "";
 
-  return `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ddd6fe"/>
-      <stop offset="35%" stop-color="#c4b5fd"/>
-      <stop offset="65%" stop-color="#a78bfa"/>
-      <stop offset="100%" stop-color="#8b5cf6"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="${W}" y2="${H}" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ede9fe"/>
+      <stop offset="30%" stop-color="#ddd6fe"/>
+      <stop offset="60%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
     </linearGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
-      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
     </linearGradient>
-    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="ctaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#7c3aed"/>
       <stop offset="100%" stop-color="#a855f7"/>
     </linearGradient>
-    <linearGradient id="ctaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f59e0b"/>
-      <stop offset="100%" stop-color="#fbbf24"/>
-    </linearGradient>
-    <filter id="cardShadow" x="-4%" y="-4%" width="108%" height="112%">
-      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#7c3aed" flood-opacity="0.18"/>
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.06"/>
-    </filter>
-    <filter id="pillShadow" x="-8%" y="-15%" width="116%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#7c3aed" flood-opacity="0.12"/>
-    </filter>
-    <filter id="topShadow" x="-2%" y="-5%" width="104%" height="115%">
+    <filter id="card3d" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#7c3aed" flood-opacity="0.25"/>
       <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <filter id="softShadow" x="-3%" y="-5%" width="106%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#7c3aed" flood-opacity="0.15"/>
+    </filter>
+    <filter id="btnShadow" x="-5%" y="-10%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#7c3aed" flood-opacity="0.3"/>
     </filter>
   </defs>
 
-  <!-- Background gradient -->
-  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Background -->
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
 
-  <!-- Decorative blobs (soft 3D feel) -->
-  <circle cx="1050" cy="100" r="200" fill="#c084fc" opacity="0.3"/>
-  <circle cx="150" cy="550" r="250" fill="#818cf8" opacity="0.2"/>
-  <circle cx="600" cy="650" r="180" fill="#a78bfa" opacity="0.15"/>
-  <ellipse cx="1100" cy="500" rx="120" ry="80" fill="#f0abfc" opacity="0.2"/>
+  <!-- Decorative blobs -->
+  <circle cx="900" cy="120" r="180" fill="#c4b5fd" opacity="0.35"/>
+  <circle cx="180" cy="950" r="200" fill="#a78bfa" opacity="0.25"/>
+  <circle cx="540" cy="1100" r="120" fill="#ddd6fe" opacity="0.3"/>
+  <ellipse cx="950" cy="800" rx="100" ry="70" fill="#e9d5ff" opacity="0.3"/>
 
-  <!-- Main card (claymorphism: white, rounded, soft shadow) -->
-  <rect x="40" y="14" width="1120" height="602" rx="32" fill="url(#shine)" filter="url(#cardShadow)" />
-  <rect x="40" y="14" width="1120" height="602" rx="32" fill="white" opacity="0.88" />
+  <!-- Main white card -->
+  <rect x="40" y="40" width="1000" height="1000" rx="36" fill="white" opacity="0.92" filter="url(#softShadow)" />
 
-  <!-- TOP BAR: purple header strip -->
-  <rect x="40" y="14" width="1120" height="${headerH}" rx="32" fill="url(#headerGrad)"/>
-  <rect x="40" y="54" width="1120" height="40" fill="url(#headerGrad)"/>
-
-  <!-- Site logo (JobGuinee) in header -->
+  <!-- Site logo centered at very top -->
   ${siteLogoSvg}
 
-  <!-- "AVIS DE RECRUTEMENT" header text -->
-  <text x="1120" y="62" font-family="${F}" font-size="18" font-weight="bold" fill="rgba(255,255,255,0.9)" text-anchor="end" letter-spacing="3">AVIS DE RECRUTEMENT</text>
+  <!-- "Avis de recrutement" centered, lowercase -->
+  <text x="${CX}" y="${avisY}" font-family="${F}" font-size="22" fill="#6b7280" text-anchor="middle" letter-spacing="1">Avis de recrutement</text>
 
-  <!-- Badges -->
+  <!-- Thin separator -->
+  <rect x="${CX - 60}" y="${avisY + 12}" width="120" height="2" rx="1" fill="#c4b5fd" />
+
   ${badgesSvg}
 
-  <!-- ============ CONTENT AREA ============ -->
-
-  <!-- Job Title -->
-  <text x="90" y="${titleY1}" font-family="${F}" font-size="${titleFontSize}" font-weight="bold" fill="#1e1b4b">${titleLine1}</text>
-  ${hasLine2 ? `<text x="90" y="${titleY2}" font-family="${F}" font-size="${titleFontSize}" font-weight="bold" fill="#1e1b4b">${titleLine2}</text>` : ""}
-
-  <!-- Company row: logo + name -->
+  <!-- Company logo + name -->
   ${companyLogoSvg}
-  <text x="${companyTextX}" y="${companyRowY + 30}" font-family="${F}" font-size="24" fill="#4b5563" font-weight="600">${companyShort}</text>
+  <text x="${companyNameX}" y="${companyNameY}" font-family="${F}" font-size="26" fill="#1e1b4b" font-weight="bold" text-anchor="${companyNameAnchor}">${companyShort}</text>
 
-  <!-- Info pills (claymorphism mini cards) -->
-  <g filter="url(#pillShadow)">
-    ${pillsSvg}
+  <!-- "recherche un(e)" -->
+  <text x="${CX}" y="${rechercheY}" font-family="${F}" font-size="20" fill="#6b7280" text-anchor="middle" font-weight="400">recherche un(e)</text>
+
+  <!-- Title Card (3D soft, rounded) -->
+  <rect x="${titleCardX}" y="${titleCardY}" width="${titleCardW}" height="${titleCardH}" rx="24" fill="url(#titleGrad)" filter="url(#card3d)" />
+  <!-- Inner highlight for 3D effect -->
+  <rect x="${titleCardX + 2}" y="${titleCardY + 2}" width="${titleCardW - 4}" height="${Math.floor(titleCardH / 2)}" rx="22" fill="white" opacity="0.08" />
+  ${titleSvg}
+
+  <!-- Info grid -->
+  <g filter="url(#softShadow)">
+    ${infoSvg}
   </g>
-
-  <!-- Salary -->
-  ${salarySvg}
 
   <!-- Deadline -->
   ${deadlineSvg}
 
-  <!-- ============ BOTTOM BAR ============ -->
+  <!-- ===== BOTTOM SECTION ===== -->
   <!-- CTA button -->
-  <rect x="90" y="545" width="340" height="52" rx="26" fill="url(#ctaGrad)" filter="url(#topShadow)" />
-  <text x="260" y="578" font-family="${F}" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Postulez via JobGuin&#233;e!</text>
+  <rect x="${CX - 230}" y="940" width="460" height="54" rx="27" fill="url(#ctaGrad)" filter="url(#btnShadow)" />
+  <text x="${CX}" y="974" font-family="${F}" font-size="19" font-weight="bold" fill="white" text-anchor="middle">Postulez directement via JobGuin&#233;e</text>
 
-  <!-- URL -->
-  <text x="1120" y="578" font-family="${F}" font-size="17" fill="#6b7280" text-anchor="end">jobguinee-pro.com</text>
+  <!-- Site URL -->
+  <text x="${CX}" y="1020" font-family="${F}" font-size="16" fill="#7c3aed" text-anchor="middle" font-weight="600">www.jobguinee-pro.com</text>
 
-  <!-- Bottom accent line -->
-  <rect x="40" y="608" width="1120" height="8" rx="4" fill="url(#ctaGrad)" opacity="0.7"/>
+  <!-- Bottom accent -->
+  <rect x="40" y="1046" width="1000" height="6" rx="3" fill="#a78bfa" opacity="0.5"/>
 </svg>`;
 }
 
@@ -409,7 +405,7 @@ Deno.serve(async (req: Request) => {
 
     await ensureWasm();
     const resvg = new Resvg(svg, {
-      fitTo: { mode: "width", value: 1200 },
+      fitTo: { mode: "width", value: 1080 },
       font: {
         fontBuffers,
         defaultFontFamily: "Inter",

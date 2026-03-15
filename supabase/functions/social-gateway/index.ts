@@ -234,8 +234,8 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const fallbackImage = `${baseUrl}/logo_jobguinee.png`;
   let ogImage = fallbackImage;
   let imageType = 'image/png';
-  let imageWidth = '1200';
-  let imageHeight = '630';
+  let imageWidth = '1080';
+  let imageHeight = '1080';
   
   const isValidImageUrl = (url: string | undefined | null): boolean => {
     if (!url || typeof url !== 'string') return false;
@@ -247,7 +247,7 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const supabaseStorageBase = Deno.env.get("SUPABASE_URL") + '/storage/v1';
 
   if (isValidImageUrl((job as any).og_image_url)) {
-    // Priority 1: Auto-generated branded OG image (already PNG 1200x630)
+    // Priority 1: Auto-generated branded OG image (already PNG 1080x1080 square)
     ogImage = (job as any).og_image_url!;
     imageType = 'image/png';
   } else if (isValidImageUrl(job.featured_image_url)) {
