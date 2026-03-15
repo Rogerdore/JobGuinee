@@ -280,18 +280,18 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   <meta name="author" content="JobGuinée" />
   
   <!-- Open Graph Tags (Facebook, LinkedIn, Pinterest) -->
-
+  ${Deno.env.get("FB_APP_ID") ? `<meta property="fb:app_id" content="${Deno.env.get("FB_APP_ID")}" />` : ''}
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="JobGuinée" />
   <meta property="og:locale" content="fr_FR" />
   <meta property="og:title" content="${escapeHTML(title)}" />
   <meta property="og:description" content="${escapeHTML(description)}" />
-  <meta property="og:image" content="${ogImage}" />
+  <meta property="og:image" content="${escapeUrlForHtml(ogImage)}" />
   <meta property="og:image:width" content="${imageWidth}" />
   <meta property="og:image:height" content="${imageHeight}" />
   <meta property="og:image:type" content="${imageType}" />
   <meta property="og:image:alt" content="${escapeHTML(title)}" />
-  <meta property="og:url" content="${shareUrl}" />
+  <meta property="og:url" content="${escapeUrlForHtml(shareUrl)}" />
   <meta property="article:section" content="Emploi" />
   <meta property="article:tag" content="${escapeHTML(job.contract_type || 'Emploi')}" />
   <meta property="article:tag" content="${escapeHTML(job.location || 'Guinée')}" />
@@ -301,18 +301,18 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHTML(title)}" />
   <meta name="twitter:description" content="${escapeHTML(description)}" />
-  <meta name="twitter:image" content="${ogImage}" />
-  <meta name="twitter:url" content="${shareUrl}" />
+  <meta name="twitter:image" content="${escapeUrlForHtml(ogImage)}" />
+  <meta name="twitter:url" content="${escapeUrlForHtml(shareUrl)}" />
   <meta name="twitter:site" content="@JobGuinee" />
   
   <!-- LinkedIn Tags -->
   <meta property="linkedin:title" content="${escapeHTML(title)}" />
   <meta property="linkedin:description" content="${escapeHTML(description)}" />
-  <meta property="linkedin:image" content="${ogImage}" />
+  <meta property="linkedin:image" content="${escapeUrlForHtml(ogImage)}" />
   
   <!-- Redirect for human users only (crawlers stay to read OG tags) -->
-  ${isCrawler ? '' : `<meta http-equiv="refresh" content="2;url=${redirectUrl}" />`}
-  <link rel="canonical" href="${redirectUrl}" />
+  ${isCrawler ? '' : `<meta http-equiv="refresh" content="2;url=${escapeUrlForHtml(redirectUrl)}" />`}
+  <link rel="canonical" href="${escapeUrlForHtml(redirectUrl)}" />
   
   <style>
     body {
@@ -414,4 +414,10 @@ function escapeHTML(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;");
+}
+
+// Escape only & for URLs in HTML attributes (don't escape quotes/angle brackets)
+function escapeUrlForHtml(url: string): string {
+  if (!url) return "";
+  return url.replace(/&/g, "&amp;");
 }
