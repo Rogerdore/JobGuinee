@@ -1,5 +1,15 @@
 import { supabase } from '../lib/supabase';
 
+// Escape HTML special characters to prevent XSS in email content
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export type NotificationChannel = 'notification' | 'email' | 'sms' | 'whatsapp';
 export type NotificationType =
   | 'interview_scheduled'
@@ -332,22 +342,28 @@ export const notificationService = {
       const htmlBody = `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937">
           <div style="background:#f0f9ff;border-left:4px solid #2563eb;padding:16px;border-radius:8px;margin-bottom:16px">
-            <h2 style="margin:0 0 8px;color:#1e40af;font-size:18px">${payload.title}</h2>
+            <h2 style="margin:0 0 8px;color:#1e40af;font-size:18px">${escapeHtml(payload.title)}</h2>
           </div>
-          <div style="white-space:pre-line;line-height:1.6;color:#374151">${payload.message}</div>
+          <div style="white-space:pre-line;line-height:1.6;color:#374151">${escapeHtml(payload.message)}</div>
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
           <p style="font-size:12px;color:#9ca3af">JobGuinée – Plateforme emploi &amp; RH en Guinée</p>
         </div>
       `;
 
-      await supabase.rpc('queue_email', {
-        p_recipient_email: profile.email,
-        p_recipient_name: profile.full_name || '',
+      // Build deterministic event_id for deduplication
+      const entityId = payload.applicationId || payload.interviewId || payload.metadata?.payment_reference || '';
+      const eventId = entityId ? `${payload.type}_${entityId}` : null;
+
+      await supabase.rpc('queue_raw_email', {
+        p_to_email: profile.email,
+        p_to_name: profile.full_name || '',
         p_subject: payload.title,
         p_html_body: htmlBody,
         p_text_body: payload.message,
         p_template_key: payload.type,
-        p_metadata: payload.metadata || {}
+        p_event_id: eventId,
+        p_entity_id: payload.applicationId || payload.interviewId || null,
+        p_user_id: payload.recipientId,
       });
 
       if (payload.applicationId) {
@@ -527,28 +543,38 @@ export const notificationService = {
       .from('interview_reminders')
       .select('*')
       .eq('status', 'pending')
-      .lte('scheduled_for', now.toISOString());
+      .lte('scheduled_for', now.toISOString())
+      .order('scheduled_for', { ascending: true })
+      .limit(50);
 
     if (error || !reminders || reminders.length === 0) return;
 
-    for (const reminder of reminders) {
-      const notificationType = reminder.reminder_type === 'j_moins_1'
-        ? 'interview_reminder_24h'
-        : 'interview_reminder_2h';
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < reminders.length; i += BATCH_SIZE) {
+      const batch = reminders.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (reminder) => {
+          const notificationType = reminder.reminder_type === 'j_moins_1'
+            ? 'interview_reminder_24h'
+            : 'interview_reminder_2h';
 
-      const result = await this.sendInterviewNotification(
-        reminder.interview_id,
-        notificationType
-      );
+          const result = await this.sendInterviewNotification(
+            reminder.interview_id,
+            notificationType
+          );
 
-      await supabase
-        .from('interview_reminders')
-        .update({
-          status: result.success ? 'sent' : 'failed',
-          sent_at: result.success ? now.toISOString() : null,
-          error_message: result.error || null
+          await supabase
+            .from('interview_reminders')
+            .update({
+              status: result.success ? 'sent' : 'failed',
+              sent_at: result.success ? now.toISOString() : null,
+              error_message: result.error || null
+            })
+            .eq('id', reminder.id);
+
+          return result;
         })
-        .eq('id', reminder.id);
+      );
     }
   },
 

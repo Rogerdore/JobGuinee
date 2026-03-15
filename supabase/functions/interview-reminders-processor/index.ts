@@ -221,12 +221,16 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     console.log(`Current time: ${now.toISOString()}`);
 
+    const BATCH_SIZE = 20;
+    const LIMIT = 100;
+
     const { data: reminders, error: fetchError } = await supabase
       .from('interview_reminders')
       .select('*')
       .eq('status', 'pending')
       .lte('scheduled_for', now.toISOString())
-      .order('scheduled_for', { ascending: true });
+      .order('scheduled_for', { ascending: true })
+      .limit(LIMIT);
 
     if (fetchError) {
       throw new Error(`Failed to fetch reminders: ${fetchError.message}`);
@@ -249,40 +253,52 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Found ${reminders.length} pending reminders`);
 
-    const results = await Promise.allSettled(
-      reminders.map((reminder: InterviewReminder) => processReminder(supabase, reminder))
-    );
+    let successCount = 0;
+    let failureCount = 0;
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i];
-      const reminder = reminders[i];
+    // Process in batches of BATCH_SIZE to avoid unbounded parallelism
+    for (let i = 0; i < reminders.length; i += BATCH_SIZE) {
+      const batch = reminders.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map((reminder: InterviewReminder) => processReminder(supabase, reminder))
+      );
 
-      if (result.status === 'fulfilled' && result.value.success) {
+      // Batch status updates
+      const sentIds: string[] = [];
+      const failedUpdates: { id: string; error: string }[] = [];
+
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        const reminder = batch[j];
+
+        if (result.status === 'fulfilled' && result.value.success) {
+          sentIds.push(reminder.id);
+          successCount++;
+        } else {
+          const errorMessage = result.status === 'rejected'
+            ? result.reason?.message || 'Unknown error'
+            : (result.value as any).error || 'Processing failed';
+          failedUpdates.push({ id: reminder.id, error: errorMessage });
+          failureCount++;
+        }
+      }
+
+      // Batch update sent reminders
+      if (sentIds.length > 0) {
         await supabase
           .from('interview_reminders')
-          .update({
-            status: 'sent',
-            sent_at: now.toISOString(),
-            error_message: null
-          })
-          .eq('id', reminder.id);
-      } else {
-        const errorMessage = result.status === 'rejected'
-          ? result.reason?.message || 'Unknown error'
-          : (result.value as any).error || 'Processing failed';
+          .update({ status: 'sent', sent_at: now.toISOString(), error_message: null })
+          .in('id', sentIds);
+      }
 
+      // Update failed reminders individually (different error messages)
+      for (const fail of failedUpdates) {
         await supabase
           .from('interview_reminders')
-          .update({
-            status: 'failed',
-            error_message: errorMessage
-          })
-          .eq('id', reminder.id);
+          .update({ status: 'failed', error_message: fail.error })
+          .eq('id', fail.id);
       }
     }
-
-    const successCount = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length;
-    const failureCount = results.length - successCount;
 
     console.log(`=== Processing Complete ===`);
     console.log(`Success: ${successCount}, Failed: ${failureCount}`);

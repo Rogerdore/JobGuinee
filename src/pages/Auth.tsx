@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Eye, EyeOff, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../lib/supabase';
 import { getAuthRedirectIntent } from '../hooks/useAuthRedirect';
@@ -19,6 +19,7 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>(initialRole);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -71,7 +72,7 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
           setLoading(false);
           return;
         }
-        await signUp(email, password, fullName, role);
+        await signUp(email, password, fullName, role, phone);
 
         // Si on arrive ici sans erreur, la confirmation email est désactivée
         // => connexion directe possible
@@ -203,6 +204,22 @@ export default function Auth({ mode, initialRole = 'candidate', onNavigate }: Au
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Votre nom complet"
                       required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="+224 6XX XX XX XX"
                     />
                   </div>
                 </div>

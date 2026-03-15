@@ -134,19 +134,15 @@ export const socialShareService = {
     const encodedTitle = encodeURIComponent(jobTitle);
     const company = job.company_name || job.company || '';
 
-    // Add src={network} parameter for tracking which platform shared the job
-    const facebookUrl = `${baseShareUrl}?src=facebook`;
-    const linkedinUrl = `${baseShareUrl}?src=linkedin`;
-    const twitterUrl = `${baseShareUrl}?src=twitter`;
-    const whatsappUrl = `${baseShareUrl}?src=whatsapp`;
-
-    const encodedFacebookUrl = encodeURIComponent(facebookUrl);
-    const encodedLinkedinUrl = encodeURIComponent(linkedinUrl);
-    const encodedTwitterUrl = encodeURIComponent(twitterUrl);
+    // Do NOT append ?src= tracking params to share URLs
+    // Facebook/LinkedIn cache URLs including query params separately from og:url
+    // This causes the debugger to show correct data but shares to use stale cache
+    // Tracking is already handled client-side via trackShare()
+    const encodedShareUrl = encodeURIComponent(baseShareUrl);
 
     const whatsappText = company
-      ? `${jobTitle} chez ${company}\n${whatsappUrl}`
-      : `${jobTitle}\n${whatsappUrl}`;
+      ? `${jobTitle} chez ${company}\n${baseShareUrl}`
+      : `${jobTitle}\n${baseShareUrl}`;
     const encodedWhatsappText = encodeURIComponent(whatsappText);
 
     const twitterText = company
@@ -155,9 +151,9 @@ export const socialShareService = {
     const encodedTwitterText = encodeURIComponent(twitterText);
 
     return {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedFacebookUrl}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedLinkedinUrl}`,
-      twitter: `https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedTwitterUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedShareUrl}`,
       whatsapp: `https://wa.me/?text=${encodedWhatsappText}`
     };
   },

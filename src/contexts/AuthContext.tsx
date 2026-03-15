@@ -186,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // N'utilise PAS WebSocket, juste les events locaux d'auth
     let subscription: any = null;
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
         // Utiliser une fonction async immédiatement invoquée (IIFE)
         // pour éviter de bloquer le callback sync
         (async () => {
@@ -212,6 +212,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   return;
                 }
                 setIsAccountDeactivated(false);
+
+                // Envoyer l'email de bienvenue uniquement au premier login après confirmation
+                // (la déduplication dans sendWelcomeConfirmedEmail empêche les doublons)
+                if (event === 'SIGNED_IN' && profileData && profileData.is_account_confirmed) {
+                  const fullName = profileData.full_name || session.user.user_metadata?.full_name || 'Utilisateur';
+                  const userType = profileData.user_type || 'candidate';
+                  sendWelcomeConfirmedEmail(session.user.id, fullName, userType);
+                }
               } catch (timeoutErr) {
                 console.warn('⚠️ Timeout récupération profil dans onAuthStateChange');
                 // Continue sans profil
@@ -312,6 +320,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!templateData) return;
 
+      // Check if welcome email was already sent/queued for this user
+      const { data: existing } = await supabase
+        .from('email_queue')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('template_id', templateData.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) return; // Already sent — don't duplicate
+
       const { data: userRow } = await supabase
         .from('profiles')
         .select('email')
@@ -359,7 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return 'email';
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: UserRole) => {
+  const signUp = async (email: string, password: string, fullName: string, role: UserRole, phone?: string) => {
     const appUrl = import.meta.env.VITE_APP_URL || 'https://jobguinee-pro.com';
     const confirmationRedirectUrl = `${appUrl}/auth/callback`;
 
@@ -371,6 +390,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           full_name: fullName,
           user_type: role,
+          ...(phone ? { phone } : {}),
         }
       }
     });

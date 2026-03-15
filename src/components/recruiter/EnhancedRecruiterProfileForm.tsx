@@ -303,7 +303,7 @@ export default function EnhancedRecruiterProfileForm({ onProfileComplete }: Recr
           professional_email: profile.professional_email || '',
           job_title: recruiterProfile?.job_title || '',
           bio: recruiterProfile?.bio || '',
-          phone: profile.phone || '',
+          phone: profile.phone || user?.user_metadata?.phone || '',
           linkedin_url: recruiterProfile?.linkedin_url || '',
           avatar_url: profile.avatar_url || '',
           profile_visibility: profile.profile_visibility || 'public'
