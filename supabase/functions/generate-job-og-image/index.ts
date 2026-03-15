@@ -94,6 +94,11 @@ function generateSvg(params: {
   educationLevel: string;
   salaryRange: string;
   deadline: string;
+  createdAt: string;
+  publicationDuration: string;
+  positionCount: number;
+  positionLevel: string;
+  language: string;
   isUrgent: boolean;
   isFeatured: boolean;
   companyLogoBase64: string | null;
@@ -102,209 +107,221 @@ function generateSvg(params: {
   const {
     title, company, location, contractType, sector,
     experienceLevel, educationLevel, salaryRange, deadline,
+    createdAt, publicationDuration, positionCount, positionLevel, language,
     isUrgent, isFeatured, companyLogoBase64, siteLogoBase64,
   } = params;
 
-  const W = 1080;
-  const H = 1080;
-  const CX = W / 2; // center X = 540
-  const F = "Inter, sans-serif";
+  const W = 1080, H = 1080, CX = W / 2, F = "Inter, sans-serif";
 
-  const companyShort = escapeXml(truncate(company, 38));
-  const titleText = escapeXml(truncate(title, 70));
-  const titleLines = wrapText(titleText, 26, 3);
-  const locationShort = escapeXml(truncate(location, 25));
-  const contractShort = escapeXml(truncate(contractType, 20));
-  const sectorShort = escapeXml(truncate(sector, 28));
-  const expShort = escapeXml(truncate(experienceLevel, 20));
-  const eduShort = escapeXml(truncate(educationLevel, 22));
-  const salaryShort = escapeXml(truncate(salaryRange, 28));
+  const companyShort = escapeXml(truncate(company, 36));
+  const titleText = escapeXml(truncate(title, 65));
+  const titleLines = wrapText(titleText, 32, 3);
+  const locationShort = escapeXml(truncate(location, 22));
+  const contractShort = escapeXml(truncate(contractType, 18));
+  const sectorShort = escapeXml(truncate(sector, 24));
+  const expShort = escapeXml(truncate(experienceLevel, 18));
+  const eduShort = escapeXml(truncate(educationLevel, 20));
+  const salaryShort = escapeXml(truncate(salaryRange, 22));
+  const durationShort = escapeXml(truncate(publicationDuration || "30 jours", 15));
+  const langShort = escapeXml(truncate(language || "Fran\u00e7ais", 15));
+  const levelShort = escapeXml(truncate(positionLevel, 20));
+  const postsStr = positionCount > 1 ? `${positionCount} postes` : "";
 
-  let deadlineStr = "";
-  if (deadline) {
-    try {
-      const d = new Date(deadline);
-      deadlineStr = escapeXml(`Date limite : ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}`);
-    } catch { /* ignore */ }
-  }
+  // Format dates
+  const fmtDate = (s: string) => {
+    try { return escapeXml(new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })); }
+    catch { return ""; }
+  };
+  const publishedStr = createdAt ? fmtDate(createdAt) : "";
+  const deadlineStr = deadline ? fmtDate(deadline) : "";
 
-  // === SECTION 1: Top — "Avis de recrutement" (Y ~60-90) ===
-  const avisY = 72;
+  // ═══ HEADER (0-130): dark blue bar with JG logo (large) ═══
+  const headerH = 130;
+  const siteLogoSvg = siteLogoBase64
+    ? `<image href="${siteLogoBase64}" x="${CX - 150}" y="8" width="300" height="72" preserveAspectRatio="xMidYMid meet" />`
+    : `<text x="${CX}" y="52" font-family="${F}" font-size="36" font-weight="bold" fill="white" text-anchor="middle">JobGuin&#233;e</text>`;
 
-  // === SECTION 2: Company logo + name (Y ~120-190) ===
-  const companyY = 145;
-  const logoSize = 56;
-  const companyLogoSvg = companyLogoBase64
-    ? `<rect x="${CX - 160}" y="${companyY - 4}" width="${logoSize + 8}" height="${logoSize + 8}" rx="16" fill="white" />
-       <image href="${companyLogoBase64}" x="${CX - 156}" y="${companyY}" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet" />`
-    : "";
-  const companyNameX = companyLogoBase64 ? CX - 160 + logoSize + 20 : CX;
-  const companyNameAnchor = companyLogoBase64 ? "start" : "middle";
-  const companyNameY = companyLogoBase64 ? companyY + 37 : companyY + 30;
-
-  // === SECTION 3: "recherche un(e)" (Y ~210) ===
-  const rechercheY = 222;
-
-  // === SECTION 4: Title card 3D (Y ~250-430) ===
-  const titleCardY = 255;
-  const titleFontSize = titleLines.length <= 1 && titleText.length <= 20 ? 42
-    : titleLines.length <= 1 ? 36
-    : titleLines.length <= 2 ? 34
-    : 30;
-  const lineH = titleFontSize + 10;
-  const titleCardH = Math.max(titleLines.length * lineH + 40, 90);
-  const titleCardW = 900;
-  const titleCardX = (W - titleCardW) / 2;
-
-  let titleSvg = "";
-  titleLines.forEach((line, i) => {
-    const ty = titleCardY + 45 + i * lineH;
-    titleSvg += `<text x="${CX}" y="${ty}" font-family="${F}" font-size="${titleFontSize}" font-weight="bold" fill="white" text-anchor="middle">${line}</text>`;
-  });
-
-  // === SECTION 5: Info items (Y after title card, ~460+) ===
-  const infoStartY = titleCardY + titleCardH + 30;
-  const infos: { label: string; value: string }[] = [];
-  if (locationShort) infos.push({ label: "Lieu", value: locationShort });
-  if (contractShort) infos.push({ label: "Contrat", value: contractShort });
-  if (expShort) infos.push({ label: "Exp&#233;rience", value: expShort });
-  if (eduShort) infos.push({ label: "Niveau", value: eduShort });
-  if (sectorShort) infos.push({ label: "Secteur", value: sectorShort });
-  if (salaryShort) infos.push({ label: "Salaire", value: salaryShort });
-
-  // Render info as 2-column grid, centered
-  const colW = 420;
-  const rowH = 52;
-  const gridX1 = CX - colW - 10;
-  const gridX2 = CX + 10;
-  let infoSvg = "";
-  infos.forEach((info, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    const x = col === 0 ? gridX1 : gridX2;
-    const y = infoStartY + row * rowH;
-    const cardW = colW;
-    infoSvg += `
-      <rect x="${x}" y="${y}" width="${cardW}" height="42" rx="12" fill="white" opacity="0.7" />
-      <text x="${x + 16}" y="${y + 27}" font-family="${F}" font-size="14" fill="#6b7280" font-weight="600">${info.label}</text>
-      <text x="${x + cardW - 16}" y="${y + 27}" font-family="${F}" font-size="15" fill="#1e1b4b" font-weight="bold" text-anchor="end">${info.value}</text>`;
-  });
-
-  const infoRows = Math.ceil(infos.length / 2);
-  const afterInfoY = infoStartY + infoRows * rowH + 10;
-
-  // Deadline
-  let deadlineSvg = "";
-  if (deadlineStr) {
-    deadlineSvg = `<text x="${CX}" y="${afterInfoY + 16}" font-family="${F}" font-size="15" fill="#dc2626" font-weight="600" text-anchor="middle">${deadlineStr}</text>`;
-  }
-
-  // Badges URGENT / EN VEDETTE (top-right area)
+  // ═══ BADGES (top-right, just below header) ═══
   let badgesSvg = "";
-  let bX = W - 80;
+  let bX = W - 70;
   if (isFeatured) {
-    const bw = 150;
+    const bw = 146;
     bX -= bw;
-    badgesSvg += `
-      <rect x="${bX}" y="52" width="${bw}" height="34" rx="17" fill="#f59e0b" />
-      <text x="${bX + bw / 2}" y="74" font-family="${F}" font-size="13" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+    badgesSvg += `<rect x="${bX}" y="${headerH + 8}" width="${bw}" height="30" rx="15" fill="#f97316" /><text x="${bX + bw/2}" y="${headerH + 28}" font-family="${F}" font-size="12" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
     bX -= 8;
   }
   if (isUrgent) {
-    const bw = 120;
+    const bw = 116;
     bX -= bw;
-    badgesSvg += `
-      <rect x="${bX}" y="52" width="${bw}" height="34" rx="17" fill="#ef4444" />
-      <text x="${bX + bw / 2}" y="74" font-family="${F}" font-size="13" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
+    badgesSvg += `<rect x="${bX}" y="${headerH + 8}" width="${bw}" height="30" rx="15" fill="#ef4444" /><text x="${bX + bw/2}" y="${headerH + 28}" font-family="${F}" font-size="12" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
   }
 
-  // Site logo
-  const siteLogoSvg = siteLogoBase64
-    ? `<image href="${siteLogoBase64}" x="${CX - 80}" y="10" width="160" height="42" preserveAspectRatio="xMidYMid meet" />`
+  // ═══ COMPANY SECTION (150-210) — logo + name side by side, centered ═══
+  const companyY = 160;
+  const cLogoSize = 52;
+  const nameW = Math.min(companyShort.length * 13, 420);
+  const groupW = companyLogoBase64 ? cLogoSize + 14 + nameW : nameW;
+  const groupX = CX - groupW / 2;
+
+  const companyLogoSvg = companyLogoBase64
+    ? `<rect x="${groupX - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+       <image href="${companyLogoBase64}" x="${groupX}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
     : "";
+  const cNameX = companyLogoBase64 ? groupX + cLogoSize + 14 : CX;
+  const cNameAnchor = companyLogoBase64 ? "start" : "middle";
+  const cNameY = companyY + 33;
+
+  // ═══ "recherche un(e)" ═══
+  const rechercheY = 232;
+
+  // ═══ TITLE CARD (blue gradient, 3D soft, centered title) ═══
+  const tcY = 252;
+  const tcW = 920;
+  const tcX = (W - tcW) / 2;
+  const tfs = titleLines.length <= 1 && titleText.length <= 20 ? 38
+    : titleLines.length <= 1 ? 34
+    : titleLines.length <= 2 ? 32 : 27;
+  const tlh = tfs + 12;
+  const tcH = Math.max(titleLines.length * tlh + 48, 95);
+  // Vertical centering of title text inside card
+  const tbh = titleLines.length * tlh;
+  const tsY = tcY + (tcH - tbh) / 2 + tfs - 2;
+  let titleSvg = "";
+  titleLines.forEach((line, i) => {
+    titleSvg += `<text x="${CX}" y="${tsY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white" text-anchor="middle">${line}</text>`;
+  });
+
+  // ═══ LOCATION / LEVEL / POSTS bar ═══
+  const barY = tcY + tcH + 16;
+  const barItems: { text: string; bg: string; fg: string }[] = [];
+  if (locationShort) barItems.push({ text: locationShort, bg: "#dbeafe", fg: "#1e40af" });
+  if (levelShort) barItems.push({ text: `Niveau: ${levelShort}`, bg: "#e0e7ff", fg: "#3730a3" });
+  if (postsStr) barItems.push({ text: postsStr, bg: "#fef3c7", fg: "#d97706" });
+
+  let barSvg = "";
+  if (barItems.length > 0) {
+    const pillPadH = 20;
+    const pillH = 32;
+    const pillWidths = barItems.map(t => t.text.length * 8.5 + pillPadH * 2);
+    const totalBarW = pillWidths.reduce((a, b) => a + b, 0) + (barItems.length - 1) * 10;
+    let px = CX - totalBarW / 2;
+    barItems.forEach((item, i) => {
+      const pw = pillWidths[i];
+      barSvg += `<rect x="${px}" y="${barY}" width="${pw}" height="${pillH}" rx="16" fill="${item.bg}" />`;
+      barSvg += `<text x="${px + pw / 2}" y="${barY + 22}" font-family="${F}" font-size="13" font-weight="600" fill="${item.fg}" text-anchor="middle">${item.text}</text>`;
+      px += pw + 10;
+    });
+  }
+
+  // ═══ INFO CARDS GRID (3 cols x N rows) ═══
+  const gridY = barY + (barItems.length > 0 ? 50 : 18);
+  const cardW = 300, cardH = 88, gapX = 30, gapY = 14;
+  const gx1 = 60, gx2 = gx1 + cardW + gapX, gx3 = gx2 + cardW + gapX;
+
+  type IC = { label: string; value: string; color: string; abbr: string; hl?: boolean };
+  const cards: IC[] = [];
+  if (contractShort) cards.push({ label: "Type de contrat", value: contractShort, color: "#1e3a5f", abbr: "CT" });
+  if (expShort) cards.push({ label: "Exp&#233;rience requise", value: expShort, color: "#0891b2", abbr: "EX" });
+  if (eduShort) cards.push({ label: "Formation requise", value: eduShort, color: "#059669", abbr: "FO" });
+  if (sectorShort) cards.push({ label: "Secteur d&#39;activit&#233;", value: sectorShort, color: "#4338ca", abbr: "SE" });
+  if (publishedStr) cards.push({ label: "Publi&#233; le", value: publishedStr, color: "#2563eb", abbr: "PU" });
+  if (deadlineStr) cards.push({ label: "Date limite candidature", value: deadlineStr, color: "#dc2626", abbr: "DL", hl: true });
+  if (durationShort) cards.push({ label: "Dur&#233;e de publication", value: durationShort, color: "#7c3aed", abbr: "DP" });
+  if (langShort) cards.push({ label: "Langue", value: langShort, color: "#ea580c", abbr: "LA" });
+  if (salaryShort) cards.push({ label: "Salaire", value: salaryShort, color: "#16a34a", abbr: "SA" });
+
+  let infoSvg = "";
+  cards.forEach((c, i) => {
+    const col = i % 3, row = Math.floor(i / 3);
+    const x = col === 0 ? gx1 : col === 1 ? gx2 : gx3;
+    const y = gridY + row * (cardH + gapY);
+    const bg = c.hl ? "#fef2f2" : "white";
+    const border = c.hl ? "#fecaca" : "#e2e8f0";
+    infoSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="16" fill="${bg}" />`;
+    infoSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="16" fill="none" stroke="${border}" stroke-width="1.5" />`;
+    // Icon circle
+    infoSvg += `<circle cx="${x + 34}" cy="${y + cardH / 2}" r="20" fill="${c.color}" opacity="0.12" />`;
+    infoSvg += `<text x="${x + 34}" y="${y + cardH / 2 + 5}" font-family="${F}" font-size="13" font-weight="bold" fill="${c.color}" text-anchor="middle">${c.abbr}</text>`;
+    // Label
+    infoSvg += `<text x="${x + 64}" y="${y + 33}" font-family="${F}" font-size="12" fill="#64748b">${c.label}</text>`;
+    // Value
+    infoSvg += `<text x="${x + 64}" y="${y + 58}" font-family="${F}" font-size="15" font-weight="bold" fill="${c.hl ? "#dc2626" : "#0f172a"}">${c.value}</text>`;
+  });
+
+  const infoRows = Math.ceil(cards.length / 3);
+  const afterInfoY = gridY + infoRows * (cardH + gapY);
+
+  // ═══ CTA + FOOTER ═══
+  const ctaY = Math.max(afterInfoY + 35, 940);
+  const urlY = ctaY + 66;
 
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="${W}" y2="${H}" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ede9fe"/>
-      <stop offset="30%" stop-color="#ddd6fe"/>
-      <stop offset="60%" stop-color="#c4b5fd"/>
-      <stop offset="100%" stop-color="#a78bfa"/>
+    <linearGradient id="hdr" x1="0" y1="0" x2="${W}" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#1e3a5f"/>
     </linearGradient>
-    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#6d28d9"/>
+    <linearGradient id="tc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
-    <linearGradient id="ctaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#a855f7"/>
+    <linearGradient id="cta" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#ea580c"/>
     </linearGradient>
-    <filter id="card3d" x="-5%" y="-5%" width="110%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#7c3aed" flood-opacity="0.25"/>
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.08"/>
+    <filter id="ts" x="-3%" y="-5%" width="106%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#1e3a5f" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.06"/>
     </filter>
-    <filter id="softShadow" x="-3%" y="-5%" width="106%" height="115%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#7c3aed" flood-opacity="0.15"/>
+    <filter id="cs" x="-2%" y="-3%" width="104%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#000" flood-opacity="0.06"/>
     </filter>
-    <filter id="btnShadow" x="-5%" y="-10%" width="110%" height="130%">
-      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#7c3aed" flood-opacity="0.3"/>
+    <filter id="bs" x="-4%" y="-10%" width="108%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#ea580c" flood-opacity="0.25"/>
     </filter>
   </defs>
 
-  <!-- Background -->
-  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  <!-- Light background -->
+  <rect width="${W}" height="${H}" fill="#f1f5f9"/>
 
-  <!-- Decorative blobs -->
-  <circle cx="900" cy="120" r="180" fill="#c4b5fd" opacity="0.35"/>
-  <circle cx="180" cy="950" r="200" fill="#a78bfa" opacity="0.25"/>
-  <circle cx="540" cy="1100" r="120" fill="#ddd6fe" opacity="0.3"/>
-  <ellipse cx="950" cy="800" rx="100" ry="70" fill="#e9d5ff" opacity="0.3"/>
+  <!-- Blue header bar -->
+  <rect width="${W}" height="${headerH}" fill="url(#hdr)"/>
+  <!-- Orange accent line at header bottom -->
+  <rect x="0" y="${headerH - 4}" width="${W}" height="4" fill="#f97316"/>
 
-  <!-- Main white card -->
-  <rect x="40" y="40" width="1000" height="1000" rx="36" fill="white" opacity="0.92" filter="url(#softShadow)" />
-
-  <!-- Site logo centered at very top -->
+  <!-- JobGuin&#233;e logo (large, centered in header) -->
   ${siteLogoSvg}
-
-  <!-- "Avis de recrutement" centered, lowercase -->
-  <text x="${CX}" y="${avisY}" font-family="${F}" font-size="22" fill="#6b7280" text-anchor="middle" letter-spacing="1">Avis de recrutement</text>
-
-  <!-- Thin separator -->
-  <rect x="${CX - 60}" y="${avisY + 12}" width="120" height="2" rx="1" fill="#c4b5fd" />
+  <!-- AVIS DE RECRUTEMENT -->
+  <text x="${CX}" y="${headerH - 14}" font-family="${F}" font-size="14" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
 
   ${badgesSvg}
 
-  <!-- Company logo + name -->
+  <!-- Company logo + name (centered) -->
   ${companyLogoSvg}
-  <text x="${companyNameX}" y="${companyNameY}" font-family="${F}" font-size="26" fill="#1e1b4b" font-weight="bold" text-anchor="${companyNameAnchor}">${companyShort}</text>
+  <text x="${cNameX}" y="${cNameY}" font-family="${F}" font-size="24" fill="#0f172a" font-weight="bold" text-anchor="${cNameAnchor}">${companyShort}</text>
 
   <!-- "recherche un(e)" -->
-  <text x="${CX}" y="${rechercheY}" font-family="${F}" font-size="20" fill="#6b7280" text-anchor="middle" font-weight="400">recherche un(e)</text>
+  <text x="${CX}" y="${rechercheY}" font-family="${F}" font-size="17" fill="#64748b" text-anchor="middle">recherche un(e)</text>
 
-  <!-- Title Card (3D soft, rounded) -->
-  <rect x="${titleCardX}" y="${titleCardY}" width="${titleCardW}" height="${titleCardH}" rx="24" fill="url(#titleGrad)" filter="url(#card3d)" />
-  <!-- Inner highlight for 3D effect -->
-  <rect x="${titleCardX + 2}" y="${titleCardY + 2}" width="${titleCardW - 4}" height="${Math.floor(titleCardH / 2)}" rx="22" fill="white" opacity="0.08" />
+  <!-- Title card (blue gradient, 3D, rounded) -->
+  <rect x="${tcX}" y="${tcY}" width="${tcW}" height="${tcH}" rx="22" fill="url(#tc)" filter="url(#ts)"/>
+  <rect x="${tcX + 2}" y="${tcY + 2}" width="${tcW - 4}" height="${Math.floor(tcH * 0.4)}" rx="20" fill="white" opacity="0.06"/>
   ${titleSvg}
 
-  <!-- Info grid -->
-  <g filter="url(#softShadow)">
+  <!-- Location / Level / Posts pills -->
+  ${barSvg}
+
+  <!-- Info cards grid -->
+  <g filter="url(#cs)">
     ${infoSvg}
   </g>
 
-  <!-- Deadline -->
-  ${deadlineSvg}
-
-  <!-- ===== BOTTOM SECTION ===== -->
-  <!-- CTA button -->
-  <rect x="${CX - 230}" y="940" width="460" height="54" rx="27" fill="url(#ctaGrad)" filter="url(#btnShadow)" />
-  <text x="${CX}" y="974" font-family="${F}" font-size="19" font-weight="bold" fill="white" text-anchor="middle">Postulez directement via JobGuin&#233;e</text>
+  <!-- CTA button (orange) -->
+  <rect x="${CX - 260}" y="${ctaY}" width="520" height="54" rx="27" fill="url(#cta)" filter="url(#bs)"/>
+  <text x="${CX}" y="${ctaY + 35}" font-family="${F}" font-size="19" font-weight="bold" fill="white" text-anchor="middle">Postulez directement via JobGuin&#233;e</text>
 
   <!-- Site URL -->
-  <text x="${CX}" y="1020" font-family="${F}" font-size="16" fill="#7c3aed" text-anchor="middle" font-weight="600">www.jobguinee-pro.com</text>
+  <text x="${CX}" y="${urlY}" font-family="${F}" font-size="15" fill="#1e3a5f" text-anchor="middle" font-weight="600">www.jobguinee-pro.com</text>
 
-  <!-- Bottom accent -->
-  <rect x="40" y="1046" width="1000" height="6" rx="3" fill="#a78bfa" opacity="0.5"/>
+  <!-- Bottom orange accent -->
+  <rect x="0" y="${H - 6}" width="${W}" height="6" fill="#f97316"/>
 </svg>`;
 }
 
@@ -331,7 +348,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, title, location, contract_type, sector, experience_level, education_level, salary_range, deadline, is_urgent, is_featured, company_logo_url, partner_logo_url, use_profile_logo, company_id, company_name")
+      .select("id, title, location, contract_type, sector, experience_level, education_level, salary_range, deadline, created_at, publication_duration, position_count, position_level, announcement_language, is_urgent, is_featured, company_logo_url, partner_logo_url, use_profile_logo, company_id, company_name")
       .eq("id", jobId)
       .maybeSingle();
 
@@ -397,6 +414,11 @@ Deno.serve(async (req: Request) => {
       educationLevel: (job as any).education_level || "",
       salaryRange: (job as any).salary_range || "",
       deadline: (job as any).deadline || "",
+      createdAt: (job as any).created_at || "",
+      publicationDuration: (job as any).publication_duration || "30 jours",
+      positionCount: (job as any).position_count || 1,
+      positionLevel: (job as any).position_level || "",
+      language: (job as any).announcement_language || "",
       isUrgent: job.is_urgent || false,
       isFeatured: job.is_featured || false,
       companyLogoBase64,
