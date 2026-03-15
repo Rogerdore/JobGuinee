@@ -4,7 +4,7 @@ import { Search, MapPin, Building, Briefcase, Filter, X, Heart, Share2, Clock, C
 import { supabase, Job, Company } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleJobs } from '../utils/sampleJobsData';
-import { testimonials, companies as recruitingCompanies, jobCategories, guineaRegions } from '../utils/testimonials';
+import { testimonials, jobCategories, guineaRegions } from '../utils/testimonials';
 import { CompanyLogoWithIcon } from '../components/common/CompanyLogo';
 import ShareJobModal from '../components/common/ShareJobModal';
 import JobCommentsModal from '../components/jobs/JobCommentsModal';
@@ -39,7 +39,8 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterDomain, setNewsletterDomain] = useState('');
-  const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 10 });
+  const [stats, setStats] = useState({ jobs: 0, candidates: 0, companies: 0, regions: 0 });
+  const [realCompanies, setRealCompanies] = useState<{name: string; logo: string | null; jobCount: number; sector: string}[]>([]);
   const [shareJobModal, setShareJobModal] = useState<(Job & { companies: Company }) | null>(null);
   const [commentsJobModal, setCommentsJobModal] = useState<(Job & { companies: Company }) | null>(null);
 
@@ -102,15 +103,31 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       .from('candidate_profiles')
       .select('*', { count: 'exact', head: true });
 
-    const { count: companiesCount } = await supabase
-      .from('companies')
-      .select('*', { count: 'exact', head: true });
+    // Fetch published jobs to extract real companies and regions
+    const { data: publishedJobs } = await supabase
+      .from('jobs')
+      .select('company_name, company_logo_url, location, sector')
+      .eq('status', 'published');
+
+    const companyMap: Record<string, { name: string; logo: string | null; jobCount: number; sector: string }> = {};
+    const regionSet = new Set<string>();
+    (publishedJobs || []).forEach((j: any) => {
+      const name = j.company_name || 'Autre';
+      if (!companyMap[name]) {
+        companyMap[name] = { name, logo: j.company_logo_url || null, jobCount: 0, sector: j.sector || '' };
+      }
+      companyMap[name].jobCount++;
+      if (j.location) regionSet.add(j.location);
+    });
+
+    const companiesList = Object.values(companyMap).sort((a, b) => b.jobCount - a.jobCount);
+    setRealCompanies(companiesList);
 
     setStats({
-      jobs: jobsCount || sampleJobs.length,
-      candidates: candidatesCount || 1247,
-      companies: companiesCount || recruitingCompanies.length,
-      regions: 10,
+      jobs: jobsCount || 0,
+      candidates: candidatesCount || 0,
+      companies: companiesList.length,
+      regions: regionSet.size || 1,
     });
   };
 
@@ -753,35 +770,43 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       )}
 
       {/* Section 5: Entreprises qui recrutent */}
+      {realCompanies.length > 0 && (
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Entreprises qui recrutent en Guinée</h2>
-            <p className="text-gray-600">Découvrez nos partenaires et leurs opportunités</p>
+            <p className="text-gray-600">Découvrez les entreprises qui recrutent actuellement</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {recruitingCompanies.map((company) => (
+          <div className={`grid gap-6 ${realCompanies.length === 1 ? 'grid-cols-1 max-w-xs mx-auto' : realCompanies.length === 2 ? 'grid-cols-2 max-w-lg mx-auto' : realCompanies.length === 3 ? 'grid-cols-3 max-w-3xl mx-auto' : 'grid-cols-2 md:grid-cols-4'}`}>
+            {realCompanies.map((company) => (
               <div
-                key={company.id}
+                key={company.name}
                 className="bg-gray-50 rounded-xl p-6 text-center hover:shadow-lg hover:bg-white transition-all card-hover cursor-pointer"
                 onClick={() => {
-                  setSector(company.sector);
+                  if (company.sector) setSector(company.sector);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
-                <img src={company.logo} alt={company.name} className="w-20 h-20 mx-auto mb-4 rounded-lg" />
+                {company.logo ? (
+                  <img src={company.logo} alt={company.name} className="w-20 h-20 mx-auto mb-4 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-lg bg-gradient-to-br from-[#0E2F56] to-[#1a4275] flex items-center justify-center">
+                    <span className="text-white text-2xl font-bold">{company.name.substring(0, 2).toUpperCase()}</span>
+                  </div>
+                )}
                 <h3 className="font-bold text-gray-900 mb-2 text-sm">{company.name}</h3>
-                <p className="text-xs text-gray-600 mb-3">{company.sector}</p>
+                {company.sector && <p className="text-xs text-gray-600 mb-3">{company.sector}</p>}
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#0E2F56] text-white text-xs font-semibold rounded-full">
                   <Briefcase className="w-3 h-3" />
-                  <span>{company.activeJobs} offres</span>
+                  <span>{company.jobCount} offre{company.jobCount > 1 ? 's' : ''}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+      )}
 
       {/* Section 6: Statistiques */}
       <div className="bg-gradient-to-br from-[#0E2F56] to-[#1a4275] py-16 text-white">
