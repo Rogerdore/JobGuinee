@@ -192,39 +192,39 @@ function generateSvg(params: {
   const ctaText = escapeXml(tpl.cta_text);
   const footerUrl = escapeXml(tpl.footer_url);
 
-  // ═══ LEFT PANEL — Logo + Company + Title + CTA ═══
+  // ═══ LEFT PANEL — Logo + Company + Title ═══
   let siteLogoSvg: string;
   if (siteLogoBase64) {
     const glow = tpl.logo_glow_enabled ? ' filter="url(#logoGlow)"' : '';
-    siteLogoSvg = `<image href="${siteLogoBase64}" x="${PAD}" y="16" width="180" height="44" preserveAspectRatio="xMinYMid meet"${glow} />`;
+    siteLogoSvg = `<image href="${siteLogoBase64}" x="${PAD}" y="20" width="240" height="56" preserveAspectRatio="xMinYMid meet"${glow} />`;
   } else {
-    siteLogoSvg = `<text x="${PAD}" y="46" font-family="${F}" font-size="28" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
+    siteLogoSvg = `<text x="${PAD}" y="56" font-family="${F}" font-size="32" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
   }
 
   // "AVIS DE RECRUTEMENT" banner
-  const bannerY = 72;
+  const bannerY = 96;
 
   // Company logo + name
-  const cLogoSize = 44;
-  const companyY = bannerY + 30;
+  const cLogoSize = 60;
+  const companyY = bannerY + 40;
   const companyLogoSvg = companyLogoBase64
-    ? `<rect x="${PAD - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="12" fill="rgba(255,255,255,0.15)" />
+    ? `<rect x="${PAD - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="rgba(255,255,255,0.15)" />
        <image href="${companyLogoBase64}" x="${PAD}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
     : "";
-  const cNameX = companyLogoBase64 ? PAD + cLogoSize + 12 : PAD;
+  const cNameX = companyLogoBase64 ? PAD + cLogoSize + 14 : PAD;
   const cNameMaxW = LP - cNameX - PAD;
 
   // Title
-  const titleY = companyY + cLogoSize + 28;
+  const titleY = companyY + cLogoSize + 40;
   const tfs = titleLines.length <= 1 ? 36 : titleLines.length <= 2 ? 32 : 28;
-  const tlh = tfs + 8;
+  const tlh = tfs + 10;
   let titleSvg = "";
   titleLines.forEach((line, i) => {
     titleSvg += `<text x="${PAD}" y="${titleY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white">${line}</text>`;
   });
 
   // Badges below title
-  const afterTitleY = titleY + titleLines.length * tlh + 12;
+  const afterTitleY = titleY + titleLines.length * tlh + 20;
   let badgesSvg = "";
   let badgeX = PAD;
   if (isUrgent) {
@@ -235,11 +235,7 @@ function generateSvg(params: {
     badgesSvg += `<rect x="${badgeX}" y="${afterTitleY}" width="130" height="30" rx="15" fill="${tpl.accent_color}" /><text x="${badgeX + 65}" y="${afterTitleY + 20}" font-family="${F}" font-size="15" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
   }
 
-  // CTA button at bottom of left panel
-  const ctaBtnY = H - 100;
-  const ctaBtnW = LPW;
-
-  // Footer URL
+  // URL at bottom of left panel
   const urlY = H - 40;
 
   // Background
@@ -343,13 +339,13 @@ function generateSvg(params: {
   ${siteLogoSvg}
 
   <!-- AVIS DE RECRUTEMENT -->
-  <rect x="${PAD}" y="${bannerY - 4}" width="${LPW}" height="26" rx="4" fill="rgba(255,255,255,0.12)"/>
-  <text x="${PAD + LPW / 2}" y="${bannerY + 15}" font-family="${F}" font-size="14" font-weight="700" fill="${tpl.accent_color}" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
+  <rect x="${PAD}" y="${bannerY - 4}" width="${LPW}" height="30" rx="6" fill="rgba(255,255,255,0.12)"/>
+  <text x="${PAD + LPW / 2}" y="${bannerY + 17}" font-family="${F}" font-size="16" font-weight="700" fill="${tpl.accent_color}" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
 
   <!-- Company -->
   ${companyLogoSvg}
-  <text x="${cNameX}" y="${companyY + 20}" font-family="${F}" font-size="22" fill="white" font-weight="bold">${companyShort}</text>
-  <text x="${cNameX}" y="${companyY + 40}" font-family="${F}" font-size="16" fill="rgba(255,255,255,0.65)">recherche un(e)</text>
+  <text x="${cNameX}" y="${companyY + 24}" font-family="${F}" font-size="26" fill="white" font-weight="bold">${companyShort}</text>
+  <text x="${cNameX}" y="${companyY + 48}" font-family="${F}" font-size="20" fill="rgba(255,255,255,0.65)">recherche un(e)</text>
 
   <!-- Job title -->
   ${titleSvg}
@@ -357,12 +353,8 @@ function generateSvg(params: {
   <!-- Badges -->
   ${badgesSvg}
 
-  <!-- Left CTA -->
-  <rect x="${PAD}" y="${ctaBtnY}" width="${ctaBtnW}" height="46" rx="23" fill="url(#cta)" filter="url(#bs)"/>
-  <text x="${PAD + ctaBtnW / 2}" y="${ctaBtnY + 30}" font-family="${F}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>
-
   <!-- URL -->
-  <text x="${PAD + LPW / 2}" y="${urlY}" font-family="${F}" font-size="16" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-weight="600">${footerUrl}</text>
+  <text x="${PAD + LPW / 2}" y="${urlY}" font-family="${F}" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-weight="600">${footerUrl}</text>
 
   <!-- RIGHT: Info cards -->
   ${rightSvg}
