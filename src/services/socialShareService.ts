@@ -150,8 +150,16 @@ export const socialShareService = {
       : `${jobTitle} sur @JobGuinee`;
     const encodedTwitterText = encodeURIComponent(twitterText);
 
+    // Build a rich quote text for Facebook's "Quoi de neuf ?" field
+    const quoteParts = [`📢 Avis de recrutement d'un(e) ${jobTitle.toUpperCase()}`];
+    if (company) quoteParts.push(`🏢 ${company}`);
+    if ((job as any).location) quoteParts.push(`📍 ${(job as any).location}`);
+    if ((job as any).contract_type) quoteParts.push(`📄 ${(job as any).contract_type}`);
+    quoteParts.push('👉 Postulez sur JobGuinée !');
+    const facebookQuote = encodeURIComponent(quoteParts.join(' | '));
+
     return {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}&quote=${facebookQuote}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`,
       twitter: `https://twitter.com/intent/tweet?text=${encodedTwitterText}&url=${encodedShareUrl}`,
       whatsapp: `https://wa.me/?text=${encodedWhatsappText}`
