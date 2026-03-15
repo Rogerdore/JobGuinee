@@ -1,22 +1,26 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
-import * as resvgWasm from "https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
+
+// Dynamic resvg-wasm loading to avoid BOOT_ERROR
+let Resvg: any;
+let wasmInitialized = false;
+
+async function ensureWasm() {
+  if (wasmInitialized) return;
+  const resvgModule = await import("https://esm.sh/@resvg/resvg-wasm@2.6.2");
+  Resvg = resvgModule.Resvg;
+  const wasmUrl = "https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
+  const wasmResp = await fetch(wasmUrl);
+  const wasmBytes = await wasmResp.arrayBuffer();
+  await resvgModule.initWasm(wasmBytes);
+  wasmInitialized = true;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
-
-let wasmInitialized = false;
-
-async function ensureWasm() {
-  if (!wasmInitialized) {
-    await initWasm(resvgWasm);
-    wasmInitialized = true;
-  }
-}
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
   try {
@@ -34,6 +38,15 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function truncate(text: string, max: number): string {
@@ -72,64 +85,118 @@ function generateSvg(params: {
 }): string {
   const { title, company, location, contractType, sector, isUrgent, isFeatured, logoBase64, siteName, siteUrl } = params;
 
-  const titleLines = wrapText(truncate(title, 60), 30);
+  const titleUpper = escapeXml(truncate(title.toUpperCase(), 65));
+  const titleLines = wrapText(titleUpper, 28);
   const titleLine1 = titleLines[0] || "";
   const titleLine2 = titleLines[1] || "";
-  const companyShort = truncate(company, 40);
-  const locationShort = truncate(location, 35);
-  const contractShort = truncate(contractType, 20);
-  const sectorShort = truncate(sector, 30);
+  const companyShort = escapeXml(truncate(company, 40));
+  const locationShort = escapeXml(truncate(location, 30));
+  const contractShort = escapeXml(truncate(contractType, 20));
+  const sectorShort = escapeXml(truncate(sector, 30));
+  const experienceLabel = sector ? sectorShort : "";
+
+  // Dynamic title font size based on length
+  const titleFontSize = titleUpper.length <= 25 ? 56 : titleUpper.length <= 40 ? 48 : 40;
+  // Y positions depend on whether title wraps to 2 lines
+  const hasLine2 = !!titleLine2;
+  const titleY1 = hasLine2 ? 230 : 255;
+  const titleY2 = titleY1 + titleFontSize + 10;
+  const companyY = hasLine2 ? titleY2 + 20 : titleY1 + 55;
+  const tagsY = companyY + 60;
 
   const logoEl = logoBase64
-    ? `<image href="${logoBase64}" x="900" y="40" width="260" height="100" preserveAspectRatio="xMidYMid meet" />`
-    : `<text x="1030" y="105" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#1a56db" text-anchor="middle">${siteName}</text>`;
+    ? `<image href="${logoBase64}" x="880" y="48" width="270" height="80" preserveAspectRatio="xMaxYMid meet" />`
+    : "";
 
   const urgentBadge = isUrgent
-    ? `<rect x="40" y="40" width="120" height="36" rx="18" fill="#ef4444"/>
-       <text x="100" y="64" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`
+    ? `<rect x="60" y="148" width="130" height="38" rx="19" fill="#ef4444"/>
+       <text x="125" y="173" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">⚡ URGENT</text>`
     : "";
 
   const featuredBadge = isFeatured
-    ? `<rect x="${isUrgent ? "175" : "40"}" y="40" width="130" height="36" rx="18" fill="#f59e0b"/>
-       <text x="${isUrgent ? "240" : "105"}" y="64" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">★ VEDETTE</text>`
+    ? `<rect x="${isUrgent ? "205" : "60"}" y="148" width="140" height="38" rx="19" fill="#f59e0b"/>
+       <text x="${isUrgent ? "275" : "130"}" y="173" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">★ EN VEDETTE</text>`
     : "";
+
+  // Build detail tags
+  const tags: string[] = [];
+  if (locationShort) tags.push(locationShort);
+  if (contractShort) tags.push(contractShort);
+  if (experienceLabel) tags.push(experienceLabel);
+
+  let tagsSvg = "";
+  let tagX = 80;
+  for (const tag of tags) {
+    const tagWidth = tag.length * 12 + 36;
+    tagsSvg += `
+      <rect x="${tagX}" y="${tagsY}" width="${tagWidth}" height="42" rx="21" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      <text x="${tagX + tagWidth / 2}" y="${tagsY + 27}" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="rgba(255,255,255,0.9)" text-anchor="middle">${tag}</text>`;
+    tagX += tagWidth + 16;
+  }
 
   return `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1e3a5f;stop-opacity:1" />
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a0533"/>
+      <stop offset="40%" stop-color="#2d1b69"/>
+      <stop offset="70%" stop-color="#4c1d95"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#1a56db;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="550" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.10)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
     </linearGradient>
   </defs>
 
+  <!-- Background -->
   <rect width="1200" height="630" fill="url(#bgGrad)"/>
 
-  <rect x="0" y="0" width="6" height="630" fill="url(#accentGrad)"/>
-  <rect x="0" y="590" width="1200" height="6" fill="url(#accentGrad)"/>
+  <!-- Decorative circles -->
+  <circle cx="1100" cy="80" r="250" fill="rgba(124,58,237,0.25)"/>
+  <circle cx="100" cy="580" r="300" fill="rgba(139,92,246,0.15)"/>
 
-  <rect x="40" y="130" width="1120" height="3" fill="#1a56db" opacity="0.4"/>
+  <!-- Inner card -->
+  <rect x="40" y="35" width="1120" height="560" rx="24" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
 
+  <!-- Gold accent bar left -->
+  <rect x="40" y="35" width="6" height="560" rx="3" fill="url(#goldGrad)"/>
+
+  ${logoEl}
   ${urgentBadge}
   ${featuredBadge}
-  ${logoEl}
 
-  <text x="60" y="${titleLine2 ? "240" : "260"}" font-family="Arial, sans-serif" font-size="62" font-weight="bold" fill="white">${titleLine1}</text>
-  ${titleLine2 ? `<text x="60" y="315" font-family="Arial, sans-serif" font-size="62" font-weight="bold" fill="white">${titleLine2}</text>` : ""}
+  <!-- Header: AVIS DE RECRUTEMENT -->
+  <rect x="80" y="65" width="5" height="32" rx="2" fill="#fbbf24"/>
+  <text x="100" y="92" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="#fbbf24" letter-spacing="2">AVIS DE RECRUTEMENT</text>
 
-  <text x="60" y="${titleLine2 ? "370" : "330"}" font-family="Arial, sans-serif" font-size="36" fill="#93c5fd" font-weight="600">${companyShort}</text>
+  <!-- Separator line -->
+  <rect x="80" y="120" width="1040" height="1" fill="rgba(255,255,255,0.12)"/>
 
-  <rect x="60" y="${titleLine2 ? "400" : "360"}" width="1080" height="2" fill="#1e40af" opacity="0.5"/>
+  <!-- Job Title (UPPERCASE, large) -->
+  <text x="80" y="${titleY1}" font-family="Arial, Helvetica, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine1}</text>
+  ${hasLine2 ? `<text x="80" y="${titleY2}" font-family="Arial, Helvetica, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine2}</text>` : ""}
 
-  <text x="60" y="${titleLine2 ? "450" : "410"}" font-family="Arial, sans-serif" font-size="28" fill="#cbd5e1">📍 ${locationShort}</text>
-  <text x="420" y="${titleLine2 ? "450" : "410"}" font-family="Arial, sans-serif" font-size="28" fill="#cbd5e1">💼 ${contractShort}</text>
-  ${sectorShort ? `<text x="760" y="${titleLine2 ? "450" : "410"}" font-family="Arial, sans-serif" font-size="28" fill="#cbd5e1">🏢 ${sectorShort}</text>` : ""}
+  <!-- Company name -->
+  <text x="80" y="${companyY}" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)" font-weight="600">${companyShort}</text>
 
-  <text x="60" y="570" font-family="Arial, sans-serif" font-size="22" fill="#64748b">${siteUrl}</text>
-  <text x="1140" y="570" font-family="Arial, sans-serif" font-size="22" fill="#1a56db" text-anchor="end" font-weight="bold">${siteName}</text>
+  <!-- Detail tags (pills) -->
+  ${tagsSvg}
+
+  <!-- Bottom separator -->
+  <rect x="80" y="500" width="1040" height="1" fill="rgba(255,255,255,0.12)"/>
+
+  <!-- CTA -->
+  <text x="80" y="548" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#fbbf24">Postulez via JobGuinée!</text>
+
+  <!-- URL -->
+  <text x="1120" y="548" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="rgba(255,255,255,0.4)" text-anchor="end">jobguinee-pro.com</text>
+
+  <!-- Bottom accent bar -->
+  <rect x="40" y="589" width="1120" height="6" rx="3" fill="url(#goldGrad)"/>
 </svg>`;
 }
 

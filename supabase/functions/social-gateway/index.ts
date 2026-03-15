@@ -108,6 +108,16 @@ Deno.serve(async (req: Request) => {
     responseHeaders.set("Access-Control-Allow-Origin", "*");
     responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
 
+    // Trigger OG image generation in background if not yet generated
+    if (!(job as any).og_image_url && jobId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      fetch(`${supabaseUrl}/functions/v1/generate-job-og-image?job_id=${jobId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${supabaseKey}` },
+      }).catch(() => {}); // fire-and-forget
+    }
+
     return new Response(html, {
       status: 200,
       headers: responseHeaders,
@@ -217,10 +227,10 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
     description = description.substring(0, 247) + '...';
   }
 
-  // OG Image Cascade
-  // Priority: featured_image_url (via Supabase transform → JPEG 1200x630) → logo PNG fallback
-  // Company logos are excluded: they are typically small icons (<200x200) 
-  // and Facebook requires at least 200x200px for og:image
+  // OG Image Priority:
+  // 1. og_image_url (auto-generated branded image from generate-job-og-image)
+  // 2. featured_image_url (recruiter-uploaded, via Supabase transform → JPEG 1200x630)
+  // 3. Fallback logo PNG
   const fallbackImage = `${baseUrl}/logo_jobguinee.png`;
   let ogImage = fallbackImage;
   let imageType = 'image/png';
@@ -234,21 +244,21 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
     return true;
   };
 
-  // Use Supabase Image Transformations to serve JPEG at optimal OG dimensions
-  // Converts WebP/PNG to JPEG and resizes to 1200x630 (Facebook recommended)
   const supabaseStorageBase = Deno.env.get("SUPABASE_URL") + '/storage/v1';
-  
-  if (isValidImageUrl(job.featured_image_url)) {
+
+  if (isValidImageUrl((job as any).og_image_url)) {
+    // Priority 1: Auto-generated branded OG image (already PNG 1200x630)
+    ogImage = (job as any).og_image_url!;
+    imageType = 'image/png';
+  } else if (isValidImageUrl(job.featured_image_url)) {
+    // Priority 2: Recruiter-uploaded featured image (transform to JPEG 1200x630)
     const rawUrl = job.featured_image_url!;
-    // Check if image is hosted on our Supabase Storage
     const objectPrefix = supabaseStorageBase + '/object/public/';
     if (rawUrl.startsWith(objectPrefix)) {
-      // Extract the bucket/path part and use render endpoint for JPEG conversion
       const storagePath = rawUrl.substring(objectPrefix.length);
       ogImage = `${supabaseStorageBase}/render/image/public/${storagePath}?width=1200&height=630&resize=cover`;
       imageType = 'image/jpeg';
     } else {
-      // External image URL — use as-is
       ogImage = rawUrl;
       const lowerImage = rawUrl.toLowerCase();
       imageType = lowerImage.endsWith('.jpg') || lowerImage.endsWith('.jpeg')
@@ -260,9 +270,6 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
         : 'image/png';
     }
   }
-
-  // Check if job-specific image exists (would need server-side validation in production)
-  // For now, we use the featured_image_url if available, otherwise fallback
 
   // og:url must be the canonical jobguinee-pro.com URL (this controls the domain shown on Facebook)
   const shareUrl = `${baseUrl}/offres/${job.slug || job.id}`;
