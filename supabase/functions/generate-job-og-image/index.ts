@@ -88,18 +88,38 @@ const corsHeaders = {
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
   try {
+    // First try direct fetch
     const res = await fetch(url);
     if (!res.ok) return null;
-    const buffer = await res.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+    const contentType = res.headers.get("content-type") || "";
+
+    // If format is supported by resvg (png, jpeg, gif), use directly
+    if (contentType.includes("png") || contentType.includes("jpeg") || contentType.includes("gif")) {
+      const buffer = await res.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return `data:${contentType};base64,${btoa(binary)}`;
     }
-    const base64 = btoa(binary);
-    const contentType = res.headers.get("content-type") || "image/png";
-    return `data:${contentType};base64,${base64}`;
-  } catch {
+
+    // Unsupported format (webp, avif, svg) — convert via wsrv.nl image proxy
+    console.log(`Unsupported format ${contentType}, converting via wsrv.nl: ${url}`);
+    const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png&w=200`;
+    const proxyRes = await fetch(proxyUrl);
+    if (!proxyRes.ok) {
+      console.warn(`wsrv.nl conversion failed: ${proxyRes.status}`);
+      return null;
+    }
+    const proxyType = proxyRes.headers.get("content-type") || "image/png";
+    const buf = await proxyRes.arrayBuffer();
+    if (buf.byteLength < 100) return null;
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    console.log(`wsrv.nl conversion OK: ${proxyType}, ${buf.byteLength}B`);
+    return `data:${proxyType};base64,${btoa(binary)}`;
+  } catch (e) {
+    console.error(`fetchImageAsBase64 error: ${e}`);
     return null;
   }
 }
@@ -192,32 +212,51 @@ function generateSvg(params: {
   const ctaText = escapeXml(tpl.cta_text);
   const footerUrl = escapeXml(tpl.footer_url);
 
-  // ═══ LEFT PANEL — Logo + Company + Title ═══
+  // ═══ LEFT PANEL — Auto-calculate spacing, company+title 1cm higher ═══
+  // Blocks: 1) Site logo (56px), 2) Banner (30px), 3) Company (60px), 4) Title (variable), 5) URL (18px)
+  const siteLogoH = 56;
+  const bannerH = 30;
+  const cLogoSize = 60;
+  const tfs = titleLines.length <= 1 ? 36 : titleLines.length <= 2 ? 32 : 28;
+  const tlh = tfs + 10;
+  const titleH = titleLines.length * tlh;
+  const urlH = 18;
+  const topPad = 20, botPad = 20;
+  const totalContent = siteLogoH + bannerH + cLogoSize + titleH + urlH;
+  const availableSpace = H - topPad - botPad - totalContent;
+  const VGAP = Math.floor(availableSpace / 4);
+  // Shift company + title up by ~1cm: reduce gap2 & gap3, give remainder to gap4 (before URL)
+  const gap1 = VGAP;                     // logo → banner
+  const gap2 = Math.max(VGAP - 19, 20);  // banner → company (-19px)
+  const gap3 = Math.max(VGAP - 19, 20);  // company → title (-19px)
+  const gap4 = VGAP + 38;                // title → URL (absorb the 38px)
+
+  // Position each block with equal gap
+  const logoY = topPad;
   let siteLogoSvg: string;
   if (siteLogoBase64) {
     const glow = tpl.logo_glow_enabled ? ' filter="url(#logoGlow)"' : '';
-    siteLogoSvg = `<image href="${siteLogoBase64}" x="${PAD}" y="20" width="240" height="56" preserveAspectRatio="xMinYMid meet"${glow} />`;
+    siteLogoSvg = `<image href="${siteLogoBase64}" x="${PAD}" y="${logoY}" width="240" height="${siteLogoH}" preserveAspectRatio="xMinYMid meet"${glow} />`;
   } else {
-    siteLogoSvg = `<text x="${PAD}" y="56" font-family="${F}" font-size="32" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
+    siteLogoSvg = `<text x="${PAD}" y="${logoY + 36}" font-family="${F}" font-size="32" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
   }
 
-  // "AVIS DE RECRUTEMENT" banner
-  const bannerY = 96;
+  const bannerY = logoY + siteLogoH + gap1;
 
-  // Company logo + name
-  const cLogoSize = 60;
-  const companyY = bannerY + 40;
-  const companyLogoSvg = companyLogoBase64
-    ? `<rect x="${PAD - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="rgba(255,255,255,0.15)" />
-       <image href="${companyLogoBase64}" x="${PAD}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
-    : "";
-  const cNameX = companyLogoBase64 ? PAD + cLogoSize + 14 : PAD;
+  const companyY = bannerY + bannerH + gap2;
+  let companyLogoSvg: string;
+  if (companyLogoBase64) {
+    companyLogoSvg = `<rect x="${PAD - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="rgba(255,255,255,0.15)" />
+       <image href="${companyLogoBase64}" x="${PAD}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`;
+  } else {
+    const initial = company ? company.charAt(0).toUpperCase() : "?";
+    companyLogoSvg = `<circle cx="${PAD + cLogoSize / 2}" cy="${companyY + cLogoSize / 2}" r="${cLogoSize / 2}" fill="${tpl.accent_color}" />
+       <text x="${PAD + cLogoSize / 2}" y="${companyY + cLogoSize / 2 + 12}" font-family="${F}" font-size="30" font-weight="bold" fill="white" text-anchor="middle">${escapeXml(initial)}</text>`;
+  }
+  const cNameX = PAD + cLogoSize + 14;
   const cNameMaxW = LP - cNameX - PAD;
 
-  // Title
-  const titleY = companyY + cLogoSize + 40;
-  const tfs = titleLines.length <= 1 ? 36 : titleLines.length <= 2 ? 32 : 28;
-  const tlh = tfs + 10;
+  const titleY = companyY + cLogoSize + gap3;
   let titleSvg = "";
   titleLines.forEach((line, i) => {
     titleSvg += `<text x="${PAD}" y="${titleY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white">${line}</text>`;
@@ -236,7 +275,7 @@ function generateSvg(params: {
   }
 
   // URL at bottom of left panel
-  const urlY = H - 40;
+  const urlY = titleY + titleH + gap4;
 
   // Background
   let backgroundSvg = "";
@@ -259,11 +298,11 @@ function generateSvg(params: {
   if (publishedStr) allCards.push({ label: "Publi&#233;", value: publishedStr, color: "#2563eb" });
   if (deadlineStr) allCards.push({ label: "Date limite", value: deadlineStr, color: "#dc2626", highlight: true });
 
-  // Grid layout: 2 columns
+  // Grid layout: 2 columns — 3D luminous cards
   const cols = 2;
   const gridPad = 30;
   const gapX = 14, gapY = 10;
-  const cardW = Math.floor((RP_W - gridPad * 2 - gapX) / cols); // ~313px
+  const cardW = Math.floor((RP_W - gridPad * 2 - gapX) / cols);
   const cardH = 64;
   const gridStartX = RP_X + gridPad;
   const gridStartY = 24;
@@ -274,7 +313,7 @@ function generateSvg(params: {
 
   if (deadlineStr) {
     const dlW = RP_W - gridPad * 2;
-    rightSvg += `<rect x="${gridStartX}" y="${cardsGridY}" width="${dlW}" height="70" rx="14" fill="#fef2f2" stroke="#fecaca" stroke-width="2"/>`;
+    rightSvg += `<rect x="${gridStartX}" y="${cardsGridY}" width="${dlW}" height="70" rx="14" fill="#fef2f2" stroke="#fecaca" stroke-width="2" filter="url(#card3d)"/>`;
     rightSvg += `<text x="${gridStartX + 16}" y="${cardsGridY + 28}" font-family="${F}" font-size="18" fill="#dc2626" font-weight="600">Date limite de candidature</text>`;
     rightSvg += `<text x="${gridStartX + 16}" y="${cardsGridY + 54}" font-family="${F}" font-size="24" fill="#dc2626" font-weight="bold">${deadlineStr}</text>`;
     cardsGridY += 84;
@@ -289,9 +328,11 @@ function generateSvg(params: {
     const row = Math.floor(i / cols);
     const x = gridStartX + col * (cardW + gapX);
     const y = cardsGridY + row * (cardH + gapY);
-    rightSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>`;
-    rightSvg += `<text x="${x + 14}" y="${y + 24}" font-family="${F}" font-size="15" fill="#94a3b8">${card.label}</text>`;
-    rightSvg += `<text x="${x + 14}" y="${y + 50}" font-family="${F}" font-size="22" font-weight="bold" fill="${card.color}">${card.value}</text>`;
+    // 3D luminous card: white fill, colored left accent, drop shadow
+    rightSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="white" filter="url(#card3d)"/>`;
+    rightSvg += `<rect x="${x}" y="${y + 8}" width="4" height="${cardH - 16}" rx="2" fill="${card.color}" opacity="0.7"/>`;
+    rightSvg += `<text x="${x + 16}" y="${y + 24}" font-family="${F}" font-size="15" fill="#94a3b8">${card.label}</text>`;
+    rightSvg += `<text x="${x + 16}" y="${y + 50}" font-family="${F}" font-size="22" font-weight="bold" fill="${card.color}">${card.value}</text>`;
   });
 
   // CTA on right panel at bottom
@@ -302,6 +343,13 @@ function generateSvg(params: {
 
   // URL on right
   rightSvg += `<text x="${gridStartX + ctaRW / 2}" y="${H - 30}" font-family="${F}" font-size="18" fill="${tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>`;
+
+  // Soft color orbs for right panel background (no filters to avoid WORKER_LIMIT)
+  const rpCx = RP_X + RP_W / 2;
+  const rpCy = H / 2;
+  let rightBgSvg = `<circle cx="${rpCx + 60}" cy="${rpCy - 40}" r="260" fill="${tpl.accent_color}" opacity="0.04"/>`;
+  rightBgSvg += `<circle cx="${rpCx - 140}" cy="${rpCy + 120}" r="180" fill="${tpl.header_gradient_end}" opacity="0.035"/>`;
+  rightBgSvg += `<circle cx="${rpCx + 180}" cy="${rpCy + 180}" r="120" fill="#7c3aed" opacity="0.03"/>`;
 
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -317,6 +365,11 @@ function generateSvg(params: {
     <filter id="bgBlur" x="-5%" y="-5%" width="110%" height="110%">
       <feGaussianBlur stdDeviation="${tpl.background_blur}" />
     </filter>
+    <filter id="card3d" x="-3%" y="-3%" width="108%" height="115%">
+      <feOffset in="SourceAlpha" dx="0" dy="2" result="off"/>
+      <feColorMatrix in="off" type="matrix" values="0 0 0 0 0.12 0 0 0 0 0.23 0 0 0 0 0.37 0 0 0 0.18 0" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
     <filter id="logoGlow" x="-30%" y="-30%" width="160%" height="160%">
       <feFlood flood-color="${tpl.logo_glow_color}" result="glowColor"/>
       <feComposite in="glowColor" in2="SourceAlpha" operator="in" result="coloredGlow"/>
@@ -330,7 +383,8 @@ function generateSvg(params: {
   ${backgroundSvg}
 
   <!-- RIGHT PANEL -->
-  <rect x="${RP_X}" y="0" width="${RP_W}" height="${H}" fill="#f8fafc"/>
+  <rect x="${RP_X}" y="0" width="${RP_W}" height="${H}" fill="#f0f4f8"/>
+  ${rightBgSvg}
 
   <!-- Accent divider -->
   <rect x="${LP - 2}" y="0" width="4" height="${H}" fill="${tpl.accent_color}"/>
@@ -402,21 +456,25 @@ Deno.serve(async (req: Request) => {
     let companyName = (job as any).company_name || "";
     let companyLogoUrl: string | null = null;
 
-    if (!companyName && job.company_id) {
+    // Always try to get logo from companies table if company_id exists
+    if (job.company_id) {
       const { data: company } = await supabase
         .from("companies")
         .select("name, logo_url")
         .eq("id", job.company_id)
         .maybeSingle();
       if (company) {
-        companyName = company.name || "";
+        if (!companyName) companyName = company.name || "";
         companyLogoUrl = company.logo_url || null;
       }
     }
 
+    // Fallback to job-level logo fields
     if (!companyLogoUrl) {
       companyLogoUrl = job.company_logo_url || job.partner_logo_url || null;
     }
+
+    console.log(`Company logo URL: ${companyLogoUrl}`);
 
     // Fetch site settings + template config in one query
     const { data: settings } = await supabase
