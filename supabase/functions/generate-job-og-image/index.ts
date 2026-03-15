@@ -165,130 +165,147 @@ function generateSvg(params: {
     backgroundImageBase64, tpl,
   } = params;
 
-  // ═══ BOLD LANDSCAPE 1200×630 — optimized for Facebook small display (~500px) ═══
-  // All text ≥24px at SVG coords so it stays readable when Facebook shrinks it
+  // ═══ OPTIMIZED LANDSCAPE 1200×630 — all content visible, no duplication ═══
   const W = 1200, H = 630, F = "Inter, sans-serif";
+  const LP = 440; // Left panel width
+  const RP_X = LP, RP_W = W - LP; // Right panel
+  const PAD = 32; // Padding inside panels
+  const LPW = LP - PAD * 2; // Usable left width = 376px
 
-  const companyShort = escapeXml(truncate(company, 35));
-  const titleText = escapeXml(truncate(title, 50));
-  const titleLines = wrapText(titleText, 28, 2);
-  const locationShort = escapeXml(truncate(location, 20));
-  const contractShort = escapeXml(truncate(contractType, 18));
-  const sectorShort = escapeXml(truncate(sector, 25));
-  const deadlineStr = deadline ? (() => { try { return escapeXml(new Date(deadline).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })); } catch { return ""; } })() : "";
-  const expShort = escapeXml(truncate(experienceLevel, 18));
+  // Prepare all data
+  const companyShort = escapeXml(truncate(company, 30));
+  const titleText = escapeXml(truncate(title, 60));
+  // At font ~30px, each char ≈ 17px. Usable width 376px → ~22 chars/line, 3 lines max
+  const titleLines = wrapText(titleText, 20, 3);
+  const locationVal = escapeXml(truncate(location, 18));
+  const contractVal = escapeXml(truncate(contractType, 16));
+  const sectorVal = escapeXml(truncate(sector, 22));
+  const expVal = escapeXml(truncate(experienceLevel, 16));
+  const eduVal = escapeXml(truncate(educationLevel, 20));
+  const salaryVal = escapeXml(truncate(salaryRange, 20));
+  const postsStr = positionCount > 1 ? `${positionCount} postes` : "1 poste";
+  const levelVal = escapeXml(truncate(positionLevel, 18));
+  const fmtDate = (s: string) => { try { return escapeXml(new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })); } catch { return ""; } };
+  const publishedStr = createdAt ? fmtDate(createdAt) : "";
+  const deadlineStr = deadline ? fmtDate(deadline) : "";
 
-  // ═══ LEFT PANEL (dark blue) — 480px wide ═══
-  const LP = 480;
-
-  // Site logo in top-left
-  let siteLogoSvg: string;
-  if (siteLogoBase64) {
-    const glowFilter = tpl.logo_glow_enabled ? ' filter="url(#logoGlow)"' : '';
-    siteLogoSvg = `<image href="${siteLogoBase64}" x="30" y="18" width="200" height="48" preserveAspectRatio="xMinYMid meet"${glowFilter} />`;
-  } else {
-    siteLogoSvg = `<text x="40" y="52" font-family="${F}" font-size="32" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
-  }
-
-  // Company logo + name
-  const cLogoSize = 56;
-  const companyStartY = 90;
-  const companyLogoSvg = companyLogoBase64
-    ? `<rect x="38" y="${companyStartY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="rgba(255,255,255,0.15)" />
-       <image href="${companyLogoBase64}" x="40" y="${companyStartY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
-    : "";
-  const cNameX = companyLogoBase64 ? 40 + cLogoSize + 16 : 40;
-  const cNameY = companyStartY + 35;
-
-  // Title — large bold text
-  const titleStartY = companyStartY + cLogoSize + 30;
-  const tfs = titleLines.length <= 1 ? 44 : 38;
-  const tlh = tfs + 10;
-  let titleSvg = "";
-  titleLines.forEach((line, i) => {
-    titleSvg += `<text x="40" y="${titleStartY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white">${line}</text>`;
-  });
-
-  // Details under title (large readable text)
-  const detailsY = titleStartY + titleLines.length * tlh + 20;
-  let detailsSvg = "";
-  let dy = detailsY;
-  const detailItems: string[] = [];
-  if (locationShort) detailItems.push(locationShort);
-  if (contractShort) detailItems.push(contractShort);
-  if (expShort) detailItems.push(expShort);
-  if (sectorShort) detailItems.push(sectorShort);
-
-  detailItems.slice(0, 4).forEach((item) => {
-    detailsSvg += `<circle cx="54" cy="${dy - 8}" r="4" fill="${tpl.accent_color}"/>`;
-    detailsSvg += `<text x="68" y="${dy}" font-family="${F}" font-size="24" fill="rgba(255,255,255,0.9)">${item}</text>`;
-    dy += 36;
-  });
-
-  // CTA button at bottom-left
-  const ctaY = H - 110;
   const ctaText = escapeXml(tpl.cta_text);
   const footerUrl = escapeXml(tpl.footer_url);
 
-  // Badges
-  let badgesSvg = "";
-  if (isUrgent) {
-    badgesSvg += `<rect x="40" y="${H - 60}" width="130" height="36" rx="18" fill="#ef4444" /><text x="105" y="${H - 36}" font-family="${F}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
-  }
-  if (isFeatured) {
-    const bx = isUrgent ? 185 : 40;
-    badgesSvg += `<rect x="${bx}" y="${H - 60}" width="160" height="36" rx="18" fill="${tpl.accent_color}" /><text x="${bx + 80}" y="${H - 36}" font-family="${F}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
-  }
-
-  // ═══ RIGHT PANEL (light) — 720px wide ═══
-  const RP_X = LP;
-  const RP_W = W - LP;
-
-  // Right panel content: deadline + big CTA
-  let rightContent = "";
-
-  // Deadline card if exists
-  if (deadlineStr) {
-    rightContent += `
-      <rect x="${RP_X + 50}" y="60" width="${RP_W - 100}" height="100" rx="20" fill="#fef2f2" stroke="#fecaca" stroke-width="2"/>
-      <text x="${RP_X + RP_W / 2}" y="105" font-family="${F}" font-size="24" fill="#dc2626" font-weight="600" text-anchor="middle">Date limite de candidature</text>
-      <text x="${RP_X + RP_W / 2}" y="142" font-family="${F}" font-size="30" fill="#dc2626" font-weight="bold" text-anchor="middle">${deadlineStr}</text>`;
+  // ═══ LEFT PANEL — Logo + Company + Title + CTA ═══
+  let siteLogoSvg: string;
+  if (siteLogoBase64) {
+    const glow = tpl.logo_glow_enabled ? ' filter="url(#logoGlow)"' : '';
+    siteLogoSvg = `<image href="${siteLogoBase64}" x="${PAD}" y="16" width="180" height="44" preserveAspectRatio="xMinYMid meet"${glow} />`;
+  } else {
+    siteLogoSvg = `<text x="${PAD}" y="46" font-family="${F}" font-size="28" font-weight="bold" fill="white">JobGuin&#233;e</text>`;
   }
 
-  // Key info cards (only 3, large)
-  const cardsStartY = deadlineStr ? 190 : 60;
-  type SimpleCard = { label: string; value: string; color: string };
-  const simpleCards: SimpleCard[] = [];
-  if (contractShort) simpleCards.push({ label: "Contrat", value: contractShort, color: tpl.header_gradient_end });
-  if (locationShort) simpleCards.push({ label: "Lieu", value: locationShort, color: "#0891b2" });
-  if (expShort) simpleCards.push({ label: "Exp&#233;rience", value: expShort, color: "#059669" });
+  // "AVIS DE RECRUTEMENT" banner
+  const bannerY = 72;
 
-  simpleCards.slice(0, 3).forEach((card, i) => {
-    const cy = cardsStartY + i * 90;
-    rightContent += `
-      <rect x="${RP_X + 50}" y="${cy}" width="${RP_W - 100}" height="76" rx="16" fill="white" stroke="#e2e8f0" stroke-width="2"/>
-      <text x="${RP_X + 80}" y="${cy + 30}" font-family="${F}" font-size="20" fill="#64748b">${card.label}</text>
-      <text x="${RP_X + 80}" y="${cy + 58}" font-family="${F}" font-size="28" font-weight="bold" fill="${card.color}">${card.value}</text>`;
+  // Company logo + name
+  const cLogoSize = 44;
+  const companyY = bannerY + 30;
+  const companyLogoSvg = companyLogoBase64
+    ? `<rect x="${PAD - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="12" fill="rgba(255,255,255,0.15)" />
+       <image href="${companyLogoBase64}" x="${PAD}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
+    : "";
+  const cNameX = companyLogoBase64 ? PAD + cLogoSize + 12 : PAD;
+  const cNameMaxW = LP - cNameX - PAD;
+
+  // Title
+  const titleY = companyY + cLogoSize + 28;
+  const tfs = titleLines.length <= 1 ? 36 : titleLines.length <= 2 ? 32 : 28;
+  const tlh = tfs + 8;
+  let titleSvg = "";
+  titleLines.forEach((line, i) => {
+    titleSvg += `<text x="${PAD}" y="${titleY + i * tlh}" font-family="${F}" font-size="${tfs}" font-weight="bold" fill="white">${line}</text>`;
   });
 
-  // CTA at bottom-right
-  const ctaRightY = H - 130;
-  rightContent += `
-    <rect x="${RP_X + 40}" y="${ctaRightY}" width="${RP_W - 80}" height="56" rx="28" fill="url(#cta)" filter="url(#bs)"/>
-    <text x="${RP_X + RP_W / 2}" y="${ctaRightY + 37}" font-family="${F}" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>`;
+  // Badges below title
+  const afterTitleY = titleY + titleLines.length * tlh + 12;
+  let badgesSvg = "";
+  let badgeX = PAD;
+  if (isUrgent) {
+    badgesSvg += `<rect x="${badgeX}" y="${afterTitleY}" width="110" height="30" rx="15" fill="#ef4444" /><text x="${badgeX + 55}" y="${afterTitleY + 20}" font-family="${F}" font-size="15" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
+    badgeX += 120;
+  }
+  if (isFeatured) {
+    badgesSvg += `<rect x="${badgeX}" y="${afterTitleY}" width="130" height="30" rx="15" fill="${tpl.accent_color}" /><text x="${badgeX + 65}" y="${afterTitleY + 20}" font-family="${F}" font-size="15" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+  }
+
+  // CTA button at bottom of left panel
+  const ctaBtnY = H - 100;
+  const ctaBtnW = LPW;
 
   // Footer URL
-  rightContent += `
-    <text x="${RP_X + RP_W / 2}" y="${H - 50}" font-family="${F}" font-size="22" fill="${tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>`;
+  const urlY = H - 40;
 
   // Background
-  let backgroundSvg: string;
+  let backgroundSvg = "";
   if (backgroundImageBase64) {
     backgroundSvg = `<image href="${backgroundImageBase64}" x="0" y="0" width="${LP}" height="${H}" preserveAspectRatio="xMidYMid slice" filter="url(#bgBlur)" />
     <rect width="${LP}" height="${H}" fill="${tpl.header_gradient_start}" opacity="${tpl.background_overlay_opacity}" />`;
-  } else {
-    backgroundSvg = "";
   }
+
+  // ═══ RIGHT PANEL — All info cards in 2-column grid ═══
+  type InfoCard = { label: string; value: string; color: string; highlight?: boolean };
+  const allCards: InfoCard[] = [];
+  if (contractVal) allCards.push({ label: "Contrat", value: contractVal, color: tpl.header_gradient_end });
+  if (locationVal) allCards.push({ label: "Lieu", value: locationVal, color: "#0891b2" });
+  if (expVal) allCards.push({ label: "Exp&#233;rience", value: expVal, color: "#059669" });
+  if (eduVal) allCards.push({ label: "Formation", value: eduVal, color: "#7c3aed" });
+  if (sectorVal) allCards.push({ label: "Secteur", value: sectorVal, color: "#4338ca" });
+  if (salaryVal) allCards.push({ label: "Salaire", value: salaryVal, color: "#16a34a" });
+  if (postsStr) allCards.push({ label: "Postes", value: postsStr, color: "#d97706" });
+  if (levelVal) allCards.push({ label: "Niveau", value: levelVal, color: "#ea580c" });
+  if (publishedStr) allCards.push({ label: "Publi&#233;", value: publishedStr, color: "#2563eb" });
+  if (deadlineStr) allCards.push({ label: "Date limite", value: deadlineStr, color: "#dc2626", highlight: true });
+
+  // Grid layout: 2 columns
+  const cols = 2;
+  const gridPad = 30;
+  const gapX = 14, gapY = 10;
+  const cardW = Math.floor((RP_W - gridPad * 2 - gapX) / cols); // ~313px
+  const cardH = 64;
+  const gridStartX = RP_X + gridPad;
+  const gridStartY = 24;
+
+  // If there's a deadline, show it as a prominent header card first
+  let rightSvg = "";
+  let cardsGridY = gridStartY;
+
+  if (deadlineStr) {
+    const dlW = RP_W - gridPad * 2;
+    rightSvg += `<rect x="${gridStartX}" y="${cardsGridY}" width="${dlW}" height="70" rx="14" fill="#fef2f2" stroke="#fecaca" stroke-width="2"/>`;
+    rightSvg += `<text x="${gridStartX + 16}" y="${cardsGridY + 28}" font-family="${F}" font-size="18" fill="#dc2626" font-weight="600">Date limite de candidature</text>`;
+    rightSvg += `<text x="${gridStartX + 16}" y="${cardsGridY + 54}" font-family="${F}" font-size="24" fill="#dc2626" font-weight="bold">${deadlineStr}</text>`;
+    cardsGridY += 84;
+  }
+
+  // Render info cards in 2 columns (exclude deadline from grid since it's shown above)
+  const gridCards = allCards.filter(c => !c.highlight);
+  const displayCards = gridCards.slice(0, 8);
+
+  displayCards.forEach((card, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = gridStartX + col * (cardW + gapX);
+    const y = cardsGridY + row * (cardH + gapY);
+    rightSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>`;
+    rightSvg += `<text x="${x + 14}" y="${y + 24}" font-family="${F}" font-size="15" fill="#94a3b8">${card.label}</text>`;
+    rightSvg += `<text x="${x + 14}" y="${y + 50}" font-family="${F}" font-size="22" font-weight="bold" fill="${card.color}">${card.value}</text>`;
+  });
+
+  // CTA on right panel at bottom
+  const ctaRY = H - 100;
+  const ctaRW = RP_W - gridPad * 2;
+  rightSvg += `<rect x="${gridStartX}" y="${ctaRY}" width="${ctaRW}" height="50" rx="25" fill="url(#cta)" filter="url(#bs)"/>`;
+  rightSvg += `<text x="${gridStartX + ctaRW / 2}" y="${ctaRY + 33}" font-family="${F}" font-size="20" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>`;
+
+  // URL on right
+  rightSvg += `<text x="${gridStartX + ctaRW / 2}" y="${H - 30}" font-family="${F}" font-size="18" fill="${tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>`;
 
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -308,46 +325,50 @@ function generateSvg(params: {
       <feFlood flood-color="${tpl.logo_glow_color}" result="glowColor"/>
       <feComposite in="glowColor" in2="SourceAlpha" operator="in" result="coloredGlow"/>
       <feGaussianBlur in="coloredGlow" stdDeviation="${tpl.logo_glow_intensity}" result="blurredGlow"/>
-      <feMerge>
-        <feMergeNode in="blurredGlow"/><feMergeNode in="blurredGlow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+      <feMerge><feMergeNode in="blurredGlow"/><feMergeNode in="blurredGlow"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <!-- LEFT PANEL: dark gradient -->
+  <!-- LEFT PANEL -->
   <rect x="0" y="0" width="${LP}" height="${H}" fill="url(#hdr)"/>
   ${backgroundSvg}
 
-  <!-- RIGHT PANEL: light background -->
+  <!-- RIGHT PANEL -->
   <rect x="${RP_X}" y="0" width="${RP_W}" height="${H}" fill="#f8fafc"/>
 
-  <!-- Accent divider line -->
+  <!-- Accent divider -->
   <rect x="${LP - 2}" y="0" width="4" height="${H}" fill="${tpl.accent_color}"/>
 
-  <!-- LEFT: Site logo -->
+  <!-- Site logo -->
   ${siteLogoSvg}
 
-  <!-- LEFT: Company logo + name -->
-  ${companyLogoSvg}
-  <text x="${cNameX}" y="${cNameY}" font-family="${F}" font-size="28" fill="white" font-weight="bold">${companyShort}</text>
-  <text x="40" y="${cNameY + 26}" font-family="${F}" font-size="22" fill="rgba(255,255,255,0.7)">recherche un(e)</text>
+  <!-- AVIS DE RECRUTEMENT -->
+  <rect x="${PAD}" y="${bannerY - 4}" width="${LPW}" height="26" rx="4" fill="rgba(255,255,255,0.12)"/>
+  <text x="${PAD + LPW / 2}" y="${bannerY + 15}" font-family="${F}" font-size="14" font-weight="700" fill="${tpl.accent_color}" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
 
-  <!-- LEFT: Job title (BIG) -->
+  <!-- Company -->
+  ${companyLogoSvg}
+  <text x="${cNameX}" y="${companyY + 20}" font-family="${F}" font-size="22" fill="white" font-weight="bold">${companyShort}</text>
+  <text x="${cNameX}" y="${companyY + 40}" font-family="${F}" font-size="16" fill="rgba(255,255,255,0.65)">recherche un(e)</text>
+
+  <!-- Job title -->
   ${titleSvg}
 
-  <!-- LEFT: Key details -->
-  ${detailsSvg}
-
-  <!-- LEFT: Badges -->
+  <!-- Badges -->
   ${badgesSvg}
 
-  <!-- RIGHT: Cards + CTA -->
-  ${rightContent}
+  <!-- Left CTA -->
+  <rect x="${PAD}" y="${ctaBtnY}" width="${ctaBtnW}" height="46" rx="23" fill="url(#cta)" filter="url(#bs)"/>
+  <text x="${PAD + ctaBtnW / 2}" y="${ctaBtnY + 30}" font-family="${F}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>
 
-  <!-- Top accent line -->
+  <!-- URL -->
+  <text x="${PAD + LPW / 2}" y="${urlY}" font-family="${F}" font-size="16" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-weight="600">${footerUrl}</text>
+
+  <!-- RIGHT: Info cards -->
+  ${rightSvg}
+
+  <!-- Top/Bottom accent lines -->
   <rect x="0" y="0" width="${W}" height="4" fill="${tpl.accent_color}"/>
-  <!-- Bottom accent line -->
   <rect x="0" y="${H - 4}" width="${W}" height="4" fill="${tpl.accent_color}"/>
 </svg>`;
 }
