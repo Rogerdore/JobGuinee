@@ -115,8 +115,11 @@ Deno.serve(async (req: Request) => {
       fetch(`${supabaseUrl}/functions/v1/generate-job-og-image?job_id=${jobId}`, {
         method: "GET",
         headers: { Authorization: `Bearer ${supabaseKey}` },
-      }).catch(() => {}); // fire-and-forget
+      }).catch((e) => console.warn("OG image generation trigger failed:", e.message)); // fire-and-forget
     }
+
+    // Log the og:image being served for debugging
+    console.log(`[social-gateway] jobId=${jobId} og_image_url=${(job as any).og_image_url || 'NONE'} featured_image_url=${job.featured_image_url || 'NONE'}`);
 
     return new Response(html, {
       status: 200,
@@ -234,8 +237,8 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const fallbackImage = `${baseUrl}/logo_jobguinee.png`;
   let ogImage = fallbackImage;
   let imageType = 'image/png';
-  let imageWidth = '1080';
-  let imageHeight = '1080';
+  let imageWidth = '1200';
+  let imageHeight = '630';
   
   const isValidImageUrl = (url: string | undefined | null): boolean => {
     if (!url || typeof url !== 'string') return false;
@@ -244,12 +247,27 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
     return true;
   };
 
+  // Verify the og_image_url is a real image URL (Supabase Storage), not a page URL
+  const isValidOgImageUrl = (url: string | undefined | null): boolean => {
+    if (!isValidImageUrl(url)) return false;
+    const u = url!.toLowerCase();
+    // Must be a storage URL or a direct image file, not a page/HTML URL
+    if (u.includes('/storage/') || u.includes('/og-images/') || 
+        u.endsWith('.png') || u.endsWith('.jpg') || u.endsWith('.jpeg') || 
+        u.endsWith('.webp') || u.endsWith('.gif')) {
+      return true;
+    }
+    return false;
+  };
+
   const supabaseStorageBase = Deno.env.get("SUPABASE_URL") + '/storage/v1';
 
-  if (isValidImageUrl((job as any).og_image_url)) {
-    // Priority 1: Auto-generated branded OG image (already PNG 1080x1080 square)
+  if (isValidOgImageUrl((job as any).og_image_url)) {
+    // Priority 1: Auto-generated branded OG image (PNG 1200x630 landscape)
     ogImage = (job as any).og_image_url!;
     imageType = 'image/png';
+    imageWidth = '1200';
+    imageHeight = '630';
   } else if (isValidImageUrl(job.featured_image_url)) {
     // Priority 2: Recruiter-uploaded featured image (transform to JPEG 1200x630)
     const rawUrl = job.featured_image_url!;
@@ -258,6 +276,8 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
       const storagePath = rawUrl.substring(objectPrefix.length);
       ogImage = `${supabaseStorageBase}/render/image/public/${storagePath}?width=1200&height=630&resize=cover`;
       imageType = 'image/jpeg';
+      imageWidth = '1200';
+      imageHeight = '630';
     } else {
       ogImage = rawUrl;
       const lowerImage = rawUrl.toLowerCase();
@@ -268,6 +288,8 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
         : lowerImage.endsWith('.gif')
         ? 'image/gif'
         : 'image/png';
+      imageWidth = '1200';
+      imageHeight = '630';
     }
   }
 

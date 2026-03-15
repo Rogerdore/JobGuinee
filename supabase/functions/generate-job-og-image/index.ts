@@ -4,28 +4,57 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // Dynamic resvg-wasm loading to avoid BOOT_ERROR
 let Resvg: any;
 let wasmInitialized = false;
+let fontsLoaded = false;
 let fontBuffers: Uint8Array[] = [];
 
+async function fetchFontWithFallback(urls: string[]): Promise<ArrayBuffer> {
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        if (buf.byteLength > 1000) return buf; // Valid font file
+      }
+    } catch { /* try next URL */ }
+  }
+  throw new Error("All font URLs failed: " + urls.join(", "));
+}
+
 async function ensureWasm() {
-  if (wasmInitialized) return;
-  const resvgModule = await import("https://esm.sh/@resvg/resvg-wasm@2.6.2");
-  Resvg = resvgModule.Resvg;
-  const wasmUrl = "https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
-  const wasmResp = await fetch(wasmUrl);
-  const wasmBytes = await wasmResp.arrayBuffer();
-  await resvgModule.initWasm(wasmBytes);
+  if (!wasmInitialized) {
+    const resvgModule = await import("https://esm.sh/@resvg/resvg-wasm@2.6.2");
+    Resvg = resvgModule.Resvg;
+    const wasmUrl = "https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
+    const wasmResp = await fetch(wasmUrl);
+    const wasmBytes = await wasmResp.arrayBuffer();
+    await resvgModule.initWasm(wasmBytes);
+    wasmInitialized = true;
+  }
 
-  const [regularResp, boldResp] = await Promise.all([
-    fetch("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf"),
-    fetch("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf"),
-  ]);
-  const [regularBuf, boldBuf] = await Promise.all([
-    regularResp.arrayBuffer(),
-    boldResp.arrayBuffer(),
-  ]);
-  fontBuffers = [new Uint8Array(regularBuf), new Uint8Array(boldBuf)];
+  if (!fontsLoaded) {
+    const FONT_REGULAR_URLS = [
+      "https://cdn.jsdelivr.net/fontsource/fonts/inter@5.1.1/latin-400-normal.ttf",
+      "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf",
+      "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2",
+    ];
+    const FONT_BOLD_URLS = [
+      "https://cdn.jsdelivr.net/fontsource/fonts/inter@5.1.1/latin-700-normal.ttf",
+      "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf",
+      "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYAZ9hiA.woff2",
+    ];
 
-  wasmInitialized = true;
+    const [regularBuf, boldBuf] = await Promise.all([
+      fetchFontWithFallback(FONT_REGULAR_URLS),
+      fetchFontWithFallback(FONT_BOLD_URLS),
+    ]);
+    fontBuffers = [new Uint8Array(regularBuf), new Uint8Array(boldBuf)];
+
+    if (fontBuffers.length < 2 || fontBuffers[0].byteLength < 1000 || fontBuffers[1].byteLength < 1000) {
+      throw new Error(`Font loading failed: regular=${fontBuffers[0]?.byteLength || 0}B, bold=${fontBuffers[1]?.byteLength || 0}B`);
+    }
+    console.log(`Fonts loaded: regular=${fontBuffers[0].byteLength}B, bold=${fontBuffers[1].byteLength}B`);
+    fontsLoaded = true;
+  }
 }
 
 // Default template config — merged with DB overrides at runtime
@@ -136,17 +165,18 @@ function generateSvg(params: {
     backgroundImageBase64, tpl,
   } = params;
 
-  const W = 1080, H = 1080, CX = W / 2, F = "Inter, sans-serif";
+  // ═══ LANDSCAPE FORMAT 1200×630 (Facebook/LinkedIn recommended) ═══
+  const W = 1200, H = 630, CX = W / 2, F = "Inter, sans-serif";
   const R = tpl.card_border_radius;
 
-  const companyShort = escapeXml(truncate(company, 36));
-  const titleText = escapeXml(truncate(title, 65));
-  const titleLines = wrapText(titleText, 32, 3);
+  const companyShort = escapeXml(truncate(company, 40));
+  const titleText = escapeXml(truncate(title, 70));
+  const titleLines = wrapText(titleText, 50, 2);
   const locationShort = escapeXml(truncate(location, 22));
   const contractShort = escapeXml(truncate(contractType, 18));
-  const sectorShort = escapeXml(truncate(sector, 24));
+  const sectorShort = escapeXml(truncate(sector, 28));
   const expShort = escapeXml(truncate(experienceLevel, 18));
-  const eduShort = escapeXml(truncate(educationLevel, 20));
+  const eduShort = escapeXml(truncate(educationLevel, 22));
   const salaryShort = escapeXml(truncate(salaryRange, 22));
   const durationShort = escapeXml(truncate(publicationDuration || "30 jours", 15));
   const langShort = escapeXml(truncate(language || "Fran\u00e7ais", 15));
@@ -160,59 +190,58 @@ function generateSvg(params: {
   const publishedStr = createdAt ? fmtDate(createdAt) : "";
   const deadlineStr = deadline ? fmtDate(deadline) : "";
 
-  // ═══ HEADER (0-130) ═══
-  const headerH = 130;
+  // ═══ HEADER (0→80) ═══
+  const headerH = 80;
 
-  // Logo with optional white glow
   let siteLogoSvg: string;
   if (siteLogoBase64) {
     const glowFilter = tpl.logo_glow_enabled ? ' filter="url(#logoGlow)"' : '';
-    siteLogoSvg = `<image href="${siteLogoBase64}" x="${CX - 150}" y="8" width="300" height="72" preserveAspectRatio="xMidYMid meet"${glowFilter} />`;
+    siteLogoSvg = `<image href="${siteLogoBase64}" x="${CX - 130}" y="5" width="260" height="50" preserveAspectRatio="xMidYMid meet"${glowFilter} />`;
   } else {
-    siteLogoSvg = `<text x="${CX}" y="52" font-family="${F}" font-size="36" font-weight="bold" fill="white" text-anchor="middle">JobGuin&#233;e</text>`;
+    siteLogoSvg = `<text x="${CX}" y="40" font-family="${F}" font-size="28" font-weight="bold" fill="white" text-anchor="middle">JobGuin&#233;e</text>`;
   }
 
   // ═══ BADGES ═══
   let badgesSvg = "";
-  let bX = W - 70;
+  let bX = W - 60;
   if (isFeatured) {
-    const bw = 146;
+    const bw = 130;
     bX -= bw;
-    badgesSvg += `<rect x="${bX}" y="${headerH + 8}" width="${bw}" height="30" rx="15" fill="${tpl.accent_color}" /><text x="${bX + bw/2}" y="${headerH + 28}" font-family="${F}" font-size="12" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
+    badgesSvg += `<rect x="${bX}" y="${headerH + 6}" width="${bw}" height="24" rx="12" fill="${tpl.accent_color}" /><text x="${bX + bw/2}" y="${headerH + 22}" font-family="${F}" font-size="11" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`;
     bX -= 8;
   }
   if (isUrgent) {
-    const bw = 116;
+    const bw = 100;
     bX -= bw;
-    badgesSvg += `<rect x="${bX}" y="${headerH + 8}" width="${bw}" height="30" rx="15" fill="#ef4444" /><text x="${bX + bw/2}" y="${headerH + 28}" font-family="${F}" font-size="12" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
+    badgesSvg += `<rect x="${bX}" y="${headerH + 6}" width="${bw}" height="24" rx="12" fill="#ef4444" /><text x="${bX + bw/2}" y="${headerH + 22}" font-family="${F}" font-size="11" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`;
   }
 
   // ═══ COMPANY SECTION ═══
-  const companyY = 160;
-  const cLogoSize = 52;
-  const nameW = Math.min(companyShort.length * 13, 420);
-  const groupW = companyLogoBase64 ? cLogoSize + 14 + nameW : nameW;
+  const companyY = headerH + 12;
+  const cLogoSize = 36;
+  const nameW = Math.min(companyShort.length * 11, 400);
+  const groupW = companyLogoBase64 ? cLogoSize + 12 + nameW : nameW;
   const groupX = CX - groupW / 2;
 
   const companyLogoSvg = companyLogoBase64
-    ? `<rect x="${groupX - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="14" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    ? `<rect x="${groupX - 2}" y="${companyY - 2}" width="${cLogoSize + 4}" height="${cLogoSize + 4}" rx="10" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
        <image href="${companyLogoBase64}" x="${groupX}" y="${companyY}" width="${cLogoSize}" height="${cLogoSize}" preserveAspectRatio="xMidYMid meet" />`
     : "";
-  const cNameX = companyLogoBase64 ? groupX + cLogoSize + 14 : CX;
+  const cNameX = companyLogoBase64 ? groupX + cLogoSize + 12 : CX;
   const cNameAnchor = companyLogoBase64 ? "start" : "middle";
-  const cNameY = companyY + 33;
+  const cNameY = companyY + 24;
 
-  const rechercheY = 232;
+  const rechercheY = companyY + cLogoSize + 10;
 
   // ═══ TITLE CARD ═══
-  const tcY = 252;
-  const tcW = 920;
+  const tcY = rechercheY + 8;
+  const tcW = 1060;
   const tcX = (W - tcW) / 2;
-  const tfs = titleLines.length <= 1 && titleText.length <= 20 ? 38
-    : titleLines.length <= 1 ? 34
-    : titleLines.length <= 2 ? 32 : 27;
-  const tlh = tfs + 12;
-  const tcH = Math.max(titleLines.length * tlh + 48, 95);
+  const tfs = titleLines.length <= 1 && titleText.length <= 20 ? 30
+    : titleLines.length <= 1 ? 26
+    : 22;
+  const tlh = tfs + 10;
+  const tcH = Math.max(titleLines.length * tlh + 24, 50);
   const tbh = titleLines.length * tlh;
   const tsY = tcY + (tcH - tbh) / 2 + tfs - 2;
   let titleSvg = "";
@@ -221,7 +250,7 @@ function generateSvg(params: {
   });
 
   // ═══ LOCATION / LEVEL / POSTS bar ═══
-  const barY = tcY + tcH + 16;
+  const barY = tcY + tcH + 8;
   const barItems: { text: string; bg: string; fg: string }[] = [];
   if (locationShort) barItems.push({ text: locationShort, bg: "#dbeafe", fg: "#1e40af" });
   if (levelShort) barItems.push({ text: `Niveau: ${levelShort}`, bg: "#e0e7ff", fg: "#3730a3" });
@@ -229,23 +258,23 @@ function generateSvg(params: {
 
   let barSvg = "";
   if (barItems.length > 0) {
-    const pillPadH = 20;
-    const pillH = 32;
-    const pillWidths = barItems.map(t => t.text.length * 8.5 + pillPadH * 2);
-    const totalBarW = pillWidths.reduce((a, b) => a + b, 0) + (barItems.length - 1) * 10;
+    const pillPadH = 16;
+    const pillH = 26;
+    const pillWidths = barItems.map(t => t.text.length * 7.5 + pillPadH * 2);
+    const totalBarW = pillWidths.reduce((a, b) => a + b, 0) + (barItems.length - 1) * 8;
     let px = CX - totalBarW / 2;
     barItems.forEach((item, i) => {
       const pw = pillWidths[i];
-      barSvg += `<rect x="${px}" y="${barY}" width="${pw}" height="${pillH}" rx="16" fill="${item.bg}" />`;
-      barSvg += `<text x="${px + pw / 2}" y="${barY + 22}" font-family="${F}" font-size="13" font-weight="600" fill="${item.fg}" text-anchor="middle">${item.text}</text>`;
-      px += pw + 10;
+      barSvg += `<rect x="${px}" y="${barY}" width="${pw}" height="${pillH}" rx="13" fill="${item.bg}" />`;
+      barSvg += `<text x="${px + pw / 2}" y="${barY + 18}" font-family="${F}" font-size="11" font-weight="600" fill="${item.fg}" text-anchor="middle">${item.text}</text>`;
+      px += pw + 8;
     });
   }
 
-  // ═══ INFO CARDS GRID ═══
-  const cols = tpl.info_card_columns;
-  const gridY = barY + (barItems.length > 0 ? 50 : 18);
-  const cardW = cols === 3 ? 300 : 460, cardH = 88, gapX = 30, gapY = 14;
+  // ═══ INFO CARDS GRID (4 columns for landscape) ═══
+  const cols = 4;
+  const gridY = barY + (barItems.length > 0 ? 34 : 10);
+  const cardW = 258, cardH = 62, gapX = 14, gapY = 8;
   const totalGridW = cols * cardW + (cols - 1) * gapX;
   const gridStartX = (W - totalGridW) / 2;
 
@@ -261,8 +290,11 @@ function generateSvg(params: {
   if (langShort) cards.push({ label: "Langue", value: langShort, color: "#ea580c", abbr: "LA" });
   if (salaryShort) cards.push({ label: "Salaire", value: salaryShort, color: "#16a34a", abbr: "SA" });
 
+  // Limit to 8 cards (2 rows) for landscape layout
+  const displayCards = cards.slice(0, 8);
+
   let infoSvg = "";
-  cards.forEach((c, i) => {
+  displayCards.forEach((c, i) => {
     const col = i % cols, row = Math.floor(i / cols);
     const x = gridStartX + col * (cardW + gapX);
     const y = gridY + row * (cardH + gapY);
@@ -270,18 +302,18 @@ function generateSvg(params: {
     const border = c.hl ? "#fecaca" : "#e2e8f0";
     infoSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${R}" fill="${bg}" />`;
     infoSvg += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${R}" fill="none" stroke="${border}" stroke-width="1.5" />`;
-    infoSvg += `<circle cx="${x + 34}" cy="${y + cardH / 2}" r="20" fill="${c.color}" opacity="0.12" />`;
-    infoSvg += `<text x="${x + 34}" y="${y + cardH / 2 + 5}" font-family="${F}" font-size="13" font-weight="bold" fill="${c.color}" text-anchor="middle">${c.abbr}</text>`;
-    infoSvg += `<text x="${x + 64}" y="${y + 33}" font-family="${F}" font-size="12" fill="#64748b">${c.label}</text>`;
-    infoSvg += `<text x="${x + 64}" y="${y + 58}" font-family="${F}" font-size="15" font-weight="bold" fill="${c.hl ? "#dc2626" : "#0f172a"}">${c.value}</text>`;
+    infoSvg += `<circle cx="${x + 28}" cy="${y + cardH / 2}" r="16" fill="${c.color}" opacity="0.12" />`;
+    infoSvg += `<text x="${x + 28}" y="${y + cardH / 2 + 4}" font-family="${F}" font-size="11" font-weight="bold" fill="${c.color}" text-anchor="middle">${c.abbr}</text>`;
+    infoSvg += `<text x="${x + 52}" y="${y + 24}" font-family="${F}" font-size="10" fill="#64748b">${c.label}</text>`;
+    infoSvg += `<text x="${x + 52}" y="${y + 44}" font-family="${F}" font-size="13" font-weight="bold" fill="${c.hl ? "#dc2626" : "#0f172a"}">${c.value}</text>`;
   });
 
-  const infoRows = Math.ceil(cards.length / cols);
+  const infoRows = Math.ceil(displayCards.length / cols);
   const afterInfoY = gridY + infoRows * (cardH + gapY);
 
   // ═══ CTA + FOOTER ═══
-  const ctaY = Math.max(afterInfoY + 35, 940);
-  const urlY = ctaY + 66;
+  const ctaY = Math.min(afterInfoY + 12, H - 72);
+  const urlY = ctaY + 50;
   const ctaText = escapeXml(tpl.cta_text);
   const footerUrl = escapeXml(tpl.footer_url);
 
@@ -306,14 +338,14 @@ function generateSvg(params: {
       <stop offset="0%" stop-color="${tpl.cta_gradient_start}"/><stop offset="100%" stop-color="${tpl.cta_gradient_end}"/>
     </linearGradient>
     <filter id="ts" x="-3%" y="-5%" width="106%" height="115%">
-      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="${tpl.title_card_start}" flood-opacity="0.22"/>
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="${tpl.title_card_start}" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.06"/>
     </filter>
     <filter id="cs" x="-2%" y="-3%" width="104%" height="110%">
-      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#000" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.06"/>
     </filter>
     <filter id="bs" x="-4%" y="-10%" width="108%" height="130%">
-      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="${tpl.cta_gradient_end}" flood-opacity="0.25"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="${tpl.cta_gradient_end}" flood-opacity="0.25"/>
     </filter>
     <filter id="bgBlur" x="-5%" y="-5%" width="110%" height="110%">
       <feGaussianBlur stdDeviation="${tpl.background_blur}" />
@@ -335,25 +367,25 @@ function generateSvg(params: {
   <!-- Blue header bar -->
   <rect width="${W}" height="${headerH}" fill="url(#hdr)"/>
   <!-- Accent line at header bottom -->
-  <rect x="0" y="${headerH - 4}" width="${W}" height="4" fill="${tpl.accent_color}"/>
+  <rect x="0" y="${headerH - 3}" width="${W}" height="3" fill="${tpl.accent_color}"/>
 
   <!-- JobGuin&#233;e logo -->
   ${siteLogoSvg}
   <!-- AVIS DE RECRUTEMENT -->
-  <text x="${CX}" y="${headerH - 14}" font-family="${F}" font-size="14" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
+  <text x="${CX}" y="${headerH - 10}" font-family="${F}" font-size="12" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="3">AVIS DE RECRUTEMENT</text>
 
   ${badgesSvg}
 
   <!-- Company logo + name -->
   ${companyLogoSvg}
-  <text x="${cNameX}" y="${cNameY}" font-family="${F}" font-size="24" fill="${backgroundImageBase64 ? "white" : "#0f172a"}" font-weight="bold" text-anchor="${cNameAnchor}">${companyShort}</text>
+  <text x="${cNameX}" y="${cNameY}" font-family="${F}" font-size="20" fill="${backgroundImageBase64 ? "white" : "#0f172a"}" font-weight="bold" text-anchor="${cNameAnchor}">${companyShort}</text>
 
   <!-- "recherche un(e)" -->
-  <text x="${CX}" y="${rechercheY}" font-family="${F}" font-size="17" fill="${backgroundImageBase64 ? "rgba(255,255,255,0.8)" : "#64748b"}" text-anchor="middle">recherche un(e)</text>
+  <text x="${CX}" y="${rechercheY}" font-family="${F}" font-size="14" fill="${backgroundImageBase64 ? "rgba(255,255,255,0.8)" : "#64748b"}" text-anchor="middle">recherche un(e)</text>
 
   <!-- Title card -->
-  <rect x="${tcX}" y="${tcY}" width="${tcW}" height="${tcH}" rx="22" fill="url(#tc)" filter="url(#ts)"/>
-  <rect x="${tcX + 2}" y="${tcY + 2}" width="${tcW - 4}" height="${Math.floor(tcH * 0.4)}" rx="20" fill="white" opacity="0.06"/>
+  <rect x="${tcX}" y="${tcY}" width="${tcW}" height="${tcH}" rx="16" fill="url(#tc)" filter="url(#ts)"/>
+  <rect x="${tcX + 2}" y="${tcY + 2}" width="${tcW - 4}" height="${Math.floor(tcH * 0.4)}" rx="14" fill="white" opacity="0.06"/>
   ${titleSvg}
 
   <!-- Location / Level / Posts pills -->
@@ -365,14 +397,14 @@ function generateSvg(params: {
   </g>
 
   <!-- CTA button -->
-  <rect x="${CX - 260}" y="${ctaY}" width="520" height="54" rx="27" fill="url(#cta)" filter="url(#bs)"/>
-  <text x="${CX}" y="${ctaY + 35}" font-family="${F}" font-size="19" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>
+  <rect x="${CX - 230}" y="${ctaY}" width="460" height="44" rx="22" fill="url(#cta)" filter="url(#bs)"/>
+  <text x="${CX}" y="${ctaY + 29}" font-family="${F}" font-size="16" font-weight="bold" fill="white" text-anchor="middle">${ctaText}</text>
 
   <!-- Site URL -->
-  <text x="${CX}" y="${urlY}" font-family="${F}" font-size="15" fill="${backgroundImageBase64 ? "white" : tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>
+  <text x="${CX}" y="${urlY}" font-family="${F}" font-size="13" fill="${backgroundImageBase64 ? "white" : tpl.header_gradient_end}" text-anchor="middle" font-weight="600">${footerUrl}</text>
 
   <!-- Bottom accent -->
-  <rect x="0" y="${H - 6}" width="${W}" height="6" fill="${tpl.accent_color}"/>
+  <rect x="0" y="${H - 4}" width="${W}" height="4" fill="${tpl.accent_color}"/>
 </svg>`;
 }
 
@@ -492,8 +524,16 @@ Deno.serve(async (req: Request) => {
     });
 
     await ensureWasm();
+
+    if (fontBuffers.length < 2 || fontBuffers[0].byteLength < 1000) {
+      // Reset fonts and retry
+      fontsLoaded = false;
+      fontBuffers = [];
+      await ensureWasm();
+    }
+
     const resvg = new Resvg(svg, {
-      fitTo: { mode: "width", value: 1080 },
+      fitTo: { mode: "width", value: 1200 },
       font: {
         fontBuffers,
         defaultFontFamily: "Inter",
@@ -501,6 +541,16 @@ Deno.serve(async (req: Request) => {
     });
     const pngData = resvg.render();
     const pngBuffer = pngData.asPng();
+
+    // Sanity check: a proper OG image with text should be at least 30KB
+    // A blank/shapes-only image is typically under 15KB
+    if (pngBuffer.byteLength < 20000) {
+      console.warn(`OG image too small (${pngBuffer.byteLength}B) — likely missing text. Fonts: regular=${fontBuffers[0]?.byteLength || 0}B, bold=${fontBuffers[1]?.byteLength || 0}B`);
+      return new Response(
+        JSON.stringify({ error: "Generated image appears blank (too small)", size: pngBuffer.byteLength }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const fileName = `jobs/${jobId}.png`;
     const { error: uploadError } = await supabase.storage
