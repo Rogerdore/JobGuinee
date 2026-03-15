@@ -264,10 +264,14 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
 
   if (isValidOgImageUrl((job as any).og_image_url)) {
     // Priority 1: Auto-generated branded OG image (PNG 2400x1260 rendered at 2x)
-    ogImage = (job as any).og_image_url!;
+    // Declare logical 1200x630 dimensions (Facebook recommended), actual PNG is 2x for sharpness
+    // Add cache-bust param so Facebook fetches the latest version
+    const ogUrl = (job as any).og_image_url!;
+    const cacheBust = (job as any).updated_at ? new Date((job as any).updated_at).getTime() : Date.now();
+    ogImage = ogUrl + (ogUrl.includes('?') ? '&' : '?') + 'v=' + cacheBust;
     imageType = 'image/png';
-    imageWidth = '2400';
-    imageHeight = '1260';
+    imageWidth = '1200';
+    imageHeight = '630';
   } else if (isValidImageUrl(job.featured_image_url)) {
     // Priority 2: Recruiter-uploaded featured image (transform to JPEG 1200x630)
     const rawUrl = job.featured_image_url!;
