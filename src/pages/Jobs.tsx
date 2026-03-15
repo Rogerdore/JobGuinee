@@ -39,6 +39,12 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterDomain, setNewsletterDomain] = useState('');
+  const [newsletterCriteria, setNewsletterCriteria] = useState<{
+    sectors: string[];
+    locations: string[];
+    contract_types: string[];
+  }>({ sectors: [], locations: [], contract_types: [] });
+  const [showCriteria, setShowCriteria] = useState(false);
   const [newsletterModal, setNewsletterModal] = useState<{
     type: 'already-subscribed' | 'choose-email' | 'login-required' | null;
     profileEmail?: string;
@@ -334,11 +340,23 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
+  const toggleCriterion = (field: 'sectors' | 'locations' | 'contract_types', value: string) => {
+    setNewsletterCriteria(prev => ({
+      ...prev,
+      [field]: prev[field].includes(value)
+        ? prev[field].filter(v => v !== value)
+        : [...prev[field], value]
+    }));
+  };
+
   const doSubscribe = async (email: string): Promise<boolean> => {
     const { error } = await supabase.from('newsletter_subscribers').insert({
       email,
       domain: newsletterDomain || 'all',
       subscribed_at: new Date().toISOString(),
+      sectors: newsletterCriteria.sectors,
+      locations: newsletterCriteria.locations,
+      contract_types: newsletterCriteria.contract_types,
     });
 
     if (error?.code === '23505') {
@@ -352,6 +370,8 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
 
     setNewsletterEmail('');
     setNewsletterDomain('');
+    setNewsletterCriteria({ sectors: [], locations: [], contract_types: [] });
+    setShowCriteria(false);
     showSuccess('Inscription réussie !', `Vous recevrez les alertes emploi sur ${email}.`, true);
     return true;
   };
@@ -1069,6 +1089,93 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                     ))}
                   </select>
                 </div>
+
+                {/* Critères de filtrage */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCriteria(!showCriteria)}
+                    className="inline-flex items-center gap-2 text-sm text-[#0E2F56] hover:text-[#1a4275] font-medium transition"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    <span>Personnaliser mes critères</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showCriteria ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showCriteria && (
+                    <div className="mt-4 bg-gray-50 rounded-xl p-4 text-left space-y-4">
+                      {/* Secteurs */}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Secteurs</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sectors.map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => toggleCriterion('sectors', s)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                                newsletterCriteria.sectors.includes(s)
+                                  ? 'bg-[#0E2F56] text-white'
+                                  : 'bg-white border border-gray-300 text-gray-600 hover:border-[#0E2F56]'
+                              }`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Villes */}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Villes</p>
+                        <div className="flex flex-wrap gap-2">
+                          {locations.map((loc) => (
+                            <button
+                              key={loc}
+                              type="button"
+                              onClick={() => toggleCriterion('locations', loc)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                                newsletterCriteria.locations.includes(loc)
+                                  ? 'bg-[#0E2F56] text-white'
+                                  : 'bg-white border border-gray-300 text-gray-600 hover:border-[#0E2F56]'
+                              }`}
+                            >
+                              {loc}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Types de contrat */}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Types de contrat</p>
+                        <div className="flex flex-wrap gap-2">
+                          {contractTypes.map((ct) => (
+                            <button
+                              key={ct}
+                              type="button"
+                              onClick={() => toggleCriterion('contract_types', ct)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                                newsletterCriteria.contract_types.includes(ct)
+                                  ? 'bg-[#0E2F56] text-white'
+                                  : 'bg-white border border-gray-300 text-gray-600 hover:border-[#0E2F56]'
+                              }`}
+                            >
+                              {ct}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {(newsletterCriteria.sectors.length > 0 || newsletterCriteria.locations.length > 0 || newsletterCriteria.contract_types.length > 0) && (
+                        <p className="text-xs text-gray-500">
+                          {newsletterCriteria.sectors.length + newsletterCriteria.locations.length + newsletterCriteria.contract_types.length} critère(s) sélectionné(s) — vous ne recevrez que les offres correspondantes
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   type="submit"
                   className="w-full md:w-auto px-8 py-3 bg-[#0E2F56] hover:bg-[#1a4275] text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 mx-auto"
