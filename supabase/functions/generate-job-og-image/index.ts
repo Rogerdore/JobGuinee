@@ -532,8 +532,10 @@ Deno.serve(async (req: Request) => {
       await ensureWasm();
     }
 
+    // Render at 2x resolution (2400x1260) for crisp text on high-DPI displays
+    // Facebook/LinkedIn will scale down to display size, keeping text sharp
     const resvg = new Resvg(svg, {
-      fitTo: { mode: "width", value: 1200 },
+      fitTo: { mode: "width", value: 2400 },
       font: {
         fontBuffers,
         defaultFontFamily: "Inter",

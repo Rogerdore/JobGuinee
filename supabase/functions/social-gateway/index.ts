@@ -263,11 +263,11 @@ function generateShareHTML(job: JobData, isCrawler: boolean = false): string {
   const supabaseStorageBase = Deno.env.get("SUPABASE_URL") + '/storage/v1';
 
   if (isValidOgImageUrl((job as any).og_image_url)) {
-    // Priority 1: Auto-generated branded OG image (PNG 1200x630 landscape)
+    // Priority 1: Auto-generated branded OG image (PNG 2400x1260 rendered at 2x)
     ogImage = (job as any).og_image_url!;
     imageType = 'image/png';
-    imageWidth = '1200';
-    imageHeight = '630';
+    imageWidth = '2400';
+    imageHeight = '1260';
   } else if (isValidImageUrl(job.featured_image_url)) {
     // Priority 2: Recruiter-uploaded featured image (transform to JPEG 1200x630)
     const rawUrl = job.featured_image_url!;
