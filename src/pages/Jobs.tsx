@@ -45,6 +45,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     contract_types: string[];
   }>({ sectors: [], locations: [], contract_types: [] });
   const [showCriteria, setShowCriteria] = useState(false);
+  const [newsletterFrequency, setNewsletterFrequency] = useState<'instant' | 'daily' | 'weekly'>('instant');
   const [newsletterModal, setNewsletterModal] = useState<{
     type: 'already-subscribed' | 'choose-email' | 'login-required' | null;
     profileEmail?: string;
@@ -357,6 +358,7 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
       sectors: newsletterCriteria.sectors,
       locations: newsletterCriteria.locations,
       contract_types: newsletterCriteria.contract_types,
+      frequency: newsletterFrequency,
     });
 
     if (error?.code === '23505') {
@@ -372,7 +374,9 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
     setNewsletterDomain('');
     setNewsletterCriteria({ sectors: [], locations: [], contract_types: [] });
     setShowCriteria(false);
-    showSuccess('Inscription réussie !', `Vous recevrez les alertes emploi sur ${email}.`, true);
+    setNewsletterFrequency('instant');
+    const freqLabels = { instant: 'instantanément', daily: 'en résumé quotidien', weekly: 'en résumé hebdomadaire' };
+    showSuccess('Inscription réussie !', `Vous recevrez les alertes emploi ${freqLabels[newsletterFrequency]} sur ${email}.`, true);
     return true;
   };
 
@@ -1088,6 +1092,31 @@ export default function Jobs({ onNavigate, initialSearch }: JobsProps) {
                       <option key={sector} value={sector}>{sector}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Fréquence des alertes */}
+                <div className="mb-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Fréquence des alertes</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {([
+                      { value: 'instant' as const, label: 'Instantanée', desc: 'Recevez chaque offre dès sa publication' },
+                      { value: 'daily' as const, label: 'Résumé quotidien', desc: 'Un email par jour à 08h' },
+                      { value: 'weekly' as const, label: 'Résumé hebdomadaire', desc: 'Un email par semaine le lundi' },
+                    ]).map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setNewsletterFrequency(value)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition ${
+                          newsletterFrequency === value
+                            ? 'border-[#0E2F56] bg-[#0E2F56] text-white'
+                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#0E2F56]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Critères de filtrage */}
