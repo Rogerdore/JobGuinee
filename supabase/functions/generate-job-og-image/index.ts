@@ -1,9 +1,10 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Dynamic resvg-wasm loading to avoid BOOT_ERROR
 let Resvg: any;
 let wasmInitialized = false;
+let fontBuffers: Uint8Array[] = [];
 
 async function ensureWasm() {
   if (wasmInitialized) return;
@@ -13,6 +14,18 @@ async function ensureWasm() {
   const wasmResp = await fetch(wasmUrl);
   const wasmBytes = await wasmResp.arrayBuffer();
   await resvgModule.initWasm(wasmBytes);
+
+  // Load Inter font (Regular + Bold) in TTF format for resvg text rendering
+  const [regularResp, boldResp] = await Promise.all([
+    fetch("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf"),
+    fetch("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf"),
+  ]);
+  const [regularBuf, boldBuf] = await Promise.all([
+    regularResp.arrayBuffer(),
+    boldResp.arrayBuffer(),
+  ]);
+  fontBuffers = [new Uint8Array(regularBuf), new Uint8Array(boldBuf)];
+
   wasmInitialized = true;
 }
 
@@ -110,12 +123,12 @@ function generateSvg(params: {
 
   const urgentBadge = isUrgent
     ? `<rect x="60" y="148" width="130" height="38" rx="19" fill="#ef4444"/>
-       <text x="125" y="173" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">⚡ URGENT</text>`
+       <text x="125" y="173" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">URGENT</text>`
     : "";
 
   const featuredBadge = isFeatured
     ? `<rect x="${isUrgent ? "205" : "60"}" y="148" width="140" height="38" rx="19" fill="#f59e0b"/>
-       <text x="${isUrgent ? "275" : "130"}" y="173" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">★ EN VEDETTE</text>`
+       <text x="${isUrgent ? "275" : "130"}" y="173" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">EN VEDETTE</text>`
     : "";
 
   // Build detail tags
@@ -130,7 +143,7 @@ function generateSvg(params: {
     const tagWidth = tag.length * 12 + 36;
     tagsSvg += `
       <rect x="${tagX}" y="${tagsY}" width="${tagWidth}" height="42" rx="21" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-      <text x="${tagX + tagWidth / 2}" y="${tagsY + 27}" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="rgba(255,255,255,0.9)" text-anchor="middle">${tag}</text>`;
+      <text x="${tagX + tagWidth / 2}" y="${tagsY + 27}" font-family="Inter, sans-serif" font-size="18" fill="rgba(255,255,255,0.9)" text-anchor="middle">${tag}</text>`;
     tagX += tagWidth + 16;
   }
 
@@ -171,17 +184,17 @@ function generateSvg(params: {
 
   <!-- Header: AVIS DE RECRUTEMENT -->
   <rect x="80" y="65" width="5" height="32" rx="2" fill="#fbbf24"/>
-  <text x="100" y="92" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="#fbbf24" letter-spacing="2">AVIS DE RECRUTEMENT</text>
+  <text x="100" y="92" font-family="Inter, sans-serif" font-size="22" font-weight="bold" fill="#fbbf24" letter-spacing="2">AVIS DE RECRUTEMENT</text>
 
   <!-- Separator line -->
   <rect x="80" y="120" width="1040" height="1" fill="rgba(255,255,255,0.12)"/>
 
   <!-- Job Title (UPPERCASE, large) -->
-  <text x="80" y="${titleY1}" font-family="Arial, Helvetica, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine1}</text>
-  ${hasLine2 ? `<text x="80" y="${titleY2}" font-family="Arial, Helvetica, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine2}</text>` : ""}
+  <text x="80" y="${titleY1}" font-family="Inter, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine1}</text>
+  ${hasLine2 ? `<text x="80" y="${titleY2}" font-family="Inter, sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${titleLine2}</text>` : ""}
 
   <!-- Company name -->
-  <text x="80" y="${companyY}" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)" font-weight="600">${companyShort}</text>
+  <text x="80" y="${companyY}" font-family="Inter, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)" font-weight="600">${companyShort}</text>
 
   <!-- Detail tags (pills) -->
   ${tagsSvg}
@@ -190,10 +203,10 @@ function generateSvg(params: {
   <rect x="80" y="500" width="1040" height="1" fill="rgba(255,255,255,0.12)"/>
 
   <!-- CTA -->
-  <text x="80" y="548" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="bold" fill="#fbbf24">Postulez via JobGuinée!</text>
+  <text x="80" y="548" font-family="Inter, sans-serif" font-size="24" font-weight="bold" fill="#fbbf24">Postulez via JobGuin&#233;e!</text>
 
   <!-- URL -->
-  <text x="1120" y="548" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="rgba(255,255,255,0.4)" text-anchor="end">jobguinee-pro.com</text>
+  <text x="1120" y="548" font-family="Inter, sans-serif" font-size="20" fill="rgba(255,255,255,0.4)" text-anchor="end">jobguinee-pro.com</text>
 
   <!-- Bottom accent bar -->
   <rect x="40" y="589" width="1120" height="6" rx="3" fill="url(#goldGrad)"/>
@@ -263,7 +276,7 @@ Deno.serve(async (req: Request) => {
       settingsMap[s.key] = typeof s.value === "string" ? s.value : JSON.stringify(s.value);
     });
 
-    const siteName = settingsMap["site_name"] || "JobGuinée";
+    const siteName = settingsMap["site_name"] || "JobGuin茅e";
     const siteUrl = settingsMap["site_url"] || "jobguinee.com";
     const siteLogoPath = settingsMap["site_logo_url"] || null;
 
@@ -293,6 +306,10 @@ Deno.serve(async (req: Request) => {
     await ensureWasm();
     const resvg = new Resvg(svg, {
       fitTo: { mode: "width", value: 1200 },
+      font: {
+        fontBuffers,
+        defaultFontFamily: "Inter",
+      },
     });
     const pngData = resvg.render();
     const pngBuffer = pngData.asPng();
